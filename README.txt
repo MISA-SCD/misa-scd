@@ -14,9 +14,7 @@ cd src
 make clean
 make
 
-To run,
-for example, to run Bulk_Implantation_Cascade
-use the following commands:
+To run, such as Bulk_Implantation_Cascade, use the following commands:
 
 cd ../tests/Bulk_Implantation_Cascade
 mpirun -n 8 ../../src/srscd parameters.txt
