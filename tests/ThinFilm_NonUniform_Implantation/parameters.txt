@@ -1,0 +1,150 @@
+!***************************************************************************************************
+!2014/05/21: This is the first version of the overall parameters file that will be used for the
+!synchronous parallel Monte Carlo code. It also contains filenames of various other input files
+!used in this code.
+!***************************************************************************************************
+
+!Tell computer location of mesh input file
+meshFile
+'../../inputs/Mesh_ThinFilm.txt'
+
+!Tell computer if this is a uniform or non-uniform mesh file
+meshType
+uniform
+
+!Toggle for calculating defect diffusion interaction with strain field
+strainField
+no
+
+!DEBUG TOOL: toggle restart from data file (instead of restarting at 0 dpa) ('yes' or 'no')
+debugRestart
+no
+
+!DEBUG TOOL: name of file to restart from (only used if debugRestart=='yes')
+debugRestartFile
+debugRestart.in
+
+!Tell computer if the number of materials we are reading in
+numMaterials
+1
+
+!Tell computer the location of the material input file(s)
+materialFile
+'../../inputs/Fe_Defects_HeSIAPinning.txt'
+
+!Type of implantation ('Cascade' for cascades, 'FrenkelPair' for Frenkel pairs)
+implantType
+FrenkelPair
+
+!Toggle Monte Carlo cascade introduction vs explicit cascade introduction (for better weak scaling)
+!('MonteCarlo' for MC cascade implantation, 'explicit' for explicit cascade implantation)
+implantScheme
+MonteCarlo
+
+!Tell computer the location of the cascade input file
+cascadeFile
+'../../inputs/Fe_Cascades.txt'
+
+!Tell computer whether we are using adaptive meshing protocol or not (adaptive for yes, nonAdaptive for no)
+meshingType
+nonAdaptive
+
+!Tell computer whether we are implanting defects uniformly or if we have implantation listed separately
+!at each material point (for non-uniform implantation) - (Uniform or NonUniform)
+implantDist
+NonUniform
+
+!Tell computer the name of the data file containing non-uniform implantation profile
+implantFile
+'../../inputs/ImplantProfile.txt'
+
+!***************************************************************************************************
+!Simulation Parameters
+!
+!The order of these parameters can be adjusted but each parameter must come directly after the tag
+!for it. For example, the temperature must come directly after 'temperature'
+!***************************************************************************************************
+
+start			!begin parameters
+
+temperature		!Temperature, in K
+273d0
+				
+dpaRate			! NOTE: if the implant profile is non-uniform, this should be the AVERAGE DPA rate.
+1.620d-2			
+
+HeDPA			! Helium/DPA ratio! He ImplantRate (atomic fraction / sec) - only used if implantDist='Uniform'
+1.16d-2			!(NOTE: if implantDist='NonUniform', must have HeDPA .NE. 0d0 to add nonuniform He implant rates)	
+
+atomSize
+1.182d-2 		!(Fe) 			1.17d-2 		!(Cu)		! atomsize (nm^3)
+
+burgers
+.287d0 			!(Fe) 			.36d0 			!(Cu)		! dislocation loop burgers vector (lattice constant) (nm)
+
+totalDPA
+1d-2			! total DPA in simulation 1
+
+annealTemp
+273d0			!Annealing temperature, in K
+
+annealSteps
+1				! number of steps in the annealing process
+
+annealTime
+0d0				! total anneal time (s)
+
+annealType
+add				! (add) for adding constant temperature increment at each anneal step, (mult) for multiplying the temperature by a constant at each anneal step
+				
+annealTempInc
+0d0				! Temperature increment for each annealing step (either added or multiplied by)
+
+grainBoundaries	!Toggle whether we are going to include the effect of grain boundaries (Removing defects that travel too far)
+no
+
+grainSize
+33000d0			! Mean free path for interstitial clusters to travel before removal (nm)
+
+dislocDensity
+1d-5			! dislocation density (nm^-2)
+
+impurityConc
+30d-6			!30d-4			! carbon impurity concentration (atomic fraction)
+
+max3DInt
+4				!maximum size for SIA defect to diffuse in 3D
+
+cascadeVolume
+1000			!volume of cascade (nm^3) - used for cascade-defect interactions
+
+HeSIAToggle
+yes				!Toggle whether or not we are allowing He-SIA clusters to form ('yes' or 'no')
+
+SIAPinToggle
+no				!Toggle whether or not we are allowing HeV clusters to pin SIA clusters ('yes' or 'no')
+
+numSims
+1				!number of times to repeat simulation
+
+end				!Tag for the end of the parameters file
+
+!***************************************************************************************************
+!Adaptive meshing parameters
+!***************************************************************************************************
+
+fineStart		! Begin fine mesh parameters (for adaptive meshing only, not used if adaptive meshing turned off)
+
+fineLength
+5				! Length of one cascade implantation element (nm)
+
+numxFine
+6				! number of cascade elements in x-direction (fine mesh)
+
+numyFine
+6				! number of cascade elements in y-direction
+
+numzFine
+6				! number of cascade elements in z-direction
+
+end				! Tag for the end of meshing parameters

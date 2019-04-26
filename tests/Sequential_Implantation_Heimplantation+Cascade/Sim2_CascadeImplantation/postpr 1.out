@@ -1,0 +1,193 @@
+ time   6.1728720384839890E-002 dpa   6.1471450277793001E-002 steps           1
+ Cascades/Frenkel pairs      337338 He implant events        3857 computation time  0.131485999    
+ Fraction null steps   1.0000000000000000     
+
+ HeNum        1734 Conc   4.3350000000000002E-004 At.%   5.1239700000000000E-006
+ VNum       21006 Conc   5.2515000000000001E-003 At.%   6.2072729999999995E-005
+ Voids           0 Conc   0.0000000000000000      At.%   0.0000000000000000     
+ SIANum         332 Conc   8.2999999999999998E-005 At.%   9.8105999999999997E-007
+ Loops           2 Conc   4.9999999999999998E-007 At.%   5.9100000000000005E-009
+ AverageHeSize   1.7560553633217992     
+ AverageVSize   1.0212320289441112     
+ AverageSIASize   1.8012048192771084     
+ AverageVoidSize                       NaN
+ AverageLoopSize   27.500000000000000     
+ PercentHeRetained  0.78947368421052633     
+ PercentVRetained   1.0312211557321975E-003
+ PercentVAnnihilated   4.8071096202321342E-008
+ NumReactionsCoarse       35172
+ NumReactionsFine           0
+ AverageTimestep   6.1728720384839890E-002
+
+ time   6.1729719707184903E-002 dpa   6.1471450277793001E-002 steps           2
+ Cascades/Frenkel pairs      337338 He implant events        3857 computation time  0.132711992    
+ Fraction null steps  0.50000000000000000     
+
+ HeNum        1734 Conc   4.3350000000000002E-004 At.%   5.1239700000000000E-006
+ VNum       21006 Conc   5.2515000000000001E-003 At.%   6.2072729999999995E-005
+ Voids           0 Conc   0.0000000000000000      At.%   0.0000000000000000     
+ SIANum         332 Conc   8.2999999999999998E-005 At.%   9.8105999999999997E-007
+ Loops           2 Conc   4.9999999999999998E-007 At.%   5.9100000000000005E-009
+ AverageHeSize   1.7560553633217992     
+ AverageVSize   1.0212320289441112     
+ AverageSIASize   1.8012048192771084     
+ AverageVoidSize                       NaN
+ AverageLoopSize   27.500000000000000     
+ PercentHeRetained  0.78947368421052633     
+ PercentVRetained   1.0312211557321975E-003
+ PercentVAnnihilated   4.8071096202321342E-008
+ NumReactionsCoarse       35173
+ NumReactionsFine           0
+ AverageTimestep   3.0864859853592452E-002
+
+ time   6.1729911033969728E-002 dpa   6.1471450277793001E-002 steps           3
+ Cascades/Frenkel pairs      337338 He implant events        3857 computation time  0.133452997    
+ Fraction null steps  0.66666666666666663     
+
+ HeNum        1734 Conc   4.3350000000000002E-004 At.%   5.1239700000000000E-006
+ VNum       21004 Conc   5.2509999999999996E-003 At.%   6.2066820000000001E-005
+ Voids           0 Conc   0.0000000000000000      At.%   0.0000000000000000     
+ SIANum         330 Conc   8.2500000000000000E-005 At.%   9.7515000000000010E-007
+ Loops           2 Conc   4.9999999999999998E-007 At.%   5.9100000000000005E-009
+ AverageHeSize   1.7560553633217992     
+ AverageVSize   1.0212340506570177     
+ AverageSIASize   1.8060606060606061     
+ AverageVoidSize                       NaN
+ AverageLoopSize   27.500000000000000     
+ PercentHeRetained  0.78947368421052633     
+ PercentVRetained   1.0311250135397927E-003
+ PercentVAnnihilated   1.4421328860696402E-007
+ NumReactionsCoarse       35160
+ NumReactionsFine           0
+ AverageTimestep   2.0576637011323243E-002
+
+ time   6.1729992846103608E-002 dpa   6.1471450277793001E-002 steps           4
+ Cascades/Frenkel pairs      337338 He implant events        3857 computation time  0.134176999    
+ Fraction null steps  0.75000000000000000     
+
+ HeNum        1734 Conc   4.3350000000000002E-004 At.%   5.1239700000000000E-006
+ VNum       21003 Conc   5.2507500000000002E-003 At.%   6.2063865000000005E-005
+ Voids           0 Conc   0.0000000000000000      At.%   0.0000000000000000     
+ SIANum         329 Conc   8.2249999999999993E-005 At.%   9.7219500000000006E-007
+ Loops           2 Conc   4.9999999999999998E-007 At.%   5.9100000000000005E-009
+ AverageHeSize   1.7560553633217992     
+ AverageVSize   1.0212350616578585     
+ AverageSIASize   1.8085106382978724     
+ AverageVoidSize                       NaN
+ AverageLoopSize   27.500000000000000     
+ PercentHeRetained  0.78947368421052633     
+ PercentVRetained   1.0310769424435905E-003
+ PercentVAnnihilated   1.9228438480928537E-007
+ NumReactionsCoarse       35152
+ NumReactionsFine           0
+ AverageTimestep   1.5432498211525902E-002
+
+ time   6.1730216164426303E-002 dpa   6.1471450277793001E-002 steps           5
+ Cascades/Frenkel pairs      337338 He implant events        3857 computation time  0.134913996    
+ Fraction null steps  0.80000000000000004     
+
+ HeNum        1734 Conc   4.3350000000000002E-004 At.%   5.1239700000000000E-006
+ VNum       21002 Conc   5.2505000000000000E-003 At.%   6.2060910000000008E-005
+ Voids           0 Conc   0.0000000000000000      At.%   0.0000000000000000     
+ SIANum         328 Conc   8.2000000000000001E-005 At.%   9.6924000000000002E-007
+ Loops           2 Conc   4.9999999999999998E-007 At.%   5.9100000000000005E-009
+ AverageHeSize   1.7560553633217992     
+ AverageVSize   1.0212360727549756     
+ AverageSIASize   1.8109756097560976     
+ AverageVoidSize                       NaN
+ AverageLoopSize   27.500000000000000     
+ PercentHeRetained  0.78947368421052633     
+ PercentVRetained   1.0310288713473881E-003
+ PercentVAnnihilated   2.4035548101160672E-007
+ NumReactionsCoarse       35144
+ NumReactionsFine           0
+ AverageTimestep   1.2346043232885261E-002
+
+ time   6.1730793516684326E-002 dpa   6.1471450277793001E-002 steps           6
+ Cascades/Frenkel pairs      337338 He implant events        3857 computation time  0.135703996    
+ Fraction null steps  0.66666666666666663     
+
+ HeNum        1734 Conc   4.3350000000000002E-004 At.%   5.1239700000000000E-006
+ VNum       21000 Conc   5.2500000000000003E-003 At.%   6.2055000000000001E-005
+ Voids           0 Conc   0.0000000000000000      At.%   0.0000000000000000     
+ SIANum         325 Conc   8.1249999999999996E-005 At.%   9.6037500000000010E-007
+ Loops           2 Conc   4.9999999999999998E-007 At.%   5.9100000000000005E-009
+ AverageHeSize   1.7560553633217992     
+ AverageVSize   1.0212380952380953     
+ AverageSIASize   1.8184615384615384     
+ AverageVoidSize                       NaN
+ AverageLoopSize   27.500000000000000     
+ PercentHeRetained  0.78947368421052633     
+ PercentVRetained   1.0309327291549836E-003
+ PercentVAnnihilated   3.3649767341624941E-007
+ NumReactionsCoarse       35122
+ NumReactionsFine           0
+ AverageTimestep   1.0288465586114055E-002
+
+ time   6.1730793577210459E-002 dpa   6.1471450277793001E-002 steps           7
+ Cascades/Frenkel pairs      337338 He implant events        3857 computation time  0.136463001    
+ Fraction null steps  0.57142857142857140     
+
+ HeNum        1734 Conc   4.3350000000000002E-004 At.%   5.1239700000000000E-006
+ VNum       21000 Conc   5.2500000000000003E-003 At.%   6.2055000000000001E-005
+ Voids           0 Conc   0.0000000000000000      At.%   0.0000000000000000     
+ SIANum         325 Conc   8.1249999999999996E-005 At.%   9.6037500000000010E-007
+ Loops           2 Conc   4.9999999999999998E-007 At.%   5.9100000000000005E-009
+ AverageHeSize   1.7560553633217992     
+ AverageVSize   1.0212380952380953     
+ AverageSIASize   1.8184615384615384     
+ AverageVoidSize                       NaN
+ AverageLoopSize   27.500000000000000     
+ PercentHeRetained  0.78947368421052633     
+ PercentVRetained   1.0309327291549836E-003
+ PercentVAnnihilated   3.3649767341624941E-007
+ NumReactionsCoarse       35124
+ NumReactionsFine           0
+ AverageTimestep   8.8186847967443513E-003
+
+ time   7.9013299236712006E-002 dpa   6.1745152375740006E-002 steps      307211
+ Cascades/Frenkel pairs      338840 He implant events        3857 computation time   43.3020973    
+ Fraction null steps  0.69950945766915895     
+
+ HeNum        1678 Conc   4.1950000000000001E-004 At.%   4.9584900000000002E-006
+ VNum       39777 Conc   9.9442500000000000E-003 At.%   1.1754103500000001E-004
+ Voids           0 Conc   0.0000000000000000      At.%   0.0000000000000000     
+ SIANum         579 Conc   1.4474999999999999E-004 At.%   1.7109450000000002E-006
+ Loops           2 Conc   4.9999999999999998E-007 At.%   5.9100000000000005E-009
+ AverageHeSize   1.8045292014302741     
+ AverageVSize   1.1504386957286874     
+ AverageSIASize   2.6943005181347148     
+ AverageVoidSize                       NaN
+ AverageLoopSize   28.500000000000000     
+ PercentHeRetained  0.78506611355976152     
+ PercentVRetained   2.1900303067861589E-003
+ PercentVAnnihilated   3.0103644229248264E-003
+ NumReactionsCoarse       48049
+ NumReactionsFine           0
+ AverageTimestep   2.5719554064376603E-007
+
+ Final Defect State
+ time  0.12345837315640065      dpa   6.2468950466982004E-002 steps      980929
+ Cascades/Frenkel pairs      342812 He implant events        3857 computation time   155.356247    
+ Fraction null steps  0.70112923565314100     
+
+ HeNum        1615 Conc   4.0374999999999997E-004 At.%   4.7723250000000001E-006
+ VNum       70175 Conc   1.7543750000000000E-002 At.%   2.0736712500000001E-004
+ Voids           0 Conc   0.0000000000000000      At.%   0.0000000000000000     
+ SIANum         526 Conc   1.3150000000000000E-004 At.%   1.5543300000000001E-006
+ Loops           2 Conc   4.9999999999999998E-007 At.%   5.9100000000000005E-009
+ AverageHeSize   1.8600619195046439     
+ AverageVSize   1.3731528322052013     
+ AverageSIASize   2.8764258555133080     
+ AverageVoidSize                       NaN
+ AverageLoopSize   30.500000000000000     
+ PercentHeRetained  0.77884366087632872     
+ PercentVRetained   4.5582125659451101E-003
+ PercentVAnnihilated   1.0980277639890025E-002
+ NumReactionsCoarse       65054
+ NumReactionsFine           0
+ AverageTimestep   1.2585862295477109E-007
+
+ computation time   155.358490    
+ total steps      980929
+ Released all fine mesh defects
