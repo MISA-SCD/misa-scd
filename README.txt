@@ -7,11 +7,19 @@ email: aydunn@sandia.gov, adunn32@me.gatech.edu
 ******************************************************************************************
 Compiling instructions
 ******************************************************************************************
+First load openmpi under version 1.8.
+Then, to compile, use the following commands:
 
-To compile, use the following commands:
+cd src
+make clean
+make
 
-srscdclean (rm -r obj_intel)
-make intel	<- runs make file
+To run,
+for example, to run Bulk_Implantation_Cascade
+use the following commands:
+
+cd ../tests/Bulk_Implantation_Cascade
+mpirun -n 8 ../../src/srscd parameters.txt
 
 ******************************************************************************************
 Description of parameters.txt
