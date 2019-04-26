@@ -136,7 +136,7 @@ call readImplantData()			!input (1-dimensional) non-uniform defect implantation 
 call readParameters()			!read simulation parameters (DPA rate, temperature, etc)
 
 !Create fine mesh connectivity
-allocate(cascadeConnectivity(numCellsCascade, 6))
+allocate(cascadeConnectivity(numCellsCascade, 6))	!< numCellsCascade=numxCascade*numyCascade*numzCascade=6*6*6
 call createCascadeConnectivity()
 
 !***********************************************************************
@@ -152,7 +152,7 @@ allocate(conc_i_store(numSims))
 allocate(conc_v_store(numSims))
 
 !Initialize values of alpha_v and alpha_i
-if(sinkEffSearch=='yes') then
+if(sinkEffSearch=='yes') then	!< sinkEffSearch was set to 'no' in Read_input.f90
 	conc_i_prev=0d0
 	conc_v_prev=0d0
 	
@@ -162,7 +162,7 @@ if(sinkEffSearch=='yes') then
 	v_iteration=0
 	i_iteration=0
 endif
-
+!< begin the first loop
 do 500 while(searchToggle .eqv. .TRUE.)
 !do 501 while(alpha_v_search .eqv. .TRUE.)
 !do 502 while(alpha_i_search .eqv. .TRUE.)
@@ -171,11 +171,11 @@ do 500 while(searchToggle .eqv. .TRUE.)
 !For running multiple simulations, initialize the defects, reactions,
 !boundary, etc. and loop here.
 !***********************************************************************
-
+!< begin the second loop
 do 13 sim=1,numSims
 
 !Reset the temperature to tempStore at the beginning of each simulation
-temperature=tempStore
+temperature=tempStore	!< Temperature read in (K)
 
 !Initialize output files
 if(myProc%taskid==MASTER) then
