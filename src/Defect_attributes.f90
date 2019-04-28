@@ -118,6 +118,9 @@ else if(functionType==3) then
 	Em=parameters(4)+parameters(5)/dble(DefectType(3))**(parameters(6))
 	
 	Diff=D0*dexp(-Em/(kboltzmann*temperature))
+else if(functionType==5) then
+	!< Dcu(n) = Dcu(1)/n
+	Diff=(DiffSingle(matNum,1)%D*dexp(-DiffSingle(matNum,1)%Em/(kboltzmann*temperature)))/dble(DefectType(1))
 else
 	write(*,*) 'error incorrect diffusivity function chosen'
 endif
@@ -284,27 +287,33 @@ else if(functionType==5) then
 	write(*,*) 'error no functionType 5 in BindingCompute'
 else if(functionType==6) then
 	HeNum=DefectType(1)
-	VNum=DefectType(2)	
-	if(dble(HeNum)/dble(VNum) .LE. .5d0) then
+	VNum=DefectType(2)
+	Eb=parameters(1)+parameters(2)*(dble(HeNum)**(0.85d0)-dble(HeNum+1)**(0.85d0))-&
+			parameters(3)*(dble(VNum)**(1d0/3d0)-dble(VNum)**(2d0/3d0))
+
+	!<if(dble(HeNum)/dble(VNum) .LE. .5d0) then
 		!helium cannot dissociate from HeV clusters with mostly V
-		Eb=10d0
-	else
+	!<	Eb=10d0
+	!<else
 		!Use He_mV_n binding energy (does not apply for low m/n ratios)
 		!Eb=parameters(1)-parameters(2)*dlog(dble(HeNum)/dble(VNum))/dlog(10d0)-&
 		!	parameters(3)*dlog(dble(HeNum)/dble(VNum))**2d0/(dlog(10d0)**2d0) !Marion and Bulatov, from Terentyev
 		
 		!EDIT: 2014.10.08: Helium cannot dissociate from HeV clusters at all.
-		Eb=10d0
+	!<	Eb=10d0
 		
 		
-		if(Eb .LT. 0d0) then
-			Eb=0d0
-		endif
+	!<	if(Eb .LT. 0d0) then
+	!<		Eb=0d0
+	!<	endif
 	
-	endif
+	!<endif
 else if(functionType==7) then
 	HeNum=DefectType(1)
 	VNum=DefectType(2)
+	Eb=parameters(1)-parameters(2)*(dble(VNum)**(1d0/3d0)-dble(VNum+1)**(1d0/3d0))+&
+			parameters(3)*(dble(VNum)**(2d0/3d0)-dble(VNum+1)**(2d0/3d0))-parameters(3)*dble(HeNum)*&
+			(dble(VNum)**(1d0/3d0)-dble(VNum+1)**(1d0/3d0)+dble(VNum)**(2d0/3d0)-dble(VNum+1)**(2d0/3d0))
 
 !	if(dble(HeNum)/dble(VNum) .LE. .5d0) then
 
@@ -321,20 +330,20 @@ else if(functionType==7) then
 !
 ! Reference:
 !
-		Eb_VOnly=parameters(1)+(parameters(2)-parameters(1))*(dble(VNum)**(2d0/3d0)-dble(VNum-1)**(2d0/3d0))/(2d0**(2d0/3d0)-1d0)
+	!<	Eb_VOnly=parameters(1)+(parameters(2)-parameters(1))*(dble(VNum)**(2d0/3d0)-dble(VNum-1)**(2d0/3d0))/(2d0**(2d0/3d0)-1d0)
 		
-		if(Eb_VOnly .LT. 0d0) then
-			Eb_VOnly=0d0
-		endif
+	!<	if(Eb_VOnly .LT. 0d0) then
+	!<		Eb_VOnly=0d0
+	!<	endif
 
 		!He_mV_n binding energy (does not apply for low m/n ratios)
 		!Eb_HeV=parameters(3)+parameters(4)*dlog(dble(HeNum)/dble(VNum))/dlog(10d0)+&
 		!	parameters(5)*dlog(dble(HeNum)/dble(VNum))**2d0/(dlog(10d0)**2d0) !Marion and Bulatov, from Terentyev
-		Eb_HeV=parameters(3)*(dble(HeNum)/dble(VNum))**parameters(4)
+	!<	Eb_HeV=parameters(3)*(dble(HeNum)/dble(VNum))**parameters(4)
 		
-		if(Eb_HeV .LT. 0d0) then
-			Eb_HeV=0d0
-		endif
+	!<	if(Eb_HeV .LT. 0d0) then
+	!<		Eb_HeV=0d0
+	!<	endif
 		
 		!Modification 2015.03.19: choose the larger binding energy between the V_only functional form and the He_V functional form
 	
@@ -344,7 +353,7 @@ else if(functionType==7) then
 !			Eb=Eb_HeV+1d0
 !		endif
 
-		Eb=Eb_VOnly+Eb_HeV
+	!<	Eb=Eb_VOnly+Eb_HeV
 		
 !	endif
 	
