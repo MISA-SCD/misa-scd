@@ -1128,7 +1128,7 @@ end subroutine
 !!2) Number of allowed reactions of each size
 !***************************************************************************************************
 
-subroutine readReactionListSizes(filename)
+subroutine readReactionListSizes(filename)	!< filename is 'xx_Defects.txt'
 use DerivedType
 use mod_srscd_constants
 implicit none
@@ -1152,7 +1152,7 @@ do 10 while(flag .eqv. .FALSE.)
 	read(80,*) char
 	if(char=='material') then
 		flag=.TRUE.
-		read(80,*) matNum
+		read(80,*) matNum	!< matNum = 1 or 2
 	endif
 10 continue
 flag=.FALSE.
@@ -1161,7 +1161,7 @@ do 11 while(flag .eqv. .FALSE.)
 	read(80,*) char
 	if(char=='species') then	
 		flag=.TRUE.
-		read(80,*) numSpecies
+		read(80,*) numSpecies	!< numSpecies = 4
 	endif
 11 continue
 flag=.FALSE.
