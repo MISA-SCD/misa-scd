@@ -120,7 +120,7 @@ else if(functionType==3) then
 	Diff=D0*dexp(-Em/(kboltzmann*temperature))
 else if(functionType==5) then
 	!< Dcu(n) = Dcu(1)/n
-	Diff=(DiffSingle(matNum,1)%D*dexp(-DiffSingle(matNum,1)%Em/(kboltzmann*temperature)))/dble(DefectType(1))
+	Diff=(DiffSingle(1,1)%D*dexp(-DiffSingle(1,1)%Em/(kboltzmann*temperature)))/dble(DefectType(1))
 else
 	write(*,*) 'error incorrect diffusivity function chosen'
 endif

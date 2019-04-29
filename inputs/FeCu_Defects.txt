@@ -618,6 +618,11 @@ FrenkelPair					!Frenkel pair implantation
 0	1	0	0		0	0	1	0		!V+SIA creation
 10							!reactionRate form 10 - for Frenkel pair implantation
 
+HeImplant					!Helium implantation
+
+1	0	0	0				!He creation
+12							!reactionRate form 12 - for He implantation
+
 Cascade						!Cascade implantation
 
 11							!reactionRate form 11 - for cascade implantation
