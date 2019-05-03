@@ -68,6 +68,9 @@ end subroutine
 !!
 !!This will also initialize the total rate in the case of a debug restart, in which 
 !!many reactions are possible at the first step (besides just implantation reactions)
+
+!!Return: totalRateVol(:) Total reaction rate in each volume element of the  local processor
+!!		  totalRate		  Total rate of the local processor
 !*****************************************************************************************
 
 subroutine initializeTotalRate()

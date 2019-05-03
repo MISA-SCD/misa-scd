@@ -267,8 +267,8 @@ if(functionType==1) then
 	!used for zero functions
 	Eb=0d0
 else if(functionType==2) then
-	!used for constant functions
-	Eb=parameters(1)
+	!used for Cu cluster dislocation
+	Eb=parameters(1)+parameters(2)*(dble(HeNum)**(0.85d0)-dble(HeNum+1)**(0.85d0))
 else if(functionType==3) then
 	!Mobile SIA loop diffusivity
 	write(*,*) 'error no functionType 3 in BindingCompute'

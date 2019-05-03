@@ -242,21 +242,21 @@ call initializeReactionList()		!initialize reactions within myMesh
 call initializeTotalRate()			!initialize totalRate and maxRate using reactionList(:)
 call initializeDebugRestart()		!input defects into coarse mesh from restart file (for debugging)
 
-!call DEBUGPrintReactionList(0)
+!call DEBUGPrintReactionList(0)		!prints all reaction lists at a given Monte Carlo step
 
 !******************************************************************
 !Initialize Counters
 !******************************************************************
 
-if(debugToggle=='yes') then
+if(debugToggle=='yes') then		!inpput parameter
 	
 	!If we are restarting from a reset file, then we have to start wtih a
 	!nonzero dpa and at a nonzero time. All of the 'old' implant events
 	!and He implant events are tracked in the master processor.
 	
 	if(myProc%taskid==MASTER) then
-		numImplantEvents	= numImplantEventsReset
-		numHeImplantEvents	= numHeImplantEventsReset
+		numImplantEvents	= numImplantEventsReset		!numImplantEventsReset is read in from debug restart file
+		numHeImplantEvents	= numHeImplantEventsReset	!numHeImplantEventsReset is read in from debug restart file
 	else
 		numImplantEvents	= 0
 		numHeImplantEvents	= 0
@@ -283,25 +283,31 @@ if(debugToggle=='yes') then
 	write(*,*) 'Processor', myProc%taskid, 'Defect lists and reaction lists initialized'
 	
 else
-	numImplantEvents	= 0
-	numHeImplantEvents	= 0
-	numAnnihilate		= 0
-	elapsedTime			= 0d0
+	numImplantEvents	= 0		!<Postprocessing: number of Frenkel pairs / cascades (local)
+	numHeImplantEvents	= 0		!<Postprocessing: number of He implantation events (local)
+	numAnnihilate		= 0		!<Postprocessing: number of annihilation reactions carried out
+	elapsedTime			= 0d0	!The simulation time that has passed
 	
-	numTrapSIA=0
-	numTrapV=0
-	numEmitSIA=0
-	numEmitV=0
+	numTrapSIA=0	!<Postprocessing: number of SIAs trapped on grain boundary
+	numTrapV=0		!<Postprocessing: number of vacancies trapped on grain boundary
+	numEmitSIA=0	!<Postprocessing: number of SIAs emitted from grain boundary
+	numEmitV=0		!<Postprocessing: number of vacancies emitted from grain boundary
 endif
 
 step=0
-nullSteps=0
+nullSteps=0		!Record the number of steps in which an empty event was selected
 
-totalTime=totalDPA/DPARate
+!2019.04.30 Add
+if(agingTime > 0) then
+	totalTime = agingTime
+else
+	totalTime=totalDPA/DPARate	!simulation time
+endif
+
 TotalCascades=0
 outputCounter=0
-nullify(ActiveCascades)
-annealIdentify=.FALSE.
+nullify(ActiveCascades)		! pointer ActiveCascades=NULL
+annealIdentify=.FALSE.		!<(.TRUE. if in annealing phase, .FALSE. otherwise) used to determine how to reset reaction rates (should we include implantation or not)
 
 do 10 while(elapsedTime .LT. totalTime)
 	
@@ -317,13 +323,13 @@ do 10 while(elapsedTime .LT. totalTime)
 		if(meshingType=='adaptive') then
 			write(*,*) 'Error adaptive meshing not allowed for single element kMC'
 		endif
-		rateSingle=0d0
+		rateSingle=0d0	!
 		do 20 cell=1,numCells
 			if(totalRateVol(cell) .GT. rateSingle) then
 				rateSingle=totalRateVol(cell)
 			endif
 		20 continue
-		totalRate=rateSingle
+		totalRate=rateSingle	!find the maximum totalRate in the local peocessor
 	endif
 	
 	call MPI_ALLREDUCE(totalRate,maxRate,1,MPI_DOUBLE_PRECISION,MPI_MAX,MPI_COMM_WORLD,ierr)
@@ -331,12 +337,12 @@ do 10 while(elapsedTime .LT. totalTime)
 !*************************************************************************
 !	if(mod(step,10)==0) then
 !		!Debugging subroutine: outputs the reaction rate in each processor
-!		call outputRates(step)
+!		call outputRates(elapsedTime, step)
 !	endif
 !*************************************************************************
 	
 	!***********************************************************************************************
-	!Choose from reactions in in reactionList(:) (local to this processor). Null events possible.
+	!Choose from reactions in reactionList(:) (local to this processor). Null events possible.
 	!
 	!If explicit implant scheme has been chosen, implant cascades when elapsed time has passed 
 	!a threshold, and do not iterate timestep when doing so.
@@ -345,30 +351,30 @@ do 10 while(elapsedTime .LT. totalTime)
 	allocate(defectUpdate)
 	allocate(defectUpdate%defectType(numSpecies))
 	do 1 i=1,numSpecies
-		defectUpdate%defectType(i)=0
+		defectUpdate%defectType(i)=0	!Initialize
 	1 continue
-	nullify(defectUpdate%next)
-	defectUpdateCurrent=>defectUpdate
+	nullify(defectUpdate%next)	!set the pointer defectUpdate%next=NULL
+	defectUpdateCurrent=>defectUpdate	!set defectUpdateCurrent point to the defect to be updated
 	
 	if(singleElemKMC=='yes') then	!choose a reaction in each volume element
 	
 		if(implantScheme=='explicit') then
-		
 			write(*,*) 'Error explicit implantation not implemented for single element kMC'
-			
 		else
 			!Generate timestep in the master processor and send it to all other processors
 			if(myProc%taskid==MASTER) then
 				tau=GenerateTimestep()
 			endif
 			
-			allocate(reactionChoiceList)
-			nullify(reactionChoiceList%next)
-			reactionChoiceCurrent=>reactionChoiceList
+			allocate(reactionChoiceList)	!type(reaction). Allocate memory for reactionChoiceList
+			nullify(reactionChoiceList%next)	!set pointer reactionChoiceList%next=NULL
+			reactionChoiceCurrent=>reactionChoiceList	!the first memory of reactionChoiceList hasn't data
 					
 			!Choose one reaction in each cell
 			do 21 cell=1,numCells
 				!Choose reactions here
+				!Inout: cell.
+				!Output: reactionCurrent, CascadeCurrent, numImplantEvents, numHeImplantEvents, numAnnihilate
 				call chooseReactionSingleCell(reactionCurrent, CascadeCurrent, cell)
 
 				!Update defects according to the reaction chosen
@@ -384,8 +390,8 @@ do 10 while(elapsedTime .LT. totalTime)
 				else
 					!Generate list of chosen reactions
 					
-					allocate(reactionChoiceCurrent%next)
-					reactionChoiceCurrent=>reactionChoiceCurrent%next
+					allocate(reactionChoiceCurrent%next)	!Allocate memory for the next
+					reactionChoiceCurrent=>reactionChoiceCurrent%next	!point to next
 					
 					reactionChoiceCurrent%numReactants=reactionCurrent%numReactants
 					allocate(reactionChoiceCurrent%reactants(reactionCurrent%numReactants, numSpecies))
@@ -422,20 +428,20 @@ do 10 while(elapsedTime .LT. totalTime)
 							
 					32 continue
 					
-					nullify(reactionChoiceCurrent%next)
+					nullify(reactionChoiceCurrent%next)		!set pointer reactionChoiceCurrent%next=NULL
 					
 				endif
 			
-			!	call DEBUGPrintDefectUpdate(defectUpdate)
+				!call DEBUGPrintDefectUpdate(defectUpdate)
 			
 				!No cascade choices allowed for one KMC domain per element at this point
 			
 			21 continue
 			
-			reactionChoiceCurrent=>reactionChoiceList%next
+			reactionChoiceCurrent=>reactionChoiceList%next	!reactionChoiceCurrent=NULL
 			call updateDefectListMultiple(reactionChoiceCurrent, defectUpdateCurrent, CascadeCurrent)
 			
-!			call DEBUGPrintDefectUpdate(defectUpdate)
+			!call DEBUGPrintDefectUpdate(defectUpdate)
 			
 			!deallocate memory
 			reactionChoiceCurrent=>reactionChoiceList%next
@@ -460,6 +466,8 @@ do 10 while(elapsedTime .LT. totalTime)
 			
 			if(elapsedTime .GE. numImplantEvents*(numDisplacedAtoms*atomsize)/(totalVolume*DPARate)) then
 				
+				!Input: none
+				!Output: reactionCurrent, pointing at cascade reaction
 				call addCascadeExplicit(reactionCurrent)
 				
 				!Do not generate a timestep in this case; this is an explicit (zero-time) reaction
@@ -469,7 +477,9 @@ do 10 while(elapsedTime .LT. totalTime)
 				endif
 				
 			else
-			
+
+				!Input:  none
+				!Output: reactionCurrent, CascadeCurrent
 				call chooseReaction(reactionCurrent, CascadeCurrent)
 				
 				!Generate timestep in the master processor and send it to all other processors
@@ -504,18 +514,16 @@ do 10 while(elapsedTime .LT. totalTime)
 			
 		!call DEBUGPrintReaction(reactionCurrent, step)
 		!write(*,*) 'tau', tau, 'totalRate', totalRate
-	
-		!************
-		! Optional: count how many steps are null events
-		!************
-	
+
 		if(.NOT. associated(reactionCurrent)) then
 			nullSteps=nullSteps+1
-			if(myProc%numtasks==1) then
-				write(*,*) 'Error null event in serial SRSCD'
-			endif
+			!!if(myProc%numtasks==1) then
+			!!	write(*,*) 'Error null event in serial SRSCD'
+			!!endif
 		endif
-	
+
+		!Input: reactionCurrent
+		!Output: defectUpdateCurrent, CascadeCurrent
 		call updateDefectList(reactionCurrent, defectUpdateCurrent, CascadeCurrent)
 
 		!call DEBUGPrintDefectUpdate(defectUpdate)
@@ -542,17 +550,20 @@ do 10 while(elapsedTime .LT. totalTime)
 	if(myProc%taskid==MASTER) then
 		
 		elapsedTime=elapsedTime+tau
-		
+!*******************************************************
 		!NOTE: we should eliminate this send/recieve pair and only track time in the master to save communication
-		do 11 i=1,myProc%numtasks-1
-			call MPI_SEND(elapsedTime, 1, MPI_DOUBLE_PRECISION,i,1,MPI_COMM_WORLD,ierr)
-		11 continue
+!!2019.05.02 Modified
+!!		do 11 i=1,myProc%numtasks-1
+!!			call MPI_SEND(elapsedTime, 1, MPI_DOUBLE_PRECISION,i,1,MPI_COMM_WORLD,ierr)
+!!		11 continue
 
-	else
+!!	else
 		!slave processors recieve elapsed time from master
-		call MPI_RECV(elapsedTime,1,MPI_DOUBLE_PRECISION,MASTER,1,MPI_COMM_WORLD,status,ierr)
+!!		call MPI_RECV(elapsedTime,1,MPI_DOUBLE_PRECISION,MASTER,1,MPI_COMM_WORLD,status,ierr)
 	endif
-	
+	call MPI_BCAST(elapsedTime, 1, MPI_DOUBLE_PRECISION, MASTER, MPI_COMM_WORLD)
+!*********************************************************
+
 	call updateReactionList(defectUpdate)
 
 	if(totalRate .LT. 0d0) then

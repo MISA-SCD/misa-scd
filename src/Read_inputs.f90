@@ -60,7 +60,9 @@ do 11 while(flag .eqv. .FALSE.)
 11 continue
 flag=.FALSE.
 
+!************************************************
 !The following is for diffusivity parameters only
+!************************************************
 
 do 12 while(flag .eqv. .FALSE.)
 	read(80,*) char
@@ -114,19 +116,20 @@ flag=.FALSE.
 !write(*,*) 'reading function diffusion values', myProc%taskid
 do 18 i=1,numFuncDiff(matNum)
 	allocate(DiffFunc(matNum,i)%defectType(numSpecies))
-	read(80,*) (DiffFunc(matNum,i)%defectType(j),j=1,numSpecies)
+	read(80,*) (DiffFunc(matNum,i)%defectType(j),j=1,numSpecies)	!< read in defectTypes
 	count=0
 	!We need to know min and max sizes for each defect type included
 	allocate(DiffFunc(matNum,i)%min(numSpecies))
 	allocate(DiffFunc(matNum,i)%max(numSpecies))
 	do 20 j=1,numSpecies
-		read(80,*) char, DiffFunc(matNum,i)%min(j), char, DiffFunc(matNum,i)%max(j)
+		read(80,*) char, DiffFunc(matNum,i)%min(j), char, DiffFunc(matNum,i)%max(j)	!< read in min and max
 	20 continue
-	read(80,*) char, DiffFunc(matNum,i)%functionType, char, DiffFunc(matNum,i)%numParam
+	read(80,*) char, DiffFunc(matNum,i)%functionType, char, DiffFunc(matNum,i)%numParam	!< read in functionType and numParm
 	allocate(DiffFunc(matNum,i)%parameters(DiffFunc(matNum,i)%numParam))
-	read(80,*) (DiffFunc(matNum,i)%parameters(j),j=1,DiffFunc(matNum,i)%numParam)
+	read(80,*) (DiffFunc(matNum,i)%parameters(j),j=1,DiffFunc(matNum,i)%numParam)	!< read in paramsters
 18 continue
 
+!< test readIn
 !do 22 i=1,numFuncDiff
 !	write(*,*) 'defect type'
 !	write(*,*)	(DiffFunc(i)%defectType(j),j=1,numSpecies)
@@ -143,6 +146,10 @@ do 18 i=1,numFuncDiff(matNum)
 !
 !Diff=findDiffusivity(DefectType)
 !write(*,*) 'Diffusivity', Diff
+
+!*****************************************************
+!The following is for binding energies parameters only
+!*****************************************************
 
 do 25 while(flag .eqv. .FALSE.)
 	read(80,*) char
@@ -218,6 +225,7 @@ do 32 i=1,numFuncBind(matNum)
 	read(80,*) (BindFunc(matNum,i)%parameters(j),j=1,BindFunc(matNum,i)%numParam)
 32 continue
 
+!< test readIn
 !allocate(DefectType(numSpecies))
 !allocate(productType(numSpecies))
 !write(*,*) 'Test: enter defect type (numSpecies values) to find binding energy'
@@ -228,7 +236,9 @@ do 32 i=1,numFuncBind(matNum)
 !Eb=findBinding(DefectType, productType)
 !write(*,*) 'Binding Energy', Eb
 
+!******************************************************************
 !Construct reaction list using migration and binding energies above
+!******************************************************************
 
 do 35 while(flag .eqv. .FALSE.)
 	read(80,*) char
@@ -238,6 +248,7 @@ do 35 while(flag .eqv. .FALSE.)
 35 continue
 flag=.FALSE.
 
+!********************** dissociation *******************************
 do 36 while(flag .eqv. .FALSE.)
 	read(80,*) char
 	if(char=='dissociation') then
@@ -256,7 +267,7 @@ do 37 i=1,numDissocReac(matNum)
 	allocate(DissocReactions(matNum,i)%reactants(DissocReactions(matNum,i)%numReactants,numSpecies))
 	allocate(DissocReactions(matNum,i)%products(DissocReactions(matNum,i)%numProducts,numSpecies))
 	read(80,*) (DissocReactions(matNum,i)%reactants(1,j),j=1,numSpecies),&
-		(DissocReactions(matNum,i)%products(1,j),j=1,numSpecies)
+		(DissocReactions(matNum,i)%products(1,j),j=1,numSpecies)	!< read in defectType
 	allocate(DissocReactions(matNum,i)%min(numSpecies))
 	allocate(DissocReactions(matNum,i)%max(numSpecies))
 	do 39 j=1,numSpecies
@@ -265,6 +276,8 @@ do 37 i=1,numDissocReac(matNum)
 	read(80,*) DissocReactions(matNum,i)%functionType
 37 continue
 
+
+!********************** diffusion *******************************
 do 40 while(flag .eqv. .FALSE.)
 	read(80,*) char
 	if(char=='diffusion') then
@@ -292,6 +305,7 @@ do 41 i=1,numDiffReac(matNum)
 	read(80,*) DiffReactions(matNum,i)%functionType
 41 continue
 
+!********************** sinkRemoval *******************************
 do 44 while(flag .eqv. .FALSE.)
 	read(80,*) char
 	if(char=='sinkRemoval') then
@@ -317,6 +331,8 @@ do 45 i=1,numSinkReac(matNum)
 	read(80,*) SinkReactions(matNum,i)%functionType
 45 continue
 
+
+!********************** impurityTrapping *******************************
 do 48 while(flag .eqv. .FALSE.)
 	read(80,*) char
 	if(char=='impurityTrapping') then
@@ -352,6 +368,8 @@ do 51 while(flag .eqv. .FALSE.)
 51 continue
 flag=.FALSE.
 
+
+!********************** clustering *******************************
 do 52 while(flag .eqv. .FALSE.)
 	read(80,*) char
 	if(char=='clustering') then
@@ -395,7 +413,7 @@ do 56 while(flag .eqv. .FALSE.)
 flag=.FALSE.
 
 !allocate(ImplantReactions(numImplantReac))
-
+!********************** FrenkelPair Implantation *******************************
 do 59 i=1,numImplantReac(matNum)
 	if(i==1) then	!Read in Frenkel pair reaction parameters
 
@@ -416,25 +434,25 @@ do 59 i=1,numImplantReac(matNum)
 			(ImplantReactions(matNum,i)%products(2,j),j=1,numSpecies)
 		read(80,*) ImplantReactions(matNum,i)%functionType
 
-	else if(i==2) then	!read in He implantation parameters
+	!else if(i==2) then	!read in He implantation parameters
 	
-		do 61 while(flag .eqv. .FALSE.)
-			read(80,*) char
-			if(char=='HeImplant') then
-				flag=.TRUE.
-			endif
-		61 continue
-		flag=.FALSE.
+	!	do 61 while(flag .eqv. .FALSE.)
+	!		read(80,*) char
+	!		if(char=='HeImplant') then
+	!			flag=.TRUE.
+	!		endif
+	!	61 continue
+	!	flag=.FALSE.
 		
 		!Reading He implantation reactions
 		
-		ImplantReactions(matNum,i)%numReactants=0
-		ImplantReactions(matNum,i)%numProducts=1
-		allocate(ImplantReactions(matNum,i)%products(ImplantReactions(matNum,i)%numProducts,numSpecies))
-		read(80,*) (ImplantReactions(matNum,i)%products(1,j),j=1,numSpecies)
-		read(80,*) ImplantReactions(matNum,i)%functionType
+	!	ImplantReactions(matNum,i)%numReactants=0
+	!	ImplantReactions(matNum,i)%numProducts=1
+	!	allocate(ImplantReactions(matNum,i)%products(ImplantReactions(matNum,i)%numProducts,numSpecies))
+	!	read(80,*) (ImplantReactions(matNum,i)%products(1,j),j=1,numSpecies)
+	!	read(80,*) ImplantReactions(matNum,i)%functionType
 	
-	else if(i==3) then !read in cascade reaction parameters
+	else if(i==2) then !read in cascade reaction parameters
 
 		do 60 while(flag .eqv. .FALSE.)
 			read(80,*) char
@@ -878,6 +896,7 @@ alpha_v			=1d0
 alpha_i			=1d0
 
 annealTemp		=273d0
+agingTime       =0d0	!2019.04.30 Add
 annealTime		=0d0
 annealSteps		=1
 annealType		='add'
@@ -951,6 +970,9 @@ do 10 while(flag .eqv. .FALSE.)
 		else if(char=='annealSteps') then
 			flag2=.TRUE.
 			read(81,*) annealSteps
+		else if(char=='agingTime') then		!2019.04.30 Add
+			flag2=.TRUE.
+			read(81,*) agingTime
 		else if(char=='annealTime') then
 			flag2=.TRUE.
 			read(81,*) annealTime

@@ -2568,11 +2568,13 @@ end subroutine
 !***************************************************************************************************
 !TEMP example function used to inform the structure of other functions in this module.
 !This will be deleted in the final version of the program.
+!This subroutine is used to initialize the reaction list in coarse mesh.
 !***************************************************************************************************
 
 !> Function find reaction rate - finds reaction rate for implantation reaction (He, Frenkel pairs, cascades).
 !!
 !! Inputs: cell ID, reaction parameters (input from file)
+!! Outputs: ReactionRate (the reaction rate  of implanation event).
 !!
 !! Calculates reaction rates according to hard-coded formulas. Have the possibility to create
 !! an arbitrary number of unique formulas for computing reaction rates. Each formula has a
@@ -2595,19 +2597,7 @@ integer, allocatable :: reactants(:,:), products(:,:)
 double precision Diff, Eb, volume, DPARateLocal, HeImplantRateLocal, zCoord
 integer n, numClusters
 
-if(reactionParameter%functionType==1) then
-	!***********************************************************************************************
-	!This is an example of a function reaction rate. It is not operational currently because all clustering,
-	!etc. type reactions are taken care of in other find reaction rate functions
-	!***********************************************************************************************
-	!calculate Diff and Eb using functions in MaterialInput
-	!constants omega, kboltzmann, temperature should be global. Information on defect numbers is global.
-	
-	!findReactionRate=omega*dble(n)**(4d0/3d0)*Diff*exp(-Eb/(kboltzmann*temperature))*numClusters
-	
-	write(*,*) 'Error should not be choosing function type 1 in findReactionRate()'
-
-else if(reactionParameter%functionType==10) then	!Frenkel pair implantation
+if(reactionParameter%functionType==10) then	!Frenkel pair implantation
 	
 	!This is the rate of Frenkel pair implantation events inside a cell with given volume (easy to calculate)
 	volume=(myMesh(cell)%length)**3d0
@@ -2658,7 +2648,7 @@ else if(ReactionParameter%functionType==12) then	!He implantation
 		write(*,*) 'Error implant distribution not recognized'
 	endif
 	
-else if(ReactionParameter%functionType==13) then	!FP implantation disallowed in grain boundaries
+else if(ReactionParameter%functionType==13) then	!Frenkel-Pair implantation disallowed in grain boundaries
 
 	findReactionRate=0d0
 	
@@ -2671,14 +2661,15 @@ end function
 !***************************************************************************************************
 !
 ! This subroutine finds the reaction rate for implantation reactions (He only for now) within the
-! fine mesh. 
+! fine mesh.
+! This subroutine is used to initialize the reaction list in fine mesh.
 !
 ! Inputs: cell number in fine mesh, reaction parameters
 ! Outputs: reaction rate for He implantation or error message
 !
 !***************************************************************************************************
 
-!> Function find reaction rate fine - finds reaction rate for implantation reaction (Helium or Frenkel pairs only) in a fine mesh.
+!> Function find reaction rate fine - finds reaction rate for implantation reaction (Helium only) in a fine mesh.
 !! Cascades cannot be implanted inside other cascades
 !!
 !! Inputs: cell ID, reaction parameters (input from file)
@@ -2718,7 +2709,7 @@ if(ReactionParameter%functionType==12) then	!He implantation
 	endif
 	
 else
-	write(*,*) 'error function type'
+	write(*,*) 'error function type', ReactionParameter%functionType
 endif
 
 end function

@@ -237,8 +237,8 @@ atemp=0d0
 atemp_cell=0d0
 r2=dprand()
 r2timesa=r2*maxRate
-nullify(CascadeCurrent)		!These are default pointed at nothing, indicating null event
-nullify(reactionCurrent)	!These are default pointed at nothing, indicating null event
+nullify(CascadeCurrent)		!CsacadeCurrent=NULL
+nullify(reactionCurrent)	!reactionCurrent=NULL
 
 !***********************************************************************
 !Here we choose from reactions within the coarse mesh
@@ -353,6 +353,9 @@ end subroutine
 !!a different processor as well as about defects that may have changed on the boundary.
 !!It also creates a list of defects that have been updated, to inform the next subroutine
 !!which reactions to update.
+!!
+!!Input: reactionCurrent
+!!Output: defectUpdateCurrent, CascadeCurrent
 !*****************************************************************************************
 
 subroutine updateDefectList(reactionCurrent, defectUpdateCurrent, CascadeCurrent)

@@ -1,4 +1,3 @@
-! $Header: /home/CVS//srscd/src/mod_srscd_constants.f90,v 1.21 2015/12/14 21:34:49 aydunn Exp $
 !****************************************************************************************
 !> Module mod_SRSCD_constants (list of globally shared variables and pointers)
 !!
@@ -78,10 +77,17 @@ double precision, parameter :: pi=3.141592653589793		!<Pi
 double precision, parameter :: Zint = 1.2				!<Constant representing preference for clustering of interstitials by interstitial clusters (increases clustering cross-section)
 double precision, parameter :: reactionRadius=.5065d0	!<Material parameter used for reaction distances (impacts reaction rates)
 
+!2019.04.30 Add
+!Cu solubility CeqCu(T) = exp(DelatS/kB)*exp(-Omega/(kB*T))  Reference: (F. Christien and A. Barbu, 2004)
+double precision, parameter :: lattice = 2.6d-1          !<lattice constant (nm)
+double precision, parameter :: entropyTermK = 6255.0     !<(unit: K)= entropy term (Omega) / Boltzmann's constant (kB)
+double precision, parameter :: demixEnergyk = 0.866      !<(nunit)= demixing energy (DelatS) / Boltzmann's constant (kB)
+double precision CeqCu  !copper solubility (/atom)
+
 !simulation parameters, to be read during readParameters() in main program
 double precision temperature			!<Temperature (K)
 double precision tempStore				!<Temperature read in (K) - used when temp. changes several times during a simulation
-double precision HeDPARatio				!<Helium to dpa ratio (atoms per atom)
+double precision HeDPARatio				!<Helium to dpa ratio (atoms per atom)   default = 0d0
 double precision DPARate				!<DPA rate in dpa/s
 double precision atomsize				!<atomic volume (nm^3)
 double precision DPA					!<DPA tracker (not a parameter)
@@ -104,12 +110,15 @@ double precision conc_v					!<Concentration of vacancies found by GB model (used
 double precision conc_i					!<Concentration of interstitials found by GB model (used to fit alpha_i)
 
 !annealing information
-double precision annealTime				!<Temperature of anneal stage (K)
-double precision annealTemp				!<Amount of time for anneal (s)
+double precision annealTime				!<Amount of time for anneal (s)
+double precision annealTemp				!<Temperature of anneal stage (K)
 integer			 annealSteps			!<Number of annealing steps
 double precision annealTempInc			!<Temperature increment at each annealing step (additive or multipliciative)
 character*20 	 annealType				!<('mult' or 'add') toggles additive or multiplicative anneal steps
 logical 		 annealIdentify			!<(.TRUE. if in annealing phase, .FALSE. otherwise) used to determine how to reset reaction rates (should we include implantation or not)
+
+!2019.04.30  Add
+double precision agingTime              !<Thermal aging time (s)
 
 integer numSims							!<Number of times to repeat simulation
 integer max3DInt						!<largest SIA size that can diffuse in 3D as spherical cluster

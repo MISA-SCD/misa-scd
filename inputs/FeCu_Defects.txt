@@ -67,14 +67,14 @@ D0	0.00d0	Em	0.00d0
 
 function		!Indicates that we are about to read in functional form parameters
 1	0	0	0			!Cu_n
-nmin	2	nmax	40
+nmin	2	nmax	4
 nmin	0	nmax	0
 nmin	0	nmax	0
 nmin	0	nmax	0
 fType	5	param	0				!functional form type 5 (used for mobile Cu_n)
 
 1	0	0	0			!Cu_n
-nmin	41	nmax	-1
+nmin	5	nmax	-1
 nmin	0	nmax	0
 nmin	0	nmax	0
 nmin	0	nmax	0
@@ -204,8 +204,8 @@ nmin	3	nmax	-1
 nmin	0	nmax	0
 nmin	0	nmax	0
 nmin	0	nmax	0
-ftype	4	param	2			!functional form type 2 (used for constant functions)
-0.5d0	0.19d0
+ftype	2	param	2			!functional form type 2 (used for constant functions)
+0.5d0	0.215d0
 
 0	1	0	0		0	1	0	0	!nV->V+(n-1)V
 nmin	0	nmax	0
@@ -245,7 +245,7 @@ mmin	2	mmax -1
 nmin	0	nmax	0
 nmin	0	nmax	0
 ftype	6	param	3			!functional form type 6 (hard-coded in)
-0.5d0	0.215d0	0.0004d0
+0.5d0	0.215d0 0.0004d0
 
 1	1	0	0		1	0	0	0	!nCumV->Cu+(n-1)CumV
 nmin	3	nmax -1
@@ -253,7 +253,7 @@ mmin	1	mmax 1
 nmin	0	nmax	0
 nmin	0	nmax	0
 ftype	6	param	3			!functional form type 6 (hard-coded in)
-0.5d0	0.215d0	0.0004d0
+0.5d0	0.215d0 0.0004d0
 
 1	1	0	0		0	1	0	0	!nCumV->V+nCu(m-1)V
 nmin	6	nmax -1
@@ -261,7 +261,7 @@ nmin	7	nmax -1
 nmin	0	nmax	0
 nmin	0	nmax	0
 ftype	7	param	4			!functional form type 7 (hard-coded in)
-1.63d0	1.72d0	2.69d0	0.0004d0
+1.63d0	1.72d0	2.69d0  0.0004d0
 
 1	1	0	0		0	1	0	0	!nCumV->V+nCu(m-1)V
 nmin	1	nmax 5
@@ -617,11 +617,6 @@ FrenkelPair					!Frenkel pair implantation
 
 0	1	0	0		0	0	1	0		!V+SIA creation
 10							!reactionRate form 10 - for Frenkel pair implantation
-
-HeImplant					!Helium implantation
-
-1	0	0	0				!He creation
-12							!reactionRate form 12 - for He implantation
 
 Cascade						!Cascade implantation
 
