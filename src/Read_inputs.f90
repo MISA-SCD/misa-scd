@@ -898,7 +898,7 @@ alpha_i			=1d0
 annealTemp		=273d0
 agingTime       =0d0	!2019.04.30 Add
 annealTime		=0d0
-annealSteps		=1
+annealSteps		=0
 annealType		='add'
 annealTempInc	=0d0
 

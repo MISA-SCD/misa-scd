@@ -511,7 +511,7 @@ integer proc
 
 reactionCounter=0
 
-cascadeCurrent=>ActiveCascades
+CascadeCurrent=>ActiveCascades
 
 do 12 while(associated(cascadeCurrent))
 	

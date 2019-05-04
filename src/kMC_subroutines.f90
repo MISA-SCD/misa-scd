@@ -351,7 +351,7 @@ end subroutine
 !!This subroutine updates defects in the local mesh according to the reaction chosen, and
 !!communicates with neighboring processors about defects that may have passed into 
 !!a different processor as well as about defects that may have changed on the boundary.
-!!It also creates a list of defects that have been updated, to inform the next subroutine
+!!It also creates a list of defects that have been updated, to inform the next subroutine (updateReactionList(defectUpdate))
 !!which reactions to update.
 !!
 !!Input: reactionCurrent
