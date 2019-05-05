@@ -128,7 +128,7 @@ use mod_srscd_constants
 use ReactionRates
 implicit none
 
-integer cell, i, j, reac, matNum, dir
+integer cell, i, j, reac, matNum, dir, count
 type(reaction), pointer :: reactionCurrent
 
 do 10 cell=1,numCells
@@ -194,7 +194,13 @@ do 10 cell=1,numCells
 
 		!search ClusterList for Cu+Cu->2Cu
 		do 14  reac=1,numClusterReac(matNum)
-			if(ClusterReactions(matNum,reac)%numReactants==2 .AND. ClusterReactions(matNum,reac)%numProducts==1) then
+			if(ClusterReactions(matNum,reac)%reactants(1,1)==1 .AND. ClusterReactions(matNum,reac)%reactants(2,1)==1 &
+					.AND. ClusterReactions(matNum,reac)%reactants(1,2)==0 .AND. &
+					ClusterReactions(matNum,reac)%reactants(2,2)==0 .AND. &
+					ClusterReactions(matNum,reac)%reactants(1,3)==0 .AND. &
+					ClusterReactions(matNum,reac)%reactants(2,3)==0 .AND. &
+					ClusterReactions(matNum,reac)%reactants(1,4)==0 .AND. &
+					ClusterReactions(matNum,reac)%reactants(2,4)==0) then
 				exit
 			endif
 		14 continue
@@ -218,6 +224,19 @@ do 10 cell=1,numCells
 		!*******************************************************************
 		!Diffusion: Cu->Cu
 		!*******************************************************************
+		!search DiffList for Cu->Cu
+		do 31  reac=1,numDiffReac(matNum)
+			if(DiffReactions(matNum,reac)%reactants(1,1)==1 .AND. DiffReactions(matNum,reac)%products(1,1)==1 &
+					.AND. DiffReactions(matNum,reac)%reactants(1,2)==0 .AND. &
+					DiffReactions(matNum,reac)%products(1,2)==0 .AND. &
+					DiffReactions(matNum,reac)%reactants(1,3)==0 .AND. &
+					DiffReactions(matNum,reac)%products(1,3)==0 .AND. &
+					DiffReactions(matNum,reac)%reactants(1,4)==0 .AND. &
+					DiffReactions(matNum,reac)%products(1,4)==0) then
+				exit
+			endif
+		31 continue
+
 		do 30 dir=1, 6
 			allocate(reactionCurrent%next)
 			reactionCurrent=>reactionCurrent%next
@@ -228,13 +247,6 @@ do 10 cell=1,numCells
 			allocate(reactionCurrent%products(reactionCurrent%numProducts, numSpecies))
 			allocate(reactionCurrent%cellNumber(reactionCurrent%numReactants + reactionCurrent%numProducts))
 			allocate(reactionCurrent%taskid(reactionCurrent%numReactants + reactionCurrent%numProducts))
-
-			!search DiffList for Cu->Cu
-			do 31  reac=1,numDiffReac(matNum)
-				if(DiffReactions(matNum,reac)%numReactants==1 .AND. DiffReactions(matNum,reac)%numProducts==1) then
-					exit
-				endif
-			31 continue
 
 			do 32 i=1,DiffReactions(matNum,reac)%numReactants+DiffReactions(matNum,reac)%numProducts
 				reactionCurrent%reactants(1,1)=1
@@ -264,7 +276,8 @@ do 10 cell=1,numCells
 		allocatE(reactionCurrent%taskid(reactionCurrent%numReactants))
 
 		do 34  reac=1,numSinkReac(matNum)
-			if(SinkReactions(matNum,reac)%numReactants==1 .AND. SinkReactions(matNum,reac)%numProducts==0) then
+			if(SinkReactions(matNum,reac)%reactants(1,1)==1 .AND. SinkReactions(matNum,reac)%reactants(1,2)==0 &
+				SinkReactions(matNum,reac)%reactants(1,3)==0 .AND. SinkReactions(matNum,reac)%reactants(1,4)==0) then
 				exit
 			endif
 		34 continue
@@ -374,7 +387,13 @@ do 10 cell=1,numCells
 
 		!search ClusterList for Cu+Cu->2Cu
 		do 41  reac=1,numClusterReac(matNum)
-			if(ClusterReactions(matNum,reac)%numReactants==2 .AND. ClusterReactions(matNum,reac)%numProducts==1) then
+			if(ClusterReactions(matNum,reac)%reactants(1,1)==1 .AND. ClusterReactions(matNum,reac)%reactants(2,1)==1 &
+					.AND. ClusterReactions(matNum,reac)%reactants(1,2)==0 .AND. &
+					ClusterReactions(matNum,reac)%reactants(2,2)==0 .AND. &
+					ClusterReactions(matNum,reac)%reactants(1,3)==0 .AND. &
+					ClusterReactions(matNum,reac)%reactants(2,3)==0 .AND. &
+					ClusterReactions(matNum,reac)%reactants(1,4)==0 .AND. &
+					ClusterReactions(matNum,reac)%reactants(2,4)==0) then
 				exit
 			endif
 		41 continue
@@ -398,6 +417,18 @@ do 10 cell=1,numCells
 		!*******************************************************************
 		!Diffusion: Cu->Cu
 		!*******************************************************************
+		!search DiffList for Cu->Cu
+		do 44  reac=1,numDiffReac(matNum)
+			if(DiffReactions(matNum,reac)%reactants(1,1)==1 .AND. DiffReactions(matNum,reac)%products(1,1)==1 &
+					.AND. DiffReactions(matNum,reac)%reactants(1,2)==0 .AND. &
+					DiffReactions(matNum,reac)%products(1,2)==0 .AND. &
+					DiffReactions(matNum,reac)%reactants(1,3)==0 .AND. &
+					DiffReactions(matNum,reac)%products(1,3)==0 .AND. &
+					DiffReactions(matNum,reac)%reactants(1,4)==0 .AND. &
+					DiffReactions(matNum,reac)%products(1,4)==0) then
+				exit
+			endif
+		44 continue
 
 		do 40 dir=1,6
 			allocate(reactionCurrent%next)
@@ -409,13 +440,6 @@ do 10 cell=1,numCells
 			allocate(reactionCurrent%products(reactionCurrent%numProducts, numSpecies))
 			allocate(reactionCurrent%cellNumber(reactionCurrent%numReactants + reactionCurrent%numProducts))
 			allocate(reactionCurrent%taskid(reactionCurrent%numReactants + reactionCurrent%numProducts))
-
-			!search DiffList for Cu->Cu
-			do 44  reac=1,numDiffReac(matNum)
-				if(DiffReactions(matNum,reac)%numReactants==1 .AND. DiffReactions(matNum,reac)%numProducts==1) then
-					exit
-				endif
-			44 continue
 
 			do 45 i=1,DiffReactions(matNum,reac)%numReactants+DiffReactions(matNum,reac)%numProducts
 				reactionCurrent%reactants(1,1)=1
@@ -445,7 +469,8 @@ do 10 cell=1,numCells
 		allocatE(reactionCurrent%taskid(reactionCurrent%numReactants))
 
 		do 47  reac=1,numSinkReac(matNum)
-			if(SinkReactions(matNum,reac)%numReactants==1 .AND. SinkReactions(matNum,reac)%numProducts==0) then
+			if(SinkReactions(matNum,reac)%reactants(1,1)==1 .AND. SinkReactions(matNum,reac)%reactants(1,2)==0 &
+				SinkReactions(matNum,reac)%reactants(1,3)==0 .AND. SinkReactions(matNum,reac)%reactants(1,4)==0) then
 				exit
 			endif
 		47 continue

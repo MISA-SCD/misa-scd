@@ -247,7 +247,7 @@ call initializeReactionList()		!initialize reactions within myMesh
 call initializeTotalRate()			!initialize totalRate and maxRate using reactionList(:)
 call initializeDebugRestart()		!input defects into coarse mesh from restart file (for debugging)
 
-!call DEBUGPrintReactionList(0)		!prints all reaction lists at a given Monte Carlo step
+call DEBUGPrintReactionList(1)		!prints all reaction lists at a given Monte Carlo step
 
 !******************************************************************
 !Initialize Counters
