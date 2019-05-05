@@ -34,7 +34,7 @@ materialFile
 
 !Type of implantation ('Cascade' for cascades, 'FrenkelPair' for Frenkel pairs)
 implantType
-FrenkelPair
+Cascade
 
 !Toggle Monte Carlo cascade introduction vs explicit cascade introduction (for better weak scaling)
 !('MonteCarlo' for MC cascade implantation, 'explicit' for explicit cascade implantation)

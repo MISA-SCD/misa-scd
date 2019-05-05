@@ -168,6 +168,7 @@ if(myProc%taskid==MASTER) then
 !			if(myProc%taskid==MASTER) then
 !				read(*,*)
 !			endif
+			write(*,*) '********************************'
 		endif
 	19 continue
 	

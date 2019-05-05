@@ -611,7 +611,7 @@ mmin	5	mmax	-1
 9							!reactionRate form 9 - for 1D-1D SIA loop interactions
 
 noDefect					!Reactions with no reactants (defect generation reactions)
-3							!Number of reactions with no reactants
+2							!Number of reactions with no reactants
 
 FrenkelPair					!Frenkel pair implantation
 
