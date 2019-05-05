@@ -234,7 +234,7 @@ endif
 
 localAtoms = floor((myProc%globalCoord(2)-myProc%globalCoord(1))/lattice * &
 		(myProc%globalCoord(4)-myProc%globalCoord(3))/lattice * &
-		(myProc%globalCoord(6)-myProc%globalCoord(5))/lattice)
+		(myProc%globalCoord(6)-myProc%globalCoord(5))/lattice) * 2
 CuAtomsEverMesh = floor(0.5d2*localAtoms/numCells)
 
 call initializeRandomSeeds()		!set unique random number seeds in each processor
