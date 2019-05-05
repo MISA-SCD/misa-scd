@@ -3202,12 +3202,12 @@ area=(myMesh(cell)%length)**2d0	!assuming square elements in grain boundary
 
 if(reactionParameter%functionType==5) then
 	
-	if(size1+size2 .GT. 4) then	!He-He reactions
-		reactionRate=0d0		!hard-coded: limit size of interstitial He clusters to max 4 (no parameters available for larger clusters)
-	else
+	!!if(size1+size2 .GT. 4) then	!He-He reactions
+	!!	reactionRate=0d0		!hard-coded: limit size of interstitial He clusters to max 4 (no parameters available for larger clusters)
+	!!else
 		reactionRate=Ztemp*(omegastar+omega*(dble(size1)**(1d0/3d0)+dble(size2)**(1d0/3d0)))*&
 			(Diff1+Diff2)*dble(num1)*dble(num2)*atomsize/vol
-	endif
+	!!endif
 	
 else if(reactionParameter%functionType==6) then	!spherical clusters other than He-He clusters
 

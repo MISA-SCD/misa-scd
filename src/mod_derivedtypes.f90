@@ -89,7 +89,7 @@ module DerivedType
 		integer numtasks				!<Number of processors in this simulation
 		double precision globalCoord(6)	!<Global boundaries of system (xmin, xmax, ymin, ymax, zmin, zmax)
 		double precision localCoord(6)	!<Local boundaries of this processor (xmin, xmax, ymin, ymax, zmin, zmax)
-		integer procNeighbor(6)			!<ID numbers of procesors neighboring this one (left, right, front, back, up, down). Accounts for periodic boundary conditions, if applicable
+		integer procNeighbor(6)			!<ID numbers of procesors neighboring this one (right, left, front, back, up, down). Accounts for periodic boundary conditions, if applicable
 	end type processorData
 	
 	!****************
@@ -117,8 +117,8 @@ module DerivedType
 		integer numNeighbors(6)						!<Number of neighbors in each direction (left, right, etc). Could be not equal to 1 in the case of free surfaces or non-uniform mesh.
 		
 		!array sizes: neighbors(direction,num) and neighborProcs(direction,num)
-		integer, allocatable :: neighbors(:,:)		!<ID number of neighboring volume elements, regardless of if they are in this processor or not. Array size (numNeighbors, 6)
-		integer, allocatable :: neighborProcs(:,:)	!<Processor ID numbers of neighboring volume element. Array size (numNeighbors, 6)
+		integer, allocatable :: neighbors(:,:)		!<ID number of neighboring volume elements, regardless of if they are in this processor or not. Array size (6, numNeighbors)
+		integer, allocatable :: neighborProcs(:,:)	!<Processor ID numbers of neighboring volume element. Array size (6, 6numNeighbors)
 	end type mesh
 	
 	!>Type: boundary mesh (one array of this type per processor)

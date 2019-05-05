@@ -257,9 +257,9 @@ do 30 dir=1,6
 				reactionCurrent%products(1,j)=DiffReactions(matNum,reac)%products(1,j)
 			33 continue
 			reactionCurrent%cellNumber(1)=cell
-			reactionCurrent%cellNumber(2)=myMesh(cell)%neighbors(1,dir)
+			reactionCurrent%cellNumber(2)=myMesh(cell)%neighbors(dir,1)
 			reactionCurrent%taskid(1)=myMesh(cell)%proc
-			reactionCurrent%taskid(2)=myMesh(cell)%neighborProcs(1,dir)
+			reactionCurrent%taskid(2)=myMesh(cell)%neighborProcs(dir,1)
 		!32 continue
 		reactionCurrent%reactionRate = 0d0
 		!reactionCurrent%reactionRate=findReactionRateDiff(reactionCurrent%reactants(1,:), cell, &
@@ -422,7 +422,7 @@ do 30 dir=1,6
 		!*******************************************************************
 		!Diffusion: Cu->Cu
 		!*******************************************************************
-do 40 dir=1.6
+do 40 dir=1,6
 		allocate(reactionCurrent%next)
 		reactionCurrent=>reactionCurrent%next
 
@@ -454,9 +454,9 @@ do 40 dir=1.6
 				reactionCurrent%products(1,j)=DiffReactions(matNum,reac)%products(1,j)
 			46 continue
 		reactionCurrent%cellNumber(1)=cell
-		reactionCurrent%cellNumber(2)=myMesh(cell)%neighbors(1,dir)
+		reactionCurrent%cellNumber(2)=myMesh(cell)%neighbors(dir,1)
 		reactionCurrent%taskid(1)=myMesh(cell)%proc
-		reactionCurrent%taskid(2)=myMesh(cell)%neighborProcs(1,dir)
+		reactionCurrent%taskid(2)=myMesh(cell)%neighborProcs(dir,1)
 		!45 continue
 		reactionCurrent%reactionRate = 0d0
 		!reactionCurrent%reactionRate=findReactionRateDiff(reactionCurrent%reactants(1,:), cell, &

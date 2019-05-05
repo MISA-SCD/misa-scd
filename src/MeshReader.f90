@@ -241,39 +241,39 @@ totalVolume=(myProc%localCoord(2)-myProc%localCoord(1))*(myProc%localCoord(4)-my
 !This mesh is periodic and does not account for the possibility of free surfaces.
 !********
 if (myProc%localCoord(1)==myProc%globalCoord(1)) then	!coordinate is at xmin
-	myProc%procNeighbor(2)=myProc%taskid+procDivision(1)-1
+	myProc%procNeighbor(2)=myProc%taskid+procDivision(1)-1	!left
 else
-	myProc%procNeighbor(2)=myProc%taskid-1
+	myProc%procNeighbor(2)=myProc%taskid-1	!left
 endif
 
 if (myProc%localCoord(2)==myProc%globalCoord(2)) then	!coordinate is at xmax
-	myProc%procNeighbor(1)=myProc%taskid-procDivision(1)+1
+	myProc%procNeighbor(1)=myProc%taskid-procDivision(1)+1	!right
 else
-	myProc%procNeighbor(1)=myProc%taskid+1
+	myProc%procNeighbor(1)=myProc%taskid+1	!right
 endif
 
 if (myProc%localCoord(3)==myProc%globalCoord(3)) then	!coordinate is at ymin
-	myProc%procNeighbor(4)=myProc%taskid+procDivision(1)*(procDivision(2)-1)
+	myProc%procNeighbor(4)=myProc%taskid+procDivision(1)*(procDivision(2)-1)	!back
 else
-	myProc%procNeighbor(4)=myProc%taskid-procDivision(1)
+	myProc%procNeighbor(4)=myProc%taskid-procDivision(1)	!back
 endif
 
 if (myProc%localCoord(4)==myProc%globalCoord(4)) then	!coordinate is at ymax
-	myProc%procNeighbor(3)=myProc%taskid-procDivision(1)*(procDivision(2)-1)
+	myProc%procNeighbor(3)=myProc%taskid-procDivision(1)*(procDivision(2)-1)	!front
 else
-	myProc%procNeighbor(3)=myProc%taskid+procDivision(1)
+	myProc%procNeighbor(3)=myProc%taskid+procDivision(1)	!front
 endif
 
 if (myProc%localCoord(5)==myProc%globalCoord(5)) then	!coordinate is at zmin
-	myProc%procNeighbor(6)=myProc%taskid+procDivision(1)*procDivision(2)*(procDivision(3)-1)
+	myProc%procNeighbor(6)=myProc%taskid+procDivision(1)*procDivision(2)*(procDivision(3)-1)	!down
 else
-	myProc%procNeighbor(6)=myProc%taskid-procDivision(1)*procDivision(2)
+	myProc%procNeighbor(6)=myProc%taskid-procDivision(1)*procDivision(2)	!down
 endif
 
 if (myProc%localCoord(6)==myProc%globalCoord(6)) then	!coordinate is at zmax
-	myProc%procNeighbor(5)=myProc%taskid-procDivision(1)*procDivision(2)*(procDivision(3)-1)
+	myProc%procNeighbor(5)=myProc%taskid-procDivision(1)*procDivision(2)*(procDivision(3)-1)	!up
 else
-	myProc%procNeighbor(5)=myProc%taskid+procDivision(1)*procDivision(2)
+	myProc%procNeighbor(5)=myProc%taskid+procDivision(1)*procDivision(2)	!up
 endif
 
 !write(*,*) 'proc', myProc%taskid, 'of', myProc%numtasks
@@ -411,7 +411,7 @@ write(*,*) 'proc', myProc%taskid, 'numx numy numz', numxLocal, numyLocal, numzLo
 allocate(myMesh(numxLocal*numyLocal*numzLocal))
 
 !this variable is used at various points in SRSCD; lets us know the length fo myMesh(:)
-numCells=numxLocal*numyLocal*numzLocal		
+numCells=numxLocal*numyLocal*numzLocal	!total cells of this processor
 
 do 23 i=1,numCells
 	myMesh(i)%length=length
@@ -573,7 +573,7 @@ implicit none
 integer cell, numElements, numx, numy, numz
 integer connectivity(numx*numy*numz, 6)
 
-numElements=numx*numy*numz
+numElements=numx*numy*numz	!total cells of the system
 !************************************************
 !periodic boundary condition version
 !************************************************

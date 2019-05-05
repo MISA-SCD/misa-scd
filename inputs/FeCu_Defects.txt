@@ -333,7 +333,7 @@ diffusion
 4							!number of defect types that can diffuse
 
 1	0	0	0		1	0	0	0				!Cu diffusion
-nmin	1	nmax	40
+nmin	1	nmax	4
 nmin	0	nmax	0
 nmin	0	nmax	0
 nmin	0	nmax	0
