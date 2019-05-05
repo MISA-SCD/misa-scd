@@ -232,6 +232,11 @@ endif
 !is done by creating random integers on the master processor and sending them to the slaves as
 !random number seeds.
 
+localAtoms = floor((myProc%globalCoord(2)-myProc%globalCoord(1))/lattice * &
+		(myProc%globalCoord(4)-myProc%globalCoord(3))/lattice * &
+		(myProc%globalCoord(6)-myProc%globalCoord(5))/lattice)
+CuAtomsEverMesh = floor(0.5d2*localAtoms/numCells)
+
 call initializeRandomSeeds()		!set unique random number seeds in each processor
 allocate(DefectList(numCells))		!Create list of defects - array
 allocate(reactionList(numCells))	!Create list of reactions - array

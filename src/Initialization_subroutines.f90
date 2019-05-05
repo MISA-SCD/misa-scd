@@ -16,10 +16,11 @@ integer cell, i
 
 do 10 cell=1,numCells
 	allocate(DefectList(cell)%defectType(numSpecies))
-	do 11 i=1,numSpecies
+	DefectList(cell)%defectType(1)=1
+	do 11 i=2,numSpecies
 		DefectList(cell)%defectType(i)=0
 	11 continue
-	DefectList(cell)%num=0
+	DefectList(cell)%num=CuAtomsEverMesh
 	DefectList(cell)%cellNumber=cell
 	nullify(DefectList(cell)%next)
 10 continue
@@ -172,43 +173,148 @@ do 10 cell=1,numCells
 		!Find reaction rate for Frenkel pair implantation using ImplantReactions(reac), which is input info from file.
 		reactionList(cell)%reactionRate=findReactionRate(cell, ImplantReactions(matNum,reac))
 		nullify(reactionList(cell)%next)
+
+		!2019.05.04 Add: Initialize possible reactions of free Cu
+		!*******************************************************
+
+		reactionCurrent=>reactionList(cell)
+
+		!clustering: Cu+Cu->2Cu
+		allocate(reactionCurrent%next)
+		reactionCurrent=>reactionCurrent%next
+
+		reactionCurrent%numReactants=2
+		reactionCurrent%numProducts=1
+		allocate(reactionCurrent%reactants(reactionCurrent%numReactants, numSpecies))
+		allocate(reactionCurrent%products(reactionCurrent%numProducts, numSpecies))
+		allocate(reactionCurrent%cellNumber(reactionCurrent%numReactants + reactionCurrent%numProducts))
+		allocate(reactionCurrent%taskid(reactionCurrent%numReactants + reactionCurrent%numProducts))
+
+		!search ClusterList for Cu+Cu->2Cu
+		do 14  reac=1,numClusterReac(matNum)
+			if(ClusterReactions(matNum,reac)%numReactants==2 .AND. ClusterReactions(matNum,reac)%numProducts==1) then
+				exit
+			endif
+		14 continue
+
+		do 15 i=1,ClusterReactions(matNum,reac)%numReactants+ClusterReactions(matNum,reac)%numProducts
+			reactionCurrent%reactants(1,1)=1
+			reactionCurrent%reactants(2,1)=1
+			reactionCurrent%products(1,1)=1
+			do 16 j=2,numSpecies
+				reactionCurrent%reactants(1,j)=ClusterReactions(matNum,reac)%reactants(1,j)
+				reactionCurrent%reactants(2,j)=ClusterReactions(matNum,reac)%reactants(2,j)
+				reactionCurrent%products(1,j)=ClusterReactions(matNum,reac)%products(1,j)
+			16 continue
+			reactionCurrent%cellNumber(i)=cell
+			reactionCurrent%taskid(i)=myMesh(cell)%proc
+		15 continue
+			!Find reaction rate for He ion implantation using ImplantReactions(reac), which is input from file.
+		reactionCurrent%reactionRate=findReactionRateMultiple(reactionCurrent%reactants(1), &
+				reactionCurrent%reactants(2), cell, ClusterReactions(matNum,reac))
+
+		!*******************************************************************
+		!Diffusion: Cu->Cu
+		allocate(reactionCurrent%next)
+		reactionCurrent=>reactionCurrent%next
+
+		reactionCurrent%numReactants=1
+		reactionCurrent%numProducts=1
+		allocate(reactionCurrent%reactants(reactionCurrent%numReactants, numSpecies))
+		allocate(reactionCurrent%products(reactionCurrent%numProducts, numSpecies))
+		allocate(reactionCurrent%cellNumber(reactionCurrent%numReactants + reactionCurrent%numProducts))
+		allocate(reactionCurrent%taskid(reactionCurrent%numReactants + reactionCurrent%numProducts))
+
+		!search DiffList for Cu->Cu
+		do 31  reac=1,numDiffReac(matNum)
+			if(DiffReactions(matNum,reac)%numReactants==1 .AND. DiffReactions(matNum,reac)%numProducts==1) then
+				exit
+			endif
+		31 continue
+
+		do 32 i=1,DiffReactions(matNum,reac)%numReactants+DiffReactions(matNum,reac)%numProducts
+			reactionCurrent%reactants(1,1)=1
+			reactionCurrent%products(1,1)=1
+			do 33 j=2,numSpecies
+				reactionCurrent%reactants(1,j)=DiffReactions(matNum,reac)%reactants(1,j)
+				reactionCurrent%products(1,j)=DiffReactions(matNum,reac)%products(1,j)
+			33 continue
+			reactionCurrent%cellNumber(i)=cell
+			reactionCurrent%taskid(i)=myMesh(cell)%proc
+		32 continue
+		reactionCurrent%reactionRate=findReactionRateDiff(reactionCurrent%reactants(1), cell, &
+				myProc%taskid, myMesh(cell)%neighbors(1,1), myMesh(cell)%neighborProcs(1,1), 1, &
+				DiffReactions(matNum,reac))
+
+		!********************************************************************************************
+		!Sink trapping: Cu->0
+		allocate(reactionCurrent%next)
+		reactionCurrent=>reactionCurrent%next
+
+		reactionCurrent%numReactants=1
+		reactionCurrent%numProducts=0
+		allocate(reactionCurrent%reactants(reactionCurrent%numReactants, numSpecies))
+		allocate(reactionCurrent%cellNumber(reactionCurrent%numReactants))
+		allocatE(reactionCurrent%taskid(reactionCurrent%numReactants))
+
+		do 34  reac=1,numSinkReac(matNum)
+			if(SinkReactions(matNum,reac)%numReactants==1 .AND. SinkReactions(matNum,reac)%numProducts==0) then
+				exit
+			endif
+		34 continue
+
+		do 35 i=1,SinkReactions(matNum,reac)%numReactants
+			reactionCurrent%reactants(1,1)=1
+			do 36 j=2,numSpecies
+				reactionCurrent%reactants(1,j)=SinkReactions(matNum,reac)%reactants(1,j)
+			36 continue
+			reactionCurrent%cellNumber(i)=cell
+			reactionCurrent%taskid(i)=myMesh(cell)%proc
+		35 continue
+		reactionCurrent%reactionRate=findReactionRateSink(reactionCurrent%reactants(1), cell, &
+				SinkReactions(matNum,reac))
+
+		nullify(reactionCurrent%next)
+
 		
 		!Helium implantation reaction: second in the list
+!********************************************************************
+!2019.05.04
+!no He implantation
+!		if(HeDPARatio .GT. 0d0) then
 		
-		if(HeDPARatio .GT. 0d0) then
-		
-			reactionCurrent=>reactionList(cell)
+!			reactionCurrent=>reactionList(cell)
 			
-			allocate(reactionCurrent%next)
-			reactionCurrent=>reactionCurrent%next
+!			allocate(reactionCurrent%next)
+!			reactionCurrent=>reactionCurrent%next
 			
-			reactionCurrent%numReactants=0
-			reactionCurrent%numProducts=1
+!			reactionCurrent%numReactants=0
+!			reactionCurrent%numProducts=1
 			
-			allocate(reactionCurrent%products(reactionCurrent%numProducts, numSpecies))
-			allocate(reactionCurrent%cellNumber(reactionCurrent%numProducts))
-			allocatE(reactionCurrent%taskid(reactionCurrent%numProducts))
+!			allocate(reactionCurrent%products(reactionCurrent%numProducts, numSpecies))
+!			allocate(reactionCurrent%cellNumber(reactionCurrent%numProducts))
+!			allocatE(reactionCurrent%taskid(reactionCurrent%numProducts))
 			
 			!search ImplantList for He implant reactions
-			do 14  reac=1,numImplantReac(matNum)
-				if(ImplantReactions(matNum,reac)%numReactants==0 .AND. ImplantReactions(matNum,reac)%numProducts==1) then
-					exit
-				endif
-			14 continue
+!			do 14  reac=1,numImplantReac(matNum)
+!				if(ImplantReactions(matNum,reac)%numReactants==0 .AND. ImplantReactions(matNum,reac)%numProducts==1) then
+!					exit
+!				endif
+!			14 continue
 			
-			do 15 i=1,ImplantReactions(matNum,reac)%numProducts
-				do 16 j=1,numSpecies
-					reactionCurrent%products(i,j)=ImplantReactions(matNum,reac)%products(i,j)
-				16 continue
-				reactionCurrent%cellNumber(i)=cell
-				reactionCurrent%taskid(i)=myMesh(cell)%proc
-			15 continue
+!			do 15 i=1,ImplantReactions(matNum,reac)%numProducts
+!				do 16 j=1,numSpecies
+!					reactionCurrent%products(i,j)=ImplantReactions(matNum,reac)%products(i,j)
+!				16 continue
+!				reactionCurrent%cellNumber(i)=cell
+!				reactionCurrent%taskid(i)=myMesh(cell)%proc
+!			15 continue
 			
 			!Find reaction rate for He ion implantation using ImplantReactions(reac), which is input from file.
-			reactionCurrent%reactionRate=findReactionRate(cell, ImplantReactions(matNum,reac))
-			nullify(reactionCurrent%next)
+!			reactionCurrent%reactionRate=findReactionRate(cell, ImplantReactions(matNum,reac))
+!			nullify(reactionCurrent%next)
 			
-		endif
+!		endif
 		
 	else if(implantType=='Cascade') then
 		!initialize reaction rates with cascade implantation. The rate should be given by a function
@@ -499,10 +605,11 @@ do 10 cell=1,numCells
 					allocate(myBoundary(dir,myMesh(cell)%neighbors(dir,k))%defectList)
 					defectCurrent=>myBoundary(dir,myMesh(cell)%neighbors(dir,k))%defectList
 					allocate(defectCurrent%defectType(numSpecies))
-					do 13 i=1,numSpecies
+					defectCurrent%defectType(1)=1
+					do 13 i=2,numSpecies
 						defectCurrent%defectType(i)=0
 					13 continue
-					defectCurrent%num=0
+					defectCurrent%num=CuAtomsEverMesh
 					defectCurrent%cellNumber=myMesh(cell)%neighbors(dir,k)
 					nullify(defectCurrent%next)
 				endif
