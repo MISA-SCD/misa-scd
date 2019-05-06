@@ -129,7 +129,8 @@ type(cascade), pointer :: CascadeCurrent
 if(myProc%taskid==MASTER) then
 	write(*,*) 'processor', myProc%taskid, 'reactions after step', step, 'numCells', numCells
 	do 19 i=1, numCells
-		reactionCurrent=>reactionList(i)%next
+		!!reactionCurrent=>reactionList(i)%next
+		reactionCurrent=>reactionList(i)
 		if(associated(reactionCurrent)) then
 			write(*,*)  'cell', i
 			write(*,*) 'neighbors', (myMesh(i)%neighbors(j,1),j=1,6)

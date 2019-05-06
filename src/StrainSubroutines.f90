@@ -23,67 +23,67 @@ open(51, file=filename, action='read', status='old')
 flag=.FALSE.
 
 !Skip to where data starts
-do 1 while (flag .eqv. .FALSE.)
+do while (flag .eqv. .FALSE.)
 	read(51,*) char
 	if(char=='start') then
 		flag=.TRUE.
-	endif
-1 continue
+	end if
+end do
 flag=.FALSE.
 
-do 2 while (flag .eqv. .FALSE.)
+do while (flag .eqv. .FALSE.)
 	read(51,*) char
 	if(char=='numDipoles') then
 		read(51,*) numDipole
 		flag=.TRUE.
-	endif
-2 continue
+	end if
+end do
 flag=.FALSE.
 
 allocate(dipoleStore(numDipole))
 
-do 4 i=1,numDipole
+do i=1,numDipole
 	
 	allocate(dipoleStore(i)%min(numSpecies))
 	allocate(dipoleStore(i)%max(numSpecies))
 	
-	do 3 while (flag .eqv. .FALSE.)
+	do while (flag .eqv. .FALSE.)
 		read(51,*) char
 		if(char=='min') then
 			read(51,*) (dipoleStore(i)%min(j),j=1,numSpecies)
 			flag=.TRUE.
-		endif
-	3 continue
+		end if
+	end do
 	flag=.FALSE.
 	
-	do 5 while (flag .eqv. .FALSE.)
+	do while (flag .eqv. .FALSE.)
 		read(51,*) char
 		if(char=='max') then
 			read(51,*) (dipoleStore(i)%max(j),j=1,numSpecies)
 			flag=.TRUE.
-		endif
-	5 continue
+		end if
+	end do
 	flag=.FALSE.
 	
-	do 6 while (flag .eqv. .FALSE.)
+	do while (flag .eqv. .FALSE.)
 		read(51,*) char
 		if(char=='equilibrium') then
 			read(51,*) (dipoleStore(i)%equilib(j), j=1,6)
 			flag=.TRUE.
-		endif
-	6 continue
+		end if
+	end do
 	flag=.FALSE.
 	
-	do 7 while (flag .eqv. .FALSE.)
+	do while (flag .eqv. .FALSE.)
 		read(51,*) char
 		if(char=='saddlePoint') then
 			read(51,*) (dipoleStore(i)%saddle(j),j=1,6)
 			flag=.TRUE.
-		endif
-	7 continue
+		end if
+	end do
 	flag=.FALSE.
 
-4 continue
+end do
 
 close(51)
 

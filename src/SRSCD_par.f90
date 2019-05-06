@@ -1,4 +1,4 @@
-! $Header: /home/CVS//srscd/src/SRSCD_par.f90,v 1.34 2015/12/14 21:34:49 aydunn Exp $
+! 2019.05: This program is used to simulate I-V-S or W-V-He
 
 !***************************************************************************************************
 !>Main program
@@ -129,14 +129,16 @@ call MPI_INIT(ierr)
 call MPI_COMM_SIZE(MPI_COMM_WORLD, myProc%numtasks, ierr)		!read number of processors
 call MPI_COMM_RANK(MPI_COMM_WORLD, myProc%taskid, ierr)			!read processor ID of this processor
 
-call initializeMesh()			!open mesh file and carry out parallel mesh initialization routine
-call selectMaterialInputs()		!open material input files and read all relevant data (migration and binding energies, etc)
-call readCascadeList()			!input cascade list from file to cascadeList (global variable)
+!Initialize input parameters
+
+call initializeMesh()			!open Mesh_xx.txt file and carry out parallel mesh initialization routine
+call selectMaterialInputs()		!open material input files (Fe_Defects.txt) and read all relevant data (migration and binding energies, etc)
+call readCascadeList()			!input cascade list (Fe_Cascades.txt) from file to cascadeList (global variable)
 call readImplantData()			!input (1-dimensional) non-uniform defect implantation info (DPA rates, He implant rates)
 call readParameters()			!read simulation parameters (DPA rate, temperature, etc)
 
 !Create fine mesh connectivity
-allocate(cascadeConnectivity(numCellsCascade, 6))	!< numCellsCascade=numxCascade*numyCascade*numzCascade=6*6*6
+allocate(cascadeConnectivity(numCellsCascade, 6))	!< numCellsCascade=numxFine*numyFine*numzFine
 call createCascadeConnectivity()
 
 !***********************************************************************
@@ -145,8 +147,8 @@ call createCascadeConnectivity()
 searchToggle=.TRUE.
 
 !Begin by searching for alpha_i, then switch to alpha_v
-alpha_v_search=.FALSE.
 alpha_i_search=.TRUE.
+alpha_v_search=.FALSE.
 
 allocate(conc_i_store(numSims))
 allocate(conc_v_store(numSims))
@@ -161,9 +163,9 @@ if(sinkEffSearch=='yes') then	!< sinkEffSearch was set to 'no' in Read_input.f90
 	
 	v_iteration=0
 	i_iteration=0
-endif
-!< begin the first loop
-do 500 while(searchToggle .eqv. .TRUE.)
+end if
+
+do while(searchToggle .eqv. .TRUE.)
 !do 501 while(alpha_v_search .eqv. .TRUE.)
 !do 502 while(alpha_i_search .eqv. .TRUE.)
 
@@ -171,8 +173,8 @@ do 500 while(searchToggle .eqv. .TRUE.)
 !For running multiple simulations, initialize the defects, reactions,
 !boundary, etc. and loop here.
 !***********************************************************************
-!< begin the second loop
-do 13 sim=1,numSims
+!< begin the outer loop
+do sim=1,numSims
 
 !Reset the temperature to tempStore at the beginning of each simulation
 temperature=tempStore	!< Temperature read in (K)
@@ -203,7 +205,7 @@ if(myProc%taskid==MASTER) then
 	!open(85, file=filename4, action='write', status='Unknown')
 	!open(86, file=filename5, action='write', status='Unknown')
 	if(xyzToggle=='yes') open(87, file=filename6, action='write', status='Unknown')
-endif
+end if
 
 !filename5(1:6)='debugg'
 !write(unit=filename5(7:8), fmt='(I2)') myProc%taskid
@@ -211,8 +213,8 @@ endif
 !open(86, file=filename5, action='write', status='Unknown')
 
 if(myProc%taskid==MASTER) then
-	write(*,*) 'Initializing trial', sim, 'proc', myProc%taskid, 'temp', temperature
-endif
+	write(*,*) 'Initializing trial', sim, 'proc', myProc%taskid, 'temperature', temperature
+end if
 
 !NEXT STEPS:
 !3. Choose Reaction
@@ -231,11 +233,14 @@ endif
 !Here we initialize the random number generators on each processor with a different seed. This 
 !is done by creating random integers on the master processor and sending them to the slaves as
 !random number seeds.
-
+!**********************************************
+!2019.05.04 add
 localAtoms = floor((myProc%globalCoord(2)-myProc%globalCoord(1))/lattice * &
 		(myProc%globalCoord(4)-myProc%globalCoord(3))/lattice * &
-		(myProc%globalCoord(6)-myProc%globalCoord(5))/lattice) * 2
-CuAtomsEverMesh = floor(0.5d2*localAtoms/numCells)
+		(myProc%globalCoord(6)-myProc%globalCoord(5))/lattice * 2 / myProc%numtasks)
+CuAtomsEverMesh = floor(0.5d-2*localAtoms/numCells)
+!write(*,*) 'localAtoms', localAtoms, 'Cu atoms in one mesh', CuAtomsEverMesh
+!**********************************************
 
 call initializeRandomSeeds()		!set unique random number seeds in each processor
 allocate(DefectList(numCells))		!Create list of defects - array
@@ -265,13 +270,13 @@ if(debugToggle=='yes') then		!inpput parameter
 	else
 		numImplantEvents	= 0
 		numHeImplantEvents	= 0
-	endif
+	end if
 	elapsedTime			= elapsedTimeReset
 	!Reset the reactions within this cell and diffusion to neighboring
 	!cells in the same processor
-	do 14 i=1,numCells
+	do i=1,numCells
 		call resetReactionListSingleCell(i)
-	14 continue
+	end do
 
 	!Create the boundary defects in this processor and send boundary
 	!defects to neighboring processor. Update reactions for diffusion
@@ -281,9 +286,9 @@ if(debugToggle=='yes') then		!inpput parameter
 	!is not the same as in the local processor. Easy fix, but putting
 	!off until later.
 	
-	do 15 i=1,numCells
+	do i=1,numCells
 		call cascadeUpdateStep(i)
-	15 continue
+	end do
 	
 	write(*,*) 'Processor', myProc%taskid, 'Defect lists and reaction lists initialized'
 	
@@ -297,7 +302,7 @@ else
 	numTrapV=0		!<Postprocessing: number of vacancies trapped on grain boundary
 	numEmitSIA=0	!<Postprocessing: number of SIAs emitted from grain boundary
 	numEmitV=0		!<Postprocessing: number of vacancies emitted from grain boundary
-endif
+end if
 
 step=0
 nullSteps=0		!Record the number of steps in which an empty event was selected
@@ -307,14 +312,14 @@ if(agingTime > 0) then
 	totalTime = agingTime
 else
 	totalTime=totalDPA/DPARate	!simulation time
-endif
+end if
 
 TotalCascades=0
 outputCounter=0
 nullify(ActiveCascades)		! pointer ActiveCascades=NULL
 annealIdentify=.FALSE.		!<(.TRUE. if in annealing phase, .FALSE. otherwise) used to determine how to reset reaction rates (should we include implantation or not)
 
-do 10 while(elapsedTime .LT. totalTime)
+do while(elapsedTime < totalTime)
 	
 	step=step+1
 	
@@ -327,15 +332,15 @@ do 10 while(elapsedTime .LT. totalTime)
 	if(singleElemKMC=='yes') then
 		if(meshingType=='adaptive') then
 			write(*,*) 'Error adaptive meshing not allowed for single element kMC'
-		endif
+		end if
 		rateSingle=0d0	!
-		do 20 cell=1,numCells
-			if(totalRateVol(cell) .GT. rateSingle) then
+		do cell=1,numCells
+			if(totalRateVol(cell) > rateSingle) then
 				rateSingle=totalRateVol(cell)
-			endif
-		20 continue
+			end if
+		end do
 		totalRate=rateSingle	!find the maximum totalRate in the local peocessor
-	endif
+	end if
 	
 	call MPI_ALLREDUCE(totalRate,maxRate,1,MPI_DOUBLE_PRECISION,MPI_MAX,MPI_COMM_WORLD,ierr)
 
@@ -355,9 +360,9 @@ do 10 while(elapsedTime .LT. totalTime)
 	
 	allocate(defectUpdate)	!Allocate memory for defectUpdate
 	allocate(defectUpdate%defectType(numSpecies))
-	do 1 i=1,numSpecies
+	do i=1,numSpecies
 		defectUpdate%defectType(i)=0	!Initialize
-	1 continue
+	end do
 	nullify(defectUpdate%next)	!defectUpdate%next=NULL
 	defectUpdateCurrent=>defectUpdate	!set defectUpdateCurrent point to the defect to be updated
 	
@@ -369,14 +374,14 @@ do 10 while(elapsedTime .LT. totalTime)
 			!Generate timestep in the master processor and send it to all other processors
 			if(myProc%taskid==MASTER) then
 				tau=GenerateTimestep()
-			endif
+			end if
 			
 			allocate(reactionChoiceList)	!type(reaction). Allocate memory for reactionChoiceList
 			nullify(reactionChoiceList%next)	!set pointer reactionChoiceList%next=NULL
 			reactionChoiceCurrent=>reactionChoiceList	!the first memory of reactionChoiceList hasn't data
 					
 			!Choose one reaction in each cell
-			do 21 cell=1,numCells
+			do cell=1,numCells
 				!Choose reactions here
 				!Inout: cell.
 				!Output: reactionCurrent, CascadeCurrent, numImplantEvents, numHeImplantEvents, numAnnihilate
@@ -409,21 +414,21 @@ do 10 while(elapsedTime .LT. totalTime)
 					
 					reactionChoiceCurrent%reactionRate=reactionCurrent%reactionRate
 					
-					do 31 i=1,reactionCurrent%numReactants
+					do i=1,reactionCurrent%numReactants
 					
-						do 41 j=1,numSpecies
+						do j=1,numSpecies
 							reactionChoiceCurrent%reactants(i,j)=reactionCurrent%reactants(i,j)
-						41 continue
+						end do
 					
 						reactionChoiceCurrent%cellNumber(i)=reactionCurrent%cellNumber(i)
 						reactionChoiceCurrent%taskid(i)=reactionCurrent%taskid(i)
 					
-					31 continue
+					end do
 					
-					do 32 i=1,reactionCurrent%numProducts
-						do 42 j=1,numSpecies
+					do i=1,reactionCurrent%numProducts
+						do j=1,numSpecies
 							reactionChoiceCurrent%products(i,j)=reactionCurrent%products(i,j)
-						42 continue
+						end do
 						
 						reactionChoiceCurrent%cellNumber(i+reactionCurrent%numReactants) = &
 							reactionCurrent%cellNumber(i+reactionCurrent%numReactants)
@@ -431,17 +436,17 @@ do 10 while(elapsedTime .LT. totalTime)
 						reactionChoiceCurrent%taskid(i+reactionCurrent%numReactants) = &
 							reactionCurrent%taskid(i+reactionCurrent%numReactants)
 							
-					32 continue
+					end do
 					
 					nullify(reactionChoiceCurrent%next)		!set pointer reactionChoiceCurrent%next=NULL
 					
-				endif
+				end if
 			
 				!call DEBUGPrintDefectUpdate(defectUpdate)
 			
 				!No cascade choices allowed for one KMC domain per element at this point
 			
-			21 continue
+			end do
 			
 			reactionChoiceCurrent=>reactionChoiceList%next	!reactionChoiceCurrent=NULL
 			call updateDefectListMultiple(reactionChoiceCurrent, defectUpdateCurrent, CascadeCurrent)
@@ -450,7 +455,7 @@ do 10 while(elapsedTime .LT. totalTime)
 			
 			!deallocate memory
 			reactionChoiceCurrent=>reactionChoiceList%next
-			do 51 while(associated(reactionChoiceCurrent))
+			do while(associated(reactionChoiceCurrent))
 				reactionTemp=>reactionChoiceCurrent%next
 				deallocate(reactionChoiceCurrent%reactants)
 				deallocate(reactionChoiceCurrent%products)
@@ -459,17 +464,17 @@ do 10 while(elapsedTime .LT. totalTime)
 				deallocate(reactionChoiceCurrent)
 				
 				reactionChoiceCurrent=>reactionTemp
-			51 continue
+			end do
 			deallocate(reactionChoiceList)
 			
-		endif
+		end if
 	
 	else	!choose a reaction in one volume element
 	
 		!If implantScheme=='explicit', cascade implantation needs to be carried out explicitly
 		if(implantScheme=='explicit') then
 			
-			if(elapsedTime .GE. numImplantEvents*(numDisplacedAtoms*atomsize)/(totalVolume*DPARate)) then
+			if(elapsedTime >= numImplantEvents*(numDisplacedAtoms*atomsize)/(totalVolume*DPARate)) then
 				
 				!Input: none
 				!Output: reactionCurrent, pointing at cascade reaction
@@ -479,7 +484,7 @@ do 10 while(elapsedTime .LT. totalTime)
 				
 				if(myProc%taskid==MASTER) then
 					tau=0d0
-				endif
+				end if
 				
 			else
 
@@ -491,9 +496,9 @@ do 10 while(elapsedTime .LT. totalTime)
 				
 				if(myProc%taskid==MASTER) then
 					tau=GenerateTimestep()
-				endif
+				end if
 				
-			endif
+			end if
 			
 		else if(implantScheme=='MonteCarlo') then
 			
@@ -503,13 +508,13 @@ do 10 while(elapsedTime .LT. totalTime)
 			
 			if(myProc%taskid==MASTER) then
 				tau=GenerateTimestep()
-			endif
+			end if
 		
 		else	
 		
 			write(*,*) 'error choosing reaction main program'
 		
-		endif
+		end if
 		
 		!***********************************************************************************************
 		!Update defects according to reactions chosen. Communicate defects that have changed on 
@@ -525,7 +530,7 @@ do 10 while(elapsedTime .LT. totalTime)
 			!!if(myProc%numtasks==1) then
 			!!	write(*,*) 'Error null event in serial SRSCD'
 			!!endif
-		endif
+		end if
 
 		!Input: reactionCurrent
 		!Output: defectUpdateCurrent, CascadeCurrent
@@ -545,11 +550,11 @@ do 10 while(elapsedTime .LT. totalTime)
 				!and if so in what volume element in the coarse mesh
 				cascadeCell=reactionCurrent%cellNumber(1)
 				
-			endif
-		endif
+			end if
+		end if
 		!Update reaction rates for defects involved in reaction chosen
 	
-	endif
+	end if
 	
 	!Update elapsed time based on tau, generated timestep. If cascade implant chosen in explicit scheme, tau=0d0
 	if(myProc%taskid==MASTER) then
@@ -565,15 +570,15 @@ do 10 while(elapsedTime .LT. totalTime)
 !!	else
 		!slave processors recieve elapsed time from master
 !!		call MPI_RECV(elapsedTime,1,MPI_DOUBLE_PRECISION,MASTER,1,MPI_COMM_WORLD,status,ierr)
-	endif
+	end if
 	call MPI_BCAST(elapsedTime, 1, MPI_DOUBLE_PRECISION, MASTER, MPI_COMM_WORLD)
 
 !*********************************************************
 	call updateReactionList(defectUpdate)
 
-	if(totalRate .LT. 0d0) then
+	if(totalRate < 0d0) then
 		write(*,*) 'error totalRate less than zero', step
-	endif
+	end if
 	
 !	call DEBUGPrintDefects(step)
 !	call DEBUGPrintReactionList(step)
@@ -584,7 +589,7 @@ do 10 while(elapsedTime .LT. totalTime)
 	!release the defects into the coarse mesh.
 
 	if(associated(CascadeCurrent)) then
-		if(totalRateCascade(CascadeCurrent) .LT. cascadeReactionLimit) then
+		if(totalRateCascade(CascadeCurrent) < cascadeReactionLimit) then
 			
 			!Record the coarse mesh cell number of cascade (it is destroyed in releaseFineMeshDefects)
 			!Used to reset reaction list and to tell cascadeUpdateStep whether a cascade event has occurred
@@ -595,8 +600,8 @@ do 10 while(elapsedTime .LT. totalTime)
 
 			call resetReactionListSingleCell(cascadeCell)
 			
-		endif
-	endif
+		end if
+	end if
 	
 	!Cascade communication step:
 	!Tell neighbors whether a cascade has occurred in a cell that is a boundary of a neighbor.
@@ -615,13 +620,13 @@ do 10 while(elapsedTime .LT. totalTime)
 			if(reactionCurrent%numReactants==-10) then
 				!if(myProc%taskid==MASTER) write(*,*) 'Checking Total Rate'
 				totalRate=TotalRateCheck()
-			endif
-		elseif(implantType=='FrenkelPair') then
+			end if
+		else if(implantType=='FrenkelPair') then
 			if(mod(step,1000)==0) then
 				totalRate=TotalRateCheck()
-			endif
-		endif
-	endif
+			end if
+		end if
+	end if
 	
 	!******************************************
 	! Optional: count how many cascades are present at step i and compile to find avg. number
@@ -634,7 +639,7 @@ do 10 while(elapsedTime .LT. totalTime)
 	! Output according to outputCounter
 	!********************************************************************************
 	
-	if(elapsedTime .GT. totalTime/200d0*(2d0)**(outputCounter)) then
+	if(elapsedTime > totalTime/200d0*(2d0)**(outputCounter)) then
 	! or if(mod(step,100000)==0) then
 		call MPI_ALLREDUCE(numImplantEvents,totalImplantEvents, 1, MPI_INTEGER, MPI_SUM, MPI_COMM_WORLD, ierr)
 		call MPI_ALLREDUCE(numHeImplantEvents,numHeImplantTotal,1,MPI_INTEGER, MPI_SUM, MPI_COMM_WORLD, ierr)
@@ -660,11 +665,11 @@ do 10 while(elapsedTime .LT. totalTime)
 				write(84,*) 'Fraction null steps', dble(nullSteps)/dble(step*numCells)
 			else
 				write(84,*) 'Fraction null steps', dble(nullSteps)/dble(step)
-			endif
+			end if
 			
 			write(84,*)
 			write(*,*)
-		endif
+		end if
 		
 		!Several defect output optionas available, these outputs should be chosen in input file (currently hard coded)
 		
@@ -676,8 +681,8 @@ do 10 while(elapsedTime .LT. totalTime)
 				call outputDefectsTotal(elapsedTime,step)
 			else
 				write(*,*) 'Error outputing postpr.out but not totdat.out'
-			endif
-		endif
+			end if
+		end if
 		if(xyzToggle=='yes') call outputDefectsXYZ()	!write(87,*): defect.xyz
 		if(vtkToggle=='yes') call outputDefectsVTK(outputCounter)	!write(88,*): VTKout.vtk
 		if(outputDebug=='yes') call outputDebugRestart(outputCounter, elapsedTime)	!write(88,*): Restart.in
@@ -709,9 +714,9 @@ do 10 while(elapsedTime .LT. totalTime)
 		!	call outputRates(elapsedTime, step)
 		!endif
 
-	endif
+	end if
 
-10 continue
+end do
 
 !***********************************************************************
 !Output defects at the end of the implantation loop
@@ -741,7 +746,7 @@ if(myProc%taskid==MASTER) then
 	
 	write(84,*)
 	write(*,*)
-endif
+end if
 
 !Final output
 call outputDefects()	!write(82,*): rawdat.out
@@ -756,23 +761,23 @@ if(outputDebug=='yes') call outputDebugRestart(outputCounter ,elapsedTime)
 !Then carry out simulation normally until elapsedTime=totalTime+annealTime
 !***********************************************************************
 
-if(annealTime .GT. 0d0) then
+if(annealTime > 0d0) then
 	call annealInitialization()	!Sets up simulation for annealing (change temp, etc)
 	annealIdentify=.TRUE.
-endif
+end if
 
 outputCounter=1		!Used to output once for each annealing step
 
-if(myProc%taskid==MASTER .AND. annealTime .GT. 0d0) then
+if(myProc%taskid==MASTER .AND. annealTime > 0d0) then
 	write(*,*) 'Entering Annealing Phase'
 !	write(82,*) 'Entering Annealing Phase'
 	write(83,*) 'Entering Annealing Phase'
 	write(84,*) 'Entering Annealing Phase'
-endif
+end if
 
 !begin annealing
 !carry out annealing in multiple steps if desired. Each step increases temperature.
-do 101 annealIter=1,annealSteps	!default value: annealSteps = 1
+do annealIter=1,annealSteps	!default value: annealSteps = 1
 
 
 	if(annealType=='mult') then
@@ -785,23 +790,23 @@ do 101 annealIter=1,annealSteps	!default value: annealSteps = 1
 
 	else
 		write(*,*) 'error unknown anneal type'
-	endif
+	end if
 
 	!Possible bug: this will make the reaction rates for implantation non-zero. Not sure why this wasn't a problem before.
-	do 111 i=1,numCells
+	do i=1,numCells
 		call resetReactionListSingleCell(i)
-	111 continue
+	end do
 
 	totalRate=TotalRateCheck()
 
-	if(myProc%taskid==MASTER .AND. annealTime .GT. 0d0) then
+	if(myProc%taskid==MASTER .AND. annealTime > 0d0) then
 		write(*,*) 'Anneal step', annealIter, 'temperature', temperature
 		write(84,*) 'Anneal step', annealIter, 'temperature', temperature
 		write(83,*) 'Anneal step', annealIter, 'temperature', temperature
-	endif
+	end if
 
 	!if annealTime = 0, the following "do" does not execute
-	do 100 while(elapsedTime .LT. totalTime+dble(annealIter)*annealTime/dble(annealSteps))
+	do while(elapsedTime .LT. totalTime+dble(annealIter)*annealTime/dble(annealSteps))
 
 		step=step+1
 	
@@ -814,15 +819,15 @@ do 101 annealIter=1,annealSteps	!default value: annealSteps = 1
 		if(singleElemKMC=='yes') then
 			if(meshingType=='adaptive') then
 				write(*,*) 'Error adaptive meshing not allowed for single element kMC'
-			endif
+			end if
 			rateSingle=0d0
-			do 200 cell=1,numCells
-				if(totalRateVol(cell) .GT. rateSingle) then
+			do cell=1,numCells
+				if(totalRateVol(cell) > rateSingle) then
 					rateSingle=totalRateVol(cell)
-				endif
-			200 continue
+				end if
+			end do
 			totalRate=rateSingle
-		endif
+		end if
 	
 		call MPI_ALLREDUCE(totalRate,maxRate,1,MPI_DOUBLE_PRECISION,MPI_MAX,MPI_COMM_WORLD,ierr)
 
@@ -839,9 +844,9 @@ do 101 annealIter=1,annealSteps	!default value: annealSteps = 1
 	
 		allocate(defectUpdate)
 		allocate(defectUpdate%defectType(numSpecies))
-		do 2 i=1,numSpecies
+		do i=1,numSpecies
 			defectUpdate%defectType(i)=0
-		2 continue
+		end do
 		nullify(defectUpdate%next)
 		defectUpdateCurrent=>defectUpdate
 	
@@ -855,14 +860,14 @@ do 101 annealIter=1,annealSteps	!default value: annealSteps = 1
 				!Generate timestep in the master processor and send it to all other processors
 				if(myProc%taskid==MASTER) then
 					tau=GenerateTimestep()
-					if(elapsedTime-totalTime+tau .GT. annealTime/dble(annealSteps)*outputCounter) then
+					if(elapsedTime-totalTime+tau > annealTime/dble(annealSteps)*outputCounter) then
 						!we have taken a timestep that moves us past this annealing step
 						tau=annealTime/dble(annealSteps)*outputCounter-(elapsedTime-totalTime)
-					endif
-				endif
+					end if
+				end if
 
 				!Choose one reaction in each cell
-				do 210 cell=1,numCells
+				do cell=1,numCells
 			
 					!Choose reactions here
 					call chooseReactionSingleCell(reactionCurrent, CascadeCurrent, cell)
@@ -877,21 +882,21 @@ do 101 annealIter=1,annealSteps	!default value: annealSteps = 1
 			
 					if(.NOT. associated(reactionCurrent)) then
 						nullSteps=nullSteps+1
-					endif
+					end if
 				
 					if(associated(reactionCurrent)) then
 						if(reactionCurrent%numReactants==-10) then
 							write(*,*) 'Error chose casacde implantation in annealing phase'
-						endif
-					endif
+						end if
+					end if
 			
 					call updateDefectList(reactionCurrent, defectUpdateCurrent, CascadeCurrent)
 			
 					!call DEBUGPrintDefectUpdate(defectUpdate)
 			
-				210 continue
+				end do
 
-			endif
+			end if
 	
 		else	!choose a reaction in one volume element
 		
@@ -901,11 +906,11 @@ do 101 annealIter=1,annealSteps	!default value: annealSteps = 1
 		
 			if(myProc%taskid==MASTER) then
 				tau=GenerateTimestep()
-				if(elapsedTime-totalTime+tau .GT. annealTime/dble(annealSteps)*outputCounter) then
+				if(elapsedTime-totalTime+tau > annealTime/dble(annealSteps)*outputCounter) then
 					!we have taken a timestep that moves us past this annealing step
 					tau=annealTime/dble(annealSteps)*outputCounter-(elapsedTime-totalTime)
-				endif
-			endif
+				end if
+			end if
 	
 			!***********************************************************************************************
 			!Update defects according to reactions chosen. Communicate defects that have changed on
@@ -922,17 +927,17 @@ do 101 annealIter=1,annealSteps	!default value: annealSteps = 1
 			if(.NOT. associated(reactionCurrent)) then
 				nullSteps=nullSteps+1
 				!write(*,*) 'null step', myProc%taskid
-			endif
+			end if
 	
 			call updateDefectList(reactionCurrent, defectUpdateCurrent, CascadeCurrent)
 		
 			if(associated(reactionCurrent)) then
 				if(reactionCurrent%numReactants==-10) then
 					write(*,*) 'Error chose casacde implantation in annealing phase'
-				endif
-			endif
+				end if
+			end if
 	
-		endif
+		end if
 	
 		!Update elapsed time based on tau, generated timestep. If cascade implant chosen in explicit scheme, tau=0d0
 		if(myProc%taskid==MASTER) then
@@ -948,7 +953,7 @@ do 101 annealIter=1,annealSteps	!default value: annealSteps = 1
 !!		else
 			!slave processors recieve elapsed time from master
 !!			call MPI_RECV(elapsedTime,1,MPI_DOUBLE_PRECISION,MASTER,1,MPI_COMM_WORLD,status,ierr)
-		endif
+		end if
 		call MPI_BCAST(elapsedTime, 1, MPI_DOUBLE_PRECISION, MASTER, MPI_COMM_WORLD)
 		!***********************************************************************************
 		!call DEBUGPrintDefectUpdate(defectUpdate)
@@ -966,7 +971,7 @@ do 101 annealIter=1,annealSteps	!default value: annealSteps = 1
 		!release the defects into the coarse mesh.
 	
 		if(associated(CascadeCurrent)) then
-			if(totalRateCascade(CascadeCurrent) .LT. cascadeReactionLimit) then
+			if(totalRateCascade(CascadeCurrent) < cascadeReactionLimit) then
 			
 				!Record the coarse mesh cell number of cascade (it is destroyed in releaseFineMeshDefects)
 				!Used to reset reaction list and to tell cascadeUpdateStep whether a cascade event has occurred
@@ -977,8 +982,8 @@ do 101 annealIter=1,annealSteps	!default value: annealSteps = 1
 
 				call resetReactionListSingleCell(cascadeCell)
 			
-			endif
-		endif
+			end if
+		end if
 		
 		!Cascade communication step:
 		!Tell neighbors whether a cascade has occurred in a cell that is a boundary of a neighbor.
@@ -989,7 +994,7 @@ do 101 annealIter=1,annealSteps	!default value: annealSteps = 1
 	
 		if(mod(step,1000)==0) then
 			totalRate=TotalRateCheck()
-		endif
+		end if
 	
 		!******************************************
 		! Optional: count how many cascades are present at step i and compile to find avg. number
@@ -1002,7 +1007,7 @@ do 101 annealIter=1,annealSteps	!default value: annealSteps = 1
 		! Output
 		!******************************************
 	
-		if((elapsedTime-totalTime) .GE. annealTime/dble(annealSteps)*outputCounter) then
+		if((elapsedTime-totalTime) >= annealTime/dble(annealSteps)*outputCounter) then
 		
 			call MPI_ALLREDUCE(numImplantEvents,totalImplantEvents, 1, MPI_INTEGER, MPI_SUM, MPI_COMM_WORLD, ierr)
 			call MPI_ALLREDUCE(numHeImplantEvents,numHeImplantTotal,1,MPI_INTEGER, MPI_SUM, MPI_COMM_WORLD, ierr)
@@ -1028,11 +1033,11 @@ do 101 annealIter=1,annealSteps	!default value: annealSteps = 1
 					write(84,*) 'Fraction null steps', dble(nullSteps)/dble(step*numCells)
 				else
 					write(84,*) 'Fraction null steps', dble(nullSteps)/dble(step)
-				endif
+				end if
 			
 				write(84,*)
 				write(*,*)
-			endif
+			end if
 		
 			if(rawdatToggle=='yes') call outputDefects()
 			!if(sinkEffSearch=='no' .AND. numMaterials .GT. 1) call outputDefectsBoundary(elapsedTime,step)
@@ -1042,21 +1047,21 @@ do 101 annealIter=1,annealSteps	!default value: annealSteps = 1
 					call outputDefectsTotal(elapsedTime,step)
 				else
 					write(*,*) 'Error outputing postpr.out but not totdat.out'
-				endif
-			endif
+				end if
+			end if
 			if(xyzToggle=='yes') call outputDefectsXYZ()
 			if(vtkToggle=='yes') call outputDefectsVTK(outputCounter)
 			if(outputDebug=='yes') call outputDebugRestart(outputCounter, elapsedTime)
 		
 			outputCounter=outputCounter+1
 
-		endif
+		end if
 	
 	!Anneal time loop
-	100 continue
+	end do
 
 !Multiple anneal steps loop
-101 continue
+end do
 
 !***********************************************************************
 !Output final defect state
@@ -1096,7 +1101,7 @@ if(myProc%taskid==MASTER) then
 			write(84,*) 'Fraction null steps', dble(nullSteps)/dble(step*numCells)
 		else
 			write(84,*) 'Fraction null steps', dble(nullSteps)/dble(step)
-		endif
+		end if
 		
 		!Optional: output sink efficiency of grain boundary
 		if(numMaterials == 2) then
@@ -1107,13 +1112,13 @@ if(myProc%taskid==MASTER) then
 			
 			write(84,*) 'GB_V_Sink_Eff', 1d0-dble(numEmitV)/dble(numTrapV)
 			write(84,*) 'GB_SIA_Sink_Eff', 1d0-dble(numEmitSIA)/dble(numTrapSIA)
-		endif
+		end if
 		
 		write(84,*) 
 		write(*,*)
 	
-	endif
-endif
+	end if
+end if
 
 if(rawdatToggle=='yes') call outputDefects()
 !if(sinkEffSearch=='no' .AND. numMaterials .GT. 1) call outputDefectsBoundary(elapsedTime,step)
@@ -1123,8 +1128,8 @@ if(postprToggle=='yes') then
 		call outputDefectsTotal(elapsedTime,step)
 	else
 		write(*,*) 'Error outputing postpr.out but not totdat.out'
-	endif
-endif
+	end if
+end if
 if(xyzToggle=='yes') call outputDefectsXYZ()
 if(vtkToggle=='yes') call outputDefectsVTK(outputCounter)
 if(outputDebug=='yes') call outputDebugRestart(outputCounter, elapsedTime)
@@ -1151,9 +1156,9 @@ if(myProc%taskid==MASTER) then
 	write(84,*) 'total steps', step
 
 	write(*,*) 'Deallocating memory: fine mesh defects and reactions'
-endif
+end if
 
-do 12 while(associated(ActiveCascades))
+do while(associated(ActiveCascades))
 	CascadeCurrent=>ActiveCascades
 
 	!Record the coarse mesh cell number of cascade (it is destroyed in releaseFineMeshDefects)
@@ -1165,13 +1170,13 @@ do 12 while(associated(ActiveCascades))
 
 	call resetReactionListSingleCell(cascadeCell)
 	
-12 continue
+end do
 
 if(myProc%taskid==MASTER) then
 !	write(82,*) 'Released all fine mesh defects'
 	write(83,*) 'Released all fine mesh defects'
 	write(84,*) 'Released all fine mesh defects'
-endif
+end if
 
 !call outputDefects()
 !call outputDefectsTotal(elapsedTime, step)
@@ -1180,7 +1185,7 @@ endif
 
 if(myProc%taskid==MASTER) then
 	write(*,*) 'Deallocating memory: coarse mesh defects and reactions'
-endif
+end if
 
 call deallocateDefectList()
 
@@ -1197,10 +1202,10 @@ if(myProc%taskid==MASTER) then
 	close(85)
 	!close(86)
 	!close(87)
-endif
+end if
 
 !End of loop for multiple trials
-13 continue
+end do
 
 !***********************************************************************
 !7.2.2015 Adding iterative search for effective sink efficiency
@@ -1237,38 +1242,38 @@ if(sinkEffSearch=='yes') then	!default sinkEffSearch = 'no'
 	
 	!Calculate residual - need residual to be +/- in order to find zero crossing
 	Residual=0d0
-	do 507 sim=1,numSims
+	do sim=1,numSims
 		Residual=Residual+(conc_v_store(sim)-conc_v)+(conc_i_store(sim)-conc_i)
-	507 continue
+	end do
 	Residual=Residual/dble(numSims)
 	
 	!Calculate standard deviation of residual
 	Residual_stdev=0d0
-	do 508 sim=1,numSims
+	do sim=1,numSims
 		Residual_stdev=Residual_stdev+((conc_v_store(sim)-conc_v)+&
 			(conc_i_store(sim)-conc_i)-Residual)**2d0
-	508 continue
+	end do
 	Residual_stdev=dsqrt(Residual_stdev/dble(numSims))
 
 	!Calculate residual of squares: for convergence criterion
 	Residual_square=0d0
-	do 509 sim=1,numSims
+	do sim=1,numSims
 		Residual_square=Residual_square+dsqrt((conc_v_store(sim)-conc_v)**2d0+(conc_i_store(sim)-conc_i)**2d0)
-	509 continue
+	end do
 	Residual_square=Residual_square/dble(numSims)
 	
 	!Calculate standard deviation of residual of squares
 	Residual_sqrdev=0d0
-	do 510 sim=1,numSims
+	do sim=1,numSims
 		Residual_sqrdev=Residual_sqrdev+(dsqrt((conc_v_store(sim)-conc_v)**2d0+&
 			(conc_i_store(sim)-conc_i)**2d0)-Residual_square)**2d0
-	510 continue
+	end do
 	Residual_sqrdev=dsqrt(Residual_sqrdev/dble(numSims))
 	
 	!Change the sign of Residual_square to match the sign of Residual
 	Residual_square=sign(Residual_square,Residual)
 
-endif
+end if
 
 if(alpha_i_search .eqv. .TRUE.) then
 	
@@ -1283,7 +1288,7 @@ if(alpha_i_search .eqv. .TRUE.) then
 
 		if(alpha_i_search .eqv. .TRUE.) then
 			!Check if conc_i_average is within stdev of previous step
-			if(dabs(Residual_square) .LT. 1.5d0*Residual_sqrdev .AND. dble(Residual) .LT. Residual_stdev) then
+			if(dabs(Residual_square) < 1.5d0*Residual_sqrdev .AND. dble(Residual) < Residual_stdev) then
 				!we have converged for both values of alpha
 				alpha_i_search=.FALSE.
 				alpha_v_search=.FALSE.
@@ -1292,9 +1297,9 @@ if(alpha_i_search .eqv. .TRUE.) then
 				write(*,*) 'Residual squares', Residual_square, 'Residual squares dev', Residual_sqrdev
 !				read(*,*)
 
-			else if(dabs(Residual_square) .GE. dabs(Residual_prev) &
+			else if(dabs(Residual_square) >= dabs(Residual_prev) &
 				.AND. sign(Residual_square,Residual_prev)==Residual_square &
-				.AND. i_iteration .GT. 2) then !we have reached a local minimum in alpha_i
+				.AND. i_iteration > 2) then !we have reached a local minimum in alpha_i
 			
 				alpha_i_search=.FALSE.
 			
@@ -1304,10 +1309,10 @@ if(alpha_i_search .eqv. .TRUE.) then
 											!correct value of residual (not the value given by the most recent alpha_i, but the one previous)
 			
 				!This forces us to keep iterating until we have converged in one step for both v and i
-				if(i_iteration .GT. 1 .OR. v_iteration==0) then
+				if(i_iteration > 1 .OR. v_iteration==0) then
 					alpha_v_search=.TRUE.
 					v_iteration=0
-				endif
+				end if
 			else
 				!calculate new value for alpha_i
 				alpha_temp=alpha_i
@@ -1317,24 +1322,24 @@ if(alpha_i_search .eqv. .TRUE.) then
 						alpha_i=0.1
 					else
 						alpha_i=alpha_i/2d0
-					endif
+					end if
 				else
 					alpha_i=(Residual_square*alpha_i_prev-Residual_prev*alpha_i)/(Residual_square-Residual_prev)
-				endif
+				end if
 			
-				if(alpha_i .LT. 0d0) then
+				if(alpha_i < 0d0) then
 					alpha_i=0d0
-				endif
+				end if
 			
-				if(alpha_i .GT. 1d0) then
+				if(alpha_i > 1d0) then
 					alpha_i=1d0
-				endif
+				end if
 			
 				!store previous step
 				alpha_i_prev=alpha_temp
 				Residual_prev=Residual_square
 			
-			endif
+			end if
 		
 			!Temp: checking if we are doing it right
 			write(*,*) 'i_iteration', i_iteration
@@ -1344,13 +1349,13 @@ if(alpha_i_search .eqv. .TRUE.) then
 			write(*,*)
 !			write(*,*) 'conc_i', conc_i, 'conc_i_avg', conc_i_avg, 'conc_i_stdev', conc_i_stdev
 !			read(*,*)
-		endif
+		end if
 
 	else
 		write(*,*) 'Error sinkEffSearch unrecognized'
-	endif
+	end if
 
-endif !if(alpha_i_search .eqv. .TRUE.) then
+end if !if(alpha_i_search .eqv. .TRUE.) then
 
 
 if(alpha_v_search .eqv. .TRUE.) then
@@ -1368,7 +1373,7 @@ if(alpha_v_search .eqv. .TRUE.) then
 		if(alpha_v_search .eqv. .TRUE.) then
 			!Check if conc_i_average is within stdev of previous step
 
-			if(dabs(Residual_square) .LT. 1.5d0*Residual_sqrdev .AND. dble(Residual) .LT. Residual_stdev) then
+			if(dabs(Residual_square) < 1.5d0*Residual_sqrdev .AND. dble(Residual) < Residual_stdev) then
 				!we have converged for both values of alpha
 				alpha_i_search=.FALSE.
 				alpha_v_search=.FALSE.
@@ -1377,9 +1382,9 @@ if(alpha_v_search .eqv. .TRUE.) then
 				write(*,*) 'Residual squares', Residual_square, 'Residual squares dev', Residual_sqrdev
 !				read(*,*)
 
-			else if(dabs(Residual_square) .GE. dabs(Residual_prev) &
+			else if(dabs(Residual_square) >= dabs(Residual_prev) &
 				.AND. sign(Residual_square,Residual_prev)==Residual_square &
-				.AND. v_iteration .GT. 2) then !we have reached a local minimum in alpha_i
+				.AND. v_iteration > 2) then !we have reached a local minimum in alpha_i
 		
 				alpha_v_search=.FALSE.
 			
@@ -1387,10 +1392,10 @@ if(alpha_v_search .eqv. .TRUE.) then
 				alpha_v=alpha_v_prev
 
 				!This forces us to keep iterating until we have converged in one step for both v and i
-				if(v_iteration .GT. 1 .OR. i_iteration==0) then
+				if(v_iteration > 1 .OR. i_iteration==0) then
 					alpha_i_search=.TRUE.
 					i_iteration=0
-				endif
+				end if
 			
 			else
 				!calculate new value for alpha_v
@@ -1401,24 +1406,24 @@ if(alpha_v_search .eqv. .TRUE.) then
 						alpha_v=0.1d0
 					else
 						alpha_v=alpha_v/2d0
-					endif
+					end if
 				else
 					alpha_v=(Residual_square*alpha_v_prev-Residual_prev*alpha_v)/(Residual_square-Residual_prev)
-				endif
+				end if
 			
-				if(alpha_v .LT. 0d0) then
+				if(alpha_v < 0d0) then
 					alpha_v=0d0
-				endif
+				end if
 			
-				if(alpha_v .GT. 1d0) then
+				if(alpha_v > 1d0) then
 					alpha_v=1d0
-				endif
+				end if
 			
 				!store previous step
 				alpha_v_prev=alpha_temp
 				Residual_prev=Residual_square
 
-			endif
+			end if
 		
 			write(*,*) 'v_iteration', v_iteration
 			write(*,*) 'alpha_v_old', alpha_v_prev, 'alpha_v', alpha_v
@@ -1427,13 +1432,13 @@ if(alpha_v_search .eqv. .TRUE.) then
 			write(*,*)
 			!write(*,*) 'conc_v', conc_v, 'conc_v_avg', conc_v_avg, 'conc_v_stdev', conc_v_stdev
 !			read(*,*)
-		endif
+		end if
 
 	else
 		write(*,*) 'Error sinkEffSearch unrecognized'
-	endif
+	end if
 
-endif !if(alpha_v_search .eqv. .TRUE.) then
+end if !if(alpha_v_search .eqv. .TRUE.) then
 
 if(sinkEffSearch=='yes') then
 	if(alpha_i_search .eqv. .FALSE.) then
@@ -1443,14 +1448,14 @@ if(sinkEffSearch=='yes') then
 			write(*,*) 'Converged for both alphas'
 		else
 			searchToggle=.TRUE.
-		endif
+		end if
 	else
 		!we have not yet converged for both alpha_v and alpha_i
 		searchToggle=.TRUE.
-	endif
-endif
+	end if
+end if
 
-500 continue
+end do
 
 if(sinkEffSearch=='yes') write(*,*) 'Final alpha_v', alpha_v, 'alpha_i', alpha_i
 
@@ -1461,13 +1466,13 @@ deallocate(cascadeConnectivity)
 
 if(myProc%taskid==MASTER) then
 	write(*,*) 'Deallocating memory: cascade list'
-endif
+end if
 
 call deallocateCascadeList()
 
 if(myProc%taskid==MASTER) then
 	write(*,*) 'Deallocating material input data'
-endif
+end if
 
 call deallocateMaterialInput()
 

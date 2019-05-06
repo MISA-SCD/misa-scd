@@ -1,4 +1,4 @@
-! $Header: /home/CVS//srscd/src/Cascade_implantation.f90,v 1.6 2015/06/09 20:51:19 aydunn Exp $
+
 !***************************************************************************************************
 !>Subroutine: Choose Cascade
 !!Takes list of cascades (read from input file) and chooses one randomly
@@ -623,51 +623,51 @@ integer cell
 !************************************************
 !PBCs in x and y, free in z (cell 0 represents free surface)
 !************************************************
-do 10 cell=1,numCellsCascade
+do cell=1,numCellsCascade
 	if(mod(cell,numxcascade)==0) then !identify cell to the right
 		!cascadeConnectivity(cell, 1)=cell-numxcascade+1
-		cascadeConnectivity(cell, 1)=0
+		cascadeConnectivity(cell, 1)=0	!free in x
 	else
 		cascadeConnectivity(cell,1)=cell+1
-	endif
+	end if
 	
 	if(mod(cell+numxcascade-1,numxcascade)==0) then !identify cell to the left
 		!cascadeConnectivity(cell,2)=cell+numxcascade-1
-		cascadeConnectivity(cell,2)=0
+		cascadeConnectivity(cell,2)=0	!free in x
 	else
 		cascadeConnectivity(cell,2)=cell-1
-	endif
+	end if
 	
-	if(mod(cell,numxcascade*numycascade) .GT. numxcascade*(numycascade-1) .OR. &
+	if(mod(cell,numxcascade*numycascade) > numxcascade*(numycascade-1) .OR. &
 		mod(cell,numxcascade*numycascade)==0) then
-		cascadeConnectivity(cell,3)=0
+		cascadeConnectivity(cell,3)=0	!free in y
 		!cascadeConnectivity(cell,3)=cell-(numxcascade*(numycascade-1))
 	else
 		cascadeConnectivity(cell,3)=cell+numxcascade
-	endif
+	end if
 	
-	if(mod(cell,numxcascade*numycascade) .LE. numxcascade .AND. mod(cell, numxcascade*numycascade) .NE. 0) then
-		cascadeConnectivity(cell,4)=0
+	if(mod(cell,numxcascade*numycascade) <= numxcascade .AND. mod(cell, numxcascade*numycascade) /= 0) then
+		cascadeConnectivity(cell,4)=0	!free in y
 		!cascadeConnectivity(cell,4)=cell+(numxcascade*(numycascade-1))
 	else
 		cascadeConnectivity(cell,4)=cell-numxcascade
-	endif
+	end if
 	
-	if(mod(cell,numxcascade*numycascade*numzcascade) .GT. numxcascade*numycascade*(numzcascade-1) .OR. &
+	if(mod(cell,numxcascade*numycascade*numzcascade) > numxcascade*numycascade*(numzcascade-1) .OR. &
 		mod(cell, numxcascade*numycascade*numzcascade)==0) then
 		
-		cascadeConnectivity(cell,5)=0
+		cascadeConnectivity(cell,5)=0	!free in z
 	else
 		cascadeConnectivity(cell,5)=cell+numxcascade*numycascade
-	endif
+	end if
 	
-	if(mod(cell,numxcascade*numycascade*numzcascade) .LE. numxcascade*numycascade .AND. &
-		mod(cell,numxcascade*numycascade*numzcascade) .NE. 0) then
+	if(mod(cell,numxcascade*numycascade*numzcascade) <= numxcascade*numycascade .AND. &
+		mod(cell,numxcascade*numycascade*numzcascade) /= 0) then
 		
-		cascadeConnectivity(cell,6)=0
+		cascadeConnectivity(cell,6)=0	!free in z
 	else
 		cascadeConnectivity(cell,6)=cell-numxcascade*numycascade
-	endif
-10 continue
+	end if
+end do
 
 end subroutine

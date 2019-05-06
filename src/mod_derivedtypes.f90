@@ -1,4 +1,4 @@
-! $Header: /home/CVS//srscd/src/mod_derivedtypes.f90,v 1.5 2015/10/09 15:36:46 aydunn Exp $
+
 !***************************************************************************************************
 !>mod_DerivedTypes contains the variable derived types created for SRSCD.
 !!

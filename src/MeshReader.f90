@@ -83,33 +83,37 @@ end interface
 open(80, file=filename,action='read', status='old')
 if(strainField=='yes') then
 	open(50, file=strainFileName, action='read', status='old')
-endif
+end if
 
 !Used to read in data from files
 flag=.FALSE.
 
 !Step -1: read in mesh type (free surfaces or periodic)
-do 1 while(flag .eqv. .FALSE.)
+do while(flag .eqv. .FALSE.)
 	read(80,*) readIn
 	if(readIn=='meshType') then
 		read(80,*) meshType
 		flag=.TRUE.
-	endif
-1 continue
+	end if
+end do
 flag=.FALSE.
 
 !Step 0: read in volume element lengths (true for UNIFORM CUBIC MESH ONLY)
-do 9 while(flag .eqv. .FALSE.)
+do while(flag .eqv. .FALSE.)
 	read(80,*) readIn
 	if(readIn=='length') then
 		read(80,*) length
 		flag=.TRUE.
-	endif
-9 continue
+	end if
+end do
 flag=.FALSE.
 
+!************************************************
 !Step 1: read in the global coordinates (max, min)
-do 10 while(flag .eqv. .FALSE.)
+!************************************************
+
+!The coordinates are the center of volume elements
+do while(flag .eqv. .FALSE.)
 	read(80,*) readIn
 	if(readIn=='xminmax') then
 		read(80,*) myProc%globalCoord(1), myProc%globalCoord(2)
@@ -118,8 +122,8 @@ do 10 while(flag .eqv. .FALSE.)
 	else if(readIn=='zminmax') then
 		read(80,*) myProc%globalCoord(5), myProc%globalCoord(6)
 		flag=.TRUE.
-	endif
-10 continue
+	end if
+end do
 flag=.FALSE.
 
 !***********************************************************************
@@ -129,28 +133,24 @@ flag=.FALSE.
 if(strainField=='yes') then
 	
 	!Step -1: skip to start of input data
-	do 35 while(flag .eqv. .FALSE.)
+	do while(flag .eqv. .FALSE.)
 		read(50,*) readIn
 		if(readIn=='start') then
 			flag=.TRUE.
-		endif
-	35 continue
+		end if
+	end do
 	flag=.FALSE.
 	
 	read(50,*)	!Blank line in strain input file
 	
-endif
+end if
 
 !Step 1a: modify global coordinates to include entire simulation volume (not just centers of elements)
-!*******
-!This step is taken because the global coord read in step 1 are the centers of volume elements and 
-!not the boundaries of the volume elements. This could be eliminated by just reporting the actual
-!boundaries in the input file instead of the centers of the volume elements.
-!*******
-do 8 i=1,5,2
+!The actual boundary coordinates of the system
+do i=1,5,2
 	myProc%globalCoord(i)=myProc%globalCoord(i)-length/2d0
 	myProc%globalCoord(i+1)=myProc%globalCoord(i+1)+length/2d0
-8 continue
+end do
 
 !Debug options
 !if(myProc%taskid==MASTER) then
@@ -158,48 +158,43 @@ do 8 i=1,5,2
 !	write(*,*) myProc%globalCoord
 !endif
 
+!************************************************
 !Step 2: divide processors over gobal volume
+!************************************************
 
 !Step 2a: find area of each face of entire volume (x-y, y-z, x-z)
-volumeFaces(1)=(myProc%globalCoord(2)-myProc%globalCoord(1))*&
-	(myProc%globalCoord(4)-myProc%globalCoord(3))
-volumeFaces(2)=(myProc%globalCoord(4)-myProc%globalCoord(3))*&
-	(myProc%globalCoord(6)-myProc%globalCoord(5))
-volumeFaces(3)=(myProc%globalCoord(2)-myProc%globalCoord(1))*&
-	(myProc%globalCoord(6)-myProc%globalCoord(5))
+volumeFaces(1)=(myProc%globalCoord(2)-myProc%globalCoord(1))*(myProc%globalCoord(4)-myProc%globalCoord(3))	!x-y
+volumeFaces(2)=(myProc%globalCoord(4)-myProc%globalCoord(3))*(myProc%globalCoord(6)-myProc%globalCoord(5))	!y-z
+volumeFaces(3)=(myProc%globalCoord(2)-myProc%globalCoord(1))*(myProc%globalCoord(6)-myProc%globalCoord(5))	!x-z
 	
 !Step 2b: for each factorization of the number of processors, find the total shared area and minimize
 totalArea=dble(myProc%numtasks)*(volumeFaces(1)+volumeFaces(2)+volumeFaces(3))	!This is an upper bound estimate
 
-procDivision(1)=0
-procDivision(2)=0
-procDivision(3)=0
-
-do 11 i=1,myProc%numtasks
-	do 12 j=1, myProc%numtasks
-		do 13 k=1, myProc%numtasks
+procDivision(1)=0	!number of processors in x
+procDivision(2)=0	!number of processors in y
+procDivision(3)=0	!number of processors in z
+!Keep factorizations of processors that minimize shared area.
+do i=1,myProc%numtasks
+	do j=1, myProc%numtasks
+		do k=1, myProc%numtasks
 			if(i*j*k==myProc%numtasks) then
 				!find shared area between processors using this factorization of the number of processors
-				if(k*volumeFaces(1)+i*volumeFaces(2)+j*volumeFaces(3) .LT. totalArea .OR. myProc%numtasks==1) then
+				if(k*volumeFaces(1)+i*volumeFaces(2)+j*volumeFaces(3) < totalArea .OR. myProc%numtasks==1) then
 					procDivision(1)=i
 					procDivision(2)=j
 					procDivision(3)=k
 					totalArea=k*volumeFaces(1)+i*volumeFaces(2)+j*volumeFaces(3)
-					!Keep factorizations of processors that minimize shared area.
-					
 					!write(*,*) 'new division found', procDivision, totalArea
-				endif
-			else
+				end if
 				!do nothing, not a factorization of numtasks
-			endif
-		13 continue
-	12 continue
-11 continue
+			end if
+		end do
+	end do
+end do
 
 if(myProc%taskid==MASTER) then
 	write(*,*) 'proc division', procDivision
-!	read(*,*)
-endif
+end if
 
 !step 2c: divide volume among processors according to the factorization above
 !**********
@@ -244,37 +239,37 @@ if (myProc%localCoord(1)==myProc%globalCoord(1)) then	!coordinate is at xmin
 	myProc%procNeighbor(2)=myProc%taskid+procDivision(1)-1	!left
 else
 	myProc%procNeighbor(2)=myProc%taskid-1	!left
-endif
+end if
 
 if (myProc%localCoord(2)==myProc%globalCoord(2)) then	!coordinate is at xmax
 	myProc%procNeighbor(1)=myProc%taskid-procDivision(1)+1	!right
 else
 	myProc%procNeighbor(1)=myProc%taskid+1	!right
-endif
+end if
 
 if (myProc%localCoord(3)==myProc%globalCoord(3)) then	!coordinate is at ymin
 	myProc%procNeighbor(4)=myProc%taskid+procDivision(1)*(procDivision(2)-1)	!back
 else
 	myProc%procNeighbor(4)=myProc%taskid-procDivision(1)	!back
-endif
+end if
 
 if (myProc%localCoord(4)==myProc%globalCoord(4)) then	!coordinate is at ymax
 	myProc%procNeighbor(3)=myProc%taskid-procDivision(1)*(procDivision(2)-1)	!front
 else
 	myProc%procNeighbor(3)=myProc%taskid+procDivision(1)	!front
-endif
+end if
 
 if (myProc%localCoord(5)==myProc%globalCoord(5)) then	!coordinate is at zmin
 	myProc%procNeighbor(6)=myProc%taskid+procDivision(1)*procDivision(2)*(procDivision(3)-1)	!down
 else
 	myProc%procNeighbor(6)=myProc%taskid-procDivision(1)*procDivision(2)	!down
-endif
+end if
 
 if (myProc%localCoord(6)==myProc%globalCoord(6)) then	!coordinate is at zmax
 	myProc%procNeighbor(5)=myProc%taskid-procDivision(1)*procDivision(2)*(procDivision(3)-1)	!up
 else
 	myProc%procNeighbor(5)=myProc%taskid+procDivision(1)*procDivision(2)	!up
-endif
+end if
 
 !write(*,*) 'proc', myProc%taskid, 'of', myProc%numtasks
 !write(*,*) 'neighbors', myProc%procNeighbor
@@ -285,7 +280,7 @@ endif
 !Step 3a: find how many volume elements are in global system and which of those are in the local processor's range
 
 !Read the number of elements in x,y,and z directions
-do 7 while(flag .eqv. .FALSE.)
+do while(flag .eqv. .FALSE.)
 	read(80,*) readIn
 	if(readIn=='numx') then
 		read(80,*) numx
@@ -294,11 +289,11 @@ do 7 while(flag .eqv. .FALSE.)
 	else if(readIn=='numz') then
 		read(80,*) numz
 		flag=.TRUE.
-	endif
-7 continue
+	end if
+end do
 flag=.FALSE.
 
-numTotal=numx*numy*numz
+numTotal=numx*numy*numz	!total cell in the system
 
 !These arrays create a global mesh and global list of material numbers and coordinates, but are discarded
 !once the local mesh is finished.
@@ -312,15 +307,15 @@ if(meshType=='periodic') then
 	call createConnectGlobalPeriodicUniform(globalMeshConnect, numx, numy, numz)
 else if(meshType=='freeSurfaces') then
 	call createConnectGlobalFreeSurfUniform(globalMeshConnect, numx, numy, numz)
-endif
+end if
 
 !Tells program that we are about to start reading in element coordinates and material numbers
-do 6 while(flag .eqv. .FALSE.)
+do while(flag .eqv. .FALSE.)
 	read(80,*) readIn
 	if(readIn=='elements') then
 		flag=.TRUE.
 	endif
-6 continue
+end do
 flag=.FALSE.
 
 !NumxLocal, numyLocal, numzLocal are used to determine the size of the mesh inside the local processor.
@@ -329,14 +324,14 @@ numxLocal=0
 numyLocal=0
 numzLocal=0
 element=1
-localElements(3)=0
 systemVol=0d0
 
-do 5 k=1,numz
+localElements(3)=0
+do k=1,numz
 	localElements(2)=0
-	do 4 j=1,numy
+	do j=1,numy
 		localElements(1)=0
-		do 3 i=1,numx
+		do i=1,numx
 			!read in the coordinates and material number from file of this element (coordinates are the center of the element)
 			read(80,*) globalMeshCoord(element,1),globalMeshCoord(element,2),globalMeshCoord(element,3),&
 				globalMaterial(element)
@@ -346,15 +341,15 @@ do 5 k=1,numz
 				read(50,*) tempCoord(1), tempCoord(2), tempCoord(3), globalStrain(element,1), globalStrain(element,2), &
 					globalStrain(element,3), globalStrain(element,4), globalStrain(element,5), globalStrain(element,6)
 					
-				if(tempCoord(1) .NE. globalMeshCoord(element,1)) then
+				if(tempCoord(1) /= globalMeshCoord(element,1)) then	!not equal
 					write(*,*) 'Error strain mesh does not match normal mesh'
-				else if(tempCoord(2) .NE. globalMeshcoord(element,2)) then
+				else if(tempCoord(2) /= globalMeshcoord(element,2)) then
 					write(*,*) 'Error strain mesh does not match normal mesh'
-				else if(tempCoord(3) .NE. globalMeshCoord(element,3)) then
+				else if(tempCoord(3) /= globalMeshCoord(element,3)) then
 					write(*,*) 'Error strain mesh does not match normal mesh'
-				endif
+				end if
 			
-			endif
+			end if
 				
 			if(numMaterials==1) then
 				systemVol=systemVol+length**3d0
@@ -362,47 +357,47 @@ do 5 k=1,numz
 				systemVol=systemVol+length**3d0
 			else
 				!Do nothing
-			endif
+			end if
 			
 			!If this element is within the local bounds of this processor, as defined in step 2
-			if(globalMeshCoord(element,1) .GT. myProc%localCoord(1) .AND. globalMeshCoord(element,1) .LE. myProc%localCoord(2) &
-				.AND. globalMeshCoord(element,2) .GT. myProc%localCoord(3) .AND. globalMeshCoord(element,2) .LE. myProc%localCoord(4) &
-				.AND. globalMeshCoord(element,3) .GT. myProc%localCoord(5) .AND. globalMeshCoord(element,3) .LE. myProc%localCoord(6)) then
+			if(globalMeshCoord(element,1) > myProc%localCoord(1) .AND. globalMeshCoord(element,1) <= myProc%localCoord(2) &
+				.AND. globalMeshCoord(element,2) > myProc%localCoord(3) .AND. globalMeshCoord(element,2) <= myProc%localCoord(4) &
+				.AND. globalMeshCoord(element,3) > myProc%localCoord(5) .AND. globalMeshCoord(element,3) <= myProc%localCoord(6)) then
 				
 				!used to count the number of elements in the x-, y-, and z-directions within each processor
 				localElements(1)=localElements(1)+1			!add elements in the x-direction
 				if(localElements(1)==1) then
 					localElements(2)=localElements(2)+1		!create another row in y-direction
-				endif
+				end if
 				if(localElements(2)==1 .AND. localElements(1)==1) then
 					localElements(3)=localElements(3)+1		!create another row in the z-direction
-				endif
+				end if
 				
 				!Here, we keep increasing numxLocal, numyLocal, numzLocal until the entire local mesh
 				!is read in
 				
-				if(localElements(1) .GT. numxLocal) then
+				if(localElements(1) > numxLocal) then
 					numxLocal=localElements(1)
-				endif
-				if(localElements(2) .GT. numyLocal) then
+				end if
+				if(localElements(2) > numyLocal) then
 					numyLocal=localElements(2)
-				endif
-				if(localElements(3) .GT. numzLocal) then
+				end if
+				if(localElements(3) > numzLocal) then
 					numzLocal=localElements(3)
-				endif
-			endif
+				end if
+			end if
 			
 			element=element+1
-		3 continue
-	4 continue
-5 continue
+		end do
+	end do
+end do
 
 !If any processors don't have volume elements in them (too many procs), we create an error message
 if(numxLocal*numyLocal*numzLocal==0) then
 	write(*,*) 'error processors with no volume elements'
 	call MPI_ABORT(MPI_COMM_WORLD,ierr)
 	stop
-endif
+end if
 
 !Step 3b: find how many volume elements are in local processor and allocate myMesh accordingly
 
@@ -413,18 +408,18 @@ allocate(myMesh(numxLocal*numyLocal*numzLocal))
 !this variable is used at various points in SRSCD; lets us know the length fo myMesh(:)
 numCells=numxLocal*numyLocal*numzLocal	!total cells of this processor
 
-do 23 i=1,numCells
+do i=1,numCells
 	myMesh(i)%length=length
 	myMesh(i)%volume=length**3d0
 	
 	!uniform mesh: all elements have 1 neighbor in each direction
 	allocate(myMesh(i)%neighbors(6,1))
 	allocate(myMesh(i)%neighborProcs(6,1))
-	do 24 j=1,6
+	do j=1,6
 		myMesh(i)%numNeighbors(j)=1
-	24 continue
+	end do
 
-23 continue
+end do
 
 !Step 3c: for each volume element in myMesh, assign coordinates and material number (and proc number)
 !We can't read from the file directly into myMesh, because we don't know how big to make it until
@@ -432,12 +427,12 @@ do 23 i=1,numCells
 !global mesh back into myMesh.
 element=1
 localElem=1
-do 20 k=1,numz
-	do 21 j=1, numy
-		do 22 i=1, numx
-			if(globalMeshCoord(element,1) .GT. myProc%localCoord(1) .AND. globalMeshCoord(element,1) .LE. myProc%localCoord(2) &
-				.AND. globalMeshCoord(element,2) .GT. myProc%localCoord(3) .AND. globalMeshCoord(element,2) .LE. myProc%localCoord(4) &
-				.AND. globalMeshCoord(element,3) .GT. myProc%localCoord(5) .AND. globalMeshCoord(element,3) .LE. myProc%localCoord(6)) then
+do k=1,numz
+	do j=1, numy
+		do i=1, numx
+			if(globalMeshCoord(element,1) > myProc%localCoord(1) .AND. globalMeshCoord(element,1) <= myProc%localCoord(2) &
+				.AND. globalMeshCoord(element,2) > myProc%localCoord(3) .AND. globalMeshCoord(element,2) <= myProc%localCoord(4) &
+				.AND. globalMeshCoord(element,3) > myProc%localCoord(5) .AND. globalMeshCoord(element,3) <= myProc%localCoord(6)) then
 				
 				myMesh(localElem)%coordinates(1)=globalMeshCoord(element,1)
 				myMesh(localElem)%coordinates(2)=globalMeshCoord(element,2)
@@ -446,17 +441,17 @@ do 20 k=1,numz
 				myMesh(localElem)%proc=myProc%taskid
 				
 				if(strainField=='yes') then
-					do 55 l=1,6
+					do l=1,6
 						myMesh(localElem)%strain(l)=globalStrain(element,l)
-					55 continue
-				endif
+					end do
+				end if
 				
 				localElem=localElem+1
-			endif
+			end if
 			element=element+1
-		22 continue
-	21 continue
-20 continue
+		end do
+	end do
+end do
 
 !Step 3d: assign neighbors and processor numbers for neighbors (connectivity in myMesh) - periodic or free surfaces in +/- z
 
@@ -464,7 +459,7 @@ if(meshType=='periodic') then
 	call createConnectLocalPeriodicUniform(numxLocal, numyLocal, numzLocal, globalMeshCoord, globalMeshConnect)
 else if(meshType=='freeSurfaces') then
 	call createConnectLocalFreeSurfUniform(numxLocal, numyLocal, numzLocal, globalMeshCoord, globalMeshConnect)
-endif
+end if
 
 !This output is optional, used to show the user what the mesh is
 
@@ -499,15 +494,15 @@ endif
 
 !Step 1: Find the max cell# of any boundary mesh element
 maxElement=0
-do 27 i=1,numxLocal*numyLocal*numzLocal
-	do 28 j=1,6
-		if(myMesh(i)%neighborProcs(j,1) .NE. myProc%taskid) then	!we are pointing to a different proc
-			if(myMesh(i)%neighbors(j,1) .GT. maxElement) then		!searching for the max element number in a neighbor
+do i=1, numxLocal*numyLocal*numzLocal
+	do j=1, 6
+		if(myMesh(i)%neighborProcs(j,1) /= myProc%taskid) then	!we are pointing to a different proc
+			if(myMesh(i)%neighbors(j,1) > maxElement) then		!searching for the max element number in a neighbor
 				maxElement=myMesh(i)%neighbors(j,1)
-			endif
-		endif
-	28 continue
-27 continue
+			end if
+		end if
+	end do
+end do
 
 !This tells us how large to allocate myBoundary. NOTE: many elements in myBoundary will be unused. Only
 !the elements that represent volume elements on the boundary of myMesh will be used. This represents
@@ -516,18 +511,18 @@ do 27 i=1,numxLocal*numyLocal*numzLocal
 allocate(myBoundary(6,maxElement))	!6 directions, maxElement elements in each direction (more than needed)
 
 !initialize myBoundary with 0 in localNeighbor - signal that myBoundary is not attached to anything
-do 33 i=1,maxElement
-	do 34 j=1,6
+do i=1,maxElement
+	do j=1,6
 		myBoundary(j,i)%localNeighbor=0	!default, says that this is not a real element of myBoundary.
 		myBoundary(j,i)%proc=-10		!default, says that this is not a real element of myBoundary.
-	34 continue
-33 continue
+	end do
+end do
 
-do 29 i=1,numxLocal*numyLocal*numzLocal	
-	do 30 j=1,6
+do i=1,numxLocal*numyLocal*numzLocal
+	do j=1,6
 		if(myMesh(i)%neighborProcs(j,1) == -1) then										!this is a free surface
 			!do nothing
-		else if(myMesh(i)%neighborProcs(j,1) .NE. myProc%taskid) then
+		else if(myMesh(i)%neighborProcs(j,1) /= myProc%taskid) then
 			myBoundary(j,myMesh(i)%neighbors(j,1))%proc=myMesh(i)%neighborProcs(j,1)	!set proc # of elements in myBoundary
 			myBoundary(j,myMesh(i)%neighbors(j,1))%length=length						!set length of elements in myBoundary
 			myBoundary(j,myMesh(i)%neighbors(j,1))%volume=length**3d0					!set volume of elements in myBoundary (changes with cascade addition)
@@ -537,21 +532,18 @@ do 29 i=1,numxLocal*numyLocal*numzLocal
 			myBoundary(j,myMesh(i)%neighbors(j,1))%localNeighbor=i
 			
 			if(strainField=='yes') then
-			
-				do 56 l=1,6
+				do l=1,6
 					myBoundary(j,myMesh(i)%neighbors(j,1))%strain(l)=globalStrain(globalNeighbor,l)
-				56 continue
-			
-			endif
-			
-		endif
-	30 continue
-29 continue
+				end do
+			end if
+		end if
+	end do
+end do
 
 !Close input files
 if(strainField=='yes') then
 	close(50)
-endif
+end if
 close(80)
 
 end subroutine
@@ -577,43 +569,43 @@ numElements=numx*numy*numz	!total cells of the system
 !************************************************
 !periodic boundary condition version
 !************************************************
-do 10 cell=1,numElements
+do cell=1,numElements
 	if(mod(cell,numx)==0) then !identify cell to the right
 		connectivity(cell, 1)=cell-numx+1
 	else
 		connectivity(cell,1)=cell+1
-	endif
+	end if
 	
 	if(mod(cell+numx-1,numx)==0) then !identify cell to the left
 		connectivity(cell,2)=cell+numx-1
 	else
 		connectivity(cell,2)=cell-1
-	endif
+	end if
 	
-	if(mod(cell,numx*numy) .GT. numx*(numy-1) .OR. mod(cell,numx*numy)==0) then
+	if(mod(cell,numx*numy) > numx*(numy-1) .OR. mod(cell,numx*numy)==0) then
 		connectivity(cell,3)=cell-(numx*(numy-1))
 	else
 		connectivity(cell,3)=cell+numx
-	endif
+	end if
 	
-	if(mod(cell,numx*numy) .LE. numx .AND. (mod(cell, numx*numy) .NE. 0 .OR. numy==1)) then
+	if(mod(cell,numx*numy) <= numx .AND. (mod(cell, numx*numy) /= 0 .OR. numy==1)) then
 		connectivity(cell,4)=cell+(numx*(numy-1))
 	else
 		connectivity(cell,4)=cell-numx
-	endif
+	end if
 	
-	if(mod(cell,numx*numy*numz) .GT. numx*numy*(numz-1) .OR. mod(cell, numx*numy*numz)==0) then
+	if(mod(cell,numx*numy*numz) > numx*numy*(numz-1) .OR. mod(cell, numx*numy*numz)==0) then
 		connectivity(cell,5)=cell-(numx*numy*(numz-1))
 	else
 		connectivity(cell,5)=cell+numx*numy
-	endif
+	end if
 	
-	if(mod(cell,numx*numy*numz) .LE. numx*numy .AND. (mod(cell,numx*numy*numz) .NE. 0 .OR. numz==1)) then
+	if(mod(cell,numx*numy*numz) <= numx*numy .AND. (mod(cell,numx*numy*numz) /= 0 .OR. numz==1)) then
 		connectivity(cell,6)=cell+(numx*numy*(numz-1))
 	else
 		connectivity(cell,6)=cell-numx*numy
-	endif
-10 continue
+	end if
+end do
 
 end subroutine
 
@@ -637,43 +629,43 @@ numElements=numx*numy*numz
 !************************************************
 !PBCs in x and y, free in z (cell 0 represents free surface)
 !************************************************
-do 10 cell=1,numElements
+do cell=1,numElements
 	if(mod(cell,numx)==0) then !identify cell to the right
 		connectivity(cell, 1)=cell-numx+1
 	else
 		connectivity(cell,1)=cell+1
-	endif
+	end if
 	
 	if(mod(cell+numx-1,numx)==0) then !identify cell to the left
 		connectivity(cell,2)=cell+numx-1
 	else
 		connectivity(cell,2)=cell-1
-	endif
+	end if
 	
-	if(mod(cell,numx*numy) .GT. numx*(numy-1) .OR. mod(cell,numx*numy)==0) then
+	if(mod(cell,numx*numy) > numx*(numy-1) .OR. mod(cell,numx*numy)==0) then
 		connectivity(cell,3)=cell-(numx*(numy-1))
 	else
 		connectivity(cell,3)=cell+numx
-	endif
+	end if
 	
-	if(mod(cell,numx*numy) .LE. numx .AND. (mod(cell, numx*numy) .NE. 0 .OR. numy==1)) then
+	if(mod(cell,numx*numy) <= numx .AND. (mod(cell, numx*numy) /= 0 .OR. numy==1)) then
 		connectivity(cell,4)=cell+(numx*(numy-1))
 	else
 		connectivity(cell,4)=cell-numx
-	endif
+	end if
 	
-	if(mod(cell,numx*numy*numz) .GT. numx*numy*(numz-1) .OR. mod(cell, numx*numy*numz)==0) then
+	if(mod(cell,numx*numy*numz) > numx*numy*(numz-1) .OR. mod(cell, numx*numy*numz)==0) then
 		connectivity(cell,5)=0
 	else
 		connectivity(cell,5)=cell+numx*numy
-	endif
+	end if
 	
-	if(mod(cell,numx*numy*numz) .LE. numx*numy .AND. (mod(cell,numx*numy*numz) .NE. 0 .OR. numz==1)) then
+	if(mod(cell,numx*numy*numz) <= numx*numy .AND. (mod(cell,numx*numy*numz) /=0 .OR. numz==1)) then
 		connectivity(cell,6)=0
 	else
 		connectivity(cell,6)=cell-numx*numy
-	endif
-10 continue
+	end if
+end do
 
 end subroutine
 
@@ -711,7 +703,7 @@ numSendRecv=0
 !************************************************
 !periodic boundary condition version
 !************************************************
-do 10 cell=1,numCells
+do cell=1,numCells
 	if(mod(cell,numx)==0) then !identify cell to the right
 		
 		!If we are on the right edge of the local mesh, identify the neighboring processor
@@ -731,17 +723,17 @@ do 10 cell=1,numCells
 			!processor)
 			
 			numSendRecv=numSendRecv+1		!count the number of items in buffer
-			sendList(numSendRecv,1)=cell
-			sendList(numSendRecv,2)=1	!direction
-			sendList(numSendRecv,3)=globalCell
-			sendList(numSendRecv,4)=globalNeighbor
-		endif
+			sendList(numSendRecv,1)=cell	!localCellID in this processor
+			sendList(numSendRecv,2)=1		!direction: right
+			sendList(numSendRecv,3)=globalCell	!the globalCellID of the localCellID
+			sendList(numSendRecv,4)=globalNeighbor	!neighbor in the right
+		end if
 	else
 		!if we are still inside the local mesh, don't need to communicate with neighboring cells and 
 		!just use the uniform cubic connectivity rules (increase x, then y, then z)
 		myMesh(cell)%neighbors(1,1)=cell+1
 		myMesh(cell)%neighborProcs(1,1)=myProc%taskid
-	endif
+	end if
 	
 	!This is the same as above, except that we are pointed to the left instead of the right of the local mesh.
 	if(mod(cell+numx-1,numx)==0) then !identify cell to the left
@@ -757,14 +749,14 @@ do 10 cell=1,numCells
 			sendList(numSendRecv,2)=2	!direction
 			sendList(numSendRecv,3)=globalCell
 			sendList(numSendRecv,4)=globalNeighbor
-		endif
+		end if
 	else
 		myMesh(cell)%neighbors(2,1)=cell-1
 		myMesh(cell)%neighborProcs(2,1)=myProc%taskid
-	endif
+	end if
 	
 	!Front (+y)
-	if(mod(cell,numx*numy) .GT. numx*(numy-1) .OR. mod(cell,numx*numy)==0) then
+	if(mod(cell,numx*numy) > numx*(numy-1) .OR. mod(cell,numx*numy)==0) then
 		
 		myMesh(cell)%neighborProcs(3,1)=myProc%procNeighbor(3)
 		if(myMesh(cell)%neighborProcs(3,1)==myProc%taskid) then
@@ -777,14 +769,14 @@ do 10 cell=1,numCells
 			sendList(numSendRecv,2)=3	!direction
 			sendList(numSendRecv,3)=globalCell
 			sendList(numSendRecv,4)=globalNeighbor
-		endif
+		end if
 	else
 		myMesh(cell)%neighbors(3,1)=cell+numx
 		myMesh(cell)%neighborProcs(3,1)=myProc%taskid
-	endif
+	end if
 	
 	!Back (-y)
-	if(mod(cell,numx*numy) .LE. numx .AND. (mod(cell, numx*numy) .NE. 0 .OR. numy==1)) then
+	if(mod(cell,numx*numy) <= numx .AND. (mod(cell, numx*numy) /= 0 .OR. numy==1)) then
 		myMesh(cell)%neighborProcs(4,1)=myProc%procNeighbor(4)
 		if(myMesh(cell)%neighborProcs(4,1)==myProc%taskid) then
 			myMesh(cell)%neighbors(4,1)=cell+(numx*(numy-1))
@@ -796,14 +788,14 @@ do 10 cell=1,numCells
 			sendList(numSendRecv,2)=4	!direction
 			sendList(numSendRecv,3)=globalCell
 			sendList(numSendRecv,4)=globalNeighbor
-		endif
+		end if
 	else
 		myMesh(cell)%neighbors(4,1)=cell-numx
 		myMesh(cell)%neighborProcs(4,1)=myProc%taskid
-	endif
+	end if
 	
 	!Up (+z)
-	if(mod(cell,numx*numy*numz) .GT. numx*numy*(numz-1) .OR. mod(cell, numx*numy*numz)==0) then
+	if(mod(cell,numx*numy*numz) > numx*numy*(numz-1) .OR. mod(cell, numx*numy*numz)==0) then
 		myMesh(cell)%neighborProcs(5,1)=myProc%procNeighbor(5)
 		if(myMesh(cell)%neighborProcs(5,1)==myProc%taskid) then
 			myMesh(cell)%neighbors(5,1)=cell-(numx*numy*(numz-1))
@@ -815,14 +807,14 @@ do 10 cell=1,numCells
 			sendList(numSendRecv,2)=5	!direction
 			sendList(numSendRecv,3)=globalCell
 			sendList(numSendRecv,4)=globalNeighbor
-		endif
+		end if
 	else
 		myMesh(cell)%neighbors(5,1)=cell+numx*numy
 		myMesh(cell)%neighborProcs(5,1)=myProc%taskid
-	endif
+	end if
 	
 	!Down (-z)
-	if(mod(cell,numx*numy*numz) .LE. numx*numy .AND. (mod(cell,numx*numy*numz) .NE. 0 .OR. numz==1)) then
+	if(mod(cell,numx*numy*numz) <= numx*numy .AND. (mod(cell,numx*numy*numz) /= 0 .OR. numz==1)) then
 		myMesh(cell)%neighborProcs(6,1)=myProc%procNeighbor(6)
 		if(myMesh(cell)%neighborProcs(6,1)==myProc%taskid) then
 			myMesh(cell)%neighbors(6,1)=cell+(numx*numy*(numz-1))
@@ -834,34 +826,34 @@ do 10 cell=1,numCells
 			sendList(numSendRecv,2)=6	!direction
 			sendList(numSendRecv,3)=globalCell
 			sendList(numSendRecv,4)=globalNeighbor
-		endif
+		end if
 	else
 		myMesh(cell)%neighbors(6,1)=cell-numx*numy
 		myMesh(cell)%neighborProcs(6,1)=myProc%taskid
-	endif
-10 continue
+	end if
+end do
 
 !Now that we have created SendList, the buffer that contains information about which elements in myMesh
 !have neighbors on other processors, we send out the cell numbers of these cells to the neighboring procs.
 !We label each MPI_SEND with globalCell so that the receiving processor pairs cells correctly using globalNeighbor (see below)
 
-do 12 i=1,numSendRecv
+do i=1,numSendRecv
 	cell=sendList(i,1)
 	dir=sendList(i,2)
 	globalCell=sendList(i,3)
 	call MPI_SEND(cell, 1, MPI_INTEGER, myMesh(cell)%neighborProcs(dir,1), globalCell, MPI_COMM_WORLD, ierr)
-12 continue
+end do
 
 !Second half of send/recieve routine. Here we recieve the neighbor (we sent the cell we were in). 
 !We label the MPI_RECV with globalNeighbor to match it to globalCell in the prev. step.
 	
-do 13 i=1,numSendRecv
+do i=1,numSendRecv
 	cell=sendList(i,1)
 	dir=sendList(i,2)
 	globalNeighbor=sendList(i,4)
 	call MPI_RECV(myMesh(cell)%neighbors(dir,1), 1, MPI_INTEGER, myMesh(cell)%neighborProcs(dir,1), &
 				globalNeighbor, MPI_COMM_WORLD, status, ierr)
-13 continue
+end do
 
 end subroutine
 
@@ -896,7 +888,7 @@ numSendRecv=0
 !******************************************************************
 !free surfaces at z=0 and z=zmax(Global) boundary condition version
 !******************************************************************
-do 10 cell=1,numCells
+do cell=1,numCells
 	if(mod(cell,numx)==0) then !identify cell to the right
 		
 		myMesh(cell)%neighborProcs(1,1)=myProc%procNeighbor(1)
@@ -910,11 +902,11 @@ do 10 cell=1,numCells
 			sendList(numSendRecv,2)=1	!direction
 			sendList(numSendRecv,3)=globalCell
 			sendList(numSendRecv,4)=globalNeighbor
-		endif
+		end if
 	else
 		myMesh(cell)%neighbors(1,1)=cell+1
 		myMesh(cell)%neighborProcs(1,1)=myProc%taskid
-	endif
+	end if
 	
 	if(mod(cell+numx-1,numx)==0) then !identify cell to the left
 		
@@ -929,13 +921,13 @@ do 10 cell=1,numCells
 			sendList(numSendRecv,2)=2	!direction
 			sendList(numSendRecv,3)=globalCell
 			sendList(numSendRecv,4)=globalNeighbor
-		endif
+		end if
 	else
 		myMesh(cell)%neighbors(2,1)=cell-1
 		myMesh(cell)%neighborProcs(2,1)=myProc%taskid
-	endif
+	end if
 	
-	if(mod(cell,numx*numy) .GT. numx*(numy-1) .OR. mod(cell,numx*numy)==0) then
+	if(mod(cell,numx*numy) > numx*(numy-1) .OR. mod(cell,numx*numy)==0) then
 		
 		myMesh(cell)%neighborProcs(3,1)=myProc%procNeighbor(3)
 		if(myMesh(cell)%neighborProcs(3,1)==myProc%taskid) then
@@ -948,14 +940,14 @@ do 10 cell=1,numCells
 			sendList(numSendRecv,2)=3	!direction
 			sendList(numSendRecv,3)=globalCell
 			sendList(numSendRecv,4)=globalNeighbor
-		endif
+		end if
 	else
 		myMesh(cell)%neighbors(3,1)=cell+numx
 		myMesh(cell)%neighborProcs(3,1)=myProc%taskid
-	endif
+	end if
 	
 	
-	if(mod(cell,numx*numy) .LE. numx .AND. (mod(cell, numx*numy) .NE. 0 .OR. numy==1)) then
+	if(mod(cell,numx*numy) <= numx .AND. (mod(cell, numx*numy) /= 0 .OR. numy==1)) then
 		myMesh(cell)%neighborProcs(4,1)=myProc%procNeighbor(4)
 		if(myMesh(cell)%neighborProcs(4,1)==myProc%taskid) then
 			myMesh(cell)%neighbors(4,1)=cell+(numx*(numy-1))
@@ -967,13 +959,13 @@ do 10 cell=1,numCells
 			sendList(numSendRecv,2)=4	!direction
 			sendList(numSendRecv,3)=globalCell
 			sendList(numSendRecv,4)=globalNeighbor
-		endif
+		end if
 	else
 		myMesh(cell)%neighbors(4,1)=cell-numx
 		myMesh(cell)%neighborProcs(4,1)=myProc%taskid
-	endif
+	end if
 	
-	if(mod(cell,numx*numy*numz) .GT. numx*numy*(numz-1) .OR. mod(cell, numx*numy*numz)==0) then
+	if(mod(cell,numx*numy*numz) > numx*numy*(numz-1) .OR. mod(cell, numx*numy*numz)==0) then
 		myMesh(cell)%neighborProcs(5,1)=myProc%procNeighbor(5)
 		globalCell=findGlobalCell(myMesh(cell)%coordinates, globalMeshCoord)
 		globalNeighbor=globalMeshConnect(globalCell,5)
@@ -990,14 +982,14 @@ do 10 cell=1,numCells
 				sendList(numSendRecv,2)=5	!direction
 				sendList(numSendRecv,3)=globalCell
 				sendList(numSendRecv,4)=globalNeighbor
-			endif
-		endif
+			end if
+		end if
 	else
 		myMesh(cell)%neighbors(5,1)=cell+numx*numy
 		myMesh(cell)%neighborProcs(5,1)=myProc%taskid
-	endif
+	end if
 	
-	if(mod(cell,numx*numy*numz) .LE. numx*numy .AND. (mod(cell,numx*numy*numz) .NE. 0 .OR. numz==1)) then
+	if(mod(cell,numx*numy*numz) <= numx*numy .AND. (mod(cell,numx*numy*numz) /= 0 .OR. numz==1)) then
 		myMesh(cell)%neighborProcs(6,1)=myProc%procNeighbor(6)
 		globalCell=findGlobalCell(myMesh(cell)%coordinates, globalMeshCoord)
 		globalNeighbor=globalMeshConnect(globalCell,6)
@@ -1014,28 +1006,28 @@ do 10 cell=1,numCells
 				sendList(numSendRecv,2)=6	!direction
 				sendList(numSendRecv,3)=globalCell
 				sendList(numSendRecv,4)=globalNeighbor
-			endif
-		endif
+			end if
+		end if
 	else
 		myMesh(cell)%neighbors(6,1)=cell-numx*numy
 		myMesh(cell)%neighborProcs(6,1)=myProc%taskid
-	endif
-10 continue
+	end if
+end do
 
-do 12 i=1,numSendRecv
+do i=1,numSendRecv
 	cell=sendList(i,1)
 	dir=sendList(i,2)
 	globalCell=sendList(i,3)
 	call MPI_SEND(cell, 1, MPI_INTEGER, myMesh(cell)%neighborProcs(dir,1), globalCell, MPI_COMM_WORLD, ierr)
-12 continue
+end do
 	
-do 13 i=1,numSendRecv
+do i=1,numSendRecv
 	cell=sendList(i,1)
 	dir=sendList(i,2)
 	globalNeighbor=sendList(i,4)
 	call MPI_RECV(myMesh(cell)%neighbors(dir,1), 1, MPI_INTEGER, myMesh(cell)%neighborProcs(dir,1), &
 				globalNeighbor, MPI_COMM_WORLD, status, ierr)
-13 continue
+end do
 
 end subroutine
 
@@ -1133,17 +1125,17 @@ open(80, file='TestInputNonUniform.txt',action='read', status='old')
 flag=.FALSE.
 
 !Step -1: read in mesh type
-do 1 while(flag .eqv. .FALSE.)
+do while(flag .eqv. .FALSE.)
 	read(80,*) readIn
 	if(readIn=='meshType') then
 		read(80,*) meshType
 		flag=.TRUE.
-	endif
-1 continue
+	end if
+end do
 flag=.FALSE.
 
 !Step 1: read in the global coordinates (max, min)
-do 10 while(flag .eqv. .FALSE.)
+do while(flag .eqv. .FALSE.)
 	read(80,*) readIn
 	if(readIn=='xminmax') then
 		read(80,*) myProc%globalCoord(1), myProc%globalCoord(2)
@@ -1152,8 +1144,8 @@ do 10 while(flag .eqv. .FALSE.)
 	else if(readIn=='zminmax') then
 		read(80,*) myProc%globalCoord(5), myProc%globalCoord(6)
 		flag=.TRUE.
-	endif
-10 continue
+	end if
+end do
 flag=.FALSE.
 
 !if(myProc%taskid==MASTER) then
@@ -1178,24 +1170,22 @@ procDivision(1)=0
 procDivision(2)=0
 procDivision(3)=0
 
-do 11 i=1,myProc%numtasks
-	do 12 j=1, myProc%numtasks
-		do 13 k=1, myProc%numtasks
+do i=1,myProc%numtasks
+	do j=1, myProc%numtasks
+		do k=1, myProc%numtasks
 			if(i*j*k==myProc%numtasks) then
 				!find area using this division
-				if(k*volumeFaces(1)+i*volumeFaces(2)+j*volumeFaces(3) .LT. totalArea) then
+				if(k*volumeFaces(1)+i*volumeFaces(2)+j*volumeFaces(3) < totalArea) then
 					procDivision(1)=i
 					procDivision(2)=j
 					procDivision(3)=k
 					totalArea=k*volumeFaces(1)+i*volumeFaces(2)+j*volumeFaces(3)
 					!write(*,*) 'new division found', procDivision, totalArea
-				endif
-			else
-				!do nothing, not a factorization of numtasks
+				end if
 			endif
-		13 continue
-	12 continue
-11 continue
+		end do
+	end do
+end do
 
 !if(myProc%taskid==MASTER) then
 !	write(*,*) 'proc division', procDivision
@@ -1238,37 +1228,37 @@ if (myProc%localCoord(1)==myProc%globalCoord(1)) then	!coordinate is at xmin
 	myProc%procNeighbor(2)=myProc%taskid+procDivision(1)-1
 else
 	myProc%procNeighbor(2)=myProc%taskid-1
-endif
+end if
 
 if (myProc%localCoord(2)==myProc%globalCoord(2)) then	!coordinate is at xmax
 	myProc%procNeighbor(1)=myProc%taskid-procDivision(1)+1
 else
 	myProc%procNeighbor(1)=myProc%taskid+1
-endif
+end if
 
 if (myProc%localCoord(3)==myProc%globalCoord(3)) then	!coordinate is at ymin
 	myProc%procNeighbor(4)=myProc%taskid+procDivision(1)*(procDivision(2)-1)
 else
 	myProc%procNeighbor(4)=myProc%taskid-procDivision(1)
-endif
+end if
 
 if (myProc%localCoord(4)==myProc%globalCoord(4)) then	!coordinate is at ymax
 	myProc%procNeighbor(3)=myProc%taskid-procDivision(1)*(procDivision(2)-1)
 else
 	myProc%procNeighbor(3)=myProc%taskid+procDivision(1)
-endif
+end if
 
 if (myProc%localCoord(5)==myProc%globalCoord(5)) then	!coordinate is at zmin
 	myProc%procNeighbor(6)=myProc%taskid+procDivision(1)*procDivision(2)*(procDivision(3)-1)
 else
 	myProc%procNeighbor(6)=myProc%taskid-procDivision(1)*procDivision(2)
-endif
+end if
 
 if (myProc%localCoord(6)==myProc%globalCoord(6)) then	!coordinate is at zmax
 	myProc%procNeighbor(5)=myProc%taskid-procDivision(1)*procDivision(2)*(procDivision(3)-1)
 else
 	myProc%procNeighbor(5)=myProc%taskid+procDivision(1)*procDivision(2)
-endif
+end if
 
 !write(*,*) 'proc', myProc%taskid, 'of', myProc%numtasks
 !write(*,*) 'neighbors', myProc%procNeighbor
@@ -1278,13 +1268,13 @@ endif
 !Step 3a: read file info into global meshes
 
 !Read total number of elements (global)
-do 14 while(flag .eqv. .FALSE.)
+do while(flag .eqv. .FALSE.)
 	read(80,*) readIn
 	if(readIn=='elements') then
 		read(80,*) numTotal
 		flag=.TRUE.
-	endif
-14 continue
+	end if
+end do
 flag=.FALSE.
 
 allocate(globalMeshCoord(numTotal,3))		!coordinates of the center of each element
@@ -1296,7 +1286,7 @@ allocate(globalLength(numTotal))			!volume element length
 !Count the number of elements that are inside the local processor's bounds
 localElem=0
 globalMaxNeighbors=0
-do 15 elem=1,numTotal
+do elem=1,numTotal
 	!read in element coordinates and material number as well as how many neighbors it has in each direction
 	read(80,*) (globalMeshCoord(elem,i),i=1,3), globalLength(elem), globalMaterial(elem), (globalNumNeighbors(elem,i), i=1,6)
 	
@@ -1304,27 +1294,27 @@ do 15 elem=1,numTotal
 	!neighbors in one direction that any one element has (if elements are of different sizes, one element
 	!may have more than one neighbor in a given direction).
 	
-	do 18 i=1,6
-		if(globalNumNeighbors(elem,i) .GT. globalMaxNeighbors) then
+	do i=1,6
+		if(globalNumNeighbors(elem,i) > globalMaxNeighbors) then
 			globalMaxNeighbors=globalNumNeighbors(elem,i)
-		endif
-	18 continue
+		end if
+	end do
 	
 	!Count the number of elements that are inside the local coordinates.
-	if(globalMeshCoord(elem,1) .GT. myProc%localCoord(1) .AND. globalMeshCoord(elem,1) .LE. myProc%localCoord(2) &
-		.AND. globalMeshCoord(elem,2) .GT. myProc%localCoord(3) .AND. globalMeshCoord(elem,2) .LE. myProc%localCoord(4) &
-		.AND. globalMeshCoord(elem,3) .GT. myProc%localCoord(5) .AND. globalMeshCoord(elem,3) .LE. myProc%localCoord(6)) then
+	if(globalMeshCoord(elem,1) > myProc%localCoord(1) .AND. globalMeshCoord(elem,1) <= myProc%localCoord(2) &
+		.AND. globalMeshCoord(elem,2) > myProc%localCoord(3) .AND. globalMeshCoord(elem,2) <= myProc%localCoord(4) &
+		.AND. globalMeshCoord(elem,3) > myProc%localCoord(5) .AND. globalMeshCoord(elem,3) <= myProc%localCoord(6)) then
 		
 		localElem=localElem+1
-	endif
-15 continue
+	end if
+end do
 
 !If there are processors with no local volume elements (too many procs), error.
 if(localElem==0) then
 	write(*,*) 'error processors with no volume elements'
 	call MPI_ABORT(MPI_COMM_WORLD,ierr)
 	stop
-endif
+end if
 
 !write(*,*) localElem, 'proc', myProc%taskid
 
@@ -1339,10 +1329,10 @@ numCells=localElem
 !in a different direction).
 
 localElem=0
-do 16 elem=1,numTotal
-	if(globalMeshCoord(elem,1) .GT. myProc%localCoord(1) .AND. globalMeshCoord(elem,1) .LE. myProc%localCoord(2) &
-		.AND. globalMeshCoord(elem,2) .GT. myProc%localCoord(3) .AND. globalMeshCoord(elem,2) .LE. myProc%localCoord(4) &
-		.AND. globalMeshCoord(elem,3) .GT. myProc%localCoord(5) .AND. globalMeshCoord(elem,3) .LE. myProc%localCoord(6)) then
+do elem=1,numTotal
+	if(globalMeshCoord(elem,1) > myProc%localCoord(1) .AND. globalMeshCoord(elem,1) <= myProc%localCoord(2) &
+		.AND. globalMeshCoord(elem,2) > myProc%localCoord(3) .AND. globalMeshCoord(elem,2) <= myProc%localCoord(4) &
+		.AND. globalMeshCoord(elem,3) > myProc%localCoord(5) .AND. globalMeshCoord(elem,3) <= myProc%localCoord(6)) then
 		
 		localElem=localElem+1	!count local elements
 		
@@ -1354,12 +1344,12 @@ do 16 elem=1,numTotal
 		myMesh(localElem)%volume=globalLength(elem)**3d0
 		maxNumNeighbors=0
 		!Find the max number of neighbors that this element has in any one direction
-		do 17 i=1,6
+		do i=1,6
 			myMesh(localElem)%numNeighbors(i)=globalNumNeighbors(elem,i)
-			if(myMesh(localElem)%numNeighbors(i) .GT. maxNumNeighbors) then
+			if(myMesh(localElem)%numNeighbors(i) > maxNumNeighbors) then
 				maxNumNeighbors=myMesh(localElem)%numNeighbors(i)
-			endif
-		17 continue
+			end if
+		end do
 		myMesh(localElem)%proc=myProc%taskid
 		
 		!The number of neighbors allowed in all directions is equal to maxNumNeighbors even if
@@ -1369,8 +1359,8 @@ do 16 elem=1,numTotal
 		allocate(myMesh(localElem)%neighbors(6,maxNumNeighbors))
 		allocate(myMesh(localElem)%neighborProcs(6,maxNumNeighbors))
 		
-	endif
-16 continue
+	end if
+end do
 
 !Step 4: create global and local connectivity matrixes including multiple neighbors to the same direction
 
@@ -1383,7 +1373,7 @@ if(meshType=='periodic') then
 else if(meshType=='freeSurfaces') then
 	call createConnectGlobalFreeSurfNonUniform(globalMeshConnect, globalMeshCoord, globalNumNeighbors, globalLength, &
 		numTotal, myProc%globalCoord)
-endif
+end if
 
 !if(myProc%taskid==MASTER) then
 !	write(*,*) 'Global elements and connectivity'
@@ -1436,17 +1426,17 @@ call createConnectLocalNonUniform(globalMeshConnect, globalMeshCoord, localElem,
 
 !Step 1: Find the max cell# of any boundary mesh element
 maxElement=0
-do 27 i=1,localElem
-	do 28 j=1,6
-		do 31 k=1,myMesh(i)%numNeighbors(j)
-			if(myMesh(i)%neighborProcs(j,k) .NE. myProc%taskid) then	!we are pointing to a different proc
-				if(myMesh(i)%neighbors(j,k) .GT. maxElement) then		!searching for the max element number in a neighbor
+do i=1,localElem
+	do j=1,6
+		do k=1,myMesh(i)%numNeighbors(j)
+			if(myMesh(i)%neighborProcs(j,k) /= myProc%taskid) then	!we are pointing to a different proc
+				if(myMesh(i)%neighbors(j,k) > maxElement) then		!searching for the max element number in a neighbor
 					maxElement=myMesh(i)%neighbors(j,k)
 				endif
 			endif
-		31 continue
-	28 continue
-27 continue
+		end do
+	end do
+end do
 
 !This tells us how large to allocate myBoundary. NOTE: many elements in myBoundary will be unused. Only
 !the elements that represent volume elements on the boundary of myMesh will be used. This represents
@@ -1455,17 +1445,17 @@ do 27 i=1,localElem
 allocate(myBoundary(6,maxElement))	!6 directions, maxElement elements in each direction (more than needed)
 
 !initialize myBoundary with 0 in localNeighbor - signal that myBoundary is not attached to anything
-do 33 i=1,maxElement
-	do 34 j=1,6
+do i=1,maxElement
+	do j=1,6
 		myBoundary(j,i)%localNeighbor=0	!default, says that this is not a real element of myBoundary.
-	34 continue
-33 continue
+	end do
+end do
 
 !Step 2: initialize myBoundary elements (only the relevant ones) with processor #'s, material #'s, length
-do 29 i=1,localElem
-	do 30 j=1,6
-		do 32 k=1,myMesh(i)%numNeighbors(j)
-			if(myMesh(i)%neighborProcs(j,k) .NE. myProc%taskid) then
+do i=1,localElem
+	do j=1,6
+		do k=1,myMesh(i)%numNeighbors(j)
+			if(myMesh(i)%neighborProcs(j,k) /= myProc%taskid) then
 				myBoundary(j,myMesh(i)%neighbors(j,k))%proc=myMesh(i)%neighborProcs(j,k)	!set proc # of elements in myBoundary
 				globalCell=findGlobalCell(myMesh(i)%coordinates, globalMeshCoord)			!find global cell # of element in myBoundary
 				globalNeighbor=globalMeshConnect(globalCell,j,k)								!use global cell # to find material # of element in myBoundary
@@ -1474,9 +1464,9 @@ do 29 i=1,localElem
 				myBoundary(j,myMesh(i)%neighbors(j,k))%volume=globalLength(globalNeighbor)**3d0	!set volume of elements in myBoundary (changes with cascade addition)
 				myBoundary(j,myMesh(i)%neighbors(j,1))%localNeighbor=i
 			endif
-		32 continue
-	30 continue
-29 continue
+		end do
+	end do
+end do
 
 close(80)
 
@@ -1504,10 +1494,10 @@ double precision neighborElem, bdryCoord(6)
 !periodic boundary condition version
 !********************************************************
 
-do 10 cell=1,numTotal
-	do 11 dir=1,6
+do cell=1,numTotal
+	do dir=1,6
 		neighbor=0
-		do 14 searchElem=1,numTotal
+		do searchElem=1,numTotal
 			if(dir==1) then
 				
 				!Here we are using the coordinates of the cell to determine if it is at the edge of the boundary
@@ -1520,113 +1510,113 @@ do 10 cell=1,numTotal
 					!too computationally expensive, but for now it only has to be carried out once so it should be fine.
 					
 					if(Coord(searchElem,1)==Coord(cell,1)+(length(cell)+length(searchElem))/2d0-(bdryCoord(2)-bdryCoord(1)) &
-					.AND. dabs(Coord(searchElem,2)-Coord(cell,2)) .LE. dmax1(length(cell),length(searchElem))/2d0 &
-					.AND. dabs(Coord(searchElem,3)-Coord(cell,3)) .LE. dmax1(length(cell),length(searchElem))/2d0) then
+					.AND. dabs(Coord(searchElem,2)-Coord(cell,2)) <= dmax1(length(cell),length(searchElem))/2d0 &
+					.AND. dabs(Coord(searchElem,3)-Coord(cell,3)) <= dmax1(length(cell),length(searchElem))/2d0) then
 						
 						neighbor=neighbor+1						!count the number of neighbors
 						Connect(cell,dir,neighbor)=searchElem	!Add this cell to the connectivity
-					endif
-				elseif(Coord(searchElem,1)==Coord(cell,1)+(length(cell)+length(searchElem))/2d0 &
-					.AND. dabs(Coord(searchElem,2)-Coord(cell,2)) .LE. dmax1(length(cell),length(searchElem))/2d0 &
-					.AND. dabs(Coord(searchElem,3)-Coord(cell,3)) .LE. dmax1(length(cell),length(searchElem))/2d0) then
+					end if
+				else if(Coord(searchElem,1)==Coord(cell,1)+(length(cell)+length(searchElem))/2d0 &
+					.AND. dabs(Coord(searchElem,2)-Coord(cell,2)) <= dmax1(length(cell),length(searchElem))/2d0 &
+					.AND. dabs(Coord(searchElem,3)-Coord(cell,3)) <= dmax1(length(cell),length(searchElem))/2d0) then
 					!we have found a partner
 					neighbor=neighbor+1
 					Connect(cell,dir,neighbor)=searchElem
-				endif
+				end if
 			else if(dir==2) then
 				if(Coord(cell,1)-length(cell)/2d0==bdryCoord(1)) then
 					!periodic
 					if(Coord(searchElem,1)==Coord(cell,1)-(length(cell)+length(searchElem))/2d0+(bdryCoord(2)-bdryCoord(1)) &
-					.AND. dabs(Coord(searchElem,2)-Coord(cell,2)) .LE. dmax1(length(cell),length(searchElem))/2d0 &
-					.AND. dabs(Coord(searchElem,3)-Coord(cell,3)) .LE. dmax1(length(cell),length(searchElem))/2d0) then
+					.AND. dabs(Coord(searchElem,2)-Coord(cell,2)) <= dmax1(length(cell),length(searchElem))/2d0 &
+					.AND. dabs(Coord(searchElem,3)-Coord(cell,3)) <= dmax1(length(cell),length(searchElem))/2d0) then
 						
 						neighbor=neighbor+1
 						Connect(cell,dir,neighbor)=searchElem
-					endif
-				elseif(Coord(searchElem,1)==Coord(cell,1)-(length(cell)+length(searchElem))/2d0 &
-					.AND. dabs(Coord(searchElem,2)-Coord(cell,2)) .LE. dmax1(length(cell),length(searchElem))/2d0 &
-					.AND. dabs(Coord(searchElem,3)-Coord(cell,3)) .LE. dmax1(length(cell),length(searchElem))/2d0) then
+					end if
+				else if(Coord(searchElem,1)==Coord(cell,1)-(length(cell)+length(searchElem))/2d0 &
+					.AND. dabs(Coord(searchElem,2)-Coord(cell,2)) <= dmax1(length(cell),length(searchElem))/2d0 &
+					.AND. dabs(Coord(searchElem,3)-Coord(cell,3)) <= dmax1(length(cell),length(searchElem))/2d0) then
 					!we have found a partner
 					neighbor=neighbor+1
 					Connect(cell,dir,neighbor)=searchElem
-				endif
+				end if
 			else if(dir==3) then
 				if(Coord(cell,2)+length(cell)/2d0==bdryCoord(4)) then
 					!periodic
 					if(Coord(searchElem,2)==Coord(cell,2)+(length(cell)+length(searchElem))/2d0-(bdryCoord(4)-bdryCoord(3)) &
-					.AND. dabs(Coord(searchElem,1)-Coord(cell,1)) .LE. dmax1(length(cell),length(searchElem))/2d0 &
-					.AND. dabs(Coord(searchElem,3)-Coord(cell,3)) .LE. dmax1(length(cell),length(searchElem))/2d0) then
+					.AND. dabs(Coord(searchElem,1)-Coord(cell,1)) <= dmax1(length(cell),length(searchElem))/2d0 &
+					.AND. dabs(Coord(searchElem,3)-Coord(cell,3)) <= dmax1(length(cell),length(searchElem))/2d0) then
 						
 						neighbor=neighbor+1
 						Connect(cell,dir,neighbor)=searchElem
-					endif
-				elseif(Coord(searchElem,2)==Coord(cell,2)+(length(cell)+length(searchElem))/2d0 &
-					.AND. dabs(Coord(searchElem,1)-Coord(cell,1)) .LE. dmax1(length(cell),length(searchElem))/2d0 &
-					.AND. dabs(Coord(searchElem,3)-Coord(cell,3)) .LE. dmax1(length(cell),length(searchElem))/2d0) then
+					end if
+				else if(Coord(searchElem,2)==Coord(cell,2)+(length(cell)+length(searchElem))/2d0 &
+					.AND. dabs(Coord(searchElem,1)-Coord(cell,1)) <= dmax1(length(cell),length(searchElem))/2d0 &
+					.AND. dabs(Coord(searchElem,3)-Coord(cell,3)) <= dmax1(length(cell),length(searchElem))/2d0) then
 					!we have found a partner
 					neighbor=neighbor+1
 					Connect(cell,dir,neighbor)=searchElem
-				endif
+				end if
 			else if(dir==4) then
 				if(Coord(cell,2)-length(cell)/2d0==bdryCoord(3)) then
 					!periodic
 					if(Coord(searchElem,2)==Coord(cell,2)-(length(cell)+length(searchElem))/2d0+(bdryCoord(4)-bdryCoord(3)) &
-					.AND. dabs(Coord(searchElem,1)-Coord(cell,1)) .LE. dmax1(length(cell),length(searchElem))/2d0 &
-					.AND. dabs(Coord(searchElem,3)-Coord(cell,3)) .LE. dmax1(length(cell),length(searchElem))/2d0) then
+					.AND. dabs(Coord(searchElem,1)-Coord(cell,1)) <= dmax1(length(cell),length(searchElem))/2d0 &
+					.AND. dabs(Coord(searchElem,3)-Coord(cell,3)) <= dmax1(length(cell),length(searchElem))/2d0) then
 						
 						neighbor=neighbor+1
 						Connect(cell,dir,neighbor)=searchElem
-					endif
-				elseif(Coord(searchElem,2)==Coord(cell,2)-(length(cell)+length(searchElem))/2d0 &
-					.AND. dabs(Coord(searchElem,1)-Coord(cell,1)) .LE. dmax1(length(cell),length(searchElem))/2d0 &
-					.AND. dabs(Coord(searchElem,3)-Coord(cell,3)) .LE. dmax1(length(cell),length(searchElem))/2d0) then
+					end if
+				else if(Coord(searchElem,2)==Coord(cell,2)-(length(cell)+length(searchElem))/2d0 &
+					.AND. dabs(Coord(searchElem,1)-Coord(cell,1)) <= dmax1(length(cell),length(searchElem))/2d0 &
+					.AND. dabs(Coord(searchElem,3)-Coord(cell,3)) <= dmax1(length(cell),length(searchElem))/2d0) then
 					!we have found a partner
 					neighbor=neighbor+1
 					Connect(cell,dir,neighbor)=searchElem
-				endif
+				end if
 			else if(dir==5) then
 				if(Coord(cell,3)+length(cell)/2d0==bdryCoord(6)) then
 					!periodic
 					if(Coord(searchElem,3)==Coord(cell,3)+(length(cell)+length(searchElem))/2d0-(bdryCoord(6)-bdryCoord(5)) &
-					.AND. dabs(Coord(searchElem,2)-Coord(cell,2)) .LE. dmax1(length(cell),length(searchElem))/2d0 &
-					.AND. dabs(Coord(searchElem,1)-Coord(cell,1)) .LE. dmax1(length(cell),length(searchElem))/2d0) then
+					.AND. dabs(Coord(searchElem,2)-Coord(cell,2)) <= dmax1(length(cell),length(searchElem))/2d0 &
+					.AND. dabs(Coord(searchElem,1)-Coord(cell,1)) <= dmax1(length(cell),length(searchElem))/2d0) then
 						
 						neighbor=neighbor+1
 						Connect(cell,dir,neighbor)=searchElem
-					endif
-				elseif(Coord(searchElem,3)==Coord(cell,3)+(length(cell)+length(searchElem))/2d0 &
-					.AND. dabs(Coord(searchElem,2)-Coord(cell,2)) .LE. dmax1(length(cell),length(searchElem))/2d0 &
-					.AND. dabs(Coord(searchElem,1)-Coord(cell,1)) .LE. dmax1(length(cell),length(searchElem))/2d0) then
+					end if
+				else if(Coord(searchElem,3)==Coord(cell,3)+(length(cell)+length(searchElem))/2d0 &
+					.AND. dabs(Coord(searchElem,2)-Coord(cell,2)) <= dmax1(length(cell),length(searchElem))/2d0 &
+					.AND. dabs(Coord(searchElem,1)-Coord(cell,1)) <= dmax1(length(cell),length(searchElem))/2d0) then
 					!we have found a partner
 					neighbor=neighbor+1
 					Connect(cell,dir,neighbor)=searchElem
-				endif
+				end if
 			else if(dir==6) then
 				if(Coord(cell,3)-length(cell)/2d0==bdryCoord(5)) then
 					!periodic
 					if(Coord(searchElem,3)==Coord(cell,3)-(length(cell)+length(searchElem))/2d0+(bdryCoord(6)-bdryCoord(5)) &
-					.AND. dabs(Coord(searchElem,2)-Coord(cell,2)) .LE. dmax1(length(cell),length(searchElem))/2d0 &
-					.AND. dabs(Coord(searchElem,1)-Coord(cell,1)) .LE. dmax1(length(cell),length(searchElem))/2d0) then
+					.AND. dabs(Coord(searchElem,2)-Coord(cell,2)) <= dmax1(length(cell),length(searchElem))/2d0 &
+					.AND. dabs(Coord(searchElem,1)-Coord(cell,1)) <= dmax1(length(cell),length(searchElem))/2d0) then
 						
 						neighbor=neighbor+1
 						Connect(cell,dir,neighbor)=searchElem
-					endif
-				elseif(Coord(searchElem,3)==Coord(cell,3)-(length(cell)+length(searchElem))/2d0 &
-					.AND. dabs(Coord(searchElem,2)-Coord(cell,2)) .LE. dmax1(length(cell),length(searchElem))/2d0 &
-					.AND. dabs(Coord(searchElem,1)-Coord(cell,1)) .LE. dmax1(length(cell),length(searchElem))/2d0) then
+					end if
+				else if(Coord(searchElem,3)==Coord(cell,3)-(length(cell)+length(searchElem))/2d0 &
+					.AND. dabs(Coord(searchElem,2)-Coord(cell,2)) <= dmax1(length(cell),length(searchElem))/2d0 &
+					.AND. dabs(Coord(searchElem,1)-Coord(cell,1)) <= dmax1(length(cell),length(searchElem))/2d0) then
 					!we have found a partner
 					neighbor=neighbor+1
 					Connect(cell,dir,neighbor)=searchElem
-				endif
-			endif
-		14 continue
-		if(NumNeighbors(cell,dir) .NE. neighbor) then
+				end if
+			end if
+		end do
+		if(NumNeighbors(cell,dir) /= neighbor) then
 			!we have found the wrong number of neighbors
 			write(*,*) 'error incorrect number of neighbors found', neighbor, 'neighbors', numNeighbors(cell,dir), 'expected'
 			write(*,*) 'cell', cell
-		endif
-	11 continue
-10 continue
+		end if
+	end do
+end do
 
 end subroutine
 
@@ -1652,121 +1642,121 @@ double precision neighborElem, bdryCoord(6)
 !free surfaces in +/- z-dir boundary condition version
 !********************************************************
 
-do 10 cell=1,numTotal
-	do 11 dir=1,6
+do cell=1,numTotal
+	do dir=1,6
 		neighbor=0
-		do 14 searchElem=1,numTotal
+		do searchElem=1,numTotal
 			if(dir==1) then
 				if(Coord(cell,1)+length(cell)/2d0==bdryCoord(2)) then
 					!periodic
 					if(Coord(searchElem,1)==Coord(cell,1)+(length(cell)+length(searchElem))/2d0-(bdryCoord(2)-bdryCoord(1)) &
-					.AND. dabs(Coord(searchElem,2)-Coord(cell,2)) .LE. dmax1(length(cell),length(searchElem))/2d0 &
-					.AND. dabs(Coord(searchElem,3)-Coord(cell,3)) .LE. dmax1(length(cell),length(searchElem))/2d0) then
+					.AND. dabs(Coord(searchElem,2)-Coord(cell,2)) <= dmax1(length(cell),length(searchElem))/2d0 &
+					.AND. dabs(Coord(searchElem,3)-Coord(cell,3)) <= dmax1(length(cell),length(searchElem))/2d0) then
 						
 						neighbor=neighbor+1
 						Connect(cell,dir,neighbor)=searchElem
-					endif
-				elseif(Coord(searchElem,1)==Coord(cell,1)+(length(cell)+length(searchElem))/2d0 &
-					.AND. dabs(Coord(searchElem,2)-Coord(cell,2)) .LE. dmax1(length(cell),length(searchElem))/2d0 &
-					.AND. dabs(Coord(searchElem,3)-Coord(cell,3)) .LE. dmax1(length(cell),length(searchElem))/2d0) then
+					end if
+				else if(Coord(searchElem,1)==Coord(cell,1)+(length(cell)+length(searchElem))/2d0 &
+					.AND. dabs(Coord(searchElem,2)-Coord(cell,2)) <= dmax1(length(cell),length(searchElem))/2d0 &
+					.AND. dabs(Coord(searchElem,3)-Coord(cell,3)) <= dmax1(length(cell),length(searchElem))/2d0) then
 					!we have found a partner
 					neighbor=neighbor+1
 					Connect(cell,dir,neighbor)=searchElem
-				endif
+				end if
 			else if(dir==2) then
 				if(Coord(cell,1)-length(cell)/2d0==bdryCoord(1)) then
 					!periodic
 					if(Coord(searchElem,1)==Coord(cell,1)-(length(cell)+length(searchElem))/2d0+(bdryCoord(2)-bdryCoord(1)) &
-					.AND. dabs(Coord(searchElem,2)-Coord(cell,2)) .LE. dmax1(length(cell),length(searchElem))/2d0 &
-					.AND. dabs(Coord(searchElem,3)-Coord(cell,3)) .LE. dmax1(length(cell),length(searchElem))/2d0) then
+					.AND. dabs(Coord(searchElem,2)-Coord(cell,2)) <= dmax1(length(cell),length(searchElem))/2d0 &
+					.AND. dabs(Coord(searchElem,3)-Coord(cell,3)) <= dmax1(length(cell),length(searchElem))/2d0) then
 						
 						neighbor=neighbor+1
 						Connect(cell,dir,neighbor)=searchElem
-					endif
-				elseif(Coord(searchElem,1)==Coord(cell,1)-(length(cell)+length(searchElem))/2d0 &
-					.AND. dabs(Coord(searchElem,2)-Coord(cell,2)) .LE. dmax1(length(cell),length(searchElem))/2d0 &
-					.AND. dabs(Coord(searchElem,3)-Coord(cell,3)) .LE. dmax1(length(cell),length(searchElem))/2d0) then
+					end if
+				else if(Coord(searchElem,1)==Coord(cell,1)-(length(cell)+length(searchElem))/2d0 &
+					.AND. dabs(Coord(searchElem,2)-Coord(cell,2)) <= dmax1(length(cell),length(searchElem))/2d0 &
+					.AND. dabs(Coord(searchElem,3)-Coord(cell,3)) <= dmax1(length(cell),length(searchElem))/2d0) then
 					!we have found a partner
 					neighbor=neighbor+1
 					Connect(cell,dir,neighbor)=searchElem
-				endif
+				end if
 			else if(dir==3) then
 				if(Coord(cell,2)+length(cell)/2d0==bdryCoord(4)) then
 					!periodic
 					if(Coord(searchElem,2)==Coord(cell,2)+(length(cell)+length(searchElem))/2d0-(bdryCoord(4)-bdryCoord(3)) &
-					.AND. dabs(Coord(searchElem,1)-Coord(cell,1)) .LE. dmax1(length(cell),length(searchElem))/2d0 &
-					.AND. dabs(Coord(searchElem,3)-Coord(cell,3)) .LE. dmax1(length(cell),length(searchElem))/2d0) then
+					.AND. dabs(Coord(searchElem,1)-Coord(cell,1)) <= dmax1(length(cell),length(searchElem))/2d0 &
+					.AND. dabs(Coord(searchElem,3)-Coord(cell,3)) <= dmax1(length(cell),length(searchElem))/2d0) then
 						
 						neighbor=neighbor+1
 						Connect(cell,dir,neighbor)=searchElem
-					endif
-				elseif(Coord(searchElem,2)==Coord(cell,2)+(length(cell)+length(searchElem))/2d0 &
-					.AND. dabs(Coord(searchElem,1)-Coord(cell,1)) .LE. dmax1(length(cell),length(searchElem))/2d0 &
-					.AND. dabs(Coord(searchElem,3)-Coord(cell,3)) .LE. dmax1(length(cell),length(searchElem))/2d0) then
+					end if
+				else if(Coord(searchElem,2)==Coord(cell,2)+(length(cell)+length(searchElem))/2d0 &
+					.AND. dabs(Coord(searchElem,1)-Coord(cell,1)) <= dmax1(length(cell),length(searchElem))/2d0 &
+					.AND. dabs(Coord(searchElem,3)-Coord(cell,3)) <= dmax1(length(cell),length(searchElem))/2d0) then
 					!we have found a partner
 					neighbor=neighbor+1
 					Connect(cell,dir,neighbor)=searchElem
-				endif
+				end if
 			else if(dir==4) then
 				if(Coord(cell,2)-length(cell)/2d0==bdryCoord(3)) then
 					!periodic
 					if(Coord(searchElem,2)==Coord(cell,2)-(length(cell)+length(searchElem))/2d0+(bdryCoord(4)-bdryCoord(3)) &
-					.AND. dabs(Coord(searchElem,1)-Coord(cell,1)) .LE. dmax1(length(cell),length(searchElem))/2d0 &
-					.AND. dabs(Coord(searchElem,3)-Coord(cell,3)) .LE. dmax1(length(cell),length(searchElem))/2d0) then
+					.AND. dabs(Coord(searchElem,1)-Coord(cell,1)) <= dmax1(length(cell),length(searchElem))/2d0 &
+					.AND. dabs(Coord(searchElem,3)-Coord(cell,3)) <= dmax1(length(cell),length(searchElem))/2d0) then
 						
 						neighbor=neighbor+1
 						Connect(cell,dir,neighbor)=searchElem
-					endif
-				elseif(Coord(searchElem,2)==Coord(cell,2)-(length(cell)+length(searchElem))/2d0 &
-					.AND. dabs(Coord(searchElem,1)-Coord(cell,1)) .LE. dmax1(length(cell),length(searchElem))/2d0 &
-					.AND. dabs(Coord(searchElem,3)-Coord(cell,3)) .LE. dmax1(length(cell),length(searchElem))/2d0) then
+					end if
+				else if(Coord(searchElem,2)==Coord(cell,2)-(length(cell)+length(searchElem))/2d0 &
+					.AND. dabs(Coord(searchElem,1)-Coord(cell,1)) <= dmax1(length(cell),length(searchElem))/2d0 &
+					.AND. dabs(Coord(searchElem,3)-Coord(cell,3)) <= dmax1(length(cell),length(searchElem))/2d0) then
 					!we have found a partner
 					neighbor=neighbor+1
 					Connect(cell,dir,neighbor)=searchElem
-				endif
+				end if
 			else if(dir==5) then
 				if(Coord(cell,3)+length(cell)/2d0==bdryCoord(6)) then
 					!periodic
 					if(Coord(searchElem,3)==Coord(cell,3)+(length(cell)+length(searchElem))/2d0-(bdryCoord(6)-bdryCoord(5)) &
-					.AND. dabs(Coord(searchElem,2)-Coord(cell,2)) .LE. dmax1(length(cell),length(searchElem))/2d0 &
-					.AND. dabs(Coord(searchElem,1)-Coord(cell,1)) .LE. dmax1(length(cell),length(searchElem))/2d0) then
+					.AND. dabs(Coord(searchElem,2)-Coord(cell,2)) <= dmax1(length(cell),length(searchElem))/2d0 &
+					.AND. dabs(Coord(searchElem,1)-Coord(cell,1)) <= dmax1(length(cell),length(searchElem))/2d0) then
 						
 						neighbor=neighbor+1
 						Connect(cell,dir,neighbor)=0
-					endif
-				elseif(Coord(searchElem,3)==Coord(cell,3)+(length(cell)+length(searchElem))/2d0 &
-					.AND. dabs(Coord(searchElem,2)-Coord(cell,2)) .LE. dmax1(length(cell),length(searchElem))/2d0 &
-					.AND. dabs(Coord(searchElem,1)-Coord(cell,1)) .LE. dmax1(length(cell),length(searchElem))/2d0) then
+					end if
+				else if(Coord(searchElem,3)==Coord(cell,3)+(length(cell)+length(searchElem))/2d0 &
+					.AND. dabs(Coord(searchElem,2)-Coord(cell,2)) <= dmax1(length(cell),length(searchElem))/2d0 &
+					.AND. dabs(Coord(searchElem,1)-Coord(cell,1)) <= dmax1(length(cell),length(searchElem))/2d0) then
 					!we have found a partner
 					neighbor=neighbor+1
 					Connect(cell,dir,neighbor)=searchElem
-				endif
+				end if
 			else if(dir==6) then
 				if(Coord(cell,3)-length(cell)/2d0==bdryCoord(5)) then
 					!periodic
 					if(Coord(searchElem,3)==Coord(cell,3)-(length(cell)+length(searchElem))/2d0+(bdryCoord(6)-bdryCoord(5)) &
-					.AND. dabs(Coord(searchElem,2)-Coord(cell,2)) .LE. dmax1(length(cell),length(searchElem))/2d0 &
-					.AND. dabs(Coord(searchElem,1)-Coord(cell,1)) .LE. dmax1(length(cell),length(searchElem))/2d0) then
+					.AND. dabs(Coord(searchElem,2)-Coord(cell,2)) <= dmax1(length(cell),length(searchElem))/2d0 &
+					.AND. dabs(Coord(searchElem,1)-Coord(cell,1)) <= dmax1(length(cell),length(searchElem))/2d0) then
 						
 						neighbor=neighbor+1
 						Connect(cell,dir,neighbor)=0
-					endif
-				elseif(Coord(searchElem,3)==Coord(cell,3)-(length(cell)+length(searchElem))/2d0 &
-					.AND. dabs(Coord(searchElem,2)-Coord(cell,2)) .LE. dmax1(length(cell),length(searchElem))/2d0 &
-					.AND. dabs(Coord(searchElem,1)-Coord(cell,1)) .LE. dmax1(length(cell),length(searchElem))/2d0) then
+					end if
+				else if(Coord(searchElem,3)==Coord(cell,3)-(length(cell)+length(searchElem))/2d0 &
+					.AND. dabs(Coord(searchElem,2)-Coord(cell,2)) <= dmax1(length(cell),length(searchElem))/2d0 &
+					.AND. dabs(Coord(searchElem,1)-Coord(cell,1)) <= dmax1(length(cell),length(searchElem))/2d0) then
 					!we have found a partner
 					neighbor=neighbor+1
 					Connect(cell,dir,neighbor)=searchElem
-				endif
-			endif
-		14 continue
-		if(NumNeighbors(cell,dir) .NE. neighbor) then
+				end if
+			end if
+		end do
+		if(NumNeighbors(cell,dir) /= neighbor) then
 			!we have found the wrong number of neighbors
 			write(*,*) 'error incorrect number of neighbors found', neighbor, 'neighbors', numNeighbors(cell,dir), 'expected'
 			write(*,*) 'cell', cell
-		endif
-	11 continue
-10 continue
+		end if
+	end do
+end do
 
 end subroutine
 
@@ -1798,10 +1788,10 @@ integer sendList(6*localElem, 5), i, status(MPI_STATUS_SIZE), neighborProc
 !in the buffer system (same as uniform mesh)
 
 numSendRecv=0
-do 10 elem=1,localElem
+do elem=1,localElem
 	globalCell=findGlobalCell(myMesh(elem)%coordinates, globalMeshCoord)
-	do 11 dir=1,6
-		do 12 neighbor=1,myMesh(elem)%numNeighbors(dir)
+	do dir=1,6
+		do neighbor=1,myMesh(elem)%numNeighbors(dir)
 			globalNeighbor=globalMeshConnect(globalCell,dir,neighbor)
 			if(globalNeighbor==0) then
 				!free surface, set cell number to 0 and proc number to -1
@@ -1809,12 +1799,12 @@ do 10 elem=1,localElem
 				myMesh(elem)%neighborProcs(dir,neighbor)=-1
 			else
 				!find out if globalNeighbor is in the local mesh. If so, set myMesh(cell)%neighbors and procs
-				if(globalMeshCoord(globalNeighbor,1) .GT. myProc%localCoord(1) &
-				.AND. globalMeshCoord(globalNeighbor,1) .LE. myProc%localCoord(2) &
-				.AND. globalMeshCoord(globalNeighbor,2) .GT. myProc%localCoord(3) &
-				.AND. globalMeshCoord(globalNeighbor,2) .LE. myProc%localCoord(4) &
-				.AND. globalMeshCoord(globalNeighbor,3) .GT. myProc%localCoord(5) &
-				.AND. globalMeshCoord(globalNeighbor,3) .LE. myProc%localCoord(6)) then
+				if(globalMeshCoord(globalNeighbor,1) > myProc%localCoord(1) &
+				.AND. globalMeshCoord(globalNeighbor,1) <= myProc%localCoord(2) &
+				.AND. globalMeshCoord(globalNeighbor,2) > myProc%localCoord(3) &
+				.AND. globalMeshCoord(globalNeighbor,2) <= myProc%localCoord(4) &
+				.AND. globalMeshCoord(globalNeighbor,3) > myProc%localCoord(5) &
+				.AND. globalMeshCoord(globalNeighbor,3) <= myProc%localCoord(6)) then
 					
 					localNeighbor=findLocalCell(globalMeshCoord(globalNeighbor,:))	!find cell number of neighbor in local mesh
 					myMesh(elem)%neighbors(dir,neighbor)=localNeighbor				
@@ -1833,32 +1823,32 @@ do 10 elem=1,localElem
 					sendList(numSendRecv,3)=globalCell
 					sendList(numSendRecv,4)=globalNeighbor
 					sendList(numSendRecv,5)=neighbor	!which neighbor number is this
-				endif
-			endif
-		12 continue
-	11 continue
-10 continue
+				end if
+			end if
+		end do
+	end do
+end do
 
 !Send/recieve the element in the local mesh / the neighbor in the neighboring processor's mesh (respectively).
 !MPI_SEND and MPI_RECV functions are matched using the cell number of the sender
 
-do 14 i=1,numSendRecv
+do i=1,numSendRecv
 	
 	elem=sendList(i,1)
 	dir=sendList(i,2)
 	globalCell=sendList(i,3)
 	neighbor=sendList(i,5)
 	call MPI_SEND(elem, 1, MPI_INTEGER, myMesh(elem)%neighborProcs(dir,neighbor), globalCell, MPI_COMM_WORLD, ierr)
-14 continue
+end do
 	
-do 15 i=1,numSendRecv
+do i=1,numSendRecv
 	elem=sendList(i,1)
 	dir=sendList(i,2)
 	globalNeighbor=sendList(i,4)
 	neighbor=sendList(i,5)
 	call MPI_RECV(myMesh(elem)%neighbors(dir,neighbor), 1, MPI_INTEGER, myMesh(elem)%neighborProcs(dir,neighbor), &
 				globalNeighbor, MPI_COMM_WORLD, status, ierr)
-15 continue
+end do
 
 end subroutine			
 

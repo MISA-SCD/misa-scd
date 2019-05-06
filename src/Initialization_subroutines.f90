@@ -45,15 +45,15 @@ include 'mpif.h'
 integer randseed, i, irand
 integer status(MPI_STATUS_SIZE)
 
-if(myProc%taskid .eq. MASTER) then
+if(myProc%taskid == MASTER) then
 	call system_clock(Count=randseed)
 	call sdprnd(randseed)
 	write(*,*)
 	write(*,*) 'random number seed', randseed, 'processor', myProc%taskid
-	do 22 i=1,myProc%numtasks-1
+	do i=1,myProc%numtasks-1
 		randseed=irand(randseed)
 		call mpi_send(randseed, 1, MPI_INTEGER, i, 1000,MPI_COMM_WORLD, ierr)
-	22 continue
+	end do
 else
 	call mpi_recv(randseed, 1, MPI_INTEGER, MASTER, 1000, MPI_COMM_WORLD, status, ierr)
 	call sdprnd(randseed)
@@ -1122,54 +1122,54 @@ logical flag
 flag=.FALSE.
 
 !read in filename of mesh file
-do 10 while (flag .eqv. .FALSE.)
+do  while (flag .eqv. .FALSE.)
 	read(81,*) char
 	if(char=='meshFile') then
 		read(81,*) filename
 		flag=.TRUE.
-	endif
-10 continue
+	end if
+end do
 flag=.FALSE.
 
 !read in whether mesh is uniform or non-uniform
-do 11 while(flag .eqv. .FALSE.)
+do while(flag .eqv. .FALSE.)
 	read(81,*) char
 	if(char=='meshType') then
 		read(81,*) meshType
 		flag=.TRUE.
-	endif
-11 continue
+	end if
+end do
 flag=.FALSE.
 
 !read in whether we have a strain field or not
-do 14 while(flag .eqv. .FALSE.)
+do while(flag .eqv. .FALSE.)
 	read(81,*) char
 	if(char=='strainField') then
 		read(81,*) strainField
 		flag=.TRUE.
-	endif
-14 continue
+	end if
+end do
 flag=.FALSE.
 
 if(strainField=='yes') then
-	do 15 while(flag .eqv. .FALSE.)
+	do while(flag .eqv. .FALSE.)
 		read(81,*) char
 		if(char=='strainFile') then
 			read(81,*) strainFileName
 			flag=.TRUE.
-		endif
-	15 continue
+		end if
+	end do
 	flag=.FALSE.
 	
-	do 16 while(flag .eqv. .FALSE.)
+	do while(flag .eqv. .FALSE.)
 		read(81,*) char
 		if(char=='dipoleFile') then
 			read(81,*) dipoleFileName
 			flag=.TRUE.
-		endif
-	16 continue
+		end if
+	end do
 	flag=.FALSE.
-endif
+end if
 
 !these subroutines (located in MeshReader.f90) initialize the mesh and connectivity.
 if(meshType=='uniform') then
@@ -1178,25 +1178,25 @@ else if(meshType=='nonUniform') then
 	call readMeshNonUniform(filename)
 else
 	write(*,*) 'error mesh type unknown'
-endif
+end if
 
 !Check to see if we are starting from a saved point (from a reset file)
-do 12 while(flag .eqv. .FALSE.)
+do while(flag .eqv. .FALSE.)
 	read(81,*) char
 	if(char == 'debugRestart') then
 		read(81,*) debugToggle
 		flag=.TRUE.
-	endif
-12 continue
+	end if
+end do
 flag=.FALSE.
 
-do 13 while(flag .eqv. .FALSE.)
+do while(flag .eqv. .FALSE.)
 	read(81,*) char
 	if(char == 'debugRestartFile') then
 		read(81,*) restartFileName
 		flag=.TRUE.
-	endif
-13 continue
+	end if
+end do
 flag=.FALSE.
 
 end subroutine

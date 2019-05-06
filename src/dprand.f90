@@ -1,4 +1,4 @@
-! $Header: /home/CVS//srscd/src/dprand.f90,v 1.5 2015/04/02 15:44:44 aydunn Exp $
+
 !>Module randdp: double precision random number generation
 !!
 !!   Nick Maclaren's double precision random number generator.

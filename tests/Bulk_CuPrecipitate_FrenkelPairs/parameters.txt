@@ -56,7 +56,7 @@ Uniform
 
 !Tell computer the name of the data file containing non-uniform implantation profile
 implantFile
-'../../inputs/ImplantProfile.txt'
+'../../inputs/ImplantProfile_noHe.txt'
 
 !***************************************************************************************************
 !Simulation Parameters
