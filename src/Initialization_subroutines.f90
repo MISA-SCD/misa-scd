@@ -14,16 +14,16 @@ implicit none
 
 integer cell, i
 
-do 10 cell=1,numCells
+do cell=1,numCells
 	allocate(DefectList(cell)%defectType(numSpecies))
 	DefectList(cell)%defectType(1)=1
-	do 11 i=2,numSpecies
+	do i=2,numSpecies
 		DefectList(cell)%defectType(i)=0
-	11 continue
+	end do
 	DefectList(cell)%num=CuAtomsEverMesh
 	DefectList(cell)%cellNumber=cell
 	nullify(DefectList(cell)%next)
-10 continue
+end do
 
 end subroutine
 
@@ -46,7 +46,7 @@ integer randseed, i, irand
 integer status(MPI_STATUS_SIZE)
 
 if(myProc%taskid == MASTER) then
-	call system_clock(Count=randseed)
+	call system_clock(Count=randseed)	!return randseed (integer, unit:ms)
 	call sdprnd(randseed)
 	write(*,*)
 	write(*,*) 'random number seed', randseed, 'processor', myProc%taskid
@@ -132,7 +132,7 @@ integer cell, i, j, reac, matNum, count
 integer dir
 type(reaction), pointer :: reactionCurrent
 
-do 10 cell=1,numCells
+do cell=1,numCells
 	!Initialize reaction rates with Frenkel pair implantation. The rate should be given by a function
 	!findReactionRate which has as parameters passed to it the cell that this rate is occuring in and
 	!the parameters of the reaction rate as read in from the file (type reactionParameters)
@@ -143,42 +143,111 @@ do 10 cell=1,numCells
 		matNum=1
 	else
 		matNum=myMesh(cell)%material
-	endif
-	
-	if(implantType=='FrenkelPair') then
+	end if
 
-		!Frenkel pair implantaiton reaction: first in the list
+	if(DPARate > 0d0) then
+
+		if(implantType=='FrenkelPair') then
+
+			!Frenkel pair implantaiton reaction: first in the list
 		
-		reactionList(cell)%numReactants=0
-		reactionList(cell)%numProducts=2
-		allocate(reactionList(cell)%products(reactionList(cell)%numProducts,numSpecies))
-		allocate(reactionList(cell)%cellNumber(reactionList(cell)%numProducts))
-		allocate(reactionList(cell)%taskid(reactionList(cell)%numProducts))
+			reactionList(cell)%numReactants=0
+			reactionList(cell)%numProducts=2
+			allocate(reactionList(cell)%products(reactionList(cell)%numProducts,numSpecies))
+			allocate(reactionList(cell)%cellNumber(reactionList(cell)%numProducts))
+			allocate(reactionList(cell)%taskid(reactionList(cell)%numProducts))
 		
-		!search ImplantList for Frenkel Pair reactions
-		do 12 reac=1,numImplantReac(matNum)
-			if(ImplantReactions(matNum,reac)%numReactants==0 .AND. ImplantReactions(matNum,reac)%numProducts==2) then	!we have found Frenkel pair implantation
-				exit	!leave ImplantReactions(reac) pointed at this element of ImplantReactions
+			!search ImplantList for Frenkel Pair reactions
+			do reac=1,numImplantReac(matNum)
+				if(ImplantReactions(matNum,reac)%numReactants==0 .AND. &
+						ImplantReactions(matNum,reac)%numProducts==2) then	!we have found Frenkel pair implantation
+					exit	!leave ImplantReactions(reac) pointed at this element of ImplantReactions
+				end if
+			end do
+		
+			do i=1,ImplantReactions(matNum,reac)%numProducts
+				do j=1,numSpecies
+					reactionList(cell)%products(i,j)=ImplantReactions(matNum,reac)%products(i,j)
+				end do
+				reactionList(cell)%cellNumber(i)=cell
+				reactionList(cell)%taskid(i)=myMesh(cell)%proc
+			end do
+		
+			!Find reaction rate for Frenkel pair implantation using ImplantReactions(reac), which is input info from file.
+			reactionList(cell)%reactionRate=findReactionRate(cell, ImplantReactions(matNum,reac))
+			nullify(reactionList(cell)%next)
+
+		else if(implantType=='Cascade') then
+			!initialize reaction rates with cascade implantation. The rate should be given by a function
+			!findReactionRate which has as parameters passed to it the cell that this rate is occuring in
+			!and the parameters of the reaction rate as read in from the file (type reactionParameters)
+
+			reactionList(cell)%numReactants=-10 	!This is a flag that the reaction is a cascade (not carried out like a standard reaction)
+			reactionList(cell)%numProducts=0		!The products are taken care of separately from the standard defect update procedure
+			allocate(reactionList(cell)%cellNumber(1))
+			allocate(reactionList(cell)%taskid(1))
+
+			reactionList(cell)%cellNumber(1)=cell
+			reactionList(cell)%taskid(1)=myMesh(cell)%proc
+
+			!search ImplantList for cascade reactions
+			do reac=1,numImplantReac(matNum)
+				if(ImplantReactions(matNum,reac)%numReactants==-10 .AND. &
+						ImplantReactions(matNum,reac)%numProducts==0) then	!we have found cascade implantation
+					exit
+				end if
+			end do
+
+			!If implant scheme is Monte Carlo, then this reaction is chosen as part of the regular
+			!Monte Carlo algorithm. Otherwise, cascades are added explicitly and this rate is set to 0
+			!so that cascade implantation is no longer chosen as part of the MC algorithm.
+
+			if(implantScheme=='MonteCarlo') then
+				reactionList(cell)%reactionRate=findReactionRate(cell, ImplantReactions(matNum,reac))
+			else if(implantScheme=='explicit') then
+				reactionList(cell)%reactionRate=0d0
 			endif
-		12 continue
-		
-		do 13 i=1,ImplantReactions(matNum,reac)%numProducts
-			do 11 j=1,numSpecies
-				reactionList(cell)%products(i,j)=ImplantReactions(matNum,reac)%products(i,j)
-			
-			11 continue
-			reactionList(cell)%cellNumber(i)=cell
-			reactionList(cell)%taskid(i)=myMesh(cell)%proc
-		13 continue
-		
-		!Find reaction rate for Frenkel pair implantation using ImplantReactions(reac), which is input info from file.
-		reactionList(cell)%reactionRate=findReactionRate(cell, ImplantReactions(matNum,reac))
-		nullify(reactionList(cell)%next)
 
-		!2019.05.04 Add: Initialize possible reactions of free Cu
+			nullify(reactionList(cell)%next)
+		else
+			write(*,*) 'error unknown implantation type'
+		end if
 
 		reactionCurrent=>reactionList(cell)
 
+		!Helium implantation reaction: second in the list
+		!if(HeDPARatio > 0d0) then
+		!	allocate(reactionCurrent%next)
+		!	reactionCurrent=>reactionCurrent%next
+
+		!	reactionCurrent%numReactants=0
+		!	reactionCurrent%numProducts=1
+
+		!	allocate(reactionCurrent%products(reactionCurrent%numProducts, numSpecies))
+		!	allocate(reactionCurrent%cellNumber(reactionCurrent%numProducts))
+		!	allocatE(reactionCurrent%taskid(reactionCurrent%numProducts))
+
+			!search ImplantList for He implant reactions
+		!	do reac=1,numImplantReac(matNum)
+		!		if(ImplantReactions(matNum,reac)%numReactants==0 .AND. &
+		!				ImplantReactions(matNum,reac)%numProducts==1) then
+		!			exit
+		!		end if
+		!	end do
+
+		!	do i=1,ImplantReactions(matNum,reac)%numProducts
+		!		do j=1,numSpecies
+		!			reactionCurrent%products(i,j)=ImplantReactions(matNum,reac)%products(i,j)
+		!		end do
+		!		reactionCurrent%cellNumber(i)=cell
+		!		reactionCurrent%taskid(i)=myMesh(cell)%proc
+		!	end do
+
+			!Find reaction rate for He ion implantation using ImplantReactions(reac), which is input from file.
+		!	reactionCurrent%reactionRate=findReactionRate(cell, ImplantReactions(matNum,reac))
+		!end if
+
+		!2019.05.04 Add: Initialize possible reactions of free Cu
 		!*******************************************************
 		!clustering: Cu+Cu->2Cu
 		!*******************************************************
@@ -194,7 +263,7 @@ do 10 cell=1,numCells
 		allocate(reactionCurrent%taskid(reactionCurrent%numReactants + reactionCurrent%numProducts))
 
 		!search ClusterList for Cu+Cu->2Cu
-		do 14  reac=1,numClusterReac(matNum)
+		do reac=1,numClusterReac(matNum)
 			if(ClusterReactions(matNum,reac)%reactants(1,1)==1 .AND. ClusterReactions(matNum,reac)%reactants(2,1)==1 &
 					.AND. ClusterReactions(matNum,reac)%reactants(1,2)==0 .AND. &
 					ClusterReactions(matNum,reac)%reactants(2,2)==0 .AND. &
@@ -203,21 +272,21 @@ do 10 cell=1,numCells
 					ClusterReactions(matNum,reac)%reactants(1,4)==0 .AND. &
 					ClusterReactions(matNum,reac)%reactants(2,4)==0) then
 				exit
-			endif
-		14 continue
+			end if
+		end do
 
-		do 15 i=1,ClusterReactions(matNum,reac)%numReactants+ClusterReactions(matNum,reac)%numProducts
+		do i=1,ClusterReactions(matNum,reac)%numReactants+ClusterReactions(matNum,reac)%numProducts
 			reactionCurrent%reactants(1,1)=1
 			reactionCurrent%reactants(2,1)=1
 			reactionCurrent%products(1,1)=1
-			do 16 j=2,numSpecies
+			do j=2,numSpecies
 				reactionCurrent%reactants(1,j)=ClusterReactions(matNum,reac)%reactants(1,j)
 				reactionCurrent%reactants(2,j)=ClusterReactions(matNum,reac)%reactants(2,j)
 				reactionCurrent%products(1,j)=ClusterReactions(matNum,reac)%products(1,j)
-			16 continue
+			end do
 			reactionCurrent%cellNumber(i)=cell
 			reactionCurrent%taskid(i)=myMesh(cell)%proc
-		15 continue
+		end do
 			!Find reaction rate for Cu clustering using ClusterReactions(reac), which is input from file.
 		reactionCurrent%reactionRate=findReactionRateMultiple(reactionCurrent%reactants(1,:), &
 				reactionCurrent%reactants(2,:), cell, ClusterReactions(matNum,reac))
@@ -225,48 +294,48 @@ do 10 cell=1,numCells
 		!*******************************************************************
 		!Diffusion: Cu->Cu
 		!*******************************************************************
-do 30 dir=1,6
-		allocate(reactionCurrent%next)
-		reactionCurrent=>reactionCurrent%next
+		do dir=1, 6
+			allocate(reactionCurrent%next)
+			reactionCurrent=>reactionCurrent%next
 
-		reactionCurrent%numReactants=1
-		reactionCurrent%numProducts=1
-		allocate(reactionCurrent%reactants(reactionCurrent%numReactants, numSpecies))
-		allocate(reactionCurrent%products(reactionCurrent%numProducts, numSpecies))
-		allocate(reactionCurrent%cellNumber(reactionCurrent%numReactants + reactionCurrent%numProducts))
-		allocate(reactionCurrent%taskid(reactionCurrent%numReactants + reactionCurrent%numProducts))
+			reactionCurrent%numReactants=1
+			reactionCurrent%numProducts=1
+			allocate(reactionCurrent%reactants(reactionCurrent%numReactants, numSpecies))
+			allocate(reactionCurrent%products(reactionCurrent%numProducts, numSpecies))
+			allocate(reactionCurrent%cellNumber(reactionCurrent%numReactants + reactionCurrent%numProducts))
+			allocate(reactionCurrent%taskid(reactionCurrent%numReactants + reactionCurrent%numProducts))
 
 		!search DiffList for Cu->Cu
-		do 31  reac=1,numDiffReac(matNum)
-			if(DiffReactions(matNum,reac)%reactants(1,1)==1 .AND. DiffReactions(matNum,reac)%products(1,1)==1 &
+			do reac=1,numDiffReac(matNum)
+				if(DiffReactions(matNum,reac)%reactants(1,1)==1 .AND. DiffReactions(matNum,reac)%products(1,1)==1 &
 					.AND. DiffReactions(matNum,reac)%reactants(1,2)==0 .AND. &
 					DiffReactions(matNum,reac)%products(1,2)==0 .AND. &
 					DiffReactions(matNum,reac)%reactants(1,3)==0 .AND. &
 					DiffReactions(matNum,reac)%products(1,3)==0 .AND. &
 					DiffReactions(matNum,reac)%reactants(1,4)==0 .AND. &
 					DiffReactions(matNum,reac)%products(1,4)==0) then
-				exit
-			endif
-		31 continue
+					exit
+				end if
+			end do
 
-		!do 32 i=1,DiffReactions(matNum,reac)%numReactants+DiffReactions(matNum,reac)%numProducts
+			!do 32 i=1,DiffReactions(matNum,reac)%numReactants+DiffReactions(matNum,reac)%numProducts
 			reactionCurrent%reactants(1,1)=1
 			reactionCurrent%products(1,1)=1
-			do 33 j=2,numSpecies
+			do j=2,numSpecies
 				reactionCurrent%reactants(1,j)=DiffReactions(matNum,reac)%reactants(1,j)
 				reactionCurrent%products(1,j)=DiffReactions(matNum,reac)%products(1,j)
-			33 continue
+			end do
 			reactionCurrent%cellNumber(1)=cell
 			reactionCurrent%cellNumber(2)=myMesh(cell)%neighbors(dir,1)
 			reactionCurrent%taskid(1)=myMesh(cell)%proc
 			reactionCurrent%taskid(2)=myMesh(cell)%neighborProcs(dir,1)
-		!32 continue
-		reactionCurrent%reactionRate = 0d0
-		!reactionCurrent%reactionRate=findReactionRateDiff(reactionCurrent%reactants(1,:), cell, &
-		!		myProc%taskid, myMesh(cell)%neighbors(1,dir), myMesh(cell)%neighborProcs(1,dir), dir, &
-		!		DiffReactions(matNum,reac))
+			!32 continue
+			reactionCurrent%reactionRate = 0d0
+			!reactionCurrent%reactionRate=findReactionRateDiff(reactionCurrent%reactants(1,:), cell, &
+			!		myProc%taskid, myMesh(cell)%neighbors(1,dir), myMesh(cell)%neighborProcs(1,dir), dir, &
+			!		DiffReactions(matNum,reac))
 
-30 continue
+		end do
 		!*******************************************************************
 		!Sink trapping: Cu->0
 		!*******************************************************************
@@ -280,108 +349,32 @@ do 30 dir=1,6
 		allocate(reactionCurrent%cellNumber(reactionCurrent%numReactants))
 		allocatE(reactionCurrent%taskid(reactionCurrent%numReactants))
 
-		do 34  reac=1,numSinkReac(matNum)
+		do reac=1,numSinkReac(matNum)
 			if(SinkReactions(matNum,reac)%reactants(1,1)==1 .AND. SinkReactions(matNum,reac)%reactants(1,2)==0 .AND. &
 				SinkReactions(matNum,reac)%reactants(1,3)==0 .AND. SinkReactions(matNum,reac)%reactants(1,4)==0) then
 				exit
-			endif
-		34 continue
+			end if
+		end do
 
-		do 35 i=1,SinkReactions(matNum,reac)%numReactants
+		do i=1,SinkReactions(matNum,reac)%numReactants
 			reactionCurrent%reactants(1,1)=1
-			do 36 j=2,numSpecies
+			do j=2,numSpecies
 				reactionCurrent%reactants(1,j)=SinkReactions(matNum,reac)%reactants(1,j)
-			36 continue
+			end do
 			reactionCurrent%cellNumber(i)=cell
 			reactionCurrent%taskid(i)=myMesh(cell)%proc
-		35 continue
+		end do
 		reactionCurrent%reactionRate=findReactionRateSink(reactionCurrent%reactants(1,:), cell, &
 				SinkReactions(matNum,reac))
-
 		nullify(reactionCurrent%next)
 
-!********************************************************************
-!2019.05.04
-!		!Helium implantation reaction: second in the list
-
-!		if(HeDPARatio .GT. 0d0) then
-		
-!			reactionCurrent=>reactionList(cell)
-			
-!			allocate(reactionCurrent%next)
-!			reactionCurrent=>reactionCurrent%next
-			
-!			reactionCurrent%numReactants=0
-!			reactionCurrent%numProducts=1
-			
-!			allocate(reactionCurrent%products(reactionCurrent%numProducts, numSpecies))
-!			allocate(reactionCurrent%cellNumber(reactionCurrent%numProducts))
-!			allocatE(reactionCurrent%taskid(reactionCurrent%numProducts))
-			
-			!search ImplantList for He implant reactions
-!			do 14  reac=1,numImplantReac(matNum)
-!				if(ImplantReactions(matNum,reac)%numReactants==0 .AND. ImplantReactions(matNum,reac)%numProducts==1) then
-!					exit
-!				endif
-!			14 continue
-			
-!			do 15 i=1,ImplantReactions(matNum,reac)%numProducts
-!				do 16 j=1,numSpecies
-!					reactionCurrent%products(i,j)=ImplantReactions(matNum,reac)%products(i,j)
-!				16 continue
-!				reactionCurrent%cellNumber(i)=cell
-!				reactionCurrent%taskid(i)=myMesh(cell)%proc
-!			15 continue
-			
-			!Find reaction rate for He ion implantation using ImplantReactions(reac), which is input from file.
-!			reactionCurrent%reactionRate=findReactionRate(cell, ImplantReactions(matNum,reac))
-!			nullify(reactionCurrent%next)
-			
-!		endif
-!***********************************************************************
-		
-	else if(implantType=='Cascade') then
-		!initialize reaction rates with cascade implantation. The rate should be given by a function
-		!findReactionRate which has as parameters passed to it the cell that this rate is occuring in 
-		!and the parameters of the reaction rate as read in from the file (type reactionParameters)
-		
-		reactionList(cell)%numReactants=-10 	!This is a flag that the reaction is a cascade (not carried out like a standard reaction)
-		reactionList(cell)%numProducts=0		!The products are taken care of separately from the standard defect update procedure
-		allocate(reactionList(cell)%cellNumber(1))
-		allocate(reactionList(cell)%taskid(1))
-		
-		reactionList(cell)%cellNumber(1)=cell
-		reactionList(cell)%taskid(1)=myMesh(cell)%proc
-		
-		!search ImplantList for cascade reactions
-		do 22 reac=1,numImplantReac(matNum)
-			if(ImplantReactions(matNum,reac)%numReactants==-10 .AND. ImplantReactions(matNum,reac)%numProducts==0) then	!we have found cascade implantation
-				exit
-			endif
-		22 continue
-		
-		!If implant scheme is Monte Carlo, then this reaction is chosen as part of the regular 
-		!Monte Carlo algorithm. Otherwise, cascades are added explicitly and this rate is set to 0
-		!so that cascade implantation is no longer chosen as part of the MC algorithm.
-		
-		if(implantScheme=='MonteCarlo') then
-			reactionList(cell)%reactionRate=findReactionRate(cell, ImplantReactions(matNum,reac))
-		else if(implantScheme=='explicit') then
-			reactionList(cell)%reactionRate=0d0
-		endif
-		
-		nullify(reactionList(cell)%next)
-
-		!2019.05.05 Add: Initialize possible reactions of free Cu
-
-		reactionCurrent=>reactionList(cell)
-
+	else	!no implantation
 		!*******************************************************
 		!clustering: Cu+Cu->2Cu
 		!*******************************************************
 
-		allocate(reactionCurrent%next)
-		reactionCurrent=>reactionCurrent%next
+		allocate(reactionList(cell))
+		reactionCurrent=>reactionList(cell)
 
 		reactionCurrent%numReactants=2
 		reactionCurrent%numProducts=1
@@ -391,7 +384,7 @@ do 30 dir=1,6
 		allocate(reactionCurrent%taskid(reactionCurrent%numReactants + reactionCurrent%numProducts))
 
 		!search ClusterList for Cu+Cu->2Cu
-		do 41  reac=1,numClusterReac(matNum)
+		do reac=1,numClusterReac(matNum)
 			if(ClusterReactions(matNum,reac)%reactants(1,1)==1 .AND. ClusterReactions(matNum,reac)%reactants(2,1)==1 &
 					.AND. ClusterReactions(matNum,reac)%reactants(1,2)==0 .AND. &
 					ClusterReactions(matNum,reac)%reactants(2,2)==0 .AND. &
@@ -400,70 +393,71 @@ do 30 dir=1,6
 					ClusterReactions(matNum,reac)%reactants(1,4)==0 .AND. &
 					ClusterReactions(matNum,reac)%reactants(2,4)==0) then
 				exit
-			endif
-		41 continue
+			end if
+		end do
 
-		do 42 i=1,ClusterReactions(matNum,reac)%numReactants+ClusterReactions(matNum,reac)%numProducts
+		do i=1,ClusterReactions(matNum,reac)%numReactants+ClusterReactions(matNum,reac)%numProducts
 			reactionCurrent%reactants(1,1)=1
 			reactionCurrent%reactants(2,1)=1
 			reactionCurrent%products(1,1)=1
-			do 43 j=2,numSpecies
+			do j=2,numSpecies
 				reactionCurrent%reactants(1,j)=ClusterReactions(matNum,reac)%reactants(1,j)
 				reactionCurrent%reactants(2,j)=ClusterReactions(matNum,reac)%reactants(2,j)
 				reactionCurrent%products(1,j)=ClusterReactions(matNum,reac)%products(1,j)
-			43 continue
+			end do
 			reactionCurrent%cellNumber(i)=cell
 			reactionCurrent%taskid(i)=myMesh(cell)%proc
-		42 continue
-		!Find reaction rate for Cu clustering  using ClusterReactions(reac), which is input from file.
+		end do
+		!Find reaction rate for Cu clustering using ClusterReactions(reac), which is input from file.
 		reactionCurrent%reactionRate=findReactionRateMultiple(reactionCurrent%reactants(1,:), &
 				reactionCurrent%reactants(2,:), cell, ClusterReactions(matNum,reac))
 
 		!*******************************************************************
 		!Diffusion: Cu->Cu
 		!*******************************************************************
-do 40 dir=1,6
-		allocate(reactionCurrent%next)
-		reactionCurrent=>reactionCurrent%next
+		do dir=1, 6
+			allocate(reactionCurrent%next)
+			reactionCurrent=>reactionCurrent%next
 
-		!search DiffList for Cu->Cu
-		do 44  reac=1,numDiffReac(matNum)
-			if(DiffReactions(matNum,reac)%reactants(1,1)==1 .AND. DiffReactions(matNum,reac)%products(1,1)==1 &
-					.AND. DiffReactions(matNum,reac)%reactants(1,2)==0 .AND. &
-					DiffReactions(matNum,reac)%products(1,2)==0 .AND. &
-					DiffReactions(matNum,reac)%reactants(1,3)==0 .AND. &
-					DiffReactions(matNum,reac)%products(1,3)==0 .AND. &
-					DiffReactions(matNum,reac)%reactants(1,4)==0 .AND. &
-					DiffReactions(matNum,reac)%products(1,4)==0) then
-				exit
-			endif
-		44 continue
+			reactionCurrent%numReactants=1
+			reactionCurrent%numProducts=1
+			allocate(reactionCurrent%reactants(reactionCurrent%numReactants, numSpecies))
+			allocate(reactionCurrent%products(reactionCurrent%numProducts, numSpecies))
+			allocate(reactionCurrent%cellNumber(reactionCurrent%numReactants + reactionCurrent%numProducts))
+			allocate(reactionCurrent%taskid(reactionCurrent%numReactants + reactionCurrent%numProducts))
 
-		reactionCurrent%numReactants=1
-		reactionCurrent%numProducts=1
-		allocate(reactionCurrent%reactants(reactionCurrent%numReactants, numSpecies))
-		allocate(reactionCurrent%products(reactionCurrent%numProducts, numSpecies))
-		allocate(reactionCurrent%cellNumber(reactionCurrent%numReactants + reactionCurrent%numProducts))
-		allocate(reactionCurrent%taskid(reactionCurrent%numReactants + reactionCurrent%numProducts))
+			!search DiffList for Cu->Cu
+			do reac=1,numDiffReac(matNum)
+				if(DiffReactions(matNum,reac)%reactants(1,1)==1 .AND. DiffReactions(matNum,reac)%products(1,1)==1 &
+						.AND. DiffReactions(matNum,reac)%reactants(1,2)==0 .AND. &
+						DiffReactions(matNum,reac)%products(1,2)==0 .AND. &
+						DiffReactions(matNum,reac)%reactants(1,3)==0 .AND. &
+						DiffReactions(matNum,reac)%products(1,3)==0 .AND. &
+						DiffReactions(matNum,reac)%reactants(1,4)==0 .AND. &
+						DiffReactions(matNum,reac)%products(1,4)==0) then
+					exit
+				end if
+			end do
 
-		!do 45 i=1,DiffReactions(matNum,reac)%numReactants+DiffReactions(matNum,reac)%numProducts
+			!do 32 i=1,DiffReactions(matNum,reac)%numReactants+DiffReactions(matNum,reac)%numProducts
 			reactionCurrent%reactants(1,1)=1
 			reactionCurrent%products(1,1)=1
-			do 46 j=2,numSpecies
+			do j=2,numSpecies
 				reactionCurrent%reactants(1,j)=DiffReactions(matNum,reac)%reactants(1,j)
 				reactionCurrent%products(1,j)=DiffReactions(matNum,reac)%products(1,j)
-			46 continue
-		reactionCurrent%cellNumber(1)=cell
-		reactionCurrent%cellNumber(2)=myMesh(cell)%neighbors(dir,1)
-		reactionCurrent%taskid(1)=myMesh(cell)%proc
-		reactionCurrent%taskid(2)=myMesh(cell)%neighborProcs(dir,1)
-		!45 continue
-		reactionCurrent%reactionRate = 0d0
-		!reactionCurrent%reactionRate=findReactionRateDiff(reactionCurrent%reactants(1,:), cell, &
-		!		myProc%taskid, myMesh(cell)%neighbors(1,dir), myMesh(cell)%neighborProcs(1,dir), dir, &
-		!		DiffReactions(matNum,reac))
+			end do
+			reactionCurrent%cellNumber(1)=cell
+			reactionCurrent%cellNumber(2)=myMesh(cell)%neighbors(dir,1)
+			reactionCurrent%taskid(1)=myMesh(cell)%proc
+			reactionCurrent%taskid(2)=myMesh(cell)%neighborProcs(dir,1)
+			!32 continue
+			reactionCurrent%reactionRate = 0d0
+			!reactionCurrent%reactionRate=findReactionRateDiff(reactionCurrent%reactants(1,:), cell, &
+			!		myProc%taskid, myMesh(cell)%neighbors(1,dir), myMesh(cell)%neighborProcs(1,dir), dir, &
+			!		DiffReactions(matNum,reac))
 
-40 continue
+		end do
+
 		!*******************************************************************
 		!Sink trapping: Cu->0
 		!*******************************************************************
@@ -477,69 +471,28 @@ do 40 dir=1,6
 		allocate(reactionCurrent%cellNumber(reactionCurrent%numReactants))
 		allocatE(reactionCurrent%taskid(reactionCurrent%numReactants))
 
-		do 47  reac=1,numSinkReac(matNum)
+		do reac=1,numSinkReac(matNum)
 			if(SinkReactions(matNum,reac)%reactants(1,1)==1 .AND. SinkReactions(matNum,reac)%reactants(1,2)==0 .AND. &
-				SinkReactions(matNum,reac)%reactants(1,3)==0 .AND. SinkReactions(matNum,reac)%reactants(1,4)==0) then
+					SinkReactions(matNum,reac)%reactants(1,3)==0 .AND. SinkReactions(matNum,reac)%reactants(1,4)==0) then
 				exit
-			endif
-		47 continue
+			end if
+		end do
 
-		do 48 i=1,SinkReactions(matNum,reac)%numReactants
+		do i=1,SinkReactions(matNum,reac)%numReactants
 			reactionCurrent%reactants(1,1)=1
-			do 49 j=2,numSpecies
+			do j=2,numSpecies
 				reactionCurrent%reactants(1,j)=SinkReactions(matNum,reac)%reactants(1,j)
-			49 continue
+			end do
 			reactionCurrent%cellNumber(i)=cell
 			reactionCurrent%taskid(i)=myMesh(cell)%proc
-		48 continue
+		end do
 		reactionCurrent%reactionRate=findReactionRateSink(reactionCurrent%reactants(1,:), cell, &
 				SinkReactions(matNum,reac))
-
 		nullify(reactionCurrent%next)
 
-!********************************************************************
-!2019.05.05
-!		!Helium implantation reaction: second in the list
-		
-!		if(HeDPARatio .GT. 0d0) then
-		
-!			reactionCurrent=>reactionList(cell)
-			
-!			allocate(reactionCurrent%next)
-!			reactionCurrent=>reactionCurrent%next
-			
-!			reactionCurrent%numReactants=0
-!			reactionCurrent%numProducts=1
-			
-!			allocate(reactionCurrent%products(reactionCurrent%numProducts, numSpecies))
-!			allocate(reactionCurrent%cellNumber(reactionCurrent%numProducts))
-!			allocatE(reactionCurrent%taskid(reactionCurrent%numProducts))
-			
-			!search ImplantList for He implant reactions
-!			do 24  reac=1,numImplantReac(matNum)
-!				if(ImplantReactions(matNum,reac)%numReactants==0 .AND. ImplantReactions(matNum,reac)%numProducts==1) then
-!					exit
-!				endif
-!			24 continue
-			
-!			do 25 i=1,ImplantReactions(matNum,reac)%numProducts
-!				do 26 j=1,numSpecies
-!					reactionCurrent%products(i,j)=ImplantReactions(matNum,reac)%products(i,j)
-!				26 continue
-!				reactionCurrent%cellNumber(i)=cell
-!				reactionCurrent%taskid(i)=myMesh(cell)%proc
-!			25 continue
-			
-			!Find reaction rate for He ion implantation using ImplantReactions(reac), which is input from file.
-!			reactionCurrent%reactionRate=findReactionRate(cell, ImplantReactions(matNum,reac))
-!			nullify(reactionCurrent%next)
-			
-!		endif
-!********************************************************************
-	else
-		write(*,*) 'error unknown implantation type'
-	endif
-10 continue
+	end if
+
+end do
 
 end subroutine
 
@@ -733,13 +686,13 @@ implicit none
 integer cell, dir, k, i
 type(defect), pointer :: defectCurrent
 
-do 10 cell=1,numCells
-	do 11 dir=1,6
-		do 12 k=1,myMesh(cell)%numNeighbors(dir)
-			if(myMesh(cell)%neighborProcs(dir,k) .NE. myProc%taskid .AND. &
-				myMesh(cell)%neighborProcs(dir,k) .NE. -1) then !neighbor cell is in different proc, not free surface (taskid=-1)
+do cell=1,numCells
+	do dir=1,6
+		do k=1,myMesh(cell)%numNeighbors(dir)
+			if(myMesh(cell)%neighborProcs(dir,k) /= myProc%taskid .AND. &
+				myMesh(cell)%neighborProcs(dir,k) /= -1) then !neighbor cell is in different proc, not free surface (taskid=-1)
 				
-				if(myMesh(cell)%neighborProcs(dir,k) .NE. myProc%procNeighbor(dir)) then
+				if(myMesh(cell)%neighborProcs(dir,k) /= myProc%procNeighbor(dir)) then
 					write(*,*) 'error neighbor not correct during boundary mesh initialization'
 				else
 					!initialize this boundary element:
@@ -757,17 +710,17 @@ do 10 cell=1,numCells
 					defectCurrent=>myBoundary(dir,myMesh(cell)%neighbors(dir,k))%defectList
 					allocate(defectCurrent%defectType(numSpecies))
 					defectCurrent%defectType(1)=1
-					do 13 i=2,numSpecies
+					do i=2,numSpecies
 						defectCurrent%defectType(i)=0
-					13 continue
+					end do
 					defectCurrent%num=CuAtomsEverMesh
 					defectCurrent%cellNumber=myMesh(cell)%neighbors(dir,k)
 					nullify(defectCurrent%next)
-				endif
-			endif
-		12 continue
-	11 continue
-10 continue
+				end if
+			end if
+		end do
+	end do
+end do
 
 nullify(defectCurrent)
 

@@ -43,13 +43,15 @@ CONTAINS
 !   whether modified or not.
 
 !> Subroutine sdprnd - seeds random number generator in this processor using integer input
+!Input: iseed
+!Output: poly(1:101), other, offset, index
 
 SUBROUTINE sdprnd (iseed)
 
 INTEGER, INTENT(IN)  :: iseed
 
 ! Local variables
-REAL (dp)            :: x
+REAL (dp)            :: x   !unknown
 REAL (dp), PARAMETER :: xmod = 1000009711.0_dp, ymod = 33554432.0_dp
 INTEGER              :: ix, iy, iz, i
 LOGICAL, SAVE        :: inital = .TRUE.
@@ -90,7 +92,7 @@ END SUBROUTINE sdprnd
 
 FUNCTION dprand() RESULT(fn_val)
 
-REAL (dp)            :: fn_val
+REAL (dp)            :: fn_val  !Output
 
 ! Local variables
 REAL (dp)            :: x, y
