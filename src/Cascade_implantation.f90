@@ -99,7 +99,7 @@ outer: do i=1,numCells
 	reactionCurrent=>reactionList(i)	!Point reactionCurrent at the cascade implantation reaction in each volume element
 	
 	atemp=atemp+1d0		!Here we don't have a reaction rate, and each cell is weighted evenly (assuming uniform mesh)
-	if(atemp .GE. r2timesa) then
+	if(atemp >= r2timesa) then
 		exit outer			!exit both loops with reactionCurrent pointing to the randomly chosen reaction
 	endif
 
@@ -110,16 +110,16 @@ if(implantType=='Cascade') then
 	if(reactionCurrent%numReactants==0 .OR. reactionCurrent%numReactants==-10) then
 		if(reactionCurrent%numReactants==-10 .AND. reactionCurrent%numProducts==0) then !Cascade implantation
 			numImplantEvents=numImplantEvents+1
-		else if(reactionCurrent%numReactants==0 .AND. reactionCurrent%numProducts .NE. 0) then !He implantation
+		else if(reactionCurrent%numReactants==0 .AND. reactionCurrent%numProducts /= 0) then !He implantation
 			write(*,*) 'Error helium implantation in explicit procedure'
 		else
 			write(*,*) 'Error reaction not allowed ', 'reactants', reactionCurrent%numReactants, &
 				'products', reactionCurrent%numProducts, 'rate', reactionCurrent%reactionRate
-		endif
-	endif
+		end if
+	end if
 else
 	write(*,*) 'Error wrong implant type for explicit procedure'
-endif
+end if
 
 end subroutine
 

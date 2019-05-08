@@ -128,7 +128,7 @@ type(cascade), pointer :: CascadeCurrent
 !output reaction list
 if(myProc%taskid==MASTER) then
 	write(*,*) 'processor', myProc%taskid, 'reactions after step', step, 'numCells', numCells
-	do 19 i=1, numCells
+	do i=1, numCells
 		!!reactionCurrent=>reactionList(i)%next
 		reactionCurrent=>reactionList(i)
 		if(associated(reactionCurrent)) then
@@ -136,55 +136,49 @@ if(myProc%taskid==MASTER) then
 			write(*,*) 'neighbors', (myMesh(i)%neighbors(j,1),j=1,6)
 			write(*,*) 'neigProcs', (myMesh(i)%neighborProcs(j,1),j=1,6)
 
-			do 23 while(associated(reactionCurrent))
-				!if(reactionCurrent%numReactants==1 .AND. reactionCurrent%numProducts==1) then
-				!	!ignore diffusion reactions for now
-				!	reactionCurrent=>reactionCurrent%next
-				!else
+			do while(associated(reactionCurrent))
+
+				write(*,*) 'numReactants', reactionCurrent%numReactants, 'reactants'
 					
-					write(*,*) 'numReactants', reactionCurrent%numReactants, 'reactants'
+				do j=1,reactionCurrent%numReactants
+					write(*,*) (reactionCurrent%reactants(j,k),k=1,numSpecies)
+				end do
 					
-					do 20 j=1,reactionCurrent%numReactants
-						write(*,*) (reactionCurrent%reactants(j,k),k=1,numSpecies)
-					20 continue
+				write(*,*) 'numProducts', reactionCurrent%numProducts, 'products'
 					
-					write(*,*) 'numProducts', reactionCurrent%numProducts, 'products'
+				do j=1,reactionCurrent%numProducts
+					write(*,*) (reactionCurrent%products(j,k),k=1,numSpecies)
+				end do
 					
-					do 21 j=1,reactionCurrent%numProducts
-						write(*,*) (reactionCurrent%products(j,k),k=1,numSpecies)
-					21 continue
+				write(*,*) 'cells and procs'
 					
-					write(*,*) 'cells and procs'
+				do j=1,reactionCurrent%numReactants+reactionCurrent%numProducts
+					write(*,*) reactionCurrent%cellNumber(j), reactionCurrent%taskid(j)
+				end do
 					
-					do 22 j=1,reactionCurrent%numReactants+reactionCurrent%numProducts
-						write(*,*) reactionCurrent%cellNumber(j), reactionCurrent%taskid(j)
-					22 continue
+				write(*,*) 'rate', reactionCurrent%reactionRate
 					
-					write(*,*) 'rate', reactionCurrent%reactionRate
-					
-					reactionCurrent=>reactionCurrent%next
-				
-				!endif
-			23 continue
-!			if(myProc%taskid==MASTER) then
-!				read(*,*)
-!			endif
+				reactionCurrent=>reactionCurrent%next
+
+			end do
+
 			write(*,*) '********************************'
+
 		endif
-	19 continue
+	end do
 	
 	write(*,*) 'Cascades'
 	CascadeCurrent=>ActiveCascades
-	do 24 while(associated(CascadeCurrent))
+	do while(associated(CascadeCurrent))
 		write(*,*) 'Cascade', CascadeCurrent%CascadeID, 'Coarse cell number', CascadeCurrent%cellNumber
-		do 25 i=1,numCellsCascade
+		do i=1,numCellsCascade
 			reactionCurrent=>CascadeCurrent%reactionList(i)%next
 			if(associated(reactionCurrent)) then
 				write(*,*)
 				write(*,*)  'cascade cell', i
 				write(*,*) 'cascade cell neighbors', (cascadeConnectivity(i,j),j=1,6)
 	
-				do 26 while(associated(reactionCurrent))
+				do while(associated(reactionCurrent))
 					if(reactionCurrent%numReactants==1 .AND. reactionCurrent%numProducts==1) then
 						!ignore diffusion reactions for now
 						reactionCurrent=>reactionCurrent%next
@@ -192,38 +186,38 @@ if(myProc%taskid==MASTER) then
 						
 						write(*,*) 'numReactants', reactionCurrent%numReactants, 'reactants'
 						
-						do 27 j=1,reactionCurrent%numReactants
+						do j=1,reactionCurrent%numReactants
 							write(*,*) (reactionCurrent%reactants(j,k),k=1,numSpecies)
-						27 continue
+						end do
 						
 						write(*,*) 'numProducts', reactionCurrent%numProducts, 'products'
 						
-						do 28 j=1,reactionCurrent%numProducts
+						do j=1,reactionCurrent%numProducts
 							write(*,*) (reactionCurrent%products(j,k),k=1,numSpecies)
-						28 continue
+						end do
 						
 						write(*,*) 'cells and procs'
 						
-						do 29 j=1,reactionCurrent%numReactants+reactionCurrent%numProducts
+						do j=1,reactionCurrent%numReactants+reactionCurrent%numProducts
 							write(*,*) reactionCurrent%cellNumber(j), reactionCurrent%taskid(j)
-						29 continue
+						end do
 						
 						write(*,*) 'rate', reactionCurrent%reactionRate
 						
 						reactionCurrent=>reactionCurrent%next
 					
 					endif
-				26 continue
+				end do
 			endif
 			
-		25 continue
+		end do
 		write(*,*) 'cascade total rate', CascadeCurrent%totalRate, 'total rate', totalRate
 		write(*,*) 'next cascade'
 		CascadeCurrent=>CascadeCurrent%next
 
-	24 continue
+	end do
 	
-endif
+end if
 
 end subroutine
 
@@ -338,24 +332,24 @@ double precision totalRateCheck
 if(myProc%taskid==MASTER) then	
 	write(*,*) 'reaction chosen processor', myProc%taskid, 'step', step
 	if(associated(reactionCurrent)) then
-		if(reactionCurrent%numReactants .GT. 0) then
+		if(reactionCurrent%numReactants > 0) then
 			write(*,*) 'reactants', reactionCurrent%reactants
-		endif
-		if(reactionCurrent%numProducts .GT. 0) then
+		end if
+		if(reactionCurrent%numProducts > 0) then
 			write(*,*) 'products', reactionCurrent%products
-		endif
+		end if
 		if(reactionCurrent%numReactants == -10) then
 			write(*,*) 'Cascade implantation chosen', numImplantEvents, 'cell', reactionCurrent%cellNumber
 			!read(*,*)
-		endif
+		end if
 		write(*,*) 'cells', reactionCurrent%cellNumber, 'procs', reactionCurrent%taskid, 'rate', reactionCurrent%reactionRate
 		!write(*,*) 'totalRate', totalRate, 'totalRateCell', totalRateVol(reactionCurrent%cellNumber)
 		!write(*,*) 'totalRateCheck', totalRateCheck(), 'totalRateCellCheck', totalRateVol(reactionCurrent%cellNumber)
 	else
 		write(*,*) 'null event chosen'
-	endif
+	end if
 !		read(*,*) !pause once per step (for debugging only)
-endif
+end if
 write(*,*)
 
 end subroutine

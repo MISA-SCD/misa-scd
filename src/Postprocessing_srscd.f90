@@ -1832,7 +1832,7 @@ if(myProc%taskid==MASTER) then
 	!Record master reaction rate
 	rate(1)=totalRate
 	
-	do 10 i=1,myProc%numtasks-1
+	do i=1,myProc%numtasks-1
 		
 		!Recieve data from other procs
 		!record data from other procs in rate()
@@ -1840,7 +1840,7 @@ if(myProc%taskid==MASTER) then
 		call MPI_RECV(rateTemp,1,MPI_DOUBLE_PRECISION,i,step,MPI_COMM_WORLD,status,ierr)
 		rate(i+1)=rateTemp
 		
-	10 continue
+	end do
 	
 	!Output data from other procs to file
 	

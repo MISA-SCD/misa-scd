@@ -86,25 +86,25 @@ integer cell
 rate=0d0
 rateSingle=0d0
 
-do 10 cell=1,numCells
+do cell=1,numCells
 	rateCell=0d0
 	reactionCurrent=>reactionList(cell)
 	
-	do 11 while(associated(reactionCurrent))
+	do while(associated(reactionCurrent))
 		rate=rate+reactionCurrent%reactionRate
 		rateCell=rateCell+reactionCurrent%reactionRate
 		reactionCurrent=>reactionCurrent%next
-	11 continue
+	end do
 	
 	totalRateVol(cell)=rateCell	!Total reaction rate in this volume element
 	
 	if(singleElemKMC=='yes') then
-		if(rateCell .GT. rateSingle) then
+		if(rateCell > rateSingle) then
 			rateSingle=rateCell
-		endif
-	endif
+		end if
+	end if
 	
-10 continue
+end do
 
 if(singleElemKMC=='yes') then
 	totalRate=rateSingle	!max reaction rate among all volume elements in this processor
@@ -209,8 +209,7 @@ do cell=1,numCells
 			endif
 
 			nullify(reactionList(cell)%next)
-		else
-			write(*,*) 'error unknown implantation type'
+
 		end if
 
 		reactionCurrent=>reactionList(cell)
@@ -245,6 +244,7 @@ do cell=1,numCells
 
 			!Find reaction rate for He ion implantation using ImplantReactions(reac), which is input from file.
 		!	reactionCurrent%reactionRate=findReactionRate(cell, ImplantReactions(matNum,reac))
+		!nullify(reactionCurrent%next)
 		!end if
 
 		!2019.05.04 Add: Initialize possible reactions of free Cu
@@ -290,6 +290,7 @@ do cell=1,numCells
 			!Find reaction rate for Cu clustering using ClusterReactions(reac), which is input from file.
 		reactionCurrent%reactionRate=findReactionRateMultiple(reactionCurrent%reactants(1,:), &
 				reactionCurrent%reactants(2,:), cell, ClusterReactions(matNum,reac))
+		nullify(reactionCurrent%next)
 
 		!*******************************************************************
 		!Diffusion: Cu->Cu
@@ -334,6 +335,7 @@ do cell=1,numCells
 			!reactionCurrent%reactionRate=findReactionRateDiff(reactionCurrent%reactants(1,:), cell, &
 			!		myProc%taskid, myMesh(cell)%neighbors(1,dir), myMesh(cell)%neighborProcs(1,dir), dir, &
 			!		DiffReactions(matNum,reac))
+			nullify(reactionCurrent%next)
 
 		end do
 		!*******************************************************************
@@ -373,8 +375,8 @@ do cell=1,numCells
 		!clustering: Cu+Cu->2Cu
 		!*******************************************************
 
-		allocate(reactionList(cell))
 		reactionCurrent=>reactionList(cell)
+		nullify(reactionList(cell)%next)
 
 		reactionCurrent%numReactants=2
 		reactionCurrent%numProducts=1
@@ -411,6 +413,7 @@ do cell=1,numCells
 		!Find reaction rate for Cu clustering using ClusterReactions(reac), which is input from file.
 		reactionCurrent%reactionRate=findReactionRateMultiple(reactionCurrent%reactants(1,:), &
 				reactionCurrent%reactants(2,:), cell, ClusterReactions(matNum,reac))
+		nullify(reactionCurrent%next)
 
 		!*******************************************************************
 		!Diffusion: Cu->Cu
@@ -455,6 +458,7 @@ do cell=1,numCells
 			!reactionCurrent%reactionRate=findReactionRateDiff(reactionCurrent%reactants(1,:), cell, &
 			!		myProc%taskid, myMesh(cell)%neighbors(1,dir), myMesh(cell)%neighborProcs(1,dir), dir, &
 			!		DiffReactions(matNum,reac))
+			nullify(reactionCurrent%next)
 
 		end do
 
@@ -543,93 +547,93 @@ if(debugToggle == 'yes') then
 	
 	!Step 1: read in header information from restart file
 	
-	do 14 while(flag .eqv. .FALSE.)
+	do while(flag .eqv. .FALSE.)
 		read(87,*) char
 		if(char=='numProcs') then
 			read(87,*) numProcs
 			flag=.TRUE.
-		endif
-	14 continue
+		end if
+	end do
 	flag=.FALSE.
 	
-	if(numProcs .NE. myProc%numTasks) then
+	if(numProcs /= myProc%numTasks) then
 		write(*,*) 'Error restart file incorrect number of processors'
 		if(myProc%taskid==MASTER) read(*,*)
-	endif
+	end if
 	
-	do 15 while(flag .eqv. .FALSE.)
+	do while(flag .eqv. .FALSE.)
 		read(87,*) char
 		if(char=='numImplantEvents') then
 			read(87,*) numImplantEventsReset
 			flag=.TRUE.
-		endif
-	15 continue
+		end if
+	end do
 	flag=.FALSE.
 	
-	do 16 while(flag .eqv. .FALSE.)
+	do while(flag .eqv. .FALSE.)
 		read(87,*) char
 		if(char=='numHeImplantEvents') then
 			read(87,*) numHeImplantEventsReset
 			flag=.TRUE.
-		endif
-	16 continue
+		end if
+	end do
 	flag=.FALSE.
 	
-	do 17 while(flag .eqv. .FALSE.)
+	do while(flag .eqv. .FALSE.)
 		read(87,*) char
 		if(char=='elapsedTime') then
 			read(87,*) elapsedTimeReset
 			flag=.TRUE.
-		endif
-	17 continue
+		end if
+	end do
 	flag=.FALSE.
 	
 	!Step 2: skip to part of input file that matches this processor
 	
-	do 19 while(flag .eqv. .FALSE.)
+	do while(flag .eqv. .FALSE.)
 		read(87,*) char
 		if(char=='processor') then
 			read(87,*) procID
 			if(procID==myProc%taskid) then
 				flag=.TRUE.
-			endif
-		endif
-	19 continue
+			end if
+		end if
+	end do
 	flag=.FALSE.
 	
 	!Step 3: Read in defect information from file to defect list (coarse mesh),
 	!noting that the coordinates in the input file must match the coordinates
 	!of the coarse mesh element.
 	
-	do 20 i=1,numCells
+	do i=1,numCells
 		
-		do 21 while(flag .eqv. .FALSE.)
+		do while(flag .eqv. .FALSE.)
 			read(87,*) char
 			if(char=='coordinates') then
 				read(87,*) (cellCoord(j), j=1,3)
 				flag=.TRUE.
-			endif
-		21 continue
+			end if
+		end do
 		flag=.FALSE.
 		
-		do 22 j=1,3
-			if(cellCoord(j) .NE. myMesh(i)%coordinates(j)) then
+		do j=1,3
+			if(cellCoord(j) /= myMesh(i)%coordinates(j)) then
 				write(*,*) 'Error cell coordinates do not match in reset file'
 				write(*,*) 'CellCoord', cellCoord(j), 'myMeshCoord', myMesh(i)%coordinates(j)
 				if(myProc%taskid==MASTER) read(*,*)
-			endif
-		22 continue
+			end if
+		end do
 		
-		do 23 while(flag .eqv. .FALSE.)
+		do while(flag .eqv. .FALSE.)
 			read(87,*) char
 			if(char=='numDefectTypes') then
 				read(87,*) numDefectTypes
 				flag=.TRUE.
-			endif
-		23 continue
+			end if
+		end do
 		flag=.FALSE.
 		
-		do 24 j=1,numDefectTypes
+		do j=1,numDefectTypes
 			read(87,*) (defectTypeReset(k), k=1,numSpecies)
 			read(87,*) defectNumReset
 			
@@ -651,19 +655,19 @@ if(debugToggle == 'yes') then
 				nullify(defectCurrent%next)
 				defectPrev%next=>defectCurrent
 				
-				do 25 k=1,numSpecies
+				do k=1,numSpecies
 					defectCurrent%defectType(k)=defectTypeReset(k)
-				25 continue
+				end do
 				defectCurrent%num=defectNumReset
 				defectCurrent%cellNumber=i
 				
-			endif
-		24 continue
+			end if
+		end do
 		
-	20 continue
+	end do
 	
 	close(87)
-endif
+end if
 flag=.FALSE.
 
 end subroutine

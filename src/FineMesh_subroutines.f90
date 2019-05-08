@@ -467,15 +467,15 @@ integer i
 r=dprand()
 a=0d0
 
-do 10 i=1,numxCascade*numyCascade*numzCascade
+do i=1,numxCascade*numyCascade*numzCascade
 	
 	a=a+1d0/dble(numxCascade*numyCascade*numzCascade)
 	
-	if(a .GT. r) then
+	if(a > r) then
 		exit
 	endif
 
-10 continue
+end do
 
 chooseRandomCell=i
 

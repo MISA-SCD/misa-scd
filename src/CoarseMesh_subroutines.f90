@@ -20,7 +20,7 @@ integer products(numSpecies), same, j
 
 if(.NOT. associated(defectCurrent)) then
 	write(*,*) 'error defectCurrent not associated in findDefectInList'
-endif
+end if
 
 outer:do while(associated(defectCurrent))
 	same=0
@@ -28,21 +28,21 @@ outer:do while(associated(defectCurrent))
 	inner: do j=1,numSpecies
 		if(defectCurrent%defectType(j)==products(j)) then
 			same=same+1
-		else if(defectCurrent%defectType(j) .GT. products(j)) then
+		else if(defectCurrent%defectType(j) > products(j)) then
 			exit inner
-		endif
+		end if
 	end do inner
 	
 	if(same==numSpecies) then
 		exit outer		!defectCurrent points to the defect that we are trying to add
 	else if(same==j-1) then
-		if(defectCurrent%defectType(j) .GT. products(j)) then
+		if(defectCurrent%defectType(j) > products(j)) then
 			exit outer		!defectCurrent points one past the defect we are trying to add and defectPrev points one before
-		endif
+		end if
 	else
 		defectPrev=>defectCurrent
 		defectCurrent=>defectCurrent%next
-	endif
+	end if
 	
 end do outer
 

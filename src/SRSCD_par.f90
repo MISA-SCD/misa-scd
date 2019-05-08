@@ -448,7 +448,7 @@ do while(elapsedTime < totalTime)
 			
 			end do
 			
-			reactionChoiceCurrent=>reactionChoiceList%next	!reactionChoiceCurrent=NULL
+			reactionChoiceCurrent=>reactionChoiceList%next
 			call updateDefectListMultiple(reactionChoiceCurrent, defectUpdateCurrent, CascadeCurrent)
 			
 			!call DEBUGPrintDefectUpdate(defectUpdate)
