@@ -774,7 +774,7 @@ if(numMaterials==1) then
 	matNum=1
 else
 	matNum=myMesh(CascadeCurrent%cellNumber)%material
-endif
+end if
 
 !Allocate cascade defect list and reaction list
 
@@ -783,44 +783,45 @@ allocate(CascadeCurrent%reactionList(numCellsCascade))
 
 !For each cell, initialize the reaction list (no reaction or He ion implantation) and defect list (single He initialized with num=0)
 
-do 10 cell=1,numCellsCascade
+do cell=1,numCellsCascade
 	
 	allocate(CascadeCurrent%localDefects(cell)%defectType(numSpecies))
 	nullify(CascadeCurrent%localDefects(cell)%next)
-	do 11 j=1,numSpecies
+	do j=1,numSpecies
 		CascadeCurrent%localDefects(cell)%defectType(j)=0
-	11 continue
+	end do
 	
 	CascadeCurrent%localDefects(cell)%num=0
-	CascadeCurrent%localDefects(cell)%cellNumber=cell
+	CascadeCurrent%localDefects(cell)%cellNumber=cell   !fineMeshID
 
-	if(HeDPARatio .GT. 0d0) then
+    !initialize the reaction list for each fine mesh
+	if(HeDPARatio > 0d0) then
 	
 		CascadeCurrent%reactionList(cell)%numReactants=0
 		CascadeCurrent%reactionList(cell)%numProducts=1
 		allocate(CascadeCurrent%reactionList(cell)%products(CascadeCurrent%reactionList(cell)%numProducts, numSpecies))
 		
 		!search ImplantList for He implant reactions
-		do 54  reac=1,numImplantReac(matNum)
+		do reac=1,numImplantReac(matNum)
 			if(ImplantReactions(matNum,reac)%numReactants==0 .AND. ImplantReactions(matNum,Reac)%numProducts==1) then
 				exit
 			endif
-		54 continue
+		end do
 		
-		do 55 i=1,ImplantReactions(matNum,reac)%numProducts
-			do 56 j=1,numSpecies
+		do i=1,ImplantReactions(matNum,reac)%numProducts
+			do j=1,numSpecies
 				CascadeCurrent%reactionList(cell)%products(i,j)=ImplantReactions(matNum,reac)%products(i,j)
-			56 continue
+			end do
 			CascadeCurrent%reactionList(cell)%cellNumber(i)=cell
 			CascadeCurrent%reactionList(cell)%taskid(i)=myMesh(cell)%proc
-		55 continue
+		end do
 		
 		!Find reaction rate for He ion implantation using ImplantReactions(reac), which is input from file.
 		CascadeCurrent%reactionList(cell)%reactionRate=findReactionRateFine(CascadeCurrent%cellNumber, ImplantReactions(matNum,reac))
 		
 		!Add this reaction rate to total rate both for the cascade and for the entire volume element
-		totalRate=totalRate+cascadeCurrent%reactionList(cell)%reactionRate
-		CascadeCurrent%totalRate(cell)=CascadeCurrent%totalRate(cell)+reactionList(cell)%reactionRate		
+		totalRate=totalRate+CascadeCurrent%reactionList(cell)%reactionRate
+		CascadeCurrent%totalRate(cell)=CascadeCurrent%totalRate(cell)+CascadeCurrent%reactionList(cell)%reactionRate
 		
 		nullify(CascadeCurrent%reactionList(cell)%next)
 	
@@ -831,8 +832,8 @@ do 10 cell=1,numCellsCascade
 		CascadeCurrent%reactionList(cell)%reactionRate=0d0
 		nullify(CascadeCurrent%reactionList(cell)%next)
 		
-	endif
-10 continue
+	end if
+end do
 
 !defectCurrentCoarse and defectPrevCoarse will be used to peruse defects in coarse mesh and place in fine mesh
 defectCurrentCoarse=>DefectList(CascadeCurrent%cellNumber)
@@ -848,7 +849,7 @@ volumeRatio=CascadeElementVol*dble(numCellsCascade)/(myMesh(CascadeCurrent%cellN
 !the fine mesh. If yes, the defects are removed from the coarse mesh. UpdateDefect needs to be kept current
 !in this loop.
 
-do 12 while(associated(defectCurrentCoarse))
+do while(associated(defectCurrentCoarse))
 	
 	r1=dprand()
 	r2=0d0
@@ -865,19 +866,19 @@ do 12 while(associated(defectCurrentCoarse))
 		!be computed here.
 		!*******************************************************************************************
 		
-		if(n .LE. 12) then
+		if(n <= 12) then    !binomial distribution
 			!chooses number of defects that are added to fine mesh from coarse mesh of this type
-			do 13 k=0,n-1
+			do k=0,n-1
 				r2=r2+dble(binomial(n,k))*dble(volumeRatio**k)*dble((1d0-volumeRatio)**(n-k))
-				if(r2 .GT. r1) then
+				if(r2 > r1) then
 					exit
 				endif
-			13 continue
-		else
+			end do
+		else    !Poisson distribution, then Gaussian distrubition
 			
 			lambda=volumeratio*n
 			rstore=0d0
-			do 44 k=0,n-1
+			do k=0,n-1
 				
 				!***********************************************************************************
 				!For k .LE. 12, a poisson distribution can be calculated. For k>12, factorial(k) is 
@@ -889,31 +890,31 @@ do 12 while(associated(defectCurrentCoarse))
 				!considering the size of the numbers that the machine can handle.
 				!***********************************************************************************
 				
-				if(k .LE. 12) then
+				if(k <= 12) then    !Poisson distribution
 					!write(*,*) 'poisson distribution'
 					r2=r2+lambda**(dble(k))*dexp(-lambda)/factorial(k)
 					!write(*,*) 'r2', r2, lambda**(dble(k))*dexp(-lambda)/factorial(k)
 					!write(*,*) 'r1', r1, 'r2', r2, 'k', k, 'n', n
-					if(r2 .GT. r1) then
+					if(r2 > r1) then
 						exit
-					endif
-				else
+					end if
+				else    !Gaussian distrubition
 					!write(*,*) 'gaussian distribution'
 					r2=r2+dexp(-(k-lambda)**(2d0)/(2d0*lambda))/(dsqrt(2*pi*lambda))
 					!write(*,*) 'r1', r1, 'r2', r2, 'k', k, 'n', n
 					if(rstore-r2 == 0d0) then
 						!write(*,*) 'gaussian exit'
 						exit
-					else if(r2 .GT. r1) then
+					else if(r2 > r1) then
 						!write(*,*) 'gaussian exit'
 						exit
-					endif
+					end if
 					rstore=r2
-				endif
-			44 continue
+				end if
+			end do
 			!read(*,*)
 			!write(*,*) 'k', k
-		endif
+		end if
 		
 !		if(k .NE. 0) then
 !			write(*,*) 'k not 0', k
@@ -925,26 +926,26 @@ do 12 while(associated(defectCurrentCoarse))
 		!k is the number of defects being deposited into the fine mesh
 		!***********
 		
-		do 20 num=1,k
+		do num=1,k
 			
 			!***************************************************************
 			!Generate the cell within the fine mesh that the defect will be deposited into
 			!***************************************************************
 			r1=dprand()*dble(numCellsCascade)
 			r2=0d0
-			do 21 cell=1,numCellsCascade
+			do cell=1,numCellsCascade
 				r2=r2+dble(cell)
-				if(r2 .GT. r1) then
+				if(r2 > r1) then
 					exit
 				endif
-			21 continue
+			end do
 			
 			!***************************************************************
 			!Deposit the defect into the fine mesh
 			!***************************************************************
-			do 24 j=1,numSpecies
+			do j=1,numSpecies
 				products(j)=defectCurrentCoarse%defectType(j)
-			24 continue
+			end do
 			!write(*,*) 'inserting into fine mesh', (products(j), j=1,numSpecies), 'k', k
 			nullify(defectPrevFine)
 			defectCurrentFine=>CascadeCurrent%localDefects(cell)
@@ -957,11 +958,11 @@ do 12 while(associated(defectCurrentCoarse))
 				
 				count=0
 				!Check to see if this defect already exists in the fine mesh list
-				do 25 j=1,numSpecies
+				do j=1,numSpecies
 					if(defectCurrentFine%defectType(j)==products(j)) then
 						count=count+1
 					endif
-				25 continue
+				end do
 				
 				if(count==numSpecies) then
 				
@@ -980,9 +981,9 @@ do 12 while(associated(defectCurrentCoarse))
 					allocate(defectPrevFine%defectType(numSpecies))
 					defectPrevFine%cellNumber=cell
 					defectPrevFine%num=1
-					do 14 j=1,numSpecies
+					do j=1,numSpecies
 						defectPrevFine%defectType(j)=products(j)
-					14 continue
+					end do
 					defectPrevFine%next=>defectCurrentFine !if inserted defect is in the middle of the list, point it to the next item in the list
 					
 				endif
@@ -994,9 +995,9 @@ do 12 while(associated(defectCurrentCoarse))
 				allocate(defectPrevFine%defectType(numSpecies))
 				defectPrevFine%cellNumber=cell
 				defectPrevFine%num=1
-				do 15 j=1,numSpecies
+				do j=1,numSpecies
 					defectPrevFine%defectType(j)=products(j)
-				15 continue
+				end do
 			endif
 			
 			!***************************************************************
@@ -1039,16 +1040,15 @@ do 12 while(associated(defectCurrentCoarse))
 				defectCurrentCoarse%num=defectCurrentCoarse%num-1 !remove the defect from the system instead of the entire entry in the list
 			endif
 			
-		20 continue
-	endif
+		end do
+	end if
 	
 	defectPrevCoarse=>defectCurrentCoarse
 	defectCurrentCoarse=>defectCurrentCoarse%next
 	
-12 continue
+end do
 
 end subroutine
-
 !***************************************************************************************************
 !
 !> Subroutine initializeMesh() - begins the mesh initialization process at the beginning of the program

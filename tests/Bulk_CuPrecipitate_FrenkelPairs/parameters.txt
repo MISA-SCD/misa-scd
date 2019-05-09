@@ -124,12 +124,12 @@ fineLength
 5				! Length of one cascade implantation element (nm)
 
 numxFine
-4				! number of cascade elements in x-direction (fine mesh)
+6				! number of cascade elements in x-direction (fine mesh)
 
 numyFine
-4				! number of cascade elements in y-direction
+6				! number of cascade elements in y-direction
 
 numzFine
-4				! number of cascade elements in z-direction
+6				! number of cascade elements in z-direction
 
 end				! Tag for the end of meshing parameters

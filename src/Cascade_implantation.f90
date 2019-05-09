@@ -20,13 +20,13 @@ r=dprand()
 atemp=0d0
 cascadeTemp=>CascadeList
 
-do 10 while(associated(cascadeTemp))
+do while(associated(cascadeTemp))
 	atemp=atemp+1d0/dble(numCascades)
-	if(atemp .GE. r) then
+	if(atemp >= r) then
 		exit
 	endif
 	cascadeTemp=>cascadeTemp%nextCascade
-10 continue
+end do
 end subroutine
 
 !***************************************************************************************************

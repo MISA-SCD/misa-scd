@@ -42,7 +42,7 @@ implicit none
 type(reaction), pointer :: reactionCurrent, reactionTemp
 type(cascade), pointer :: cascadeCurrent
 type(defect), pointer :: defectTemp
-double precision r2, atemp, atemp_cell, r2timesa
+double precision r2, atemp, atemp_cell, r2timesa, atemp_test
 integer i, j
 double precision totalRateCells
 
@@ -52,6 +52,7 @@ double precision totalRateCells
 
 atemp=0d0
 atemp_cell=0d0
+atemp_test=0d0
 r2=dprand()
 r2timesa=r2*maxRate
 nullify(CascadeCurrent)		!These are default pointed at nothing, indicating null event
@@ -86,6 +87,8 @@ outer: do i=1,numCells
 			atemp=atemp+totalRateVol(i)
 	end if
 end do outer
+
+atemp_test = atemp_cell
 
 !***********************************************************************
 !Here we choose from reactions within the fine meshes for active cascades
@@ -184,22 +187,22 @@ else
 	
 	!for post processing: counting trapping and emission reactions from the grain boundary
 	if(reactionCurrent%numReactants==1 .AND. reactionCurrent%numProducts==1) then	!diffusion/emission reaction
- !! if(reactionCurrent%cellNumber(1) > 0 .AND. reactionCurrent%cellNumber(2) > 0) then
-                !write(*,*) 'myProc', myProc%taskid, 'cellNumber(2)', reactionCurrent%cellNumber(2)
-		if(myMesh(reactionCurrent%cellNumber(1))%material == 1 .AND. &
-			myMesh(reactionCurrent%cellNumber(2))%material == 2) then	!trapping on grain boundary
+  		if(atemp_cell > atemp_test) then	!2019.05.09 Add
+			!write(*,*) 'myProc', myProc%taskid, 'cellNumber(2)', reactionCurrent%cellNumber(2)
+			if(myMesh(reactionCurrent%cellNumber(1))%material == 1 .AND. &
+				myMesh(reactionCurrent%cellNumber(2))%material == 2) then	!trapping on grain boundary
 			
-			numTrapV=numTrapV+reactionCurrent%reactants(1,2)
-			numTrapSIA=numTrapSIA+reactionCurrent%reactants(1,3)
+				numTrapV=numTrapV+reactionCurrent%reactants(1,2)
+				numTrapSIA=numTrapSIA+reactionCurrent%reactants(1,3)
 			
-		else if(myMesh(reactionCurrent%cellNumber(1))%material==2 .AND. &
-				myMesh(reactionCurrent%cellNumber(2))%material==1) then	!emission from grain boundary
+			else if(myMesh(reactionCurrent%cellNumber(1))%material==2 .AND. &
+					myMesh(reactionCurrent%cellNumber(2))%material==1) then	!emission from grain boundary
 				
-			numEmitV=numEmitV+reactionCurrent%reactants(1,2)
-			numEmitSIA=numEmitSIA+reactionCurrent%reactants(1,3)
+				numEmitV=numEmitV+reactionCurrent%reactants(1,2)
+				numEmitSIA=numEmitSIA+reactionCurrent%reactants(1,3)
 			
-		end if
-!!  endif
+			end if
+  		end if
 	end if
 end if
 
@@ -428,10 +431,10 @@ interface
 end interface
 
 !initialize the trackers of number of defects to update
-do 9 i=1,6
+do i=1,6
 	numUpdateLocal(i)=0
 	numUpdateBndry(i)=0
-9 continue
+end do
 
 if(associated(reactionCurrent)) then	!if we have not chosen a null event
 
@@ -494,13 +497,13 @@ if(associated(reactionCurrent)) then	!if we have not chosen a null event
 				CascadeCurrent=>ActiveCascades
 				CascadeCurrent%cascadeID=numImplantEvents
 				!write(*,*) 'initialized ActiveCascades'
-			else
+			else	!cascade fine meshe are already in the system
 				j=1
-				do 540 while(associated(CascadeCurrent))
+				do while(associated(CascadeCurrent))
 					CascadePrev=>CascadeCurrent
 					CascadeCurrent=>CascadeCurrent%next
 					j=j+1
-				540 continue
+				end do
 				!write(*,*) 'initializing cascade', j
 				allocate(CascadeCurrent)
 				nullify(CascadeCurrent%next)
@@ -527,8 +530,9 @@ if(associated(reactionCurrent)) then	!if we have not chosen a null event
 			!If we add too many cascades to a coarse mesh element, the volume inside can become negative. If this 
 			!happens, output an error message. (Only a danger in the case of very high DPA rates and
 			!small coarse mesh elements)
+			!!每选择一次级联植入，则添加一组细网格
 			
-			if(myMesh(cascadeCurrent%cellNumber)%volume .LE. 0d0) then
+			if(myMesh(cascadeCurrent%cellNumber)%volume <= 0d0) then
 				write(*,*) 'Error negative coarse mesh volume'
 			endif
 			

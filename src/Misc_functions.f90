@@ -19,10 +19,10 @@ if(n .GE. 17) then
 endif
 
 temp=1
-do 10 i=1,n
+do i=1,n
 	temp=temp*i
 	!write(*,*) 'temp', temp
-10 continue
+end do
 factorial=temp
 
 end function

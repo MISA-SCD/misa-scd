@@ -63,7 +63,7 @@ D0	8.2d11	Em	0.43d0
 0	0	4	0			!SIA_m 4
 D0	8.2d11	Em	0.43d0
 0	0	4	0			!Cu_1V_1******************
-D0	0.00d0	Em	0.00d0
+D0	3.3d15	Em	2.29d0
 
 function		!Indicates that we are about to read in functional form parameters
 1	0	0	0			!Cu_n
