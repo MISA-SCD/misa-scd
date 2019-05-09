@@ -332,20 +332,29 @@ double precision totalRateCheck
 if(myProc%taskid==MASTER) then	
 	write(*,*) 'reaction chosen processor', myProc%taskid, 'step', step
 	if(associated(reactionCurrent)) then
-		if(reactionCurrent%numReactants > 0) then
-			write(*,*) 'reactants', reactionCurrent%reactants
-		end if
-		if(reactionCurrent%numProducts > 0) then
-			write(*,*) 'products', reactionCurrent%products
-		end if
-		if(reactionCurrent%numReactants == -10) then
-			write(*,*) 'Cascade implantation chosen', numImplantEvents, 'cell', reactionCurrent%cellNumber
+		!2019.05.09
+		write(*,*) '**************************************choosenReaction*****************************'
+		write(*,*) 'numReactants', reactionCurrent%numReactants,'reactants', reactionCurrent%reactants
+		write(*,*) 'numProducts	', reactionCurrent%numProducts, 'products', reactionCurrent%products
+		write(*,*) 'cellNumbers', reactionCurrent%cellNumber
+		write(*,*) 'taskid', reactionCurrent%taskid
+		write(*,*) 'reactionRate', reactionCurrent%reactionRate
+
+		!if(reactionCurrent%numReactants > 0) then
+		!	write(*,*) 'reactants', reactionCurrent%reactants
+		!end if
+		!if(reactionCurrent%numProducts > 0) then
+		!	write(*,*) 'products', reactionCurrent%products
+		!end if
+		!if(reactionCurrent%numReactants == -10) then
+		!	write(*,*) 'Cascade implantation chosen', numImplantEvents, 'cell', reactionCurrent%cellNumber
 			!read(*,*)
-		end if
-		write(*,*) 'cells', reactionCurrent%cellNumber, 'procs', reactionCurrent%taskid, 'rate', reactionCurrent%reactionRate
+		!end if
+		!write(*,*) 'cells', reactionCurrent%cellNumber, 'procs', reactionCurrent%taskid, 'rate', reactionCurrent%reactionRate
 		!write(*,*) 'totalRate', totalRate, 'totalRateCell', totalRateVol(reactionCurrent%cellNumber)
 		!write(*,*) 'totalRateCheck', totalRateCheck(), 'totalRateCellCheck', totalRateVol(reactionCurrent%cellNumber)
 	else
+		write(*,*) '**************************************choosenReaction*****************************'
 		write(*,*) 'null event chosen'
 	end if
 !		read(*,*) !pause once per step (for debugging only)

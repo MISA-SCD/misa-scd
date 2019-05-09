@@ -508,7 +508,7 @@ do while(elapsedTime < totalTime)
 		else if(implantScheme=='MonteCarlo') then
 			
 			call chooseReaction(reactionCurrent, CascadeCurrent)
-			
+			call DEBUGPrintReaction(reactionCurrent, step)
 			!Generate timestep in the master processor and send it to all other processors
 			
 			if(myProc%taskid==MASTER) then
