@@ -252,7 +252,7 @@ call initializeReactionList()		!initialize reactions within myMesh
 call initializeTotalRate()			!initialize totalRate and maxRate using reactionList(:)
 call initializeDebugRestart()		!input defects into coarse mesh from restart file (for debugging)
 
-call DEBUGPrintReactionList(1)		!prints all reaction lists at a given Monte Carlo step
+!call DEBUGPrintReactionList(1)		!prints all reaction lists at a given Monte Carlo step
 
 !******************************************************************
 !Initialize Counters
@@ -322,6 +322,11 @@ annealIdentify=.FALSE.		!<(.TRUE. if in annealing phase, .FALSE. otherwise) used
 do while(elapsedTime < totalTime)
 	
 	step=step+1
+	!just for testing
+	if(myProc%taskid == MASTER) then
+		write(*,*) '$$$$$$$$$$$$$$$$$$$$$$$$$$ elapsedTime', elapsedTime
+	end if
+	call DEBUGPrintReactionList(step)
 	
 	!Logical variable tells us whether cascade communication step needs to be carried out
 	!(0=no cascade, nonzero=number of volume element where cascade event has happened)
