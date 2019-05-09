@@ -362,3 +362,32 @@ end if
 write(*,*)
 
 end subroutine
+
+!2019.05.09
+subroutine DEBUGPrintDefectList(step)
+	use mod_srscd_constants
+	use DerivedType
+	implicit none
+
+	integer i,step
+	type(defect), pointer :: defectCurrent
+
+	!output reaction list
+	if(myProc%taskid==MASTER) then
+		write(*,*) 'processor', myProc%taskid, 'reactions after step', step, 'numCells', numCells
+		do i=1, numCells
+			!!reactionCurrent=>reactionList(i)%next
+			defectCurrent=>DefectList(i)
+			if(associated(defectCurrent)) then
+				write(*,*) '************defectList********************'
+				write(*,*) 'defectType', defectCurrent%defectType
+				write(*,*) 'numDefects', defectCurrent%num
+				write(*,*) 'cellNumber', defectCurrent%cellNumber
+
+				defectCurrent=>defectCurrent%next
+
+			endif
+		end do
+	end if
+
+end subroutine

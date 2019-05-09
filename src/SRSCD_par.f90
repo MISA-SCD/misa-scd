@@ -508,6 +508,7 @@ do while(elapsedTime < totalTime)
 		else if(implantScheme=='MonteCarlo') then
 			
 			call chooseReaction(reactionCurrent, CascadeCurrent)
+			!test
 			call DEBUGPrintReaction(reactionCurrent, step)
 			!Generate timestep in the master processor and send it to all other processors
 			
@@ -540,6 +541,8 @@ do while(elapsedTime < totalTime)
 		!Input: reactionCurrent
 		!Output: defectUpdateCurrent, CascadeCurrent
 		call updateDefectList(reactionCurrent, defectUpdateCurrent, CascadeCurrent)
+		!test
+		call DEBUGPrintDefectList(step)
 
 		!call DEBUGPrintDefectUpdate(defectUpdate)
 	
