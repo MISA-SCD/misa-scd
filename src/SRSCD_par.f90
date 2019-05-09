@@ -235,10 +235,10 @@ end if
 !random number seeds.
 !**********************************************
 !2019.05.04 add
-localAtoms = floor((myProc%globalCoord(2)-myProc%globalCoord(1))/lattice * &
-		(myProc%globalCoord(4)-myProc%globalCoord(3))/lattice * &
-		(myProc%globalCoord(6)-myProc%globalCoord(5))/lattice * 2 / myProc%numtasks)
-CuAtomsEverMesh = floor(0.5d-2*localAtoms/numCells)
+localAtoms = (myProc%localCoord(2)-myProc%localCoord(1))/lattice * &
+		(myProc%localCoord(4)-myProc%localCoord(3))/lattice * &
+		(myProc%localCoord(6)-myProc%localCoord(5))/lattice * 2
+CuAtomsEverMesh = floor(0.005*localAtoms/numCells)
 !write(*,*) 'localAtoms', localAtoms, 'Cu atoms in one mesh', CuAtomsEverMesh
 !**********************************************
 
@@ -308,7 +308,7 @@ step=0
 nullSteps=0		!Record the number of steps in which an empty event was selected
 
 !2019.04.30 Add
-if(agingTime > 0) then
+if(DPARate <= 0) then
 	totalTime = agingTime
 else
 	totalTime=totalDPA/DPARate	!simulation time

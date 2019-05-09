@@ -83,7 +83,7 @@ double precision, parameter :: lattice = 2.6d-1          !<lattice constant (nm)
 double precision, parameter :: entropyTermK = 6255.0     !<(unit: K)= entropy term (Omega) / Boltzmann's constant (kB)
 double precision, parameter :: demixEnergyk = 0.866      !<(nunit)= demixing energy (DelatS) / Boltzmann's constant (kB)
 double precision CeqCu  !copper solubility (/atom)
-integer localAtoms  !number of atoms of my processor
+double precision localAtoms  !number of atoms of my processor
 integer CuAtomsEverMesh !number of Cu atoms in one mesh
 
 !simulation parameters, to be read during readParameters() in main program

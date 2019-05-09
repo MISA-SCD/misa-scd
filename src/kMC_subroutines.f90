@@ -187,7 +187,7 @@ else
 	
 	!for post processing: counting trapping and emission reactions from the grain boundary
 	if(reactionCurrent%numReactants==1 .AND. reactionCurrent%numProducts==1) then	!diffusion/emission reaction
-  		if(atemp_cell > atemp_test) then	!2019.05.09 Add
+  		if(atemp_cell == atemp_test) then	!2019.05.09 Add
 			!write(*,*) 'myProc', myProc%taskid, 'cellNumber(2)', reactionCurrent%cellNumber(2)
 			if(myMesh(reactionCurrent%cellNumber(1))%material == 1 .AND. &
 				myMesh(reactionCurrent%cellNumber(2))%material == 2) then	!trapping on grain boundary
