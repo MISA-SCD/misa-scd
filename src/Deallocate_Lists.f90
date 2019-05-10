@@ -239,7 +239,7 @@ type(defect), pointer :: defectCurrent, defectPrev
 integer cell, i, j
 
 do 10 cell=1,numCells
-	defectCurrent=>DefectList(cell)%next
+	defectCurrent=>defectList(cell)%next
 	
 	do 11 while(associated(defectCurrent))
 	
@@ -264,7 +264,7 @@ do 12 cell=1,numCells
 	endif
 12 continue
 
-deallocate(DefectList)
+deallocate(defectList)
 
 end subroutine
 

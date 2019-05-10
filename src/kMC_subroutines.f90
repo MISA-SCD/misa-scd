@@ -1350,12 +1350,12 @@ if(associated(reactionCurrent)) then	!if we have not chosen a null event
 				
 			!if there is one defect of this type and it is at the beginning of the list then just make its number 0 (don't remove first defect from list)
 			else if(defectCurrent%num==1 .AND. associated(defectCurrent%next)) then !removing first defect from cell i
-				DefectList(reactionCurrent%cellNumber(i))%num=0 !first defect in system never deallocates, it is single helium. set number equal to zero.
+				defectList(reactionCurrent%cellNumber(i))%num=0 !first defect in system never deallocates, it is single helium. set number equal to zero.
 				defectUpdateCurrent%num=-1
 			
 			!if there is one defect of this type and it is the only defect in the list, then make its number 0 (don't remove first defect from list)
 			else if(defectCurrent%num==1) then 							!removing only defect from cell i (single helium) - this is redundant but will keep for now
-				DefectList(reactionCurrent%cellNumber(i))%num=0
+				defectList(reactionCurrent%cellNumber(i))%num=0
 				defectUpdateCurrent%num=-1
 			
 			!if the defect is in the list but none present, we have chosen a reaction that shouldn't exist
@@ -1597,7 +1597,7 @@ if(associated(reactionCurrent)) then	!if we have not chosen a null event
 			nullify(defectUpdateCurrent%next)
 			
 			nullify(defectPrev)
-			defectCurrent=>DefectList(reactionCurrent%cellNumber(i))
+			defectCurrent=>defectList(reactionCurrent%cellNumber(i))
 			
 			call findDefectInList(defectCurrent, defectPrev, reactionCurrent%reactants(i,:))
 			
@@ -1703,13 +1703,13 @@ if(associated(reactionCurrent)) then	!if we have not chosen a null event
 				
 			!if there is one defect of this type and it is at the beginning of the list then just make its number 0 (don't remove first defect from list)
 			else if(defectCurrent%num==1 .AND. associated(defectCurrent%next)) then !removing first defect from cell i
-				DefectList(reactionCurrent%cellNumber(i))%num=0 !first defect in system never deallocates, it is single helium. set number equal to zero.
+				defectList(reactionCurrent%cellNumber(i))%num=0 !first defect in system never deallocates, it is single helium. set number equal to zero.
 				defectUpdateCurrent%num=-1
 				write(*,*) 'Removing the first defect from the list'
 			
 			!if there is one defect of this type and it is the only defect in the list, then make its number 0 (don't remove first defect from list)
 			else if(defectCurrent%num==1) then 							!removing only defect from cell i (single helium) - this is redundant but will keep for now
-				DefectList(reactionCurrent%cellNumber(i))%num=0
+				defectList(reactionCurrent%cellNumber(i))%num=0
 				defectUpdateCurrent%num=-1
 				write(*,*) 'Removing the only defect from the list'
 			
@@ -2143,7 +2143,7 @@ if(associated(reactionCurrent)) then	!if we have not chosen a null event
 						defectUpdateCurrent%defectType(j)=reactionCurrent%products(i,j)
 					13 continue
 					
-					defectCurrent=>DefectList(reactionCurrent%cellNumber(i+reactionCurrent%numReactants))
+					defectCurrent=>defectList(reactionCurrent%cellNumber(i+reactionCurrent%numReactants))
 	
 					!this subroutine will move defectCurrent to the place in the list where reactionCurrent%products(i,x) exists OR, if it doesn't exist,
 					! defectPrev will point to the defect before the insertion place and defectCurrent will point to the defect after insertion
@@ -2894,7 +2894,7 @@ do while(associated(reactionCurrent))	!loop through all non-null reactions chose
 			nullify(defectUpdateCurrent%next)
 			
 			nullify(defectPrev)
-			defectCurrent=>DefectList(reactionCurrent%cellNumber(i))
+			defectCurrent=>defectList(reactionCurrent%cellNumber(i))
 			
 			call findDefectInList(defectCurrent, defectPrev, reactionCurrent%reactants(i,:))
 			
@@ -3000,12 +3000,12 @@ do while(associated(reactionCurrent))	!loop through all non-null reactions chose
 				
 			!if there is one defect of this type and it is at the beginning of the list then just make its number 0 (don't remove first defect from list)
 			else if(defectCurrent%num==1 .AND. associated(defectCurrent%next)) then !removing first defect from cell i
-				DefectList(reactionCurrent%cellNumber(i))%num=0 !first defect in system never deallocates, it is single helium. set number equal to zero.
+				defectList(reactionCurrent%cellNumber(i))%num=0 !first defect in system never deallocates, it is single helium. set number equal to zero.
 				defectUpdateCurrent%num=-1
 			
 			!if there is one defect of this type and it is the only defect in the list, then make its number 0 (don't remove first defect from list)
 			else if(defectCurrent%num==1) then 	!removing only defect from cell i (single helium) - this is redundant but will keep for now
-				DefectList(reactionCurrent%cellNumber(i))%num=0
+				defectList(reactionCurrent%cellNumber(i))%num=0
 				defectUpdateCurrent%num=-1
 			
 			!if the defect is in the list but none present, we have chosen a reaction that shouldn't exist
@@ -3333,7 +3333,7 @@ do while(associated(reactionCurrent))	!loop through all non-null reactions chose
 						defectUpdateCurrent%defectType(j)=reactionCurrent%products(i,j)
 					end do
 					
-					defectCurrent=>DefectList(reactionCurrent%cellNumber(i+reactionCurrent%numReactants))
+					defectCurrent=>defectList(reactionCurrent%cellNumber(i+reactionCurrent%numReactants))
 	
 					!this subroutine will move defectCurrent to the place in the list where reactionCurrent%products(i,x) exists OR, if it doesn't exist,
 					! defectPrev will point to the defect before the insertion place and defectCurrent will point to the defect after insertion

@@ -52,7 +52,7 @@ do 10 i=1,numCellsCascade
 	do 11 while(associated(defectCurrentFine))
 		
 		nullify(defectPrevCoarse)
-		defectCurrentCoarse=>DefectList(CascadeCurrent%cellNumber)
+		defectCurrentCoarse=>defectList(CascadeCurrent%cellNumber)
 		
 		!Point defectCurrentCoarse at the correct place in the coarse element defect list to 
 		!implant defectCurrentFine

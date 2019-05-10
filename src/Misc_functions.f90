@@ -74,39 +74,39 @@ CascadeCurrent=>ActiveCascades
 rate=0d0
 
 !Compute total rate of all reactions in the coarse mesh
-do 10 i=1,numCells
+do i=1,numCells
 	rateCell=0d0
 	reactionCurrent=>reactionList(i)
 	
-	do 11 while(associated(reactionCurrent))
+	do while(associated(reactionCurrent))
 		rate=rate+reactionCurrent%reactionRate
 		rateCell=rateCell+reactionCurrent%reactionRate
 		reactionCurrent=>reactionCurrent%next
-	11 continue
+	end do
 	
-	if(dabs(totalRateVol(i)-rateCell) .GT. 1d0) then
+	if(dabs(totalRateVol(i)-rateCell) > 1d0) then
 		write(*,*) 'Error: total rate differs significantly from expected in cell', i
 		write(*,*) 'TotalRateVol', totalRateVol(i), 'expected value', rateCell
 	endif
 	
 	totalRateVol(i)=rateCell			!Also updating the total rate within each volume element
-10 continue
+end do
 
 !Compute total rate of all reactions in the fine meshes by going through active cascades
 !2015.04.02: Need to create something analagous to totalRateVol() for the case of cascades.
 !Put it in the cascade derived type definition
-do 12 while(associated(CascadeCurrent))
+do while(associated(CascadeCurrent))
 
-	do 13 i=1,numCellsCascade
+	do i=1,numCellsCascade
 		rateCascade=0d0
 	
 		reactionCurrent=>CascadeCurrent%reactionList(i)
 		
-		do 14 while(associated(reactionCurrent))	
+		do while(associated(reactionCurrent))
 			rate=rate+reactionCurrent%reactionRate
 			rateCascade=rateCascade+reactionCurrent%reactionRate			
 			reactionCurrent=>reactionCurrent%next
-		14 continue
+		end do
 		
 		if(dabs(CascadeCurrent%totalRate(i)-rateCascade) .GT. 1d0) then
 			write(*,*) 'Error: total rate differs significantly from expected in cascade', &
@@ -116,10 +116,10 @@ do 12 while(associated(CascadeCurrent))
 	
 		CascadeCurrent%totalRate(i)=rateCascade
 
-	13 continue
+	end do
 	
 	CascadeCurrent=>CascadeCurrent%next
-12 continue
+end do
 
 !Compare rate to totalRate and return error if different
 !if(myProc%taskid==MASTER) then

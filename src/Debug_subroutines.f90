@@ -377,7 +377,7 @@ subroutine DEBUGPrintDefectList(step)
 		write(*,*) 'processor', myProc%taskid, 'reactions after step', step, 'numCells', numCells
 		do i=1, numCells
 			!!reactionCurrent=>reactionList(i)%next
-			defectCurrent=>DefectList(i)
+			defectCurrent=>defectList(i)
 			if(associated(defectCurrent)) then
 				write(*,*) '************defectList********************'
 				write(*,*) 'defectType', defectCurrent%defectType

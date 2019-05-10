@@ -294,6 +294,7 @@ end do
 flag=.FALSE.
 
 numTotal=numx*numy*numz	!total cell in the system
+totalMesh = numTotal
 
 !These arrays create a global mesh and global list of material numbers and coordinates, but are discarded
 !once the local mesh is finished.

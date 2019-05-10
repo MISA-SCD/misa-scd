@@ -151,9 +151,9 @@ tag=0
 allocate(outputDefectList)
 allocate(outputDefectList%defectType(numSpecies))
 nullify(outputDefectList%next)
-do 1 i=1,numSpecies
+do i=1,numSpecies
 	outputDefectList%defectType(i)=0
-1 continue
+end do
 outputDefectList%cellNumber=0
 outputDefectList%num=0
 
@@ -165,17 +165,17 @@ if(myProc%taskid==MASTER) then
 	write(83,*) 'dpa', DPA
 	
 	!Create list of defects in processor 0
-	do 12 i=1,numCells
+	do i=1,numCells
 		
 		!ONLY OUTPUT DEFECTS IN THE BULK (NOT GBS)
-		if(numMaterials .GT. 1 .AND. myMesh(i)%material .NE. 1) then
+		if(numMaterials > 1 .AND. myMesh(i)%material /= 1) then
 		
 			!Do nothing, no output of defects in grain boundaries
 			
 		else
 	
 			defectCurrent=>defectList(i)%next
-			do 13 while(associated(defectCurrent))
+			do while(associated(defectCurrent))
 				
 				nullify(defectPrevList)
 				
@@ -242,11 +242,11 @@ if(myProc%taskid==MASTER) then
 				endif
 				
 				defectCurrent=>defectCurrent%next
-			13 continue
+			end do
 		
 		endif
 		
-	12 continue
+	end do
 	
 	!Other processors will send information about defects contained in their mesh. This processor 
 	!must output all information to data file (can't do it from other processors). Information should

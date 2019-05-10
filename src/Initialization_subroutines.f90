@@ -13,16 +13,28 @@ use mod_srscd_constants
 implicit none
 
 integer cell, i
+type(defect), pointer :: defectCurrent
 
 do cell=1,numCells
-	allocate(DefectList(cell)%defectType(numSpecies))
-	DefectList(cell)%defectType(1)=1
-	do i=2,numSpecies
-		DefectList(cell)%defectType(i)=0
+	allocate(defectList(cell)%defectType(numSpecies))
+	do i=1,numSpecies
+		defectList(cell)%defectType(i)=0
 	end do
-	DefectList(cell)%num=CuAtomsEverMesh
-	DefectList(cell)%cellNumber=cell
-	nullify(DefectList(cell)%next)
+	defectList(cell)%num=0
+	defectList(cell)%cellNumber=cell
+	nullify(defectList(cell)%next)
+
+	defectCurrent=>defectList(cell)
+	allocate(defectCurrent%next)
+	defectCurrent=>defectCurrent%next
+	allocate(defectCurrent%defectType(numSpecies))
+	defectCurrent%defectType(1) = 1
+	do i=2, numSpecies
+		defectCurrent%defectType(i) = 0
+	end do
+	defectCurrent%num=CuAtomsEverMesh
+	defectCurrent%cellNumber=cell
+	nullify(defectCurrent%next)
 end do
 
 end subroutine
@@ -637,7 +649,7 @@ if(debugToggle == 'yes') then
 			read(87,*) (defectTypeReset(k), k=1,numSpecies)
 			read(87,*) defectNumReset
 			
-			defectCurrent=>DefectList(i)
+			defectCurrent=>defectList(i)
 			nullify(defectPrev)
 			
 			call findDefectInList(defectCurrent, defectPrev, defectTypeReset)
@@ -836,7 +848,7 @@ do cell=1,numCellsCascade
 end do
 
 !defectCurrentCoarse and defectPrevCoarse will be used to peruse defects in coarse mesh and place in fine mesh
-defectCurrentCoarse=>DefectList(CascadeCurrent%cellNumber)
+defectCurrentCoarse=>defectList(CascadeCurrent%cellNumber)
 nullify(defectPrevCoarse)
 
 !Use random numbers to assign the defects in the coarse element to the fine mesh

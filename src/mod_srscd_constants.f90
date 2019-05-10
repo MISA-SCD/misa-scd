@@ -24,7 +24,7 @@ integer numCells										!<Number of cells in local mesh
 
 !reaction and defect lists
 type(reaction), pointer :: reactionList(:)				!<List of reactions in local (coarse) mesh
-type(defect), pointer :: DefectList(:)					!<List of defects in local (coarse) mesh
+type(defect), pointer :: defectList(:)					!<List of defects in local (coarse) mesh
 double precision totalRate								!<Total reaction rate in this processor
 double precision, allocatable :: totalRateVol(:)		!<Total reaction rate in each volume element
 double precision maxRate								!<Max reaction rate in all processors
@@ -83,8 +83,9 @@ double precision, parameter :: lattice = 2.6d-1          !<lattice constant (nm)
 double precision, parameter :: entropyTermK = 6255.0     !<(unit: K)= entropy term (Omega) / Boltzmann's constant (kB)
 double precision, parameter :: demixEnergyk = 0.866      !<(nunit)= demixing energy (DelatS) / Boltzmann's constant (kB)
 double precision CeqCu  !copper solubility (/atom)
-double precision localAtoms  !number of atoms of my processor
+double precision atomsEverMesh  !number of atoms of my processor
 integer CuAtomsEverMesh !number of Cu atoms in one mesh
+integer totalMesh
 
 !simulation parameters, to be read during readParameters() in main program
 double precision temperature			!<Temperature (K)

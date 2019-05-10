@@ -235,15 +235,15 @@ end if
 !random number seeds.
 !**********************************************
 !2019.05.04 add
-localAtoms = (myProc%localCoord(2)-myProc%localCoord(1))/lattice * &
-		(myProc%localCoord(4)-myProc%localCoord(3))/lattice * &
-		(myProc%localCoord(6)-myProc%localCoord(5))/lattice * 2
-CuAtomsEverMesh = floor(0.005*localAtoms/numCells)
-!write(*,*) 'localAtoms', localAtoms, 'Cu atoms in one mesh', CuAtomsEverMesh
+atomsEverMesh = ((myProc%globalCoord(2)-myProc%globalCoord(1))/lattice * &
+		(myProc%globalCoord(4)-myProc%globalCoord(3))/lattice * &
+		(myProc%globalCoord(6)-myProc%globalCoord(5))/lattice * 2) / totalMesh
+CuAtomsEverMesh = floor(0.005*atomsEverMesh)
+write(*,*) 'atomsEverMesh', atomsEverMesh, 'Cu atoms in one mesh', CuAtomsEverMesh
 !**********************************************
 
 call initializeRandomSeeds()		!set unique random number seeds in each processor
-allocate(DefectList(numCells))		!Create list of defects - array
+allocate(defectList(numCells))		!Create list of defects - array
 allocate(reactionList(numCells))	!Create list of reactions - array
 allocate(totalRateVol(numCells))	!Create array of total rates in each volume element
 call initializeDefectList()			!initialize defects within myMesh
