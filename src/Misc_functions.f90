@@ -14,7 +14,7 @@ implicit none
 
 integer n, i, temp
 
-if(n .GE. 17) then
+if(n >= 17) then
 	write(*,*) 'error factorial too large'
 endif
 
@@ -165,3 +165,5 @@ end do
 totalRateCascade=rateSum
 
 end function
+
+

@@ -37,6 +37,9 @@ character(12) filename, filename2, filename3, filename4, filename5, filename6
 
 double precision rateDiff	!temporary
 type(Reaction), pointer :: reactionTemp
+!just for test
+double precision diffTest
+integer defectTypeTest(4)
 
 !***********************************************************************
 !7.2.2015 Adding an iterative search for sink efficiency. Variables below:
@@ -239,7 +242,15 @@ atomsEverMesh = ((myProc%globalCoord(2)-myProc%globalCoord(1))/lattice * &
 		(myProc%globalCoord(4)-myProc%globalCoord(3))/lattice * &
 		(myProc%globalCoord(6)-myProc%globalCoord(5))/lattice * 2) / totalMesh
 CuAtomsEverMesh = floor(0.005*atomsEverMesh)
-write(*,*) 'atomsEverMesh', atomsEverMesh, 'Cu atoms in one mesh', CuAtomsEverMesh
+!write(*,*) 'atomsEverMesh', atomsEverMesh, 'Cu atoms in one mesh', CuAtomsEverMesh
+
+initialCeqv = dexp(-FormSingle(1,2)%Ef / (kboltzmann*temperature))
+initialCeqi = dexp(-FormSingle(1,3)%Ef / (kboltzmann*temperature))
+
+vacancyEverMesh = floor(initialCeqv*atomsEverMesh)
+SIAEverMesh = floor(initialCeqi*atomsEverMesh)
+
+write(*,*) 'initialCeqv', initialCeqv, 'vacancyEverMesh', vacancyEverMesh
 !**********************************************
 
 call initializeRandomSeeds()		!set unique random number seeds in each processor
@@ -252,8 +263,17 @@ call initializeReactionList()		!initialize reactions within myMesh
 call initializeTotalRate()			!initialize totalRate and maxRate using reactionList(:)
 call initializeDebugRestart()		!input defects into coarse mesh from restart file (for debugging)
 
-!call DEBUGPrintReactionList(1)		!prints all reaction lists at a given Monte Carlo step
+defectTypeTest(1)=1
+defectTypeTest(2)=0
+defectTypeTest(3)=0
+defectTypeTest(4)=0
+diffTest = findDiffusivity(1, defectTypeTest)
+if(myProc%taskid == MASTER) then
+	write(*,*) 'Cu diffusion', diffTest
 
+end if
+!call DEBUGPrintReactionList(0)		!prints all reaction lists at a given Monte Carlo step
+call DEBUGPrintDefectList(0)
 !******************************************************************
 !Initialize Counters
 !******************************************************************
@@ -323,10 +343,10 @@ do while(elapsedTime < totalTime)
 	
 	step=step+1
 	!just for testing
-	if(myProc%taskid == MASTER) then
-		write(*,*) '$$$$$$$$$$$$$$$$$$$$$$$$$$ elapsedTime', elapsedTime
-	end if
-	call DEBUGPrintReactionList(step)
+	!if(myProc%taskid == MASTER) then
+	!	write(*,*) '$$$$$$$$$$$$$$$$$$$$$$$$$$ elapsedTime', elapsedTime
+	!end if
+	!call DEBUGPrintReactionList(step)
 	
 	!Logical variable tells us whether cascade communication step needs to be carried out
 	!(0=no cascade, nonzero=number of volume element where cascade event has happened)
@@ -509,7 +529,7 @@ do while(elapsedTime < totalTime)
 			
 			call chooseReaction(reactionCurrent, CascadeCurrent)
 			!test
-			call DEBUGPrintReaction(reactionCurrent, step)
+			!call DEBUGPrintReaction(reactionCurrent, step)
 			!Generate timestep in the master processor and send it to all other processors
 			
 			if(myProc%taskid==MASTER) then
@@ -579,10 +599,15 @@ do while(elapsedTime < totalTime)
 		!slave processors recieve elapsed time from master
 !!		call MPI_RECV(elapsedTime,1,MPI_DOUBLE_PRECISION,MASTER,1,MPI_COMM_WORLD,status,ierr)
 	end if
-	call MPI_BCAST(elapsedTime, 1, MPI_DOUBLE_PRECISION, MASTER, MPI_COMM_WORLD)
+	call MPI_BCAST(elapsedTime, 1, MPI_DOUBLE_PRECISION, MASTER, MPI_COMM_WORLD,ierr)
 
 !*********************************************************
 	call updateReactionList(defectUpdate)
+	!just for testing
+	!if(myProc%taskid == MASTER) then
+	!	write(*,*) '$$$$$$$$$$$$$$$$$$$$$$$$$$ elapsedTime', elapsedTime
+	!end if
+	!call DEBUGPrintReactionList(step)
 
 	if(totalRate < 0d0) then
 		write(*,*) 'error totalRate less than zero', step
@@ -962,7 +987,7 @@ do annealIter=1,annealSteps	!default value: annealSteps = 1
 			!slave processors recieve elapsed time from master
 !!			call MPI_RECV(elapsedTime,1,MPI_DOUBLE_PRECISION,MASTER,1,MPI_COMM_WORLD,status,ierr)
 		end if
-		call MPI_BCAST(elapsedTime, 1, MPI_DOUBLE_PRECISION, MASTER, MPI_COMM_WORLD)
+		call MPI_BCAST(elapsedTime, 1, MPI_DOUBLE_PRECISION, MASTER, MPI_COMM_WORLD,ierr)
 		!***********************************************************************************
 		!call DEBUGPrintDefectUpdate(defectUpdate)
 

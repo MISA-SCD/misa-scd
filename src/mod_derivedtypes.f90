@@ -137,10 +137,18 @@ module DerivedType
 		type(defect), pointer :: defectList	!<List of defects present in this volume element (See defect derived type)
 		double precision strain(6)			!<Strain tensor at the center of this volume element
 	end type boundaryMesh
-	
+
 	!Variable classes used for material inputs
+
+	!2019.05.10 Add
+	!List of formation energies that are in single-defect form
+	type formationSingle
+		integer, allocatable :: defectType(:)	!<Type of defect of the point defect
+		double precision :: Ef					!<Binding energy (eV)
+	end type
+
 	!List of diffusion rates that are in functional forms
-	
+
 	!>Type: diffusion function (list of functional forms for defect diffusivities read in from input file)
 	!!
 	!!This derived type contains information read in from an input file concerning which defects

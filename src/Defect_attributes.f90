@@ -19,7 +19,7 @@ implicit none
 integer defectType(numSpecies)
 integer i, j, numSame, matNum
 double precision Diff
-double precision DiffusivityCompute
+double precision DiffusivityCompute, permanentCv
 
 !Temporary: used as a parameter to vary the diffusivity of all defects on GB
 double precision, parameter :: Param=0d0
@@ -30,32 +30,43 @@ double precision, parameter :: Param=0d0
 !If it is in neither, it outputs an error message (defect type should not exist)
 !***************************************************************************************************
 
-do 10 i=1,numSingleDiff(matNum)
+do i=1,numSingleDiff(matNum)
 	numSame=0
-	do 11 j=1,numSpecies
+	do j=1,numSpecies
 		if(DefectType(j)==DiffSingle(matNum,i)%defectType(j)) then
 			numSame=numSame+1
 		endif
-	11 continue
+	end do
 	if (numSame==numSpecies) then
 		if(matNum==2) then
-		
-			Diff=DiffSingle(matNum,i)%D*dexp(-(DiffSingle(matNum,i)%Em-Param)/(kboltzmann*temperature))
+			if(DefectType(1)==1 .AND. DefectType(2)==0 .AND. DefectType(3)==0 .AND. DefectType(4)==0 &
+					.AND. DPARate > 0)) then
+				Diff=DiffSingle(matNum,i)%D*dexp(-(DiffSingle(matNum,i)%Em-Param)/(kboltzmann*temperature)) * &
+							(permanentCv(matNum) / initialCeqv)
+			else
+				Diff=DiffSingle(matNum,i)%D*dexp(-(DiffSingle(matNum,i)%Em-Param)/(kboltzmann*temperature))
+			end if
+			!Diff=DiffSingle(matNum,i)%D*dexp(-(DiffSingle(matNum,i)%Em-Param)/(kboltzmann*temperature))
 			exit
-		
 		else
-	
-			Diff=DiffSingle(matNum,i)%D*dexp(-DiffSingle(matNum,i)%Em/(kboltzmann*temperature))
+			if(DefectType(1)==1 .AND. DefectType(2)==0 .AND. DefectType(3)==0 .AND. DefectType(4)==0 &
+					.AND. DPARate > 0)) then
+				Diff=DiffSingle(matNum,i)%D*dexp(-DiffSingle(matNum,i)%Em/(kboltzmann*temperature)) * &
+					(permanentCv(matNum) / initialCeqv)
+			else
+				Diff=DiffSingle(matNum,i)%D*dexp(-DiffSingle(matNum,i)%Em/(kboltzmann*temperature))
+			end if
+			!Diff=DiffSingle(matNum,i)%D*dexp(-DiffSingle(matNum,i)%Em/(kboltzmann*temperature))
 			exit
 		
 		endif
 	endif
-10 continue
+end do
 
 if(i==numSingleDiff(matNum)+1) then	!did not find defect in single defect list
-	do 12 i=1,numFuncDiff(matNum)
+	do i=1,numFuncDiff(matNum)
 		numSame=0
-		do 13 j=1,numSpecies
+		do j=1,numSpecies
 			if(DefectType(j)==0 .AND. DiffFunc(matNum,i)%defectType(j)==0) then
 				numSame=numSame+1
 			else if(DefectType(j) .NE. 0 .AND. DiffFunc(matNum,i)%defectType(j)==1) then
@@ -65,14 +76,14 @@ if(i==numSingleDiff(matNum)+1) then	!did not find defect in single defect list
 				endif
 				endif
 			endif
-		13 continue
+		end do
 		if(numSame==numSpecies) then
 		
 			Diff=DiffusivityCompute(DefectType, DiffFunc(matNum,i)%functionType, DiffFunc(matNum,i)%numParam,&
-				DiffFunc(matNum,i)%parameters)
+				DiffFunc(matNum,i)%parameters, matNum)
 				exit
 		endif
-	12 continue
+	end do
 	if(i==numFuncDiff(matNum)+1) then
 		write(*,*) 'error defect diffusion not allowed'
 		write(*,*) DefectType
@@ -92,15 +103,17 @@ end function
 !! as needed.
 !*****************************************************************************************
 
-double precision function DiffusivityCompute(DefectType, functionType, numParameters, parameters)
+double precision function DiffusivityCompute(DefectType, functionType, numParameters, parameters,matNum)
 use mod_srscd_constants
+use DerivedType
 implicit none
 
 integer DefectType(numSpecies)
-integer functionType, numParameters
+integer functionType, numParameters, matNum
 double precision parameters(numParameters)
 double precision Diff
 double precision D0, Em
+double precision permanentCv
 
 !***************************************************************************************************
 !This function computes diffusivity using functional form and parameters given in the input file
@@ -120,12 +133,52 @@ else if(functionType==3) then
 	Diff=D0*dexp(-Em/(kboltzmann*temperature))
 else if(functionType==5) then
 	!< Dcu(n) = Dcu(1)/n
-	Diff=(DiffSingle(1,1)%D*dexp(-DiffSingle(1,1)%Em/(kboltzmann*temperature)))/dble(DefectType(1))
+	if(DPARate > 0d0) then
+		Diff=(DiffSingle(matNum,1)%D*dexp(-DiffSingle(1,1)%Em/(kboltzmann*temperature)))/dble(DefectType(1)) * &
+				(permanentCv(matNum) / initialCeqv)
+	else
+		Diff=(DiffSingle(matNum,1)%D*dexp(-DiffSingle(1,1)%Em/(kboltzmann*temperature)))/dble(DefectType(1))
+	end if
 else
 	write(*,*) 'error incorrect diffusivity function chosen'
 endif
 
 DiffusivityCompute=Diff
+
+end function
+
+!**********************************************************************************
+!This function is used to compute the vacancy concentration in the permanent regime
+!**********************************************************************************
+double precision function permanentCv(matNum)
+	use DerivedType
+	use mod_srscd_constants
+	implicit none
+
+	double precision Kiv, diffV, diffI
+	integer i, j, matNum
+
+	do i=1,numSingleDiff(matNum)
+		if(DiffSingle(matNum,i)%defectType(1)==0 .AND. DiffSingle(matNum,i)%defectType(2)==1 .AND. &
+				DiffSingle(matNum,i)%defectType(3)==0 .AND. DiffSingle(matNum,i)%defectType(4)==0) then	!we have found V
+			exit
+		end if
+	end do
+
+	do j=1,numSingleDiff(matNum)
+		if(DiffSingle(matNum,i)%defectType(1)==0 .AND. DiffSingle(matNum,i)%defectType(2)==0 .AND. &
+				DiffSingle(matNum,i)%defectType(3)==1 .AND. DiffSingle(matNum,i)%defectType(4)==0) then	!we have found V
+			exit
+		end if
+	end do
+
+	diffV = DiffSingle(matNum,i)%D*dexp(-DiffSingle(matNum,i)%Em/(kboltzmann*temperature))
+	diffI = DiffSingle(matNum,j)%D*dexp(-DiffSingle(matNum,i)%Em/(kboltzmann*temperature))
+
+	Kiv = 4*pi/atomsize*reactionRadius*(diffV + diffI)
+
+	permanentCv = -dislocationDensity*Zint*diffI/(2*Kiv)+&
+			((dislocationDensity*Zint*diffI/(2*Kiv))**(2d0)+DPARate*Zint*diffI/(Kiv*diffV))**(1d0/2d0)
 
 end function
 

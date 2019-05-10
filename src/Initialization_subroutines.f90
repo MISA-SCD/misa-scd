@@ -25,15 +25,40 @@ do cell=1,numCells
 	nullify(defectList(cell)%next)
 
 	defectCurrent=>defectList(cell)
+
+	!Cu_1
 	allocate(defectCurrent%next)
 	defectCurrent=>defectCurrent%next
 	allocate(defectCurrent%defectType(numSpecies))
-	defectCurrent%defectType(1) = 1
-	do i=2, numSpecies
+	do i=1, numSpecies
 		defectCurrent%defectType(i) = 0
 	end do
+	defectCurrent%defectType(1) = 1
 	defectCurrent%num=CuAtomsEverMesh
 	defectCurrent%cellNumber=cell
+
+	!V_1
+	allocate(defectCurrent%next)
+	defectCurrent=>defectCurrent%next
+	allocate(defectCurrent%defectType(numSpecies))
+	do i=1, numSpecies
+		defectCurrent%defectType(i) = 0
+	end do
+	defectCurrent%defectType(2) = 1
+	defectCurrent%num=vacancyEverMesh
+	defectCurrent%cellNumber=cell
+
+	!SIA_1
+	allocate(defectCurrent%next)
+	defectCurrent=>defectCurrent%next
+	allocate(defectCurrent%defectType(numSpecies))
+	do i=1, numSpecies
+		defectCurrent%defectType(i) = 0
+	end do
+	defectCurrent%defectType(3) = 1
+	defectCurrent%num=SIAEverMesh
+	defectCurrent%cellNumber=cell
+
 	nullify(defectCurrent%next)
 end do
 

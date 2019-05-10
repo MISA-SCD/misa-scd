@@ -36,7 +36,22 @@ material
 species
 4
 
-!List of allowed species, diffusion prefactors (nm^2/s), and migration energies (eV) for each
+!List of allowed species, formation energies (eV), diffusion prefactors (nm^2/s), and migration energies (eV) for each
+
+numSingle
+3
+numFunction
+0
+
+single
+1	0	0	0   !Cu_1
+Ef	1.77d0
+0	1	0	0   !V_1
+Ef	1.6d0
+0	0	1	0   !SIA_1
+Ef	4.3d0
+
+diffusionPrefactors
 
 numSingle
 10				!Indicates there are 1 sizes of Cu that are treated individually

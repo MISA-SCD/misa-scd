@@ -61,8 +61,44 @@ end do
 flag=.FALSE.
 
 !************************************************
+!The following is for formation energies parameters only
+!************************************************
+
+do while(flag .eqv. .FALSE.)
+	read(80,*) char
+	if(char=='numSingle') then
+		flag=.TRUE.
+		read(80,*) numSingleForm(matNum)
+	end if
+end do
+flag=.FALSE.
+
+do while(flag .eqv. .FALSE.)
+	read(80,*) char
+	if(char=='numFunction') then
+		flag=.TRUE.
+		read(80,*) numFuncForm(matNum)
+	end if
+end do
+flag=.FALSE.
+
+do i=1,numSingleForm(matNum)
+	allocate(FormSingle(matNum,i)%defectType(numSpecies))
+	read(80,*) (FormSingle(matNum,i)%defectType(j),j=1,numSpecies)
+	read(80,*) char, FormSingle(matNum,i)%Ef
+end do
+
+!************************************************
 !The following is for diffusivity parameters only
 !************************************************
+
+do while(flag .eqv. .FALSE.)
+	read(80,*) char
+	if(char=='diffusionPrefactors') then
+		flag=.TRUE.
+	end if
+end do
+flag=.FALSE.
 
 do while(flag .eqv. .FALSE.)
 	read(80,*) char
@@ -742,6 +778,8 @@ end do
 flag=.FALSE.
 
 !Allocate all of the counters for the number of reactions, etc...
+allocate(numSingleForm(numMaterials))
+allocate(numFuncForm(numMaterials))
 allocate(numSingleDiff(numMaterials))
 allocate(numFuncDiff(numMaterials))
 allocate(numSingleBind(numMaterials))
@@ -774,6 +812,20 @@ do i=1,numMaterials
 end do
 
 !Allocate all lists of binding, diffusion, and reactions
+maxNum=0
+do i=1,numMaterials
+	if(numSingleForm(i) > maxNum) then
+		maxNum=numSingleForm(i)
+	end if
+end do
+
+maxNum=0
+do i=1,numMaterials
+	if(numFuncForm(i) > maxNum) then
+		maxNum=numFuncForm(i)
+	end if
+end do
+
 maxNum=0
 do i=1,numMaterials
 	if(numSingleDiff(i) > maxNum) then
@@ -1188,6 +1240,32 @@ do while(flag .eqv. .FALSE.)
 	if(char=='species') then	
 		flag=.TRUE.
 		read(80,*) numSpecies	!< numSpecies = 4
+	end if
+end do
+flag=.FALSE.
+
+do while(flag .eqv. .FALSE.)
+	read(80,*) char
+	if(char=='numSingle') then
+		flag=.TRUE.
+		read(80,*) numSingleForm(matNum)
+	end if
+end do
+flag=.FALSE.
+
+do while(flag .eqv. .FALSE.)
+	read(80,*) char
+	if(char=='numFunction') then
+		flag=.TRUE.
+		read(80,*) numFuncForm(matNum)
+	end if
+end do
+flag=.FALSE.
+
+do while(flag .eqv. .FALSE.)
+	read(80,*) char
+	if(char=='diffusionPrefactors') then
+		flag=.TRUE.
 	end if
 end do
 flag=.FALSE.

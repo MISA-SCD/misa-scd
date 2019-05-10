@@ -48,6 +48,7 @@ double precision cascadeElementVol						!<volume of a cascade element (nm^3)
 integer numMaterials						!<Number of material types (eg. copper, niobium or bulk, grain boundary)
 integer numSpecies							!<Number of chemical species (typically set to 4: He, V, SIA_glissile, SIA_sessile)
 
+type(formationSingle), allocatable :: FormSingle(:,:)           !<Parameters for formation of single defects
 type(diffusionFunction), allocatable :: DiffFunc(:,:)			!<Parameters for functional forms of diffusion rates for defects
 type(diffusionSingle), allocatable :: DiffSingle(:,:)			!<Parameters for diffusion of single defects
 type(bindingSingle), allocatable :: BindSingle(:,:)				!<Parameters for binding of single defects
@@ -59,6 +60,8 @@ type(reactionParameters), allocatable :: ImpurityReactions(:,:)	!<List of allowe
 type(reactionParameters), allocatable :: ClusterReactions(:,:)	!<List of allowed clustering reactions (and ref. to functional form of reaction rate)
 type(reactionParameters), allocatable :: ImplantReactions(:,:)	!<List of allowed implantation reactions (and ref. to functional form of reaction rate)
 
+integer, allocatable :: numSingleForm(:)    !<Number of single defect formation energy in input file
+integer, allocatable :: numFuncForm(:)      !<Number of functional forms for formation energy in input files
 integer, allocatable :: numSingleDiff(:)	!<Number of single defect diffusion rates in input file
 integer, allocatable :: numFuncDiff(:)		!<Number of functional forms for diffusion rates in input files
 integer, allocatable :: numSingleBind(:)	!<Number of single defect binding energies in input file
@@ -75,16 +78,18 @@ integer, allocatable :: numImplantReac(:)	!<Number of implantation reactions in 
 double precision, parameter :: kboltzmann=8.6173324d-5	!<Boltzmann's constant (eV/K)
 double precision, parameter :: pi=3.141592653589793		!<Pi
 double precision, parameter :: Zint = 1.2				!<Constant representing preference for clustering of interstitials by interstitial clusters (increases clustering cross-section)
+double precision, parameter :: Zv = 1.0
 double precision, parameter :: reactionRadius=.5065d0	!<Material parameter used for reaction distances (impacts reaction rates)
 
 !2019.04.30 Add
 !Cu solubility CeqCu(T) = exp(DelatS/kB)*exp(-Omega/(kB*T))  Reference: (F. Christien and A. Barbu, 2004)
 double precision, parameter :: lattice = 2.6d-1          !<lattice constant (nm)
-double precision, parameter :: entropyTermK = 6255.0     !<(unit: K)= entropy term (Omega) / Boltzmann's constant (kB)
-double precision, parameter :: demixEnergyk = 0.866      !<(nunit)= demixing energy (DelatS) / Boltzmann's constant (kB)
-double precision CeqCu  !copper solubility (/atom)
+double precision initialCeqv    !Thermal equilibrium concentration of vacancy
+double precision initialCeqi    !Thermal equilibrium concentration of SIA
 double precision atomsEverMesh  !number of atoms of my processor
-integer CuAtomsEverMesh !number of Cu atoms in one mesh
+integer CuAtomsEverMesh !Initial number of Cu atoms in one mesh
+integer vacancyEverMesh !Initial number of vacancies in one mesh
+integer SIAEverMesh     !Initial number of SIAs in one mesh
 integer totalMesh
 
 !simulation parameters, to be read during readParameters() in main program
