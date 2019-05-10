@@ -40,7 +40,7 @@ do i=1,numSingleDiff(matNum)
 	if (numSame==numSpecies) then
 		if(matNum==2) then
 			if(DefectType(1)==1 .AND. DefectType(2)==0 .AND. DefectType(3)==0 .AND. DefectType(4)==0 &
-					.AND. DPARate > 0)) then
+					.AND. DPARate > 0) then
 				Diff=DiffSingle(matNum,i)%D*dexp(-(DiffSingle(matNum,i)%Em-Param)/(kboltzmann*temperature)) * &
 							(permanentCv(matNum) / initialCeqv)
 			else
@@ -50,7 +50,7 @@ do i=1,numSingleDiff(matNum)
 			exit
 		else
 			if(DefectType(1)==1 .AND. DefectType(2)==0 .AND. DefectType(3)==0 .AND. DefectType(4)==0 &
-					.AND. DPARate > 0)) then
+					.AND. DPARate > 0) then
 				Diff=DiffSingle(matNum,i)%D*dexp(-DiffSingle(matNum,i)%Em/(kboltzmann*temperature)) * &
 					(permanentCv(matNum) / initialCeqv)
 			else
@@ -59,8 +59,8 @@ do i=1,numSingleDiff(matNum)
 			!Diff=DiffSingle(matNum,i)%D*dexp(-DiffSingle(matNum,i)%Em/(kboltzmann*temperature))
 			exit
 		
-		endif
-	endif
+		end if
+	end if
 end do
 
 if(i==numSingleDiff(matNum)+1) then	!did not find defect in single defect list
@@ -156,24 +156,10 @@ double precision function permanentCv(matNum)
 	implicit none
 
 	double precision Kiv, diffV, diffI
-	integer i, j, matNum
+	integer matNum
 
-	do i=1,numSingleDiff(matNum)
-		if(DiffSingle(matNum,i)%defectType(1)==0 .AND. DiffSingle(matNum,i)%defectType(2)==1 .AND. &
-				DiffSingle(matNum,i)%defectType(3)==0 .AND. DiffSingle(matNum,i)%defectType(4)==0) then	!we have found V
-			exit
-		end if
-	end do
-
-	do j=1,numSingleDiff(matNum)
-		if(DiffSingle(matNum,i)%defectType(1)==0 .AND. DiffSingle(matNum,i)%defectType(2)==0 .AND. &
-				DiffSingle(matNum,i)%defectType(3)==1 .AND. DiffSingle(matNum,i)%defectType(4)==0) then	!we have found V
-			exit
-		end if
-	end do
-
-	diffV = DiffSingle(matNum,i)%D*dexp(-DiffSingle(matNum,i)%Em/(kboltzmann*temperature))
-	diffI = DiffSingle(matNum,j)%D*dexp(-DiffSingle(matNum,i)%Em/(kboltzmann*temperature))
+	diffV = DiffSingle(matNum,2)%D*dexp(-DiffSingle(matNum,2)%Em/(kboltzmann*temperature))
+	diffI = DiffSingle(matNum,6)%D*dexp(-DiffSingle(matNum,6)%Em/(kboltzmann*temperature))
 
 	Kiv = 4*pi/atomsize*reactionRadius*(diffV + diffI)
 

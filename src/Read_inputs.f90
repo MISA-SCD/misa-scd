@@ -82,6 +82,14 @@ do while(flag .eqv. .FALSE.)
 end do
 flag=.FALSE.
 
+do while(flag .eqv. .FALSE.)
+	read(80,*) char
+	if(char=='single') then
+		flag=.TRUE.
+	end if
+end do
+flag=.FALSE.
+
 do i=1,numSingleForm(matNum)
 	allocate(FormSingle(matNum,i)%defectType(numSpecies))
 	read(80,*) (FormSingle(matNum,i)%defectType(j),j=1,numSpecies)
@@ -136,9 +144,9 @@ do i=1,numSingleDiff(matNum)
 	read(80,*) char, DiffSingle(matNum,i)%D, char, DiffSingle(matNum,i)%Em
 end do
 
-!do 16 i=1,numSingleDiff
-!	write(*,*) 'species', (DiffSingle(i)%defectType(j),j=1,numSpecies)
-!	write(*,*) 'D0', DiffSingle(i)%D, 'Em', DiffSingle(i)%Em
+!do 16 i=1,numSingleDiff(matNum)
+!	write(*,*) 'species', (DiffSingle(matNum,i)%defectType(j),j=1,numSpecies)
+!	write(*,*) 'D0', DiffSingle(matNum,i)%D, 'Em', DiffSingle(matNum,i)%Em
 !16 continue
 
 do while(flag .eqv. .FALSE.)
@@ -818,6 +826,7 @@ do i=1,numMaterials
 		maxNum=numSingleForm(i)
 	end if
 end do
+allocate(FormSingle(numMaterials,maxNum))
 
 maxNum=0
 do i=1,numMaterials
@@ -825,6 +834,7 @@ do i=1,numMaterials
 		maxNum=numFuncForm(i)
 	end if
 end do
+!allocate(FormFunc(numMaterials,maxNum))
 
 maxNum=0
 do i=1,numMaterials

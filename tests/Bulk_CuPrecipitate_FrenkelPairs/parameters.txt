@@ -80,10 +80,10 @@ HeDPA			! Helium/DPA ratio! He ImplantRate (atomic fraction / sec) - only used i
 0d0				!(NOTE: if implantDist='NonUniform', must have HeDPA .NE. 0d0 to add nonuniform He implant rates)	
 
 atomSize
-1.182d-2 		!(Fe) 			8.79d-3 		!(Cu)		! atomsize (nm^3)
+8.79d-3 		!(Fe) 			8.79d-3 		!(Cu)		! atomsize (nm^3)
 
 burgers
-.287d0 			!(Fe) 			.36d0 			!(Cu)		! dislocation loop burgers vector (lattice constant) (nm)
+0.132d0 			!(Fe) 			.36d0 			!(Cu)		! dislocation loop burgers vector (lattice constant) (nm)
 
 totalDPA
 2d-8			! total DPA in simulation 1

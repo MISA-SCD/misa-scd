@@ -62,21 +62,21 @@ single			!Indicates that we are about to read in single defect parameters
 1	0	0	0			!Cu_1
 D0	6.3d15	Em 	2.29d0
 0	1	0	0			!V_1
-D0	8.2d11	Em	0.67d0
+D0	1.0d14	Em	1.3d0
 0	2	0	0			!V_2
-D0	8.2d11	Em	0.62d0
+D0	1.0d14	Em	0.62d0
 0	3	0	0			!V_3
-D0	8.2d11	Em	0.35d0
+D0	1.0d14	Em	0.35d0
 0	4	0	0			!V_4
-D0	8.2d11	Em	0.48d0
+D0	1.0d14	Em	0.48d0
 0	0	1	0			!SIA_m 1
-D0	8.2d11	Em	0.34d0
+D0	4.0d10	Em	0.3d0
 0	0	2	0			!SIA_m 2
-D0	8.2d11	Em	0.42d0
+D0	4.0d10	Em	0.42d0
 0	0	3	0			!SIA_m 3
-D0	8.2d11	Em	0.43d0
+D0	4.0d10	Em	0.43d0
 0	0	4	0			!SIA_m 4
-D0	8.2d11	Em	0.43d0
+D0	4.0d10	Em	0.43d0
 0	0	4	0			!Cu_1V_1******************
 D0	3.3d15	Em	2.29d0
 
@@ -138,14 +138,14 @@ single
 Eb	0.19d0
 
 0	2	0	0		0	1	0	0	!dissociation of 2V cluster
-Eb	0.3d0
+Eb	0.8d0
 0	3	0	0		0	1	0	0	!dissociation of 3V cluster
 Eb	0.37d0
 0	4	0	0		0	1	0	0	!dissociation of 4V cluster
 Eb	0.62d0
 
 0	0	2	0		0	0	1	0	!dissociation of 2SIA cluster
-Eb	0.8d0
+Eb	1.2d0
 0	0	3	0		0	0	1	0	!dissociation of 3SIA cluster
 Eb	0.92d0
 

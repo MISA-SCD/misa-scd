@@ -37,9 +37,6 @@ character(12) filename, filename2, filename3, filename4, filename5, filename6
 
 double precision rateDiff	!temporary
 type(Reaction), pointer :: reactionTemp
-!just for test
-double precision diffTest
-integer defectTypeTest(4)
 
 !***********************************************************************
 !7.2.2015 Adding an iterative search for sink efficiency. Variables below:
@@ -263,15 +260,6 @@ call initializeReactionList()		!initialize reactions within myMesh
 call initializeTotalRate()			!initialize totalRate and maxRate using reactionList(:)
 call initializeDebugRestart()		!input defects into coarse mesh from restart file (for debugging)
 
-defectTypeTest(1)=1
-defectTypeTest(2)=0
-defectTypeTest(3)=0
-defectTypeTest(4)=0
-diffTest = findDiffusivity(1, defectTypeTest)
-if(myProc%taskid == MASTER) then
-	write(*,*) 'Cu diffusion', diffTest
-
-end if
 !call DEBUGPrintReactionList(0)		!prints all reaction lists at a given Monte Carlo step
 call DEBUGPrintDefectList(0)
 !******************************************************************
