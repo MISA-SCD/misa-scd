@@ -174,7 +174,7 @@ if(myProc%taskid==MASTER) then
 			
 		else
 	
-			defectCurrent=>defectList(i)%next
+			defectCurrent=>defectList(i)%next	!the first defect in the list is 0
 			do while(associated(defectCurrent))
 				
 				nullify(defectPrevList)
@@ -187,11 +187,11 @@ if(myProc%taskid==MASTER) then
 				if(associated(defectCurrentList)) then !if we aren't at the end of the list
 					same=0
 					
-					do 709 j=1,numSpecies
+					do j=1,numSpecies
 						if(defectCurrentList%defectType(j)==defectCurrent%defectType(j)) then
 							same=same+1
 						endif
-					709 continue
+					end do
 					
 					if(same==numSpecies) then	
 					
@@ -211,9 +211,9 @@ if(myProc%taskid==MASTER) then
 						defectPrevList%cellNumber=0	!no need for cell numbers in outputDefectList
 						defectPrevList%num=defectCurrent%num
 						
-						do 710 j=1,numSpecies
+						do j=1,numSpecies
 							defectPrevList%defectType(j)=defectCurrent%defectType(j)
-						710 continue
+						end do
 						
 						!if inserted defect is in the middle of the list, point it to the next item in the list
 						
@@ -231,9 +231,9 @@ if(myProc%taskid==MASTER) then
 					defectPrevList%cellNumber=0 !no need for cell numbers in outputDefectList
 					defectPrevList%num=defectCurrent%num
 					
-					do 711 j=1,numSpecies
+					do j=1,numSpecies
 						defectPrevList%defectType(j)=defectCurrent%defectType(j)
-					711 continue
+					end do
 					
 				else
 					
@@ -252,13 +252,13 @@ if(myProc%taskid==MASTER) then
 	!must output all information to data file (can't do it from other processors). Information should
 	!be output in the same format for the master and slave processors.
 	
-	do 14 i=1,myProc%numtasks-1
+	do i=1,myProc%numtasks-1
 	
 		call MPI_RECV(numDefectsRecv,1,MPI_INTEGER,i,399,MPI_COMM_WORLD,status,ierr)
 		
 !		write(*,*) 'recieving ', numDefectsRecv, 'defects'
 		
-		do 15 j=1,numDefectsRecv
+		do j=1,numDefectsRecv
 			call MPI_RECV(defectsRecv,numSpecies+1,MPI_DOUBLE_PRECISION,i,400,MPI_COMM_WORLD,status,ierr)
 !			write(*,*) 'recieved defect ', j
 			
@@ -332,9 +332,9 @@ if(myProc%taskid==MASTER) then
 			
 			!Signal to other processor to send the next defect
 			call MPI_SEND(tag,1,MPI_INTEGER, i, 405,MPI_COMM_WORLD, ierr)
-		15 continue
+		end do
 		
-	14 continue
+	end do
 	
 	!Output defect list
 !	write(*,*) 'Defects ', 'num'
@@ -455,7 +455,7 @@ if(myProc%taskid==MASTER) then
 	write(83,*)
 	write(84,*)
 
-else
+else	!other processors
 	numDefectsSend=0
 	
 	!Create list of defects in processor 
@@ -574,7 +574,7 @@ else
 	
 	call countReactionsCoarse(reactionsCoarse)
 	call countReactionsFine(reactionsFine)
-endif
+end if
 
 !Deallocate memory
 

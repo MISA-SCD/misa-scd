@@ -87,10 +87,10 @@ double precision, parameter :: lattice = 2.6d-1          !<lattice constant (nm)
 double precision initialCeqv    !Thermal equilibrium concentration of vacancy
 double precision initialCeqi    !Thermal equilibrium concentration of SIA
 double precision atomsEverMesh  !number of atoms of my processor
-integer CuAtomsEverMesh !Initial number of Cu atoms in one mesh
-integer vacancyEverMesh !Initial number of vacancies in one mesh
-integer SIAEverMesh     !Initial number of SIAs in one mesh
-integer totalMesh
+integer*8 CuAtomsEverMesh       !Initial number of Cu atoms in one mesh
+integer vacancyEverMesh         !Initial number of vacancies in one mesh
+integer SIAEverMesh             !Initial number of SIAs in one mesh
+integer totalMesh               !total meshes in the sysytem
 
 !simulation parameters, to be read during readParameters() in main program
 double precision temperature			!<Temperature (K)

@@ -38,6 +38,10 @@ character(12) filename, filename2, filename3, filename4, filename5, filename6
 double precision rateDiff	!temporary
 type(Reaction), pointer :: reactionTemp
 
+!2019.05.13 Add: used to change double to integer
+double precision CuAtomsEverMeshTemp
+character*20 CuAtomsEverMeshTemp2
+
 !***********************************************************************
 !7.2.2015 Adding an iterative search for sink efficiency. Variables below:
 !***********************************************************************
@@ -238,7 +242,9 @@ end if
 atomsEverMesh = ((myProc%globalCoord(2)-myProc%globalCoord(1))/lattice * &
 		(myProc%globalCoord(4)-myProc%globalCoord(3))/lattice * &
 		(myProc%globalCoord(6)-myProc%globalCoord(5))/lattice * 2) / totalMesh
-CuAtomsEverMesh = floor(0.005*atomsEverMesh)
+CuAtomsEverMeshTemp = aint(0.005d0* atomsEverMesh)
+write(CuAtomsEverMeshTemp2,'(f20.0)') CuAtomsEverMeshTemp
+read(CuAtomsEverMeshTemp2,'(i19)') CuAtomsEverMesh
 !write(*,*) 'atomsEverMesh', atomsEverMesh, 'Cu atoms in one mesh', CuAtomsEverMesh
 
 initialCeqv = dexp(-FormSingle(1,2)%Ef / (kboltzmann*temperature))
