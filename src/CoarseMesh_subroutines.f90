@@ -160,11 +160,11 @@ integer proc
 
 reactionCounter=0
 	
-do 10 cell=1,numCells
+do cell=1,numCells
 	
 	reactionCurrent=>reactionList(cell)
 	
-	do 11 while(Associated(reactionCurrent))
+	do while(Associated(reactionCurrent))
 	
 		if(reactionCurrent%numReactants==0 .AND. reactionCurrent%numProducts==0) then
 			!null reaction, do not count
@@ -174,9 +174,9 @@ do 10 cell=1,numCells
 			reactionCurrent=>reactionCurrent%next
 		endif
 		
-	11 continue
+	end do
 
-10 continue
+end do
 
 !Get info from other procs
 

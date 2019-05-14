@@ -322,10 +322,10 @@ step=0
 nullSteps=0		!Record the number of steps in which an empty event was selected
 
 !2019.04.30 Add
-if(DPARate <= 0) then
-	totalTime = agingTime
-else
+if(DPARate > 0) then
 	totalTime=totalDPA/DPARate	!simulation time
+else
+	totalTime = agingTime
 end if
 
 TotalCascades=0
@@ -700,7 +700,7 @@ do while(elapsedTime < totalTime)
 		
 		!Several defect output optionas available, these outputs should be chosen in input file (currently hard coded)
 		
-		if(rawdatToggle=='yes') call outputDefects()
+		if(rawdatToggle=='yes') call outputDefects(elapsedTime,step)
 		!if(sinkEffSearch=='no' .AND. numMaterials .GT. 1) call outputDefectsBoundary(elapsedTime,step)
 		!if(sinkEffSearch=='no' .AND. numMaterials==1) call outputDefectsTotal(elapsedTime, step)
 		if(postprToggle=='yes') then
@@ -710,7 +710,7 @@ do while(elapsedTime < totalTime)
 				write(*,*) 'Error outputing postpr.out but not totdat.out'
 			end if
 		end if
-		if(xyzToggle=='yes') call outputDefectsXYZ()	!write(87,*): defect.xyz
+		if(xyzToggle=='yes') call outputDefectsXYZ(elapsedTime,step)	!write(87,*): defect.xyz
 		if(vtkToggle=='yes') call outputDefectsVTK(outputCounter)	!write(88,*): VTKout.vtk
 		if(outputDebug=='yes') call outputDebugRestart(outputCounter, elapsedTime)	!write(88,*): Restart.in
 		
@@ -1228,7 +1228,7 @@ if(myProc%taskid==MASTER) then
 	close(84)
 	close(85)
 	!close(86)
-	!close(87)
+	close(87)
 end if
 
 !End of loop for multiple trials

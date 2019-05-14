@@ -513,13 +513,13 @@ reactionCounter=0
 
 CascadeCurrent=>ActiveCascades
 
-do 12 while(associated(cascadeCurrent))
+do while(associated(cascadeCurrent))
 	
-	do 10 cell=1,numCellsCascade
+	do cell=1,numCellsCascade
 		
 		reactionCurrent=>CascadeCurrent%reactionList(cell)
 		
-		do 11 while(Associated(reactionCurrent))
+		do while(Associated(reactionCurrent))
 		
 			if(reactionCurrent%numReactants==0 .AND. reactionCurrent%numProducts==0) then
 				!null reaction, do not count
@@ -529,13 +529,13 @@ do 12 while(associated(cascadeCurrent))
 				reactionCurrent=>reactionCurrent%next
 			endif
 			
-		11 continue
+		end do
 	
-	10 continue
+	end do
 	
 	CascadeCurrent=>CascadeCurrent%next
 
-12 continue
+end do
 
 !Get info from other procs
 
