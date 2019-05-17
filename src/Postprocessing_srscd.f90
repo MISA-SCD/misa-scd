@@ -70,6 +70,8 @@ if(myProc%taskid==MASTER) then
 				!!call MPI_RECV(numRecv,1,MPI_INTEGER,i,104,MPI_COMM_WORLD,status,ierr)
 				write(82,*) (cellDefectSend(l,k), l=1,numSpecies),cellDefectSend(numSpecies+1,k)
 			end do
+
+			deallocate(cellDefectRecv)
 			
 			!send a signal telling the other processor to go on to the next cell
 			!call MPI_SEND(tag,1,MPI_INTEGER,i,105,MPI_COMM_WORLD,ierr)
@@ -123,8 +125,12 @@ else
 		
 		!This just pauses the sending until the master has recieved all of the above information
 		!call MPI_RECV(buffer,1,MPI_INTEGER,MASTER,105,MPI_COMM_WORLD,status,ierr)
+
+		deallocate(cellDefectSend)
 	end do
 end if
+
+
 
 end subroutine
 
@@ -372,6 +378,7 @@ if(myProc%taskid==MASTER) then
 		end do
         !Signal to other processor to send the next defect
 !        call MPI_SEND(tag,1,MPI_INTEGER, i, 405,MPI_COMM_WORLD, ierr)
+		deallocate(defectsRecv)
 		
 	end do
 	
@@ -641,6 +648,8 @@ else	!other processors
     end do
 
     call MPI_SEND(defectsSend, (numSpecies+1)*numDefectsSend, MPI_DOUBLE_PRECISION, MASTER, 400, MPI_COMM_WORLD, ierr)
+
+	deallocate(defectsSend)
 
     !This just pauses the sending until the master has recieved all of the above information
 !    call MPI_RECV(buffer,1,MPI_INTEGER,MASTER,405,MPI_COMM_WORLD,status,ierr)
@@ -1576,10 +1585,8 @@ integer numCellsNeighbor
 integer i, j
 integer status(MPI_STATUS_SIZE)
 !double precision coords(3)
-double precision, allocatable ::  coordsRecv(:,:)
-double precision coordsSend(3,numCells)
-integer, allocatable ::  countRecv(:,:)
-integer countSend(3,numCells)
+double precision, allocatable ::  xyzRecv(:,:)
+double precision xyzSend(6,numCells)
 
 type(defect), pointer :: defectCurrent
 
@@ -1629,11 +1636,9 @@ if(myProc%taskid==MASTER) then
 	do i=1,myProc%numTasks-1
 	
 		call MPI_RECV(numCellsNeighbor, 1, MPI_INTEGER, i, 567, MPI_COMM_WORLD, status, ierr)
-        allocate(coordsRecv(3,numCellsNeighbor))
-        allocate(countRecv(3,numCellsNeighbor))
+        allocate(xyzRecv(6,numCellsNeighbor))
 
-        call MPI_RECV(coordsRecv, 3*numCellsNeighbor, MPI_DOUBLE_PRECISION, i, 571, MPI_COMM_WORLD, status, ierr)
-        call MPI_RECV(countRecv, 3*numCellsNeighbor, MPI_INTEGER, i, 568, MPI_COMM_WORLD, status, ierr)
+        call MPI_RECV(xyzRecv, 6*numCellsNeighbor, MPI_DOUBLE_PRECISION, i, 571, MPI_COMM_WORLD, status, ierr)
 
 		do j=1,numCellsNeighbor
 		
@@ -1642,12 +1647,14 @@ if(myProc%taskid==MASTER) then
 			!call MPI_RECV(VCount, 1, MPI_INTEGER, i, 569, MPI_COMM_WORLD, status, ierr)
 			!call MPI_RECV(SIACount, 1, MPI_INTEGER, i, 570, MPI_COMM_WORLD, status, ierr)
 			
-			write(87,59) cellCount, coordsRecv(1,j), coordsRecv(2,j), coordsRecv(3,j), &
-                    countRecv(1,j), countRecv(2,j), countRecv(3,j)
+			write(87,59) cellCount, xyzRecv(1,j), xyzRecv(2,j), xyzRecv(3,j), &
+					ifix(xyzRecv(4,j)), ifix(xyzRecv(5,j)), ifix(xyzRecv(6,j))
 				
 			cellCount=cellCount+1
 			
 		end do
+
+		deallocate(xyzRecv)
 		
 	end do
 
@@ -1665,21 +1672,21 @@ else
 		!VCount=0
 		!SIACount=0
 
-        coordsSend(1,i) = myMesh(i)%coordinates(1)
-        coordsSend(2,i) = myMesh(i)%coordinates(2)
-        coordsSend(3,i) = myMesh(i)%coordinates(3)
+        xyzSend(1,i) = myMesh(i)%coordinates(1)
+		xyzSend(2,i) = myMesh(i)%coordinates(2)
+		xyzSend(3,i) = myMesh(i)%coordinates(3)
 
-        countSend(1,i) = 0  !CuCount
-        countSend(2,i) = 0  !VCount
-        countSend(3,i) = 0  !SIACount
+		xyzSend(4,i) = 0  !CuCount
+		xyzSend(5,i) = 0  !VCount
+		xyzSend(6,i) = 0  !SIACount
 		
 		defectCurrent=>defectList(i)
 		
 		do while(associated(defectCurrent))
 
-            countSend(1,i)	 = countSend(1,i)+defectCurrent%defectType(1)*defectCurrent%num
-            countSend(2,i)	 = countSend(2,i)+defectCurrent%defectType(2)*defectCurrent%num
-            countSend(3,i) = countSend(3,i)+defectCurrent%defectType(3)*defectCurrent%num + &
+			xyzSend(4,i)	 = countSend(1,i)+defectCurrent%defectType(1)*defectCurrent%num
+			xyzSend(5,i)	 = countSend(2,i)+defectCurrent%defectType(2)*defectCurrent%num
+			xyzSend(6,i) = countSend(3,i)+defectCurrent%defectType(3)*defectCurrent%num + &
 					   defectCurrent%defectType(4)*defectCurrent%num
 			
 			defectCurrent=>defectCurrent%next
@@ -1691,12 +1698,10 @@ else
 		!call MPI_SEND(SIACount, 1, MPI_INTEGER, MASTER, 570, MPI_COMM_WORLD, ierr)
 	
 	end do
-    call MPI_SEND(coordsSend, 3*numCells, MPI_DOUBLE_PRECISION, MASTER, 571, MPI_COMM_WORLD, ierr)
-    call MPI_SEND(countSend, 3*numCells, MPI_INTEGER, MASTER, 568, MPI_COMM_WORLD, ierr)
-
+    call MPI_SEND(xyzSend, 6*numCells, MPI_DOUBLE_PRECISION, MASTER, 571, MPI_COMM_WORLD, ierr)
 
 endif
-
+deallocate(xyzSend)
  59		format(i4,3(1x,e12.4),3(1x,i6))
 
 end subroutine
@@ -1709,7 +1714,7 @@ end subroutine
 !
 !***********************************************************************
 
-subroutine outputDefectsVTK(fileNumber)
+subroutine outputDefectsVTK(fileNumber)	!fileNumber = outputCounter
 use mod_srscd_constants
 use DerivedType
 implicit none
@@ -1718,12 +1723,15 @@ include 'mpif.h'
 integer fileNumber, numx, numy, numz
 integer i,j,k
 integer xindex, yindex, zindex
-integer numV, numHe, numSIA, GrainID
+integer numV, numCu, numSIA, GrainID
 integer numCellsNeighbor, cellIndex(3)
 integer status(MPI_STATUS_SIZE)
 
 integer, allocatable :: DefectListVTK(:,:,:,:)
 integer, allocatable :: GlobalGrainID(:,:,:)
+!2019.05.15 Add
+integer defectSend(7,numCells)
+integer, allocatable :: defectRecv(:,:)
 
 double precision xlength, ylength, zlength
 type(defect), pointer :: defectCurrent
@@ -1731,200 +1739,217 @@ character(13) :: fileName
 
 if(myProc%taskid==MASTER) then
 
-!Step 1: Find the dimensions of the (global) mesh (assume cubic elements)
+	!Step 1: Find the dimensions of the (global) mesh (assume cubic elements)
 
-numx=(myProc%globalCoord(2)-myProc%globalCoord(1))/myMesh(1)%length
-numy=(myProc%globalCoord(4)-myProc%globalCoord(3))/myMesh(1)%length
-numz=(myProc%globalCoord(6)-myProc%globalCoord(5))/myMesh(1)%length
+	numx=(myProc%globalCoord(2)-myProc%globalCoord(1))/myMesh(1)%length
+	numy=(myProc%globalCoord(4)-myProc%globalCoord(3))/myMesh(1)%length
+	numz=(myProc%globalCoord(6)-myProc%globalCoord(5))/myMesh(1)%length
 
-xlength=myMesh(1)%length
-ylength=myMesh(1)%length
-zlength=myMesh(1)%length
+	xlength=myMesh(1)%length
+	ylength=myMesh(1)%length
+	zlength=myMesh(1)%length
 
-!Step 2: Allocate DefectListVTK and GlobalGrainID to the same dimensions as global mesh
+	!Step 2: Allocate DefectListVTK and GlobalGrainID to the same dimensions as global mesh
 
-allocate(DefectListVTK(numx,numy,numz,3))
-allocate(GlobalGrainID(numx,numy,numz))
+	allocate(DefectListVTK(numx,numy,numz,3))
+	allocate(GlobalGrainID(numx,numy,numz))
 
-!Step 3: Fill in DefectListVTK
+	!Step 3: Fill in DefectListVTK
 
-do 19 i=1,numCells
+	do i=1,numCells
 	
-	!Step 3.1: identify the x,y,z index of this cell
-	xindex=(myMesh(i)%coordinates(1)-myProc%globalCoord(1))/myMesh(1)%length+1
-	yindex=(myMesh(i)%coordinates(2)-myProc%globalCoord(3))/myMesh(1)%length+1
-	zindex=(myMesh(i)%coordinates(3)-myProc%globalCoord(5))/myMesh(1)%length+1
+		!Step 3.1: identify the x,y,z index of this cell
+		xindex=((myMesh(i)%coordinates(1)-xlength/2)-myProc%globalCoord(1))/myMesh(1)%length+1
+		yindex=((myMesh(i)%coordinates(2)-ylength/2)-myProc%globalCoord(3))/myMesh(1)%length+1
+		zindex=((myMesh(i)%coordinates(3)-zlength/2)-myProc%globalCoord(5))/myMesh(1)%length+1
 	
-	!Step 3.2: count number of vacancies, interstitials, and He atoms in this cell
-	defectCurrent=>defectList(i)
+		!Step 3.2: count number of vacancies, interstitials, and He atoms in this cell
+		defectCurrent=>defectList(i)
 	
-	numV=0
-	numSIA=0
-	numHe=0
-	GrainID=myMesh(i)%material
-	
-	do 20 while(associated(defectCurrent))
-		numV=numV+defectCurrent%defectType(2)*defectCurrent%num
-		numHe=numHe+defectCurrent%defectType(1)*defectCurrent%num
-		numSIA=numSIA+defectCurrent%defectType(3)*defectCurrent%num + &
-			defectCurrent%defectType(4)*defectCurrent%num
-		
-		defectCurrent=>defectCurrent%next
-	20 continue
-	
-	!If we are in a grain boundary or nanoporous simulation, only output defects in the bulk
-	if(numMaterials .GT. 1 .AND. GrainID .NE. 1) then
 		numV=0
 		numSIA=0
-		numHe=0
-	endif
+		numCu=0
+		GrainID=myMesh(i)%material
 	
-	!Step 3.3: enter in data point in DefectListVTK
-	DefectListVTK(xindex,yindex,zindex,1)=numHe
-	DefectListVTK(xindex,yindex,zindex,2)=numV
-	DefectListVTK(xindex,yindex,zindex,3)=numSIA
-	GlobalGrainID(xindex,yindex,zindex)=GrainID
+		do while(associated(defectCurrent))
+			numV=numV+defectCurrent%defectType(2)*defectCurrent%num
+			numCu=numCu+defectCurrent%defectType(1)*defectCurrent%num
+			numSIA=numSIA+defectCurrent%defectType(3)*defectCurrent%num + &
+				defectCurrent%defectType(4)*defectCurrent%num
+		
+			defectCurrent=>defectCurrent%next
+		end do
 	
-19 continue
+		!If we are in a grain boundary or nanoporous simulation, only output defects in the bulk
+		if(numMaterials > 1 .AND. GrainID /= 1) then
+			numV=0
+			numSIA=0
+			numCu=0
+		end if
+	
+		!Step 3.3: enter in data point in DefectListVTK
+		DefectListVTK(xindex,yindex,zindex,1)=numCu
+		DefectListVTK(xindex,yindex,zindex,2)=numV
+		DefectListVTK(xindex,yindex,zindex,3)=numSIA
+		GlobalGrainID(xindex,yindex,zindex)=GrainID
+	
+	end do
 
-!Step 3.4: recieve data from other processors and fill into DefectListVTK
-do 21 i=1,myProc%numTasks-1
+	!Step 3.4: recieve data from other processors and fill into DefectListVTK
+	do i=1,myProc%numTasks-1
 	
-	call MPI_RECV(numCellsNeighbor, 1, MPI_INTEGER, i, 567, MPI_COMM_WORLD, status, ierr)
-		
-	do 22 j=1,numCellsNeighbor
+		call MPI_RECV(numCellsNeighbor, 1, MPI_INTEGER, i, 567, MPI_COMM_WORLD, status, ierr)
+		allocate(defectRecv(7,numCellsNeighbor))
+		call MPI_RECV(defectRecv, 7*numCellsNeighbor, MPI_INTEGER, i, 571, MPI_COMM_WORLD, status, ierr)
+
+		do j=1,numCellsNeighbor
 	
-		call MPI_RECV(cellIndex, 3, MPI_INTEGER, i, 571, MPI_COMM_WORLD, status, ierr)
-		call MPI_RECV(numHe, 1, MPI_INTEGER, i, 568, MPI_COMM_WORLD, status, ierr)
-		call MPI_RECV(numV, 1, MPI_INTEGER, i, 569, MPI_COMM_WORLD, status, ierr)
-		call MPI_RECV(numSIA, 1, MPI_INTEGER, i, 570, MPI_COMM_WORLD, status, ierr)
-		call MPI_RECV(GrainID, 1, MPI_INTEGER, i, 571, MPI_COMM_WORLD, status, ierr)
+			!call MPI_RECV(cellIndex, 3, MPI_INTEGER, i, 571, MPI_COMM_WORLD, status, ierr)
+			!call MPI_RECV(numHe, 1, MPI_INTEGER, i, 568, MPI_COMM_WORLD, status, ierr)
+			!call MPI_RECV(numV, 1, MPI_INTEGER, i, 569, MPI_COMM_WORLD, status, ierr)
+			!call MPI_RECV(numSIA, 1, MPI_INTEGER, i, 570, MPI_COMM_WORLD, status, ierr)
+			!call MPI_RECV(GrainID, 1, MPI_INTEGER, i, 571, MPI_COMM_WORLD, status, ierr)
 		
-		DefectListVTK(cellIndex(1),cellIndex(2),cellIndex(3),1)=numHe
-		DefectListVTK(cellIndex(1),cellIndex(2),cellIndex(3),2)=numV
-		DefectListVTK(cellIndex(1),cellIndex(2),cellIndex(3),3)=numSIA
-		GlobalGrainID(cellIndex(1),cellIndex(2),cellIndex(3))=GrainID
+			DefectListVTK(defectRecv(1,j),defectRecv(2,j),defectRecv(3,j),1)=defectRecv(4,j)
+			DefectListVTK(defectRecv(1,j),defectRecv(2,j),defectRecv(3,j),2)=defectRecv(5,j)
+			DefectListVTK(defectRecv(1,j),defectRecv(2,j),defectRecv(3,j),3)=defectRecv(6,j)
+			GlobalGrainID(defectRecv(1,j),defectRecv(2,j),defectRecv(3,j))=defectRecv(7,j)
 				
-	22 continue
+		end do
+		deallocate(defectRecv)
 	
-21 continue
+	end do
 
-!Step 4: Ouptut data in VTK file format, taking data from DefectListVTK
+	!Step 4: Ouptut data in VTK file format, taking data from DefectListVTK
 
-fileName(1:6)='VTKout'
-write(unit=fileName(7:9), fmt='(I3)') fileNumber
-fileName(10:13)='.vtk'
+	fileName(1:6)='VTKout'
+	write(unit=fileName(7:9), fmt='(I3)') fileNumber
+	fileName(10:13)='.vtk'
 
-open(88, file=fileName, status='Unknown')
+	open(88, file=fileName, status='Unknown')
 
-write(88,'(a)') '# vtk DataFile Version 1.0'
-write(88,'(a)') '3D Unstructured Grid of Linear Cubes'
-write(88,'(a)') 'ASCII'
-write(88,*)
-write(88,'(a)') 'DATASET STRUCTURED_POINTS'
-write(88,'(a)', advance='no') 'DIMENSIONS '
-write(88,'(I4,I4,I4)') numx, numy, numz
-write(88,'(a)', advance='no') 'ORIGIN '
-write(88,'(I4,I4,I4)') 0, 0, 0
-write(88,'(a)', advance='no') 'SPACING '
-write(88,*) xlength, ylength, zlength
-write(88,'(a)', advance='no') 'POINT_DATA '
-write(88,*) numx*numy*numz
+	write(88,'(a)') '# vtk DataFile Version 1.0'
+	write(88,'(a)') '3D Unstructured Grid of Linear Cubes'
+	write(88,'(a)') 'ASCII'
+	write(88,*)
+	write(88,'(a)') 'DATASET STRUCTURED_POINTS'
+	write(88,'(a)', advance='no') 'DIMENSIONS '
+	write(88,'(I4,I4,I4)') numx, numy, numz
+	write(88,'(a)', advance='no') 'ORIGIN '
+	write(88,'(I4,I4,I4)') 0, 0, 0
+	write(88,'(a)', advance='no') 'SPACING '
+	write(88,*) xlength, ylength, zlength
+	write(88,'(a)', advance='no') 'POINT_DATA '
+	write(88,*) numx*numy*numz
 
-write(88,'(a,a,a,I4)') 'SCALARS ', 'Helium', ' float', 1
-write(88,'(a,a)') 'LOOKUP_TABLE ', 'DEFAULT'
+	write(88,'(a,a,a,I4)') 'SCALARS ', 'Cu', ' float', 1
+	write(88,'(a,a)') 'LOOKUP_TABLE ', 'DEFAULT'
 
-do 10 k=1,numz
-do 11 j=1,numy
-do 12 i=1,numx
+	do k=1,numz
+		do j=1,numy
+			do i=1,numx
 
-	write(88,*) DefectListVTK(i,j,k,1)
+				write(88,*) DefectListVTK(i,j,k,1)
 
-12 continue
-11 continue
-10 continue
+			end do
+		end do
+	end do
 
-write(88,'(a,a,a,I4)') 'SCALARS ', 'Vacancies', ' float', 1
-write(88,'(a,a)') 'LOOKUP_TABLE ', 'DEFAULT'
+	write(88,'(a,a,a,I4)') 'SCALARS ', 'Vacancies', ' float', 1
+	write(88,'(a,a)') 'LOOKUP_TABLE ', 'DEFAULT'
 
-do 13 k=1,numz
-do 14 j=1,numy
-do 15 i=1,numx
+	do k=1,numz
+		do j=1,numy
+			do i=1,numx
 
-	write(88,*) DefectListVTK(i,j,k,2)
+				write(88,*) DefectListVTK(i,j,k,2)
 
-15 continue
-14 continue
-13 continue
+			end do
+		end do
+	end do
 
-write(88,'(a,a,a,I4)') 'SCALARS ', 'SIAs', ' float', 1
-write(88,'(a,a)') 'LOOKUP_TABLE ', 'DEFAULT'
+	write(88,'(a,a,a,I4)') 'SCALARS ', 'SIAs', ' float', 1
+	write(88,'(a,a)') 'LOOKUP_TABLE ', 'DEFAULT'
 
-do 16 k=1,numz
-do 17 j=1,numy
-do 18 i=1,numx
+	do k=1,numz
+		do j=1,numy
+			do i=1,numx
 
-	write(88,*) DefectListVTK(i,j,k,3)
+				write(88,*) DefectListVTK(i,j,k,3)
 
-18 continue
-17 continue
-16 continue
+			end do
+		end do
+	end do
 
-write(88,'(a,a,a,I4)') 'SCALARS ', 'GrainID', ' float', 1
-write(88,'(a,a)') 'LOOKUP_TABLE ', 'DEFAULT'
+	write(88,'(a,a,a,I4)') 'SCALARS ', 'GrainID', ' float', 1
+	write(88,'(a,a)') 'LOOKUP_TABLE ', 'DEFAULT'
 
-do 59 k=1,numz
-do 60 j=1,numy
-do 61 i=1,numx
+	do k=1,numz
+		do j=1,numy
+			do i=1,numx
 
-	write(88,*) GlobalGrainID(i,j,k)
+				write(88,*) GlobalGrainID(i,j,k)
 	
-61 continue
-60 continue
-59 continue
+			end do
+		end do
+	end do
 
-close(88)
+	close(88)
 
 else
 
-!Send defect information to master
-call MPI_SEND(numCells, 1, MPI_INTEGER, MASTER, 567, MPI_COMM_WORLD, ierr)
+	!Send defect information to master
+	call MPI_SEND(numCells, 1, MPI_INTEGER, MASTER, 567, MPI_COMM_WORLD, ierr)
 
-do 23 i=1,numCells
+	do i=1,numCells
 	
-	!Step 5.1: identify the x,y,z index of this cell
-	cellIndex(1)=(myMesh(i)%coordinates(1)-myProc%globalCoord(1))/myMesh(1)%length+1
-	cellIndex(2)=(myMesh(i)%coordinates(2)-myProc%globalCoord(3))/myMesh(1)%length+1
-	cellIndex(3)=(myMesh(i)%coordinates(3)-myProc%globalCoord(5))/myMesh(1)%length+1
+		!Step 5.1: identify the x,y,z index of this cell
+		!cellIndex(1)=(myMesh(i)%coordinates(1)-myProc%globalCoord(1))/myMesh(1)%length+1
+		!cellIndex(2)=(myMesh(i)%coordinates(2)-myProc%globalCoord(3))/myMesh(1)%length+1
+		!cellIndex(3)=(myMesh(i)%coordinates(3)-myProc%globalCoord(5))/myMesh(1)%length+1
+
+		defectSend(1,i)=((myMesh(i)%coordinates(1)-myMesh(1)%length/2)-myProc%globalCoord(1))/myMesh(1)%length+1
+		defectSend(2,i)=((myMesh(i)%coordinates(2)-myMesh(1)%length/2)-myProc%globalCoord(3))/myMesh(1)%length+1
+		defectSend(3,i)=((myMesh(i)%coordinates(3)-myMesh(1)%length/2)-myProc%globalCoord(5))/myMesh(1)%length+1
 	
-	!Step 5.2: count number of vacancies, interstitials, and He atoms in this cell
-	defectCurrent=>defectList(i)
+		!Step 5.2: count number of vacancies, interstitials, and He atoms in this cell
+		defectCurrent=>defectList(i)
 	
-	numV=0
-	numSIA=0
-	numHe=0
-	GrainID=myMesh(i)%material
+		!numV=0
+		!numSIA=0
+		!numHe=0
+		!GrainID=myMesh(i)%material
+		defectSend(4,i) = 0	!numCu
+		defectSend(5,i) = 0	!numV
+		defectSend(6,i) = 0	!numSIA
+		defectSend(7,i) = myMesh(i)%material
 	
-	do 24 while(associated(defectCurrent))
-		numV=numV+defectCurrent%defectType(2)*defectCurrent%num
-		numHe=numHe+defectCurrent%defectType(1)*defectCurrent%num
-		numSIA=numSIA+defectCurrent%defectType(3)*defectCurrent%num + &
-			defectCurrent%defectType(4)*defectCurrent%num
+		do while(associated(defectCurrent))
+			!numV=numV+defectCurrent%defectType(2)*defectCurrent%num
+			!numHe=numHe+defectCurrent%defectType(1)*defectCurrent%num
+			!numSIA=numSIA+defectCurrent%defectType(3)*defectCurrent%num + &
+			!	defectCurrent%defectType(4)*defectCurrent%num
+			defectSend(4,i) = defectSend(4,i) + defectCurrent%defectType(1)*defectCurrent%num
+			defectSend(5,i) = defectSend(5,i) + defectCurrent%defectType(2)*defectCurrent%num
+			defectSend(6,i) = defectSend(6,i) + defectCurrent%defectType(3)*defectCurrent%num + &
+						defectCurrent%defectType(4)*defectCurrent%num
 		
-		defectCurrent=>defectCurrent%next
-	24 continue
+			defectCurrent=>defectCurrent%next
+		end do
 	
-	!Step 5.3: Send information to master
-	call MPI_SEND(cellIndex, 3, MPI_INTEGER, MASTER, 571, MPI_COMM_WORLD, ierr)
-	call MPI_SEND(numHe, 1, MPI_INTEGER, MASTER, 568, MPI_COMM_WORLD, ierr)
-	call MPI_SEND(numV, 1, MPI_INTEGER, MASTER, 569, MPI_COMM_WORLD, ierr)
-	call MPI_SEND(numSIA, 1, MPI_INTEGER, MASTER, 570, MPI_COMM_WORLD, ierr)
-	call MPI_SEND(GrainID, 1, MPI_INTEGER, MASTER, 571, MPI_COMM_WORLD, ierr)
+		!Step 5.3: Send information to master
+		!call MPI_SEND(cellIndex, 3, MPI_INTEGER, MASTER, 571, MPI_COMM_WORLD, ierr)
+		!call MPI_SEND(numHe, 1, MPI_INTEGER, MASTER, 568, MPI_COMM_WORLD, ierr)
+		!call MPI_SEND(numV, 1, MPI_INTEGER, MASTER, 569, MPI_COMM_WORLD, ierr)
+		!call MPI_SEND(numSIA, 1, MPI_INTEGER, MASTER, 570, MPI_COMM_WORLD, ierr)
+		!call MPI_SEND(GrainID, 1, MPI_INTEGER, MASTER, 571, MPI_COMM_WORLD, ierr)
 	
-23 continue
+	end do
+	call MPI_SEND(defectSend, 7*numCells, MPI_INTEGER, MASTER, 571, MPI_COMM_WORLD, ierr)
 
-endif
+end if
 
+deallocate(defectSend)
 nullify(defectCurrent)
 
 end subroutine
@@ -1989,7 +2014,7 @@ end subroutine
 !
 !****************************************************************************************************
 
-subroutine outputDebugRestart(fileNumber, elapsedTime)
+subroutine outputDebugRestart(fileNumber, elapsedTime)	!fileNumber = outputCounter
 use mod_srscd_constants
 use DerivedType
 implicit none
@@ -2003,15 +2028,15 @@ integer i, j
 integer numDefectTypes
 
 integer numCellsNeighbor
-double precision coordsNeighbor(3)
-integer defectData(numSpecies+1)
+double precision coordsAndNumTypesSend(4), coordsAndNumTypesRecv(4)
+integer, allocatable :: defectDataSend(:,:), defectDataRecv(:,:)
 
 double precision elapsedTime
 type(defect), pointer :: defectCurrent
 character(12) :: fileName
 
 call MPI_ALLREDUCE(numImplantEvents,totalImplantEvents, 1, MPI_INTEGER, MPI_SUM, MPI_COMM_WORLD, ierr)
-call MPI_ALLREDUCE(numHeImplantEvents,numHeImplantTotal,1,MPI_INTEGER, MPI_SUM, MPI_COMM_WORLD, ierr)
+!call MPI_ALLREDUCE(numHeImplantEvents,numHeImplantTotal,1,MPI_INTEGER, MPI_SUM, MPI_COMM_WORLD, ierr)
 
 if(myProc%taskid==MASTER) then
 	
@@ -2026,9 +2051,9 @@ if(myProc%taskid==MASTER) then
 	write(88,*) 'numImplantEvents'
 	write(88,*) totalImplantEvents
 	write(88,*)
-	write(88,*) 'numHeImplantEvents'
-	write(88,*) numHeImplantTotal
-	write(88,*) 
+	!write(88,*) 'numHeImplantEvents'
+	!write(88,*) numHeImplantTotal
+	!write(88,*)
 	write(88,*) 'elapsedTime'
 	write(88,*) elapsedTime
 	write(88,*)
@@ -2040,7 +2065,7 @@ if(myProc%taskid==MASTER) then
 	write(88,*) myProc%taskid
 	write(88,*) 
 	
-	do 10 cell=1,numCells
+	do cell=1,numCells
 	
 		write(88,*) 'coordinates'
 		write(88,*) (myMesh(cell)%coordinates(i),i=1,3)
@@ -2050,33 +2075,33 @@ if(myProc%taskid==MASTER) then
 		defectCurrent=>defectList(cell)
 		numDefectTypes=0
 		
-		do 11 while(associated(defectCurrent))
-			if(defectCurrent%num .GT. 0) then
+		do while(associated(defectCurrent))
+			if(defectCurrent%num > 0) then
 				numDefectTypes=numDefectTypes+1
 			endif
 			defectCurrent=>defectCurrent%next
-		11 continue
+		end do
 		
 		!write the defect list into the restart.in file
 		write(88,*) 'numDefectTypes'
 		write(88,*) numDefectTypes
 		
 		defectCurrent=>defectList(cell)
-		do 12 while(associated(defectCurrent))
-			if(defectCurrent%num .GT. 0) then
+		do while(associated(defectCurrent))
+			if(defectCurrent%num > 0) then
 				write(88,*) (defectCurrent%defectType(i),i=1,numSpecies)
 				write(88,*) defectCurrent%num
 			endif
 			defectCurrent=>defectCurrent%next
-		12 continue
+		end do
 		
 		write(88,*) 'end'
 		write(88,*)
 	
-	10 continue
+	end do
 	
 	!Recieve defect data from neighbors
-	do 13 proc=1,myProc%numTasks-1
+	do proc=1,myProc%numTasks-1
 		
 		write(88,*) 'processor'
 		write(88,*) proc
@@ -2084,29 +2109,35 @@ if(myProc%taskid==MASTER) then
 		
 		call MPI_RECV(numCellsNeighbor, 1, MPI_INTEGER, proc, 567, MPI_COMM_WORLD, status, ierr)
 		
-		do 14 cell=1,numCellsNeighbor
+		do cell=1,numCellsNeighbor
 		
-			call MPI_RECV(coordsNeighbor,3,MPI_DOUBLE_PRECISION,proc,2000+cell,MPI_COMM_WORLD,status,ierr)
+			!call MPI_RECV(coordsNeighbor,3,MPI_DOUBLE_PRECISION,proc,2000+cell,MPI_COMM_WORLD,status,ierr)
+			call MPI_RECV(coordsAndNumTypesRecv,4,MPI_DOUBLE_PRECISION,proc,1000+cell,MPI_COMM_WORLD,status,ierr)
 			write(88,*) 'coordinates'
-			write(88,*) (coordsNeighbor(i),i=1,3)
+			write(88,*) (coordsAndNumTypesRecv(i),i=1,3)
 			write(88,*)
-			
-			call MPI_RECV(numDefectTypes,1,MPI_INTEGER,proc,1000+cell,MPI_COMM_WORLD,status,ierr)
+
+			numDefectTypes = coordsAndNumTypesRecv(4)
 			write(88,*) 'numDefectTypes'
 			write(88,*) numDefectTypes
+
+			allocate(defectDataRecv(numSpecies+1,numDefectTypes))
+			call MPI_RECV(defectDataRecv,(numSpecies+1)*numDefectTypes,MPI_INTEGER,proc,3000*cell,MPI_COMM_WORLD,status,ierr)
 			
-			do 15 i=1,numDefectTypes
-				call MPI_RECV(defectData,numSpecies+1,MPI_INTEGER,proc,3000*cell+i,MPI_COMM_WORLD,status,ierr)
-				write(88,*) (defectData(j),j=1,numSpecies)
-				write(88,*) defectData(numSpecies+1)
-			15 continue
+			do i=1,numDefectTypes
+				!call MPI_RECV(defectData,numSpecies+1,MPI_INTEGER,proc,3000*cell+i,MPI_COMM_WORLD,status,ierr)
+				write(88,*) (defectDataRecv(j,i),j=1,numSpecies)
+				write(88,*) defectDataRecv(numSpecies+1,i)
+			end do
 			
 			write(88,*) 'end'
 			write(88,*)
+
+			deallocate(defectDataRecv)
 			
-		14 continue
+		end do
 	
-	13 continue
+	end do
 	
 	close(88)
 
@@ -2117,47 +2148,62 @@ else
 	!Send number of cells to master
 	call MPI_SEND(numCells,1,MPI_INTEGER,MASTER,567,MPI_COMM_WORLD,ierr)
 	
-	do 16 cell=1,numCells
+	do cell=1,numCells
 	
 		!send coordinates of cell to master
-		call MPI_SEND(myMesh(cell)%coordinates,3,MPI_DOUBLE_PRECISION,MASTER,2000+cell,MPI_COMM_WORLD,ierr)
+		coordsAndNumTypesSend(1) = myMesh(cell)%coordinates(1)
+		coordsAndNumTypesSend(2) = myMesh(cell)%coordinates(2)
+		coordsAndNumTypesSend(3) = myMesh(cell)%coordinates(3)
+
+		!call MPI_SEND(myMesh(cell)%coordinates,3,MPI_DOUBLE_PRECISION,MASTER,2000+cell,MPI_COMM_WORLD,ierr)
 	
 		!Count how many defect types are in the cell
 		defectCurrent=>defectList(cell)
-		numDefectTypes=0
+		!numDefectTypes=0
+		coordsAndNumTypesSend(4)=0
 		
-		do 17 while(associated(defectCurrent))
-			if(defectCurrent%num .GT. 0) then
-				numDefectTypes=numDefectTypes+1
+		do while(associated(defectCurrent))
+			if(defectCurrent%num > 0) then
+				!numDefectTypes=numDefectTypes+1
+				coordsAndNumTypesSend(4)=coordsAndNumTypesSend(4)+1
 			endif
 			defectCurrent=>defectCurrent%next
-		17 continue
-		
+		end do
+
 		!send number of defect types to master
-		call MPI_SEND(numDefectTypes,1,MPI_INTEGER,MASTER,1000+cell,MPI_COMM_WORLD,ierr)
-		
+		call MPI_SEND(coordsAndNumTypesSend,4,MPI_DOUBLE_PRECISION,MASTER,1000+cell,MPI_COMM_WORLD,ierr)
+
+		numDefectTypes = coordsAndNumTypesSend(4)
+		allocate(defectDataSend(numSpecies+1,numDefectTypes))
+
 		i=1
 		defectCurrent=>defectList(cell)
 		
-		do 18 while(associated(defectCurrent))
-			if(defectCurrent%num .GT. 0) then
-				do 19 j=1,numSpecies
-					defectData(j)=defectCurrent%defectType(j)
-				19 continue
-				defectData(numSpecies+1)=defectCurrent%num
+		do while(associated(defectCurrent))
+			if(defectCurrent%num > 0) then
+				do j=1,numSpecies
+					defectDataSend(j,i)=defectCurrent%defectType(j)
+				end do
+				defectDataSend(numSpecies+1,i)=defectCurrent%num
 				
-				call MPI_SEND(defectData,numSpecies+1,MPI_INTEGER,MASTER,3000*cell+i,MPI_COMM_WORLD,ierr)
+				!call MPI_SEND(defectData,numSpecies+1,MPI_INTEGER,MASTER,3000*cell+i,MPI_COMM_WORLD,ierr)
 				i=i+1
 			endif
 			defectCurrent=>defectCurrent%next
-		18 continue
+		end do
+		call MPI_SEND(defectDataSend,(numSpecies+1)*numDefectTypes,MPI_INTEGER,MASTER,3000*cell,MPI_COMM_WORLD,ierr)
+
+		deallocate(defectDataSend)
 	
-	16 continue
+	end do
 
 endif
 
 end subroutine
 
+!*****************************************************
+!function: computeVConc
+!*****************************************************
 
 double precision function computeVConc()
 use DerivedType
@@ -2593,6 +2639,9 @@ nullify(outputDefectList)
 
 end function
 
+!******************************************************
+!function: computeIConc()
+!******************************************************
 
 double precision function computeIConc()
 use DerivedType
