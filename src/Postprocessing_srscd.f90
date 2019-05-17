@@ -477,11 +477,11 @@ if(myProc%taskid==MASTER) then
 	
 	write(83,*) 'CuClusterNum', CuClusterNum, 'Concentration (cm-3)', dble(CuClusterNum)/(systemVol*1d-21), &
             'MeanRadius (nm)', CuMeanRadius
-	write(83,*) 'VClusterNum', VClusterNum, 'Concentration (cm-3)', dble(VNum)/(systemVol*1d-21), &
+	write(83,*) 'VClusterNum', VClusterNum, 'Concentration (cm-3)', dble(VClusterNum)/(systemVol*1d-21), &
             'VMeanRadius (nm)', VMeanRadius
 	write(83,*)	'Voids', VoidNum, 'Concentration (cm-3)', dble(VoidNum)/(systemVol*1d-21), &
             'VoidMeanRadius (nm)', VoidMeanRadius
-	write(83,*) 'SIAClusterNum', SIAClusterNum, 'Concentration (cm-3)', dble(SIANum)/(systemVol*1d-21)
+	write(83,*) 'SIAClusterNum', SIAClusterNum, 'Concentration (cm-3)', dble(SIAClusterNum)/(systemVol*1d-21)
 	write(83,*) 'SIA_small (SIANum>=16)',LoopSize(1), 'Concentration (cm-3)', dble(LoopSize(1))/(systemVol*1d-21)
 	write(83,*) 'Loops (SIANum>=20)', LoopSize(2), 'Concentration (cm-3)', dble(LoopSize(2))/(systemVol*1d-21), &
             'LoopMeanRadius (nm)', LoopMeanRadius
@@ -496,7 +496,7 @@ if(myProc%taskid==MASTER) then
             'At.%', dble(VClusterNum)*atomSize/systemVol
 	write(84,*)	'Voids', VoidNum, 'Concentration (cm-3)', dble(VoidNum)/(systemVol*1d-21), &
             'At.%', dble(VoidNum)*atomSize/systemVol
-	write(84,*) 'SIAClusterNum', SIAClusterNum, 'Concentration (cm-3)', dble(SIANum)/(systemVol*1d-21), &
+	write(84,*) 'SIAClusterNum', SIAClusterNum, 'Concentration (cm-3)', dble(SIAClusterNum)/(systemVol*1d-21), &
             'At.%', dble(SIAClusterNum)*atomSize/systemVol
 	write(84,*) 'SIA_small (SIANum>=16)',LoopSize(1), 'Concentration (cm-3)', dble(LoopSize(1))/(systemVol*1d-21), &
             'At.%', dble(LoopSize(1))*atomSize/systemVol
@@ -1586,7 +1586,7 @@ integer i, j
 integer status(MPI_STATUS_SIZE)
 !double precision coords(3)
 double precision, allocatable ::  xyzRecv(:,:)
-double precision xyzSend(6,numCells)
+double precision, allocatable ::  xyzSend(:,:)
 
 type(defect), pointer :: defectCurrent
 
@@ -1646,9 +1646,13 @@ if(myProc%taskid==MASTER) then
 			!call MPI_RECV(HeCount, 1, MPI_INTEGER, i, 568, MPI_COMM_WORLD, status, ierr)
 			!call MPI_RECV(VCount, 1, MPI_INTEGER, i, 569, MPI_COMM_WORLD, status, ierr)
 			!call MPI_RECV(SIACount, 1, MPI_INTEGER, i, 570, MPI_COMM_WORLD, status, ierr)
+
+			CuCount=xyzRecv(4,j)
+			VCount=xyzRecv(5,j)
+			SIACount=xyzRecv(6,j)
 			
 			write(87,59) cellCount, xyzRecv(1,j), xyzRecv(2,j), xyzRecv(3,j), &
-					ifix(xyzRecv(4,j)), ifix(xyzRecv(5,j)), ifix(xyzRecv(6,j))
+					CuCount, VCount, SIACount
 				
 			cellCount=cellCount+1
 			
@@ -1663,7 +1667,9 @@ else
 	call MPI_ALLREDUCE(numCells, numPoints, 1, MPI_INTEGER, MPI_SUM, MPI_COMM_WORLD, ierr)
 	
 	call MPI_SEND(numCells, 1, MPI_INTEGER, MASTER, 567, MPI_COMM_WORLD, ierr)
-	
+
+	allocate(xyzSend(6,numCells))
+
 	do i=1,numCells
 	
 		!call MPI_SEND(myMesh(i)%coordinates, 3, MPI_DOUBLE_PRECISION, MASTER, 571, MPI_COMM_WORLD, ierr)
@@ -1684,9 +1690,9 @@ else
 		
 		do while(associated(defectCurrent))
 
-			xyzSend(4,i)	 = countSend(1,i)+defectCurrent%defectType(1)*defectCurrent%num
-			xyzSend(5,i)	 = countSend(2,i)+defectCurrent%defectType(2)*defectCurrent%num
-			xyzSend(6,i) = countSend(3,i)+defectCurrent%defectType(3)*defectCurrent%num + &
+			xyzSend(4,i) = xyzSend(4,i)+defectCurrent%defectType(1)*defectCurrent%num
+			xyzSend(5,i) = xyzSend(5,i)+defectCurrent%defectType(2)*defectCurrent%num
+			xyzSend(6,i) = xyzSend(6,i)+defectCurrent%defectType(3)*defectCurrent%num + &
 					   defectCurrent%defectType(4)*defectCurrent%num
 			
 			defectCurrent=>defectCurrent%next
@@ -1700,8 +1706,10 @@ else
 	end do
     call MPI_SEND(xyzSend, 6*numCells, MPI_DOUBLE_PRECISION, MASTER, 571, MPI_COMM_WORLD, ierr)
 
+	deallocate(xyzSend)
+
 endif
-deallocate(xyzSend)
+
  59		format(i4,3(1x,e12.4),3(1x,i6))
 
 end subroutine
@@ -1730,7 +1738,7 @@ integer status(MPI_STATUS_SIZE)
 integer, allocatable :: DefectListVTK(:,:,:,:)
 integer, allocatable :: GlobalGrainID(:,:,:)
 !2019.05.15 Add
-integer defectSend(7,numCells)
+integer , allocatable :: defectSend(:,:)
 integer, allocatable :: defectRecv(:,:)
 
 double precision xlength, ylength, zlength
@@ -1901,6 +1909,8 @@ else
 	!Send defect information to master
 	call MPI_SEND(numCells, 1, MPI_INTEGER, MASTER, 567, MPI_COMM_WORLD, ierr)
 
+	allocate(defectSend(7,numCells))
+
 	do i=1,numCells
 	
 		!Step 5.1: identify the x,y,z index of this cell
@@ -1947,9 +1957,10 @@ else
 	end do
 	call MPI_SEND(defectSend, 7*numCells, MPI_INTEGER, MASTER, 571, MPI_COMM_WORLD, ierr)
 
+	deallocate(defectSend)
+
 end if
 
-deallocate(defectSend)
 nullify(defectCurrent)
 
 end subroutine
