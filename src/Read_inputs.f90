@@ -987,9 +987,9 @@ cascadeReactionLimit=100d0
 !Toggles for various output types
 postprToggle		='yes'
 totdatToggle		='yes'
-rawdatToggle		='no'
+rawdatToggle		='yes'
 vtkToggle			='no'
-xyzToggle			='no'
+xyzToggle			='yes'
 outputDebug			='no'
 profileToggle		='no'
 

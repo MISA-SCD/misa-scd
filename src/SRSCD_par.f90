@@ -245,15 +245,19 @@ atomsEverMesh = ((myProc%globalCoord(2)-myProc%globalCoord(1))/lattice * &
 CuAtomsEverMeshTemp = aint(0.005d0* atomsEverMesh)
 write(CuAtomsEverMeshTemp2,'(f20.0)') CuAtomsEverMeshTemp
 read(CuAtomsEverMeshTemp2,'(i19)') CuAtomsEverMesh
-!write(*,*) 'atomsEverMesh', atomsEverMesh, 'Cu atoms in one mesh', CuAtomsEverMesh
 
 initialCeqv = dexp(-FormSingle(1,2)%Ef / (kboltzmann*temperature))
 initialCeqi = dexp(-FormSingle(1,3)%Ef / (kboltzmann*temperature))
 
+initialTotalV = floor(initialCeqv*atomsEverMesh*totalMesh)
+initialTotalSIA = floor(initialCeqi*atomsEverMesh*totalMesh)
+
 vacancyEverMesh = floor(initialCeqv*atomsEverMesh)
 SIAEverMesh = floor(initialCeqi*atomsEverMesh)
 
+write(*,*) 'atomsEverMesh', atomsEverMesh, 'CuEverMesh', CuAtomsEverMesh
 write(*,*) 'initialCeqv', initialCeqv, 'vacancyEverMesh', vacancyEverMesh
+write(*,*) 'initialCeqi', initialCeqi, 'SIAEverMesh', SIAEverMesh
 !**********************************************
 
 call initializeRandomSeeds()		!set unique random number seeds in each processor
@@ -555,8 +559,8 @@ do while(elapsedTime < totalTime)
 		!Input: reactionCurrent
 		!Output: defectUpdateCurrent, CascadeCurrent
 		call updateDefectList(reactionCurrent, defectUpdateCurrent, CascadeCurrent)
-		!test
-		call DEBUGPrintDefectList(step)
+
+		!call DEBUGPrintDefectList(step)
 
 		!call DEBUGPrintDefectUpdate(defectUpdate)
 	
@@ -582,17 +586,8 @@ do while(elapsedTime < totalTime)
 	if(myProc%taskid==MASTER) then
 		
 		elapsedTime=elapsedTime+tau
-!*******************************************************
-		!NOTE: we should eliminate this send/recieve pair and only track time in the master to save communication
-!!2019.05.02 Modified
-!!		do 11 i=1,myProc%numtasks-1
-!!			call MPI_SEND(elapsedTime, 1, MPI_DOUBLE_PRECISION,i,1,MPI_COMM_WORLD,ierr)
-!!		11 continue
-
-!!	else
-		!slave processors recieve elapsed time from master
-!!		call MPI_RECV(elapsedTime,1,MPI_DOUBLE_PRECISION,MASTER,1,MPI_COMM_WORLD,status,ierr)
 	end if
+
 	call MPI_BCAST(elapsedTime, 1, MPI_DOUBLE_PRECISION, MASTER, MPI_COMM_WORLD,ierr)
 
 !*********************************************************
@@ -669,7 +664,7 @@ do while(elapsedTime < totalTime)
 	if(elapsedTime > totalTime/200d0*(2d0)**(outputCounter)) then
 	! or if(mod(step,100000)==0) then
 		call MPI_ALLREDUCE(numImplantEvents,totalImplantEvents, 1, MPI_INTEGER, MPI_SUM, MPI_COMM_WORLD, ierr)
-		call MPI_ALLREDUCE(numHeImplantEvents,numHeImplantTotal,1,MPI_INTEGER, MPI_SUM, MPI_COMM_WORLD, ierr)
+		!call MPI_ALLREDUCE(numHeImplantEvents,numHeImplantTotal,1,MPI_INTEGER, MPI_SUM, MPI_COMM_WORLD, ierr)
 		
 		DPA=dble(totalImplantEvents)/(((myProc%globalCoord(2)-myProc%globalCoord(1))*(myProc%globalCoord(4)-myProc%globalCoord(3))*&
 			(myProc%globalCoord(6)-myProc%globalCoord(5)))/(numDisplacedAtoms*atomsize))
@@ -677,12 +672,10 @@ do while(elapsedTime < totalTime)
 		if(myProc%taskid==MASTER) then
 			call cpu_time(time2)
 			write(*,*) 'time', elapsedTime, 'dpa', dpa, 'steps', step
-			write(*,*) 'Cascades/Frenkel pairs', totalImplantEvents, 'He implant events', numHeImplantTotal, &
-				'computation time', time2-time1
+			write(*,*) 'Cascades/Frenkel pairs', totalImplantEvents, 'computation time', time2-time1
 			!write postpr.out
 			write(84,*) 'time', elapsedTime, 'dpa', dpa, 'steps', step
-			write(84,*) 'Cascades/Frenkel pairs', totalImplantEvents, 'He implant events', numHeImplantTotal, &
-				'computation time', time2-time1
+			write(84,*) 'Cascades/Frenkel pairs', totalImplantEvents, 'computation time', time2-time1
 			
 			!Optional: output average number of cascades present per step in local processor
 			!write(84,*) 'Processor ', myProc%taskid, 'Avg. cascades present', dble(TotalCascades)/dble(step)
@@ -732,8 +725,7 @@ do while(elapsedTime < totalTime)
 
 		!	!Write initial information into write file
 		!	write(86,*) 'time', elapsedTime, 'dpa', dpa, 'steps', step
-		!	write(86,*) 'Cascades/Frenkel pairs', totalImplantEvents, 'He Implant Events', numHeImplantTotal, &
-		!		'computation time', time2-time1
+		!	write(86,*) 'Cascades/Frenkel pairs', totalImplantEvents,  'computation time', time2-time1
 		!	write(86,*)
 		!endif
 
@@ -750,7 +742,7 @@ end do
 !***********************************************************************
 
 call MPI_ALLREDUCE(numImplantEvents,totalImplantEvents, 1, MPI_INTEGER, MPI_SUM, MPI_COMM_WORLD, ierr)
-call MPI_ALLREDUCE(numHeImplantEvents,numHeImplantTotal,1,MPI_INTEGER, MPI_SUM, MPI_COMM_WORLD, ierr)
+!call MPI_ALLREDUCE(numHeImplantEvents,numHeImplantTotal,1,MPI_INTEGER, MPI_SUM, MPI_COMM_WORLD, ierr)
 
 DPA=dble(totalImplantEvents)/(((myProc%globalCoord(2)-myProc%globalCoord(1))*(myProc%globalCoord(4)-myProc%globalCoord(3))*&
 	(myProc%globalCoord(6)-myProc%globalCoord(5)))/(numDisplacedAtoms*atomsize))
@@ -759,11 +751,9 @@ if(myProc%taskid==MASTER) then
 	call cpu_time(time2)
 
 	write(*,*) 'time', elapsedTime, 'dpa', dpa, 'steps', step
-	write(*,*) 'Cascades/Frenkel pairs', totalImplantEvents, 'He implant events', numHeImplantTotal, &
-				'computation time', time2-time1
+	write(*,*) 'Cascades/Frenkel pairs', totalImplantEvents, 'computation time', time2-time1
 	write(84,*) 'time', elapsedTime, 'dpa', dpa, 'steps', step
-	write(84,*) 'Cascades/Frenkel pairs', totalImplantEvents, 'He implant events', numHeImplantTotal, &
-				'computation time', time2-time1
+	write(84,*) 'Cascades/Frenkel pairs', totalImplantEvents, 'computation time', time2-time1
 	
 	!Optional: output average number of cascades present per step in local processor
 	write(84,*) 'Processor ', myProc%taskid, 'Avg. cascades present', dble(TotalCascades)/dble(step)
@@ -797,7 +787,7 @@ outputCounter=1		!Used to output once for each annealing step
 
 if(myProc%taskid==MASTER .AND. annealTime > 0d0) then
 	write(*,*) 'Entering Annealing Phase'
-!	write(82,*) 'Entering Annealing Phase'
+	write(82,*) 'Entering Annealing Phase'
 	write(83,*) 'Entering Annealing Phase'
 	write(84,*) 'Entering Annealing Phase'
 end if
@@ -833,7 +823,7 @@ do annealIter=1,annealSteps	!default value: annealSteps = 1
 	end if
 
 	!if annealTime = 0, the following "do" does not execute
-	do while(elapsedTime .LT. totalTime+dble(annealIter)*annealTime/dble(annealSteps))
+	do while(elapsedTime < totalTime+dble(annealIter)*annealTime/dble(annealSteps))
 
 		step=step+1
 	
@@ -970,17 +960,8 @@ do annealIter=1,annealSteps	!default value: annealSteps = 1
 		if(myProc%taskid==MASTER) then
 		
 			elapsedTime=elapsedTime+tau
-!***********************************************************************************
-			!NOTE: we should eliminate this send/recieve pair and only track time in the master to save communication
-!!2019.05.03 Modified
-!!			do 110 i=1,myProc%numtasks-1
-!!				call MPI_SEND(elapsedTime, 1, MPI_DOUBLE_PRECISION,i,1,MPI_COMM_WORLD,ierr)
-!!			110 continue
-
-!!		else
-			!slave processors recieve elapsed time from master
-!!			call MPI_RECV(elapsedTime,1,MPI_DOUBLE_PRECISION,MASTER,1,MPI_COMM_WORLD,status,ierr)
 		end if
+
 		call MPI_BCAST(elapsedTime, 1, MPI_DOUBLE_PRECISION, MASTER, MPI_COMM_WORLD,ierr)
 		!***********************************************************************************
 		!call DEBUGPrintDefectUpdate(defectUpdate)
@@ -1037,7 +1018,7 @@ do annealIter=1,annealSteps	!default value: annealSteps = 1
 		if((elapsedTime-totalTime) >= annealTime/dble(annealSteps)*outputCounter) then
 		
 			call MPI_ALLREDUCE(numImplantEvents,totalImplantEvents, 1, MPI_INTEGER, MPI_SUM, MPI_COMM_WORLD, ierr)
-			call MPI_ALLREDUCE(numHeImplantEvents,numHeImplantTotal,1,MPI_INTEGER, MPI_SUM, MPI_COMM_WORLD, ierr)
+			!call MPI_ALLREDUCE(numHeImplantEvents,numHeImplantTotal,1,MPI_INTEGER, MPI_SUM, MPI_COMM_WORLD, ierr)
 		
 			DPA=dble(totalImplantEvents)/(((myProc%globalCoord(2)-myProc%globalCoord(1))*(myProc%globalCoord(4)-myProc%globalCoord(3))*&
 				(myProc%globalCoord(6)-myProc%globalCoord(5)))/(numDisplacedAtoms*atomsize))
@@ -1045,11 +1026,9 @@ do annealIter=1,annealSteps	!default value: annealSteps = 1
 			if(myProc%taskid==MASTER) then
 				call cpu_time(time2)
 				write(*,*) 'time', elapsedTime, 'anneal time', elapsedTime-totalTime, 'dpa', dpa, 'steps', step
-				write(*,*) 'Cascades/Frenkel pairs', totalImplantEvents, 'He implant events', numHeImplantTotal, &
-					'computation time', time2-time1
+				write(*,*) 'Cascades/Frenkel pairs', totalImplantEvents, 'computation time', time2-time1
 				write(84,*) 'time', elapsedTime, 'anneal time', elapsedTime-totalTime, 'dpa', dpa, 'steps', step
-				write(84,*) 'Cascades/Frenkel pairs', totalImplantEvents, 'He implant events', numHeImplantTotal, &
-					'computation time', time2-time1
+				write(84,*) 'Cascades/Frenkel pairs', totalImplantEvents, 'computation time', time2-time1
 			
 				!Optional: output average number of cascades present per step in local processor
 				!write(*,*) 'Processor ', myProc%taskid, 'Avg. cascades present', dble(TotalCascades)/dble(step)
@@ -1095,29 +1074,27 @@ end do
 !***********************************************************************
 
 call MPI_ALLREDUCE(numImplantEvents,totalImplantEvents, 1, MPI_INTEGER, MPI_SUM, MPI_COMM_WORLD, ierr)
-call MPI_ALLREDUCE(numHeImplantEvents,numHeImplantTotal,1,MPI_INTEGER, MPI_SUM, MPI_COMM_WORLD, ierr)
+!call MPI_ALLREDUCE(numHeImplantEvents,numHeImplantTotal,1,MPI_INTEGER, MPI_SUM, MPI_COMM_WORLD, ierr)
 
 DPA=dble(totalImplantEvents)/(((myProc%globalCoord(2)-myProc%globalCoord(1))*(myProc%globalCoord(4)-myProc%globalCoord(3))*&
 	(myProc%globalCoord(6)-myProc%globalCoord(5)))/(numDisplacedAtoms*atomsize))
 
-!write(*,*) 'Fraction null steps', dble(nullSteps)/dble(step), 'Proc', myProc%taskid
+write(*,*) 'Fraction null steps', dble(nullSteps)/dble(step), 'Proc', myProc%taskid
 
 if(myProc%taskid==MASTER) then
 	call cpu_time(time2)
 	
 	if(sinkEffSearch=='no') then
 		write(*,*) 'Final Defect State'
-!		write(82,*) 'Final Defect State'
+		write(82,*) 'Final Defect State'
 		write(83,*) 'Final Defect State'
 		write(84,*) 'Final Defect State'
 		
 		write(*,*) 'time', elapsedTime, 'dpa', dpa, 'steps', step
-		write(*,*) 'Cascades/Frenkel pairs', totalImplantEvents, 'He implant events', numHeImplantTotal, &
-					'computation time', time2-time1
+		write(*,*) 'Cascades/Frenkel pairs', totalImplantEvents, 'computation time', time2-time1
 		
 		write(84,*) 'time', elapsedTime, 'dpa', dpa, 'steps', step
-		write(84,*) 'Cascades/Frenkel pairs', totalImplantEvents, 'He implant events', numHeImplantTotal, &
-					'computation time', time2-time1
+		write(84,*) 'Cascades/Frenkel pairs', totalImplantEvents, 'computation time', time2-time1
 		
 		!Optional: output average number of cascades present per step in local processor
 		!write(*,*) 'Processor ', myProc%taskid, 'Avg. cascades present', dble(TotalCascades)/dble(step)
@@ -1200,7 +1177,7 @@ do while(associated(ActiveCascades))
 end do
 
 if(myProc%taskid==MASTER) then
-!	write(82,*) 'Released all fine mesh defects'
+	write(82,*) 'Released all fine mesh defects'
 	write(83,*) 'Released all fine mesh defects'
 	write(84,*) 'Released all fine mesh defects'
 end if

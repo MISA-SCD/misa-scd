@@ -7,7 +7,7 @@
 !!subroutine
 !*****************************************************************************************
 
-subroutine initializeDefectList()
+subroutine 是啊initializeDefectList()
 use DerivedType
 use mod_srscd_constants
 implicit none
@@ -247,42 +247,15 @@ do cell=1,numCells
 
 			nullify(reactionList(cell)%next)
 
+		else
+			reactionList(cell)%numReactants=0
+			reactionList(cell)%numProducts=0
+			reactionList(cell)%reactionRate=0d0
+			nullify(reactionList(cell)%next)
+
 		end if
 
 		reactionCurrent=>reactionList(cell)
-
-		!Helium implantation reaction: second in the list
-		!if(HeDPARatio > 0d0) then
-		!	allocate(reactionCurrent%next)
-		!	reactionCurrent=>reactionCurrent%next
-
-		!	reactionCurrent%numReactants=0
-		!	reactionCurrent%numProducts=1
-
-		!	allocate(reactionCurrent%products(reactionCurrent%numProducts, numSpecies))
-		!	allocate(reactionCurrent%cellNumber(reactionCurrent%numProducts))
-		!	allocatE(reactionCurrent%taskid(reactionCurrent%numProducts))
-
-			!search ImplantList for He implant reactions
-		!	do reac=1,numImplantReac(matNum)
-		!		if(ImplantReactions(matNum,reac)%numReactants==0 .AND. &
-		!				ImplantReactions(matNum,reac)%numProducts==1) then
-		!			exit
-		!		end if
-		!	end do
-
-		!	do i=1,ImplantReactions(matNum,reac)%numProducts
-		!		do j=1,numSpecies
-		!			reactionCurrent%products(i,j)=ImplantReactions(matNum,reac)%products(i,j)
-		!		end do
-		!		reactionCurrent%cellNumber(i)=cell
-		!		reactionCurrent%taskid(i)=myMesh(cell)%proc
-		!	end do
-
-			!Find reaction rate for He ion implantation using ImplantReactions(reac), which is input from file.
-		!	reactionCurrent%reactionRate=findReactionRate(cell, ImplantReactions(matNum,reac))
-		!nullify(reactionCurrent%next)
-		!end if
 
 		!2019.05.04 Add: Initialize possible reactions of free Cu
 		!*******************************************************
@@ -332,49 +305,49 @@ do cell=1,numCells
 		!*******************************************************************
 		!Diffusion: Cu->Cu
 		!*******************************************************************
-		do dir=1, 6
-			allocate(reactionCurrent%next)
-			reactionCurrent=>reactionCurrent%next
+!		do dir=1, 6
+!			allocate(reactionCurrent%next)
+!			reactionCurrent=>reactionCurrent%next
 
-			reactionCurrent%numReactants=1
-			reactionCurrent%numProducts=1
-			allocate(reactionCurrent%reactants(reactionCurrent%numReactants, numSpecies))
-			allocate(reactionCurrent%products(reactionCurrent%numProducts, numSpecies))
-			allocate(reactionCurrent%cellNumber(reactionCurrent%numReactants + reactionCurrent%numProducts))
-			allocate(reactionCurrent%taskid(reactionCurrent%numReactants + reactionCurrent%numProducts))
+!			reactionCurrent%numReactants=1
+!			reactionCurrent%numProducts=1
+!			allocate(reactionCurrent%reactants(reactionCurrent%numReactants, numSpecies))
+!			allocate(reactionCurrent%products(reactionCurrent%numProducts, numSpecies))
+!			allocate(reactionCurrent%cellNumber(reactionCurrent%numReactants + reactionCurrent%numProducts))
+!			allocate(reactionCurrent%taskid(reactionCurrent%numReactants + reactionCurrent%numProducts))
 
 		!search DiffList for Cu->Cu
-			do reac=1,numDiffReac(matNum)
-				if(DiffReactions(matNum,reac)%reactants(1,1)==1 .AND. DiffReactions(matNum,reac)%products(1,1)==1 &
-					.AND. DiffReactions(matNum,reac)%reactants(1,2)==0 .AND. &
-					DiffReactions(matNum,reac)%products(1,2)==0 .AND. &
-					DiffReactions(matNum,reac)%reactants(1,3)==0 .AND. &
-					DiffReactions(matNum,reac)%products(1,3)==0 .AND. &
-					DiffReactions(matNum,reac)%reactants(1,4)==0 .AND. &
-					DiffReactions(matNum,reac)%products(1,4)==0) then
-					exit
-				end if
-			end do
+!			do reac=1,numDiffReac(matNum)
+!				if(DiffReactions(matNum,reac)%reactants(1,1)==1 .AND. DiffReactions(matNum,reac)%products(1,1)==1 &
+!					.AND. DiffReactions(matNum,reac)%reactants(1,2)==0 .AND. &
+!					DiffReactions(matNum,reac)%products(1,2)==0 .AND. &
+!					DiffReactions(matNum,reac)%reactants(1,3)==0 .AND. &
+!					DiffReactions(matNum,reac)%products(1,3)==0 .AND. &
+!					DiffReactions(matNum,reac)%reactants(1,4)==0 .AND. &
+!					DiffReactions(matNum,reac)%products(1,4)==0) then
+!					exit
+!				end if
+!			end do
 
 			!do 32 i=1,DiffReactions(matNum,reac)%numReactants+DiffReactions(matNum,reac)%numProducts
-			reactionCurrent%reactants(1,1)=1
-			reactionCurrent%products(1,1)=1
-			do j=2,numSpecies
-				reactionCurrent%reactants(1,j)=DiffReactions(matNum,reac)%reactants(1,j)
-				reactionCurrent%products(1,j)=DiffReactions(matNum,reac)%products(1,j)
-			end do
-			reactionCurrent%cellNumber(1)=cell
-			reactionCurrent%cellNumber(2)=myMesh(cell)%neighbors(dir,1)
-			reactionCurrent%taskid(1)=myMesh(cell)%proc
-			reactionCurrent%taskid(2)=myMesh(cell)%neighborProcs(dir,1)
+!			reactionCurrent%reactants(1,1)=1
+!			reactionCurrent%products(1,1)=1
+!			do j=2,numSpecies
+!				reactionCurrent%reactants(1,j)=DiffReactions(matNum,reac)%reactants(1,j)
+!				reactionCurrent%products(1,j)=DiffReactions(matNum,reac)%products(1,j)
+!			end do
+!			reactionCurrent%cellNumber(1)=cell
+!			reactionCurrent%cellNumber(2)=myMesh(cell)%neighbors(dir,1)
+!			reactionCurrent%taskid(1)=myMesh(cell)%proc
+!			reactionCurrent%taskid(2)=myMesh(cell)%neighborProcs(dir,1)
 			!32 continue
-			reactionCurrent%reactionRate = 0d0
+!			reactionCurrent%reactionRate = 0d0
 			!reactionCurrent%reactionRate=findReactionRateDiff(reactionCurrent%reactants(1,:), cell, &
 			!		myProc%taskid, myMesh(cell)%neighbors(1,dir), myMesh(cell)%neighborProcs(1,dir), dir, &
 			!		DiffReactions(matNum,reac))
-			nullify(reactionCurrent%next)
+!			nullify(reactionCurrent%next)
 
-		end do
+!		end do
 		!*******************************************************************
 		!Sink trapping: Cu->0
 		!*******************************************************************
@@ -455,49 +428,49 @@ do cell=1,numCells
 		!*******************************************************************
 		!Diffusion: Cu->Cu
 		!*******************************************************************
-		do dir=1, 6
-			allocate(reactionCurrent%next)
-			reactionCurrent=>reactionCurrent%next
+!		do dir=1, 6
+!			allocate(reactionCurrent%next)
+!			reactionCurrent=>reactionCurrent%next
 
-			reactionCurrent%numReactants=1
-			reactionCurrent%numProducts=1
-			allocate(reactionCurrent%reactants(reactionCurrent%numReactants, numSpecies))
-			allocate(reactionCurrent%products(reactionCurrent%numProducts, numSpecies))
-			allocate(reactionCurrent%cellNumber(reactionCurrent%numReactants + reactionCurrent%numProducts))
-			allocate(reactionCurrent%taskid(reactionCurrent%numReactants + reactionCurrent%numProducts))
+!			reactionCurrent%numReactants=1
+!			reactionCurrent%numProducts=1
+!			allocate(reactionCurrent%reactants(reactionCurrent%numReactants, numSpecies))
+!			allocate(reactionCurrent%products(reactionCurrent%numProducts, numSpecies))
+!			allocate(reactionCurrent%cellNumber(reactionCurrent%numReactants + reactionCurrent%numProducts))
+!			allocate(reactionCurrent%taskid(reactionCurrent%numReactants + reactionCurrent%numProducts))
 
 			!search DiffList for Cu->Cu
-			do reac=1,numDiffReac(matNum)
-				if(DiffReactions(matNum,reac)%reactants(1,1)==1 .AND. DiffReactions(matNum,reac)%products(1,1)==1 &
-						.AND. DiffReactions(matNum,reac)%reactants(1,2)==0 .AND. &
-						DiffReactions(matNum,reac)%products(1,2)==0 .AND. &
-						DiffReactions(matNum,reac)%reactants(1,3)==0 .AND. &
-						DiffReactions(matNum,reac)%products(1,3)==0 .AND. &
-						DiffReactions(matNum,reac)%reactants(1,4)==0 .AND. &
-						DiffReactions(matNum,reac)%products(1,4)==0) then
-					exit
-				end if
-			end do
+!			do reac=1,numDiffReac(matNum)
+!				if(DiffReactions(matNum,reac)%reactants(1,1)==1 .AND. DiffReactions(matNum,reac)%products(1,1)==1 &
+!						.AND. DiffReactions(matNum,reac)%reactants(1,2)==0 .AND. &
+!						DiffReactions(matNum,reac)%products(1,2)==0 .AND. &
+!						DiffReactions(matNum,reac)%reactants(1,3)==0 .AND. &
+!						DiffReactions(matNum,reac)%products(1,3)==0 .AND. &
+!						DiffReactions(matNum,reac)%reactants(1,4)==0 .AND. &
+!						DiffReactions(matNum,reac)%products(1,4)==0) then
+!					exit
+!				end if
+!			end do
 
 			!do 32 i=1,DiffReactions(matNum,reac)%numReactants+DiffReactions(matNum,reac)%numProducts
-			reactionCurrent%reactants(1,1)=1
-			reactionCurrent%products(1,1)=1
-			do j=2,numSpecies
-				reactionCurrent%reactants(1,j)=DiffReactions(matNum,reac)%reactants(1,j)
-				reactionCurrent%products(1,j)=DiffReactions(matNum,reac)%products(1,j)
-			end do
-			reactionCurrent%cellNumber(1)=cell
-			reactionCurrent%cellNumber(2)=myMesh(cell)%neighbors(dir,1)
-			reactionCurrent%taskid(1)=myMesh(cell)%proc
-			reactionCurrent%taskid(2)=myMesh(cell)%neighborProcs(dir,1)
+!			reactionCurrent%reactants(1,1)=1
+!			reactionCurrent%products(1,1)=1
+!			do j=2,numSpecies
+!				reactionCurrent%reactants(1,j)=DiffReactions(matNum,reac)%reactants(1,j)
+!				reactionCurrent%products(1,j)=DiffReactions(matNum,reac)%products(1,j)
+!			end do
+!			reactionCurrent%cellNumber(1)=cell
+!			reactionCurrent%cellNumber(2)=myMesh(cell)%neighbors(dir,1)
+!			reactionCurrent%taskid(1)=myMesh(cell)%proc
+!			reactionCurrent%taskid(2)=myMesh(cell)%neighborProcs(dir,1)
 			!32 continue
-			reactionCurrent%reactionRate = 0d0
+!			reactionCurrent%reactionRate = 0d0
 			!reactionCurrent%reactionRate=findReactionRateDiff(reactionCurrent%reactants(1,:), cell, &
 			!		myProc%taskid, myMesh(cell)%neighbors(1,dir), myMesh(cell)%neighborProcs(1,dir), dir, &
 			!		DiffReactions(matNum,reac))
-			nullify(reactionCurrent%next)
+!			nullify(reactionCurrent%next)
 
-		end do
+!		end do
 
 		!*******************************************************************
 		!Sink trapping: Cu->0
@@ -530,6 +503,10 @@ do cell=1,numCells
 		reactionCurrent%reactionRate=findReactionRateSink(reactionCurrent%reactants(1,:), cell, &
 				SinkReactions(matNum,reac))
 		nullify(reactionCurrent%next)
+
+		!********************************************
+		!clustering: V+V->2V
+		!********************************************
 
 	end if
 

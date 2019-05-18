@@ -90,6 +90,8 @@ double precision atomsEverMesh  !number of atoms of my processor
 integer*8 CuAtomsEverMesh       !Initial number of Cu atoms in one mesh
 integer vacancyEverMesh         !Initial number of vacancies in one mesh
 integer SIAEverMesh             !Initial number of SIAs in one mesh
+integer initialTotalV
+integer initialTotalSIA
 integer totalMesh               !total meshes in the sysytem
 
 !simulation parameters, to be read during readParameters() in main program
