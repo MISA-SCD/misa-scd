@@ -379,10 +379,9 @@ subroutine DEBUGPrintDefectList(step)
 			!!reactionCurrent=>reactionList(i)%next
 			defectCurrent=>defectList(i)
 			write(*,*) '************defectList********************'
+			write(*,*) 'cellNumber', i
 			do while(associated(defectCurrent))
-				write(*,*) 'defectType', defectCurrent%defectType
-				write(*,*) 'numDefects', defectCurrent%num
-				write(*,*) 'cellNumber', defectCurrent%cellNumber
+				write(*,*) 'defectType', defectCurrent%defectType, 'numDefects', defectCurrent%num
 
 				defectCurrent=>defectCurrent%next
 

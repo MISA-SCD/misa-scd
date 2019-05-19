@@ -7,7 +7,7 @@
 !!subroutine
 !*****************************************************************************************
 
-subroutine 是啊initializeDefectList()
+subroutine initializeDefectList()
 use DerivedType
 use mod_srscd_constants
 implicit none
@@ -38,26 +38,26 @@ do cell=1,numCells
 	defectCurrent%cellNumber=cell
 
 	!V_1
-	allocate(defectCurrent%next)
-	defectCurrent=>defectCurrent%next
-	allocate(defectCurrent%defectType(numSpecies))
-	do i=1, numSpecies
-		defectCurrent%defectType(i) = 0
-	end do
-	defectCurrent%defectType(2) = 1
-	defectCurrent%num=vacancyEverMesh
-	defectCurrent%cellNumber=cell
+!	allocate(defectCurrent%next)
+!	defectCurrent=>defectCurrent%next
+!	allocate(defectCurrent%defectType(numSpecies))
+!	do i=1, numSpecies
+!		defectCurrent%defectType(i) = 0
+!	end do
+!	defectCurrent%defectType(2) = 1
+!	defectCurrent%num=vacancyEverMesh
+!	defectCurrent%cellNumber=cell
 
 	!SIA_1
-	allocate(defectCurrent%next)
-	defectCurrent=>defectCurrent%next
-	allocate(defectCurrent%defectType(numSpecies))
-	do i=1, numSpecies
-		defectCurrent%defectType(i) = 0
-	end do
-	defectCurrent%defectType(3) = 1
-	defectCurrent%num=SIAEverMesh
-	defectCurrent%cellNumber=cell
+!	allocate(defectCurrent%next)
+!	defectCurrent=>defectCurrent%next
+!	allocate(defectCurrent%defectType(numSpecies))
+!	do i=1, numSpecies
+!		defectCurrent%defectType(i) = 0
+!	end do
+!	defectCurrent%defectType(3) = 1
+!	defectCurrent%num=SIAEverMesh
+!	defectCurrent%cellNumber=cell
 
 	nullify(defectCurrent%next)
 end do
@@ -245,12 +245,6 @@ do cell=1,numCells
 				reactionList(cell)%reactionRate=0d0
 			endif
 
-			nullify(reactionList(cell)%next)
-
-		else
-			reactionList(cell)%numReactants=0
-			reactionList(cell)%numProducts=0
-			reactionList(cell)%reactionRate=0d0
 			nullify(reactionList(cell)%next)
 
 		end if

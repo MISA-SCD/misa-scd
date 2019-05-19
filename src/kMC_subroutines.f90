@@ -143,15 +143,15 @@ else
 		if(reactionCurrent%numProducts==2 .AND. reactionCurrent%numReactants==0) then
 			!Frenkel pair implantation
 			numImplantEvents=numImplantEvents+1		!LOCAL number of implantation events. Total DPA calculated out using MPI_ALLREDUCE
-		else if(reactionCurrent%numReactants==0 .AND. reactionCurrent%numProducts==1) then	!He implantation
-			numHeImplantEvents=numHeImplantEvents+1
+		!else if(reactionCurrent%numReactants==0 .AND. reactionCurrent%numProducts==1) then	!He implantation
+			!numHeImplantEvents=numHeImplantEvents+1
 		end if
 	else if(implantType=='Cascade') then
 		if(reactionCurrent%numReactants==0 .OR. reactionCurrent%numReactants==-10) then
 			if(reactionCurrent%numReactants==-10 .AND. reactionCurrent%numProducts==0) then !Cascade implantation
 				numImplantEvents=numImplantEvents+1
-			else if(reactionCurrent%numReactants==0 .AND. reactionCurrent%numProducts .NE. 0) then !He implantation
-				numHeImplantEvents=numHeImplantEvents+1
+			!else if(reactionCurrent%numReactants==0 .AND. reactionCurrent%numProducts .NE. 0) then !He implantation
+				!numHeImplantEvents=numHeImplantEvents+1
 			else
 				write(*,*) 'Error reaction not allowed ', 'reactants', reactionCurrent%numReactants, &
 					'products', reactionCurrent%numProducts, 'rate', reactionCurrent%reactionRate
@@ -285,15 +285,15 @@ else
 		if(reactionCurrent%numProducts==2 .AND. reactionCurrent%numReactants==0) then
 			!Frenkel pair implantation
 			numImplantEvents=numImplantEvents+1		!LOCAL number of implantation events. Total DPA calculated out using MPI_ALLREDUCE
-		else if(reactionCurrent%numReactants==0 .AND. reactionCurrent%numProducts==1) then	!He implantation
-			numHeImplantEvents=numHeImplantEvents+1
+		!else if(reactionCurrent%numReactants==0 .AND. reactionCurrent%numProducts==1) then	!He implantation
+			!numHeImplantEvents=numHeImplantEvents+1
 		end if
 	else if(implantType=='Cascade') then
 		if(reactionCurrent%numReactants==0 .OR. reactionCurrent%numReactants==-10) then
 			if(reactionCurrent%numReactants==-10 .AND. reactionCurrent%numProducts==0) then !Cascade implantation
 				numImplantEvents=numImplantEvents+1
-			else if(reactionCurrent%numReactants==0 .AND. reactionCurrent%numProducts .NE. 0) then !He implantation
-				numHeImplantEvents=numHeImplantEvents+1
+			!else if(reactionCurrent%numReactants==0 .AND. reactionCurrent%numProducts .NE. 0) then !He implantation
+				!numHeImplantEvents=numHeImplantEvents+1
 			else
 				write(*,*) 'Error reaction not allowed ', 'reactants', reactionCurrent%numReactants, &
 					'products', reactionCurrent%numProducts, 'rate', reactionCurrent%reactionRate

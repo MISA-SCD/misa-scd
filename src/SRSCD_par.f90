@@ -271,7 +271,7 @@ call initializeTotalRate()			!initialize totalRate and maxRate using reactionLis
 call initializeDebugRestart()		!input defects into coarse mesh from restart file (for debugging)
 
 !call DEBUGPrintReactionList(0)		!prints all reaction lists at a given Monte Carlo step
-call DEBUGPrintDefectList(0)
+!call DEBUGPrintDefectList(0)
 !******************************************************************
 !Initialize Counters
 !******************************************************************
@@ -284,10 +284,10 @@ if(debugToggle=='yes') then		!inpput parameter
 	
 	if(myProc%taskid==MASTER) then
 		numImplantEvents	= numImplantEventsReset		!numImplantEventsReset is read in from debug restart file
-		numHeImplantEvents	= numHeImplantEventsReset	!numHeImplantEventsReset is read in from debug restart file
+		!numHeImplantEvents	= numHeImplantEventsReset	!numHeImplantEventsReset is read in from debug restart file
 	else
 		numImplantEvents	= 0
-		numHeImplantEvents	= 0
+		!numHeImplantEvents	= 0
 	end if
 	elapsedTime			= elapsedTimeReset
 	!Reset the reactions within this cell and diffusion to neighboring
@@ -312,7 +312,7 @@ if(debugToggle=='yes') then		!inpput parameter
 	
 else
 	numImplantEvents	= 0		!<Postprocessing: number of Frenkel pairs / cascades (local)
-	numHeImplantEvents	= 0		!<Postprocessing: number of He implantation events (local)
+	!numHeImplantEvents	= 0		!<Postprocessing: number of He implantation events (local)
 	numAnnihilate		= 0		!<Postprocessing: number of annihilation reactions carried out
 	elapsedTime			= 0d0	!The simulation time that has passed
 	

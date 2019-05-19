@@ -170,7 +170,7 @@ integer, parameter :: maxBufferSize=50	!<Used to define the max size of a send/r
 
 !counters
 integer numImplantEvents			!<Postprocessing: number of Frenkel pairs / cascades (local)
-integer numHeImplantEvents			!<Postprocessing: number of He implantation events (local)
+!integer numHeImplantEvents			!<Postprocessing: number of He implantation events (local)
 integer totalImplantEvents			!<Postprocessing: number of implant events across all processors 
 integer numHeImplantTotal			!<Postprocessing: number of He implant events across all processors
 integer numAnnihilate				!<Postprocessing: number of annihilation reactions carried out
