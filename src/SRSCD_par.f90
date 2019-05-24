@@ -1,4 +1,4 @@
-! 2019.05: This program is used to simulate I-V-S or W-V-He
+! 019.05: This program is used to simulate I-V-S or W-V-He
 
 !***************************************************************************************************
 !>Main program
@@ -256,6 +256,7 @@ vacancyEverMesh = floor(initialCeqv*atomsEverMesh)
 SIAEverMesh = floor(initialCeqi*atomsEverMesh)
 
 write(*,*) 'atomsEverMesh', atomsEverMesh, 'CuEverMesh', CuAtomsEverMesh
+write(*,*) 'initialTotalV', initialTotalV, 'initialTotalSIA', initialTotalSIA
 write(*,*) 'initialCeqv', initialCeqv, 'vacancyEverMesh', vacancyEverMesh
 write(*,*) 'initialCeqi', initialCeqi, 'SIAEverMesh', SIAEverMesh
 !**********************************************
@@ -766,11 +767,13 @@ if(myProc%taskid==MASTER) then
 end if
 
 !Final output
-call outputDefects()	!write(82,*): rawdat.out
+call outputDefects(elapsedTime,step)	!write(82,*): rawdat.out
 call outputDefectsTotal(elapsedTime, step)	!write(83,*): totdat.out, write(84,*): postpr.out
 !call outputDefectsProfile(sim)	!write(99,*): DepthProfile.out
 if(vtkToggle=='yes') call outputDefectsVTK(outputCounter)
 if(outputDebug=='yes') call outputDebugRestart(outputCounter ,elapsedTime)
+
+
 
 !***********************************************************************
 !Annealing loop: change the temperature to annealTemp and change all
@@ -1045,7 +1048,7 @@ do annealIter=1,annealSteps	!default value: annealSteps = 1
 				write(*,*)
 			end if
 		
-			if(rawdatToggle=='yes') call outputDefects()
+			if(rawdatToggle=='yes') call outputDefects(elapsedTime,step)
 			!if(sinkEffSearch=='no' .AND. numMaterials .GT. 1) call outputDefectsBoundary(elapsedTime,step)
 			!if(sinkEffSearch=='no' .AND. numMaterials==1) call outputDefectsTotal(elapsedTime, step)
 			if(postprToggle=='yes') then
@@ -1055,7 +1058,7 @@ do annealIter=1,annealSteps	!default value: annealSteps = 1
 					write(*,*) 'Error outputing postpr.out but not totdat.out'
 				end if
 			end if
-			if(xyzToggle=='yes') call outputDefectsXYZ()
+			if(xyzToggle=='yes') call outputDefectsXYZ(elapsedTime,step)
 			if(vtkToggle=='yes') call outputDefectsVTK(outputCounter)
 			if(outputDebug=='yes') call outputDebugRestart(outputCounter, elapsedTime)
 		
@@ -1124,7 +1127,7 @@ if(myProc%taskid==MASTER) then
 	end if
 end if
 
-if(rawdatToggle=='yes') call outputDefects()
+if(rawdatToggle=='yes') call outputDefects(elapsedTime,step)
 !if(sinkEffSearch=='no' .AND. numMaterials .GT. 1) call outputDefectsBoundary(elapsedTime,step)
 !if(sinkEffSearch=='no' .AND. numMaterials==1) call outputDefectsTotal(elapsedTime, step)
 if(postprToggle=='yes') then
@@ -1134,7 +1137,7 @@ if(postprToggle=='yes') then
 		write(*,*) 'Error outputing postpr.out but not totdat.out'
 	end if
 end if
-if(xyzToggle=='yes') call outputDefectsXYZ()
+if(xyzToggle=='yes') call outputDefectsXYZ(elapsedTime,step)
 if(vtkToggle=='yes') call outputDefectsVTK(outputCounter)
 if(outputDebug=='yes') call outputDebugRestart(outputCounter, elapsedTime)
 

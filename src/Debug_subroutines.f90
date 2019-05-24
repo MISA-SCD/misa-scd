@@ -167,7 +167,8 @@ if(myProc%taskid==MASTER) then
 		endif
 	end do
 	
-	write(*,*) 'Cascades'
+	!write(*,*) 'Cascades'
+	write(*,*)
 	CascadeCurrent=>ActiveCascades
 	do while(associated(CascadeCurrent))
 		write(*,*) 'Cascade', CascadeCurrent%CascadeID, 'Coarse cell number', CascadeCurrent%cellNumber

@@ -53,7 +53,7 @@ if(myProc%taskid==MASTER) then
 		do j=1,numCellsRecv
 
             call MPI_RECV(numDefectsRecv,1,MPI_INTEGER,i,100+2*j,MPI_COMM_WORLD,status,ierr)
-            allocate(cellDefectSend(numSpecies+1,numDefectsRecv+1))
+            allocate(cellDefectRecv(numSpecies+1,numDefectsRecv+1))
 
             call MPI_RECV(cellDefectRecv,(numSpecies+1)*(numDefectsRecv+1),MPI_DOUBLE_PRECISION,i,&
                     101+2*j,MPI_COMM_WORLD,status,ierr)
@@ -68,7 +68,7 @@ if(myProc%taskid==MASTER) then
 				!!call MPI_RECV(defectTypeRecv,numSpecies,MPI_INTEGER,i,102,MPI_COMM_WORLD,status,ierr)
 				!!call MPI_RECV(cellNumberRecv,1,MPI_INTEGER,i,103,MPI_COMM_WORLD,status,ierr)
 				!!call MPI_RECV(numRecv,1,MPI_INTEGER,i,104,MPI_COMM_WORLD,status,ierr)
-				write(82,*) (cellDefectSend(l,k), l=1,numSpecies),cellDefectSend(numSpecies+1,k)
+				write(82,*) (cellDefectRecv(l,k), l=1,numSpecies),cellDefectRecv(numSpecies+1,k)
 			end do
 
 			deallocate(cellDefectRecv)
