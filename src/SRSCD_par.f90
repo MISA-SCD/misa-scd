@@ -26,7 +26,7 @@ type(reaction), pointer :: reactionChoiceList, reactionChoiceCurrent	!used to cr
 type(cascade), pointer :: CascadeCurrent								!used to find defects/reactions in fine mesh
 
 double precision elapsedTime, totalTime, tau, GenerateTimestep, TotalRateCheck, rateSingle
-integer status(MPI_STATUS_SIZE), step, annealIter, sim, numDefectsRecv, tracker, outputCounter, nullSteps
+integer status(MPI_STATUS_SIZE),  annealIter, sim, numDefectsRecv, tracker, outputCounter, nullSteps
 integer cascadeCell, i, j, k, cell
 integer, allocatable :: cellRecvTot(:), defectRecvTot(:,:)
 real time1, time2
