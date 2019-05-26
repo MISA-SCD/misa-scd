@@ -32,7 +32,7 @@ logical flag
 numGrains=1
 
 !Input file where information on uniform cubic mesh is stored
-open(81, file='/MeshGenInputs/MeshGenInput.txt',action='read', status='old')
+open(81, file='/MeshGenInputs/MeshGenInput_Bulk.txt',action='read', status='old')
 
 !Part 1: Read in parameters from input file
 

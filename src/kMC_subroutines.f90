@@ -2405,7 +2405,10 @@ do i=1,6
 						
 						if(defectCurrent%num==0) then
 							!delete this defect from the list in myBoundary
-							defectPrev%next=>defectCurrent%next !remove that defect type from the system
+							if(associated(defectCurrent%next)) then	!defectCurrent isn't at the end of defectList
+								defectPrev%next=>defectCurrent%next !remove that defect type from the system
+							end if
+
 							deallocate(defectCurrent%defectType)
 							deallocate(defectCurrent)
 							nullify(defectCurrent)
