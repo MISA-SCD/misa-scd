@@ -26,7 +26,7 @@ type(reaction), pointer :: reactionCurrent
 type(defect), pointer :: defectCurrent
 type(cascade), pointer :: cascadeCurrent
 
-integer i,j,k,count, step
+integer i,j,k,count,step
 
 interface
 	subroutine DEBUGPrintReaction(reactionCurrent, step)
@@ -121,7 +121,7 @@ use mod_srscd_constants
 use DerivedType
 implicit none
 
-integer i, j, k, step
+integer i, j, k,step
 type(reaction), pointer :: reactionCurrent
 type(cascade), pointer :: CascadeCurrent
 
@@ -236,7 +236,7 @@ use DerivedType
 use mod_srscd_constants
 implicit none
 
-integer i, j, k, step, count
+integer i, j, k, count, step
 type(defect), pointer :: defectCurrent
 type(Cascade), pointer :: CascadeCurrent
 
@@ -327,8 +327,8 @@ use DerivedType
 implicit none
 
 type(Reaction), pointer :: reactionCurrent
-integer step
 double precision totalRateCheck
+integer step
 
 if(myProc%taskid==MASTER) then	
 	write(*,*) 'reaction chosen processor', myProc%taskid, 'step', step
@@ -370,7 +370,7 @@ subroutine DEBUGPrintDefectList(step)
 	use DerivedType
 	implicit none
 
-	integer i,step
+	integer i, step
 	type(defect), pointer :: defectCurrent
 
 	!output reaction list
