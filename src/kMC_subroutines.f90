@@ -2402,17 +2402,22 @@ do i=1,6
 					end do
 					if(same==numSpecies) then	!if the defect is already present in the list
 						defectCurrent%num=defectCurrent%num+bndryBufferRecv(j,numSpecies+2) !this will be +/- 1 only
-						
-						if(defectCurrent%num==0) then
-							!delete this defect from the list in myBoundary
-							if(associated(defectCurrent%next)) then	!defectCurrent isn't at the end of defectList
-								defectPrev%next=>defectCurrent%next !remove that defect type from the system
-							end if
 
+						!2019.05.26 Debug: if the defect of this type is at the end of the defectList
+						!if there is one defect of this type and it is in the middle of the defectList
+						if(defectCurrent%num==0 .AND. associated(defectCurrent%next) .AND. associated(defectPrev)) then
+							!delete this defect from the list in myBoundary
+							defectPrev%next=>defectCurrent%next !remove that defect type from the system
 							deallocate(defectCurrent%defectType)
 							deallocate(defectCurrent)
 							nullify(defectCurrent)
-						endif
+						!if there is one defect of this type and it is 	at the end of the defectList
+						else if(defectCurrent%num==0 .AND. associated(defectPrev)) then
+							deallocate(defectCurrent%defectType)
+							deallocate(defectCurrent)
+							nullify(defectCurrent)
+							nullify(defectPrev%next)
+						end if
 					else		!if the defect is to be inserted in the list
 					
 						if(bndryBufferRecv(j,numSpecies+2) == -1) then
@@ -4008,16 +4013,16 @@ double precision temp
 defectUpdateCurrent=>defectUpdate%next	!the first is zero
 
 !loop through defects that needs reactions updated in defectUpdate
-do 10 while(associated(defectUpdateCurrent))
+do while(associated(defectUpdateCurrent))
 	
-	if(defectUpdateCurrent%num .NE. 1 .AND. defectUpdateCurrent%num .NE. -1) then
+	if(defectUpdateCurrent%num /= 1 .AND. defectUpdateCurrent%num /= -1) then
 		!we have an error; all defectUpdateCurrent members should have num = +/-1 (indicates adding or removing)
 		write(*,*) 'error defectUpdateCurrent%num not equal to +/- 1', myProc%taskid, defectUpdateCurrent%num
-	endif
+	end if
 	
-	do 11 i=1,numSpecies
+	do i=1,numSpecies
 		defectTemp(i)=defectUpdateCurrent%defectType(i)
-	11 continue
+	end do
 			
 	!if the defect is within the local mesh, update all relevant reactions
 	
@@ -4273,21 +4278,14 @@ do 10 while(associated(defectUpdateCurrent))
 			
 		endif
 
-	!if the defect is within the boundary mesh, only update the diffusion reactions for cells 
-	!touching that boundary element
+	!if the defect is within the boundary mesh, only update the diffusion reactions for cells touching that boundary element
 	else
 
 		!If we are in this section, this means that a defect has changed in the boundary to this 
 		!volume element but not IN the volume element. Therefore we only need to update one diffusion
 		!reaction in one direction, the direction of the element with the changed defect. No defects
 		!have changed in this volume element.
-		
-		!*******************************************************************************************
-		!EDIT: 06/05/2014 Updated addDiffusionReactions search in the boundary by adding a %neighbor
-		!item in defectUpdate so that we don't have to search for the local element that is the
-		!neighbor of the boundary element.
-		!*******************************************************************************************
-		
+
 		!*******************************************************************************************
 		!2015.04.06 Possible bug: is defectUpdateCurrent%dir pointing in the backwards direction?
 		!(from neighboring cell TO local cell instead of vice versa) This may be the case because
@@ -4330,18 +4328,18 @@ do 10 while(associated(defectUpdateCurrent))
 	endif
 	defectUpdateCurrent=>defectUpdateCurrent%next
 
-10 continue
+end do
 
 !Deallocate defectUpdate (memory release)
 defectUpdatePrev=>defectUpdate
 defectUpdateCurrent=>defectUpdate%next
-do 20 while(associated(defectUpdatePrev))
+do while(associated(defectUpdatePrev))
 	deallocate(defectUpdatePrev%defectType)
 	deallocate(defectUpdatePrev)
 	defectUpdatePrev=>defectUpdateCurrent
 	if(associated(defectUpdateCurrent)) then
 		defectUpdateCurrent=>defectUpdateCurrent%next
 	endif
-20 continue
+end do
 
 end subroutine

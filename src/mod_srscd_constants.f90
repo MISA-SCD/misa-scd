@@ -129,7 +129,6 @@ logical 		 annealIdentify			!<(.TRUE. if in annealing phase, .FALSE. otherwise) 
 
 !2019.04.30  Add
 double precision agingTime              !<Thermal aging time (s)
-double precision elapsedTime
 
 integer numSims							!<Number of times to repeat simulation
 integer max3DInt						!<largest SIA size that can diffuse in 3D as spherical cluster

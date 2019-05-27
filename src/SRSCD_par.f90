@@ -25,7 +25,7 @@ type(reaction), pointer :: reactionCurrent								!used to find reactions
 type(reaction), pointer :: reactionChoiceList, reactionChoiceCurrent	!used to create a list of chosen reactions (for one KMC domain per volume element case)
 type(cascade), pointer :: CascadeCurrent								!used to find defects/reactions in fine mesh
 
-double precision  totalTime, tau, GenerateTimestep, TotalRateCheck, rateSingle
+double precision  elapsedTime, totalTime, tau, GenerateTimestep, TotalRateCheck, rateSingle
 integer status(MPI_STATUS_SIZE),  step, annealIter, sim, numDefectsRecv, tracker, outputCounter, nullSteps
 integer cascadeCell, i, j, k, cell
 integer, allocatable :: cellRecvTot(:), defectRecvTot(:,:)
@@ -371,7 +371,7 @@ do while(elapsedTime < totalTime)
 !*************************************************************************
 !	if(mod(step,10)==0) then
 !		!Debugging subroutine: outputs the reaction rate in each processor
-!		call outputRates(elapsedTime, step)
+		call outputRates(elapsedTime, step)
 !	endif
 !*************************************************************************
 	

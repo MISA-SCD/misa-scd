@@ -69,20 +69,20 @@ integer defectType(numSpecies), cellNumber, numDefects, i, count
 numDefects=0
 defectCurrent=>defectList(cellNumber)
 
-do 10 while(associated(defectCurrent))
+do while(associated(defectCurrent))
 	count=0
-	do 11 i=1,numSpecies
+	do i=1,numSpecies
 		if(defectType(i)==defectCurrent%defectType(i)) then
 			count=count+1
 		endif
-	11 continue
+	end do
 	if(count==numSpecies) then
 		numDefects=defectCurrent%num
 		exit
 	else
 		defectCurrent=>defectCurrent%next
 	endif
-10 continue
+end do
 
 findNumDefect=numDefects
 end function
@@ -112,20 +112,20 @@ else
 	numDefects=0
 	defectCurrent=>myBoundary(dir, cellNumber)%defectList
 	
-	do 10 while(associated(defectCurrent))
+	do while(associated(defectCurrent))
 		count=0
-		do 11 i=1,numSpecies
+		do i=1,numSpecies
 			if(defectType(i)==defectCurrent%defectType(i)) then
 				count=count+1
 			endif
-		11 continue
+		end do
 		if(count==numSpecies) then
 			numDefects=defectCurrent%num
 			exit
 		else
 			defectCurrent=>defectCurrent%next
 		endif
-	10 continue
+	end do
 endif
 
 findNumDefectBoundary=numDefects

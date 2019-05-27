@@ -2084,21 +2084,21 @@ numProducts=1
 allocate(reactants(numReactants,numSpecies))
 allocate(products(numProducts,numSpecies))
 
-do 10 i=1, numDiffReac(matNum)
+do i=1, numDiffReac(matNum)
 	count=0
 	
 	!Check if the defect type is accepted by this diffusion reaction
-	do 11 j=1,numSpecies
+	do j=1,numSpecies
 		if(defectType(j) == 0 .AND. DiffReactions(matNum,i)%reactants(1,j) == 0) then
 			count=count+1
-		else if(defectType(j) .NE. 0 .AND. DiffReactions(matNum,i)%reactants(1,j) .NE. 0) then
-			if(defectType(j) .GE. DiffReactions(matNum,i)%min(j)) then
-				if((defectType(j) .LE. DiffReactions(matNum,i)%max(j)) .OR. DiffReactions(matNum,i)%max(j)==-1) then
+		else if(defectType(j) /= 0 .AND. DiffReactions(matNum,i)%reactants(1,j) /= 0) then
+			if(defectType(j) >= DiffReactions(matNum,i)%min(j)) then
+				if((defectType(j) <= DiffReactions(matNum,i)%max(j)) .OR. DiffReactions(matNum,i)%max(j)==-1) then
 					count=count+1
-				endif
-			endif
-		endif
-	11 continue
+				end if
+			end if
+		end if
+	end do
 	
 	if(count==numSpecies) then	!this defect type is accepted for this diffusion reaction
 		!point reactionCurrent at the reaction and reactionPrev at the reaction before it
@@ -2106,10 +2106,10 @@ do 10 i=1, numDiffReac(matNum)
 		!to the end of the list)
 		
 		!Create temporary arrays with the defect types associated with this reaction (dissociation)
-		do 12 j=1,numSpecies
+		do j=1,numSpecies
 			reactants(1,j)=defectType(j)
 			products(1,j)=defectType(j)
-		12 continue
+		end do
 
 		reactionCurrent=>reactionList(cell1)
 		nullify(reactionPrev)
@@ -2192,8 +2192,8 @@ do 10 i=1, numDiffReac(matNum)
 			write(*,*) 'error updating reaction list - diffusion'
 		endif
 		
-	endif
-10 continue
+	end if
+end do
 
 end subroutine
 
@@ -3463,11 +3463,10 @@ double precision alpha
 
 if(polycrystal=='yes') then
 	matNum=1
-	grainNum=myMesh(cell1)%material
 else
 	matNum=myMesh(cell1)%material	!not worrying about diffusion between multiple material types right now
-	grainNum=myMesh(cell1)%material
-endif
+end if
+grainNum=myMesh(cell1)%material
 
 if(reactionParameter%functionType==2) then
 
@@ -3478,16 +3477,16 @@ if(reactionParameter%functionType==2) then
 	num1=findNumDefect(defectType,cell1)
 	
 	strainE1=findStrainEnergy(defectType, cell1)
-	if(strainE1 .NE. 0d0) then
+	if(strainE1 /= 0d0) then
 		write(*,*) 'defectType', defectType
 		write(*,*) 'strainE1', strainE1
 		read(*,*)
-	endif
+	end if
 	
 	if(proc2==-1) then	!free surface (NOTE: not taking into account strain-assisted diffusion here)
 		areaShared=area1
 		reactionRate=Diff*areaShared*(dble(num1)/Vol1)/length1
-		if(reactionRate .GT. 0d0) then
+		if(reactionRate > 0d0) then
 			findReactionRateDiff=reactionRate
 		else
 			findReactionRateDiff=0d0
@@ -3511,7 +3510,7 @@ if(reactionParameter%functionType==2) then
 		
 		!The area of the shared interface between the volume elements is the minimum of the two volume 
 		!elements' face areas (assuming cubic elements, nonuniform)
-		if(area1 .GT. area2) then
+		if(area1 > area2) then
 			areaShared=area2
 		else
 			areaShared=area1
@@ -3522,30 +3521,30 @@ if(reactionParameter%functionType==2) then
 				num2=findNumDefect(defectType,cell2)
 			else
 				num2=findNumDefectBoundary(defectType,cell2,dir)
-			endif
+			end if
 			
 			alpha=1d0
 			
 		else
 			
-			if(numMaterials .GT. 1) then
+			if(numMaterials > 1) then
 				!Sink efficiencies (Default set at 1)
-				if(defectType(2) .NE. 0d0) then
+				if(defectType(2) /= 0d0) then
 					alpha=alpha_v
-				else if(defectType(3) .NE. 0d0) then
+				else if(defectType(3) /= 0d0) then
 					alpha=alpha_i
 				else
 					alpha=1d0
-				endif
+				end if
 			else
 				alpha=1d0
-			endif
+			end if
 
 			num2=0	!If we are diffusing between two material types, assume perfect sink
 		endif
 		
 		if(strainField=='yes') then
-			if(strainE1 .NE. 0d0) then
+			if(strainE1 /= 0d0) then
 				write(*,*) 'Strain E1', strainE1, 'Strain E2', strainE2
 				write(*,*) 'defect type', defectType
 				read(*,*)
@@ -3554,14 +3553,14 @@ if(reactionParameter%functionType==2) then
 				dble(num1)*(strainE1-strainE2)/(Vol1*kboltzmann*temperature))/(length1/2d0 + length2/2d0)
 		else
 			reactionRate=alpha*Diff*areaShared*(dble(num1)/Vol1-dble(num2)/Vol2)/(length1/2d0 + length2/2d0)
-		endif
+		end if
 		
-		if(reactionRate .GT. 0d0) then
+		if(reactionRate > 0d0) then
 			findReactionRateDiff=reactionRate
 		else
 			findReactionRateDiff=0d0
-		endif
-	endif
+		end if
+	end if
 elseif(reactionParameter%functionType==3) then	!2D diffusion on a plane (rather than 3D diffusion in a volume)
 	Diff=findDiffusivity(matNum,defectType)
 	length1=myMesh(cell1)%length
@@ -3650,7 +3649,7 @@ elseif(reactionParameter%functionType==4) then	!Dissociation from grain boundary
 	
 		reactionRate=omega*dble(size)**(4d0/3d0)*Diff*dexp(-Eb/(kboltzmann*temperature))*dble(num1)
 		
-		if(reactionRate .GT. 0d0) then
+		if(reactionRate > 0d0) then
 			findReactionRateDiff=reactionRate
 		else
 			findReactionRateDiff=0d0
@@ -4007,40 +4006,40 @@ integer, allocatable :: reactants(:,:)
 integer cell1, cell2, proc1, proc2, i, j, count(2)
 logical flag
 
-do 10 while(associated(reactionCurrent))
+do while(associated(reactionCurrent))
 	if(reactionCurrent%numReactants==1 .AND. reactionCurrent%numProducts==1) then
 		if(reactionCurrent%cellNumber(1)==cell1 .AND. reactionCurrent%cellNumber(2)==cell2) then
 			if(reactionCurrent%taskid(1)==proc1 .AND. reactionCurrent%taskid(2)==proc2) then
 				count(1)=0
-				do 12 j=1,numSpecies
+				do j=1,numSpecies
 					if(reactionCurrent%reactants(1,j)==reactants(1,j)) then
 						count(1)=count(1)+1
 					endif
-				12 continue	
+				end do
 		
 				count(2)=0
-				do 14 j=1,numSpecies
+				do j=1,numSpecies
 					if(reactionCurrent%products(1,j)==reactants(1,j)) then
 						count(2)=count(2)+1
 					endif
-				14 continue
+				end do
 		
 				flag=.FALSE.
-				do 15 i=1,2
-					if(count(i) .NE. numSpecies) then
+				do i=1,2
+					if(count(i) /= numSpecies) then
 						flag=.TRUE.
 					endif
-				15 continue
+				end do
 				
 				if(flag .EQV. .FALSE.) then	!we have found the reaction
 					exit
 				endif
 			endif
 		endif
-	endif
+	end if
 	reactionPrev=>reactionCurrent
 	reactionCurrent=>reactionCurrent%next
-10 continue
+end do
 
 end subroutine
 
