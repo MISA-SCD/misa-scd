@@ -721,12 +721,23 @@ do cell=1,numCells
 					allocate(myBoundary(dir,myMesh(cell)%neighbors(dir,k))%defectList)
 					defectCurrent=>myBoundary(dir,myMesh(cell)%neighbors(dir,k))%defectList
 					allocate(defectCurrent%defectType(numSpecies))
+					do i=1, numSpecies
+						defectCurrent%defectType(i)=0
+					end do
+					defectCurrent%num=0
+					defectCurrent%cellNumber=myMesh(cell)%neighbors(dir,k)
+
+					!Cu_1
+					allocate(defectCurrent%next)
+					defectCurrent=>defectCurrent%next
+					allocate(defectCurrent%defectType(numSpecies))
 					defectCurrent%defectType(1)=1
 					do i=2,numSpecies
 						defectCurrent%defectType(i)=0
 					end do
 					defectCurrent%num=CuAtomsEverMesh
 					defectCurrent%cellNumber=myMesh(cell)%neighbors(dir,k)
+
 					nullify(defectCurrent%next)
 				end if
 			end if

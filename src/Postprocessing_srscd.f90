@@ -19,8 +19,8 @@ integer buffer, tag, i, j, k,l, status(MPI_STATUS_SIZE), numCellsRecv, numDefect
 integer defectCount
 type(defect), pointer :: defectCurrent
 !double precision coordinatesRecv(3)
-integer, allocatable :: cellDefectSend(:,:)
-integer, allocatable :: cellDefectRecv(:,:)
+double precision, allocatable :: cellDefectSend(:,:)
+double precision, allocatable :: cellDefectRecv(:,:)
 
 double precision elapsedTime
 integer step
@@ -55,7 +55,7 @@ if(myProc%taskid==MASTER) then
             call MPI_RECV(numDefectsRecv,1,MPI_INTEGER,i,100+2*j,MPI_COMM_WORLD,status,ierr)
             allocate(cellDefectRecv(numSpecies+1,numDefectsRecv+1))
 
-            call MPI_RECV(cellDefectRecv,(numSpecies+1)*(numDefectsRecv+1),MPI_INTEGER,i,&
+            call MPI_RECV(cellDefectRecv,(numSpecies+1)*(numDefectsRecv+1),MPI_DOUBLE_PRECISION,i,&
                     101+2*j,MPI_COMM_WORLD,status,ierr)
 
             !!call MPI_RECV(coordinatesRecv,3,MPI_DOUBLE_PRECISION,i,100,MPI_COMM_WORLD,status,ierr)
@@ -68,7 +68,7 @@ if(myProc%taskid==MASTER) then
 				!!call MPI_RECV(defectTypeRecv,numSpecies,MPI_INTEGER,i,102,MPI_COMM_WORLD,status,ierr)
 				!!call MPI_RECV(cellNumberRecv,1,MPI_INTEGER,i,103,MPI_COMM_WORLD,status,ierr)
 				!!call MPI_RECV(numRecv,1,MPI_INTEGER,i,104,MPI_COMM_WORLD,status,ierr)
-				write(82,*) (cellDefectRecv(l,k), l=1,numSpecies),cellDefectRecv(numSpecies+1,k)
+				write(82,*) (ifix(cellDefectRecv(l,k)), l=1,numSpecies),ifix(cellDefectRecv(numSpecies+1,k))
 			end do
 
 			deallocate(cellDefectRecv)
@@ -120,7 +120,7 @@ else
 			defectCurrent=>defectCurrent%next
 		end do
 
-        call MPI_SEND(cellDefectSend, (numSpecies+1)*(defectCount+1), MPI_INTEGER, MASTER, &
+        call MPI_SEND(cellDefectSend, (numSpecies+1)*(defectCount+1), MPI_DOUBLE_PRECISION, MASTER, &
                 101+2*i, MPI_COMM_WORLD, ierr)
 		
 		!This just pauses the sending until the master has recieved all of the above information

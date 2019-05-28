@@ -242,7 +242,7 @@ end if
 atomsEverMesh = ((myProc%globalCoord(2)-myProc%globalCoord(1))/lattice * &
 		(myProc%globalCoord(4)-myProc%globalCoord(3))/lattice * &
 		(myProc%globalCoord(6)-myProc%globalCoord(5))/lattice * 2) / totalMesh
-CuAtomsEverMeshTemp = aint(0.005d0* atomsEverMesh)
+CuAtomsEverMeshTemp = aint(CuContent * atomsEverMesh)
 write(CuAtomsEverMeshTemp2,'(f20.0)') CuAtomsEverMeshTemp
 read(CuAtomsEverMeshTemp2,'(i19)') CuAtomsEverMesh
 

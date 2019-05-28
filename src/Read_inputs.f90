@@ -953,6 +953,7 @@ integer procVol, volume
 
 !Set default values for variables
 tempStore		=273d0
+CuContent		=0.5d-2
 dpaRate			=1d-4
 HeDPARatio		=0d0
 atomsize		=1.182d-2
@@ -1015,6 +1016,9 @@ do while(flag .eqv. .FALSE.)
 		else if(char=='temperature') then
 			flag2=.TRUE.
 			read(81,*) tempStore
+		else if(char=='CuContent') then
+			flag2=.TRUE.
+			read(81,*) CuContent
 		else if(char=='dpaRate') then
 			flag2=.TRUE.
 			read(81,*) DPARate

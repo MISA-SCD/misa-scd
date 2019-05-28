@@ -97,6 +97,7 @@ integer totalMesh               !total meshes in the sysytem
 !simulation parameters, to be read during readParameters() in main program
 double precision temperature			!<Temperature (K)
 double precision tempStore				!<Temperature read in (K) - used when temp. changes several times during a simulation
+double precision CuContent              !<The initial content of Cu in iron
 double precision HeDPARatio				!<Helium to dpa ratio (atoms per atom)   default = 0d0
 double precision DPARate				!<DPA rate in dpa/s
 double precision atomsize				!<atomic volume (nm^3)

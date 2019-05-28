@@ -70,6 +70,9 @@ start			!begin parameters
 temperature		!Temperature, in K
 563d0
 
+CuContent       !Initial content of Cu in iron
+0.5d-2
+
 annealTemp
 563d0			!Annealing temperature, in K
 				

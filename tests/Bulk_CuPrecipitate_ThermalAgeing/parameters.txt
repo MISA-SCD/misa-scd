@@ -70,6 +70,9 @@ start			!begin parameters
 temperature		!Temperature, in K
 563d0
 
+CuContent       !Initial content of Cu in iron
+0.5d-2
+
 annealTemp
 563d0			!Annealing temperature, in K
 				
@@ -89,7 +92,7 @@ totalDPA
 0d0			! total DPA in simulation 1
 
 agingTime   !Thermal aging time (s)
-1.0d8
+1.0d1
 
 annealTime
 0d0				! total anneal time (s)
