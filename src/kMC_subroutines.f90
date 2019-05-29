@@ -435,6 +435,8 @@ do i=1,6
 	numUpdateBndry(i)=0
 end do
 
+mixingEvents=0
+
 if(associated(reactionCurrent)) then	!if we have not chosen a null event
 
 	!***********************************************************************************************
@@ -1028,6 +1030,13 @@ if(associated(reactionCurrent)) then	!if we have not chosen a null event
 			
 			allocate(defectStoreList)
 			allocate(defectStoreList%defectType(numSpecies))
+			!2019.05.29 Add*****************
+			do i=1,numSpecies
+				defectStoreList%defectType(i)=0
+			end do
+			defectStoreList%num=0
+			defectStoreList%cellNumber=reactionCurrent%cellNumber(1)
+			!*******************************
 			nullify(defectStoreList%next)
 			defectStore=>defectStoreList
 			
@@ -1043,7 +1052,7 @@ if(associated(reactionCurrent)) then	!if we have not chosen a null event
 			!***************************************************************************************
 
 			!Step 1:
-			do 1590 i=1, cascadeTemp%numDefectsTotal
+			do i=1, cascadeTemp%numDefectsTotal
 				!Create list of defects that need to be added to cell (after casacade
 				!mixing has been taken into account)
 				
@@ -1052,26 +1061,26 @@ if(associated(reactionCurrent)) then	!if we have not chosen a null event
 				allocate(defectStore%defectType(numSpecies))
 				nullify(defectStore%next)
 				
-				do 1556 j=1,numSpecies
+				do j=1,numSpecies
 					defectStore%defectType(j)=cascadeDefectTemp%defectType(j)
-				1556 continue
+				end do
 				defectStore%cellNumber=reactionCurrent%cellNumber(1)
 				defectStore%num=1
 				
 				cascadeDefectTemp=>cascadeDefectTemp%next
-			1590 continue
+			end do
 			
-			defectCurrent=>defectList(reactionCurrent%cellNumber(1))
+			defectCurrent=>defectList(reactionCurrent%cellNumber(1))	!exited defects in the CoarseMesh
 			
 			defectPrev=>defectCurrent
 			defectTemp=>defectCurrent%next
 			
-			if(cascadeVolume .GT. 0d0) then
+			if(cascadeVolume > 0d0) then
 			
-				do 1550 while(associated(defectTemp))
+				do while(associated(defectTemp))
 					
-					!Step 3:
-					do 1572 k=1,defectTemp%num
+					!Step 3: choose a defect in defectStoreList to combine with the defect that exited in the coarseMesh
+					do k=1,defectTemp%num
 						mixingEvents=mixingEvents+1
 						
 						!Choose which defect in the cascade will be combined with defectTemp already presetn in the cell
@@ -1081,15 +1090,15 @@ if(associated(reactionCurrent)) then	!if we have not chosen a null event
 						r1=dprand()
 						
 						!Move defectStore through defectStoreList until defect chosen for recombination
-						do 1573 i=1,cascadeTemp%numDefectsTotal
+						do i=1,cascadeTemp%numDefectsTotal
 							atemp=atemp+1d0/dble(cascadeTemp%numDefectsTotal)
 							
-							if(atemp .GT. r1) then
+							if(atemp > r1) then
 								exit
 							endif
 							
 							defectStore=>defectStore%next
-						1573 continue
+						end do
 						
 						if( .NOT. associated(defectStore)) then
 							write(*,*) 'Error DefectStore not associated in cascade mixing'
@@ -1132,12 +1141,12 @@ if(associated(reactionCurrent)) then	!if we have not chosen a null event
 							defectTemp%num=defectTemp%num-1
 						endif
 	
-					1572 continue
+					end do
 					
 					defectPrev=>defectTemp
 					defectTemp=>defectTemp%next
 					
-				1550 continue
+				end do
 			
 			endif
 			

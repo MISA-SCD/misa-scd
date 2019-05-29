@@ -492,16 +492,16 @@ if(HeDPARatio == 0d0) then
 	!leave the first reaction alone (cascade implantation reaction)
 	reactionCurrent=>reactionList(cellNumber)%next	
 
-elseif(HeDPARatio .GT. 0d0) then
+elseif(HeDPARatio > 0d0) then
 
 	!don't delete first or second reactions (cascade and He implantation)
 	reactionCurrent=>reactionList(cellNumber)%next%next		
 
 else
 	write(*,*) 'Error negative HeDPARatio'
-endif
+end if
 
-do 10 while(associated(reactionCurrent))
+do while(associated(reactionCurrent))
 	reactionPrev=>reactionCurrent
 	reactionCurrent=>reactionCurrent%next
 	
@@ -510,18 +510,20 @@ do 10 while(associated(reactionCurrent))
 	totalRateVol(cellNumber)=totalRateVol(cellNumber)-reactionPrev%reactionRate
 	
 	deallocate(reactionPrev%reactants)
-	deallocate(reactionPrev%products)
+	if(allocated(reactionPrev%products)) then
+		deallocate(reactionPrev%products)
+	end if
 	deallocate(reactionPrev%taskid)
 	deallocate(reactionPrev%cellNumber)
 	deallocate(reactionPrev)
-10 continue
+end do
 
 if(HeDPARatio == 0d0) then
 	nullify(reactionList(cellnumber)%next)
-elseif(HeDPARatio .GT. 0d0) then
+else if(HeDPARatio > 0d0) then
 	nullify(reactionList(cellnumber)%next%next)
 else
 	write(*,*) 'Error negative HeDPARatio'
-endif
+end if
 
 end subroutine

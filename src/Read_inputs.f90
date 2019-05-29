@@ -616,13 +616,13 @@ if(implantType=='Cascade') then
 				allocate(defectCurrent%next)
 				nullify(defectCurrent%next%next)
 				defectCurrent=>defectCurrent%next
-			endif
+			end if
 		end do
 		
 		if(i /= numCascades) then
 			allocate(cascadeCurrent%nextCascade)
 			cascadeCurrent=>cascadeCurrent%nextCascade
-		endif
+		end if
 	end do
 	nullify(defectCurrent)
 	nullify(cascadeCurrent)

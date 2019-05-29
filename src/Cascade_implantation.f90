@@ -24,7 +24,7 @@ do while(associated(cascadeTemp))
 	atemp=atemp+1d0/dble(numCascades)
 	if(atemp >= r) then
 		exit
-	endif
+	end if
 	cascadeTemp=>cascadeTemp%nextCascade
 end do
 end subroutine

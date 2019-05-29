@@ -182,7 +182,7 @@ do cell=1,numCells
 		matNum=myMesh(cell)%material
 	end if
 
-	if(DPARate > 0d0) then
+	if(totalDPA > 0d0 .AND. DPARate > 0d0) then
 
 		if(implantType=='FrenkelPair') then
 
@@ -375,12 +375,18 @@ do cell=1,numCells
 		nullify(reactionCurrent%next)
 
 	else	!no implantation
+        reactionList(cell)%numReactants=0
+        reactionList(cell)%numProducts=0
+        reactionList(cell)%reactionRate=0d0
+        nullify(reactionList(cell)%next)
+
 		!*******************************************************
 		!clustering: Cu+Cu->2Cu
 		!*******************************************************
 
 		reactionCurrent=>reactionList(cell)
-		nullify(reactionList(cell)%next)
+        allocate(reactionCurrent%next)
+        reactionCurrent=>reactionCurrent%next
 
 		reactionCurrent%numReactants=2
 		reactionCurrent%numProducts=1

@@ -260,6 +260,9 @@ write(*,*) 'initialTotalV', initialTotalV, 'initialTotalSIA', initialTotalSIA
 write(*,*) 'initialCeqv', initialCeqv, 'vacancyEverMesh', vacancyEverMesh
 write(*,*) 'initialCeqi', initialCeqi, 'SIAEverMesh', SIAEverMesh
 !**********************************************
+!Initialization
+Vconcent = initialCeqv
+SIAconcent = initialCeqi
 
 call initializeRandomSeeds()		!set unique random number seeds in each processor
 allocate(defectList(numCells))		!Create list of defects - array
@@ -327,7 +330,7 @@ step=0
 nullSteps=0		!Record the number of steps in which an empty event was selected
 
 !2019.04.30 Add
-if(DPARate > 0) then
+if(totalDPA > 0d0 .AND. DPARate > 0d0) then
 	totalTime=totalDPA/DPARate	!simulation time
 else
 	totalTime = agingTime
@@ -341,6 +344,7 @@ annealIdentify=.FALSE.		!<(.TRUE. if in annealing phase, .FALSE. otherwise) used
 do while(elapsedTime < totalTime)
 	
 	step=step+1
+	call computeVconcent()
 	!just for testing
 	!if(myProc%taskid == MASTER) then
 	!	write(*,*) '$$$$$$$$$$$$$$$$$$$$$$$$$$ elapsedTime', elapsedTime

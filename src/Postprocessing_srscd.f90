@@ -16,7 +16,7 @@ include 'mpif.h'
 
 integer buffer, tag, i, j, k,l, status(MPI_STATUS_SIZE), numCellsRecv, numDefectsRecv
 !integer defectTypeRecv(numSpecies), cellNumberRecv, numRecv, defectCount
-integer defectCount
+integer defectCount, recvTemp(numSpecies+1)
 type(defect), pointer :: defectCurrent
 !double precision coordinatesRecv(3)
 double precision, allocatable :: cellDefectSend(:,:)
@@ -68,7 +68,10 @@ if(myProc%taskid==MASTER) then
 				!!call MPI_RECV(defectTypeRecv,numSpecies,MPI_INTEGER,i,102,MPI_COMM_WORLD,status,ierr)
 				!!call MPI_RECV(cellNumberRecv,1,MPI_INTEGER,i,103,MPI_COMM_WORLD,status,ierr)
 				!!call MPI_RECV(numRecv,1,MPI_INTEGER,i,104,MPI_COMM_WORLD,status,ierr)
-				write(82,*) (ifix(cellDefectRecv(l,k)), l=1,numSpecies),ifix(cellDefectRecv(numSpecies+1,k))
+				do l=1, numSpecies+1
+					recvTemp(l) = cellDefectRecv(l,k)
+				end do
+				write(82,*) recvTemp
 			end do
 
 			deallocate(cellDefectRecv)

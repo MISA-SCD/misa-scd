@@ -86,6 +86,8 @@ double precision, parameter :: reactionRadius=0.65	!<Material parameter used for
 double precision, parameter :: lattice = 2.6d-1          !<lattice constant (nm)
 double precision initialCeqv    !Thermal equilibrium concentration of vacancy
 double precision initialCeqi    !Thermal equilibrium concentration of SIA
+double precision Vconcent       !Vacancy concentration
+double precision SIAconcent     !SIA concentration
 double precision atomsEverMesh  !number of atoms of my processor
 integer*8 CuAtomsEverMesh       !Initial number of Cu atoms in one mesh
 integer vacancyEverMesh         !Initial number of vacancies in one mesh

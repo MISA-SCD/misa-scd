@@ -316,14 +316,14 @@ nmin	0	nmax	0
 nmin	0	nmax	0
 1							!reactionRate form 1
 
-0	0	1	0		0	0	1	0	!nSIA->SIA+(n-1)SIA
+0	0	1	0		0	0	1	0	!nSIA_m->SIA+(n-1)SIA
 nmin	0	nmax	0
 nmin	0	nmax	0
 nmin	2	nmax	-1
 nmin	0	nmax	0
 1							!reactionRate form 1
 
-0	0	0	1		0	0	1	0	!nSIA->SIA+(n-1)SIA NOTE: mobile SIA ejected from Sessile SIA cluster
+0	0	0	1		0	0	1	0	!nSIA_im->SIA+(n-1)SIA NOTE: mobile SIA ejected from Sessile SIA cluster
 nmin	0	nmax	0
 nmin	0	nmax	0
 nmin	0	nmax	0

@@ -17,7 +17,7 @@ SYSLIB =
 TARGET = srscd
 
 # 
-$(TARGET): mod_derivedtypes.o mod_srscd_constants.o  dprand.o Debug_subroutines.o Defect_attributes.o MeshReader.o ReactionRates.o Initialization_subroutines.o Read_inputs.o Cascade_implantation.o SRSCD_par.o kMC_subroutines.o Deallocate_Lists.o FineMesh_subroutines.o CoarseMesh_subroutines.o Misc_functions.o StrainSubroutines.o Postprocessing_srscd.o
+$(TARGET): mod_derivedtypes.o mod_srscd_constants.o  dprand.o Debug_subroutines.o Defect_attributes.o MeshReader.o ReactionRates.o Initialization_subroutines.o Read_inputs.o Cascade_implantation.o SRSCD_par.o kMC_subroutines.o Deallocate_Lists.o FineMesh_subroutines.o CoarseMesh_subroutines.o Misc_functions.o StrainSubroutines.o Postprocessing_srscd.o PointDefect_concentration.o
 		$(LINK) -o $(TARGET) *.o
 
 #
@@ -58,6 +58,8 @@ StrainSubroutines.o: StrainSubroutines.f90
 	$(FF) -c StrainSubroutines.f90
 Postprocessing_srscd.o: Postprocessing_srscd.f90
 	$(FF) -c Postprocessing_srscd.f90
+PointDefect_concentration.o: PointDefect_concentration.f90
+	$(FF) -c PointDefect_concentration.f90
 
 # Cleans
 

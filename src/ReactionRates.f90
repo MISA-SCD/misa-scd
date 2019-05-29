@@ -4185,43 +4185,55 @@ type(defect), pointer :: defectTemp
 !SIA+SIA clustering
 							
 !two 1D clusters coming together to make a sessile cluster
-if(products(3) .GT. max3DInt .AND. defectTemp%defectType(3) .GT. max3DInt) then
+!if(products(3) > max3DInt .AND. defectTemp%defectType(3) > max3DInt) then
+if(products(3) > max3DInt) then
 	products(4)=products(3)
 	products(3)=0
 endif
 
-do 551 l=1,numSpecies
+do l=1,numSpecies
 	products(l)=products(l)+defectTemp%defectType(l)
-551 continue
+end do
 
 !V+SIA recombination
-if(products(2) .GE. products(3)) then
+if(products(2) >= products(3)) then
 	products(2)=products(2)-products(3)
 	products(3)=0
-else if(products(3) .GE. products(2)) then
+else if(products(3) >= products(2)) then
 	products(3)=products(3)-products(2)
 	products(2)=0
 endif
 
-if(products(2) .GE. products(4)) then
+if(products(2) >= products(4)) then
 	products(2)=products(2)-products(4)
 	products(4)=0
-else if(products(4) .GE. products(2)) then
+else if(products(4) >= products(2)) then
 	products(4)=products(4)-products(2)
 	products(2)=0
+	!sessile cluster becomes mobile again when it shrinks below max3DInt
+	if(products(4) /= 0 .AND. products(4) <= max3DInt) then
+		products(3)=products(4)
+		products(4)=0
+	end if
 endif
 
 !sessile+mobile SIA cluster makes sessile cluster
-if(products(3) .NE. 0. .AND. products(4) .NE. 0) then
+if(products(3) /= 0. .AND. products(4) /= 0) then
 	products(4)=products(3)+products(4)
 	products(3)=0
-endif
+end if
+
+!mobile+mobile SIA cluster makes sessible cluster
+if(products(3) > 4) then
+	products(4)=products(3)
+	products(3)=0
+end if
 
 !sessile cluster becomes mobile again when it shrinks below max3DInt
-if(products(4) .NE. 0 .AND. products(4) .LE. max3DInt) then
-	products(3)=products(4)
-	products(4)=0
-endif
+!if(products(4) /= 0 .AND. products(4) <= max3DInt) then
+!	products(3)=products(4)
+!	products(4)=0
+!endif
 
 end subroutine
 

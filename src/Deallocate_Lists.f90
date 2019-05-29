@@ -238,10 +238,10 @@ implicit none
 type(defect), pointer :: defectCurrent, defectPrev
 integer cell, i, j
 
-do 10 cell=1,numCells
+do cell=1,numCells
 	defectCurrent=>defectList(cell)%next
 	
-	do 11 while(associated(defectCurrent))
+	do while(associated(defectCurrent))
 	
 		defectPrev=>defectCurrent
 		defectCurrent=>defectCurrent%next
@@ -252,9 +252,9 @@ do 10 cell=1,numCells
 		
 		deallocate(defectPrev)
 	
-	11 continue
+	end do
 
-10 continue
+end do
 
 do 12 cell=1,numCells
 	defectCurrent=>defectList(cell)
