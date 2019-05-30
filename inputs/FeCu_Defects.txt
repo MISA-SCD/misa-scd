@@ -97,7 +97,7 @@ fType	1	param	0				!functional form type 5 (used for used for immobile defects)
 
 0	1	0	0			!V_n
 nmin	0	nmax	0
-nmin	5	nmax -1
+nmin	5	nmax    -1
 nmin	0	nmax	0
 nmin	0	nmax	0
 fType	1	param	0				!functional form type 1 (used for immobile defects)
@@ -114,12 +114,26 @@ fType	3	param	6				!functional form type 3 (hard coded in)
 nmin	0	nmax	0
 nmin	0	nmax	0
 nmin	0	nmax	0
-nmin	1	nmax -1
+nmin	1	nmax    -1
 fType	1	param	0				!functional form type 1 (used for immobile defects)
 
 1	1	0	0
-nmin	1	nmax -1		!Cu number that can be considered with this function
-nmin	1	nmax -1		!V number that can be considered with this function
+nmin	1	nmax    1		!Cu number that can be considered with this function
+nmin	2	nmax    2		!V number that can be considered with this function
+nmin	0	nmax	0
+nmin	0	nmax	0
+fType	1	param	0
+
+1	1	0	0
+nmin	2	nmax    2		!Cu number that can be considered with this function
+nmin	1	nmax    1		!V number that can be considered with this function
+nmin	0	nmax	0
+nmin	0	nmax	0
+fType	1	param	0
+
+1	1	0	0
+nmin	2	nmax    -1		!Cu number that can be considered with this function
+nmin	2	nmax    -1		!V number that can be considered with this function
 nmin	0	nmax	0
 nmin	0	nmax	0
 fType	1	param	0	!Functional form type 1 (used for immobile defects)

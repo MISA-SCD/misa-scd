@@ -89,7 +89,7 @@ burgers
 0.132d0 			!(Fe) 			.36d0 			!(Cu)		! dislocation loop burgers vector (lattice constant) (nm)
 
 totalDPA
-2d-8			! total DPA in simulation 1
+2d-2			! total DPA in simulation 1
 
 annealTime
 0d0				! total anneal time (s)

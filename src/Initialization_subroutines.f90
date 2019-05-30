@@ -26,24 +26,21 @@ subroutine initializeVIdefect()
 	allocate(VmeshCoordinatesList(initialTotalV,3))
 
 	!V
-	if(initialTotalV > 0) then
-		if(myProc%taskid==MASTER) then
+	if(myProc%taskid==MASTER) then
+		outer: do i=1, initialTotalV
+			r1 = dprand()
 
-			outer: do i=1, initialTotalV
-				r1 = dprand()
-
-				inter: do cell=1, totalMesh
-					rtemp = rtemp + cell/totalMesh
-					if(r1 <= rtemp)
-						VmeshCoordinatesList(i,1) = globalMeshCoord(cell,1)
-						VmeshCoordinatesList(i,2) = globalMeshCoord(cell,2)
-						VmeshCoordinatesList(i,3) = globalMeshCoord(cell,3)
-						rtemp = 0d0
-						exit inter
-					end if
-				end do inter
-			end do outer
-		end if
+			inter: do cell=1, totalMesh
+				rtemp = rtemp + cell/totalMesh
+				if(r1 <= rtemp)
+					VmeshCoordinatesList(i,1) = globalMeshCoord(cell,1)
+					VmeshCoordinatesList(i,2) = globalMeshCoord(cell,2)
+					VmeshCoordinatesList(i,3) = globalMeshCoord(cell,3)
+					rtemp = 0d0
+					exit inter
+				end if
+			end do inter
+		end do outer
 	end if
 
 call MPI_BCAST(VmeshCoordinatesList, 3*initialTotalV, MPI_DOUBLE_PRECISION, MASTER, MPI_COMM_WORLD,ierr)

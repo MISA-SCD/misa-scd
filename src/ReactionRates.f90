@@ -4185,8 +4185,8 @@ type(defect), pointer :: defectTemp
 !SIA+SIA clustering
 							
 !two 1D clusters coming together to make a sessile cluster
-!if(products(3) > max3DInt .AND. defectTemp%defectType(3) > max3DInt) then
-if(products(3) > max3DInt) then
+if(products(3) > max3DInt .AND. defectTemp%defectType(3) > max3DInt) then
+!if(products(3) > max3DInt) then
 	products(4)=products(3)
 	products(3)=0
 endif

@@ -92,7 +92,7 @@ totalDPA
 0d0			! total DPA in simulation 1
 
 agingTime   !Thermal aging time (s)
-1.0d1
+1.4d7
 
 annealTime
 0d0				! total anneal time (s)
