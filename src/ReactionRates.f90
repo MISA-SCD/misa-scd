@@ -2631,22 +2631,22 @@ else if(reactionParameter%functionType==11) then	!cascade implantation
 		write(*,*) 'Error implant distribution not recognized'
 	endif
 	
-else if(ReactionParameter%functionType==12) then	!He implantation
+!else if(ReactionParameter%functionType==12) then	!He implantation
 	
 	!This is the rate of Helium implantation events inside a cell with given volume
-	volume=(myMesh(cell)%length)**3d0
+!	volume=(myMesh(cell)%length)**3d0
 	
-	if(implantDist=='Uniform') then
-		findReactionRate=volume*HeDPARatio*DPARate/atomsize
-	else if(implantDist=='NonUniform') then
+!	if(implantDist=='Uniform') then
+!		findReactionRate=volume*HeDPARatio*DPARate/atomsize
+!	else if(implantDist=='NonUniform') then
 		
-		zCoord=myMesh(cell)%coordinates(3)
-		HeImplantRateLocal=findHeImplantRateLocal(zCoord)
-		findReactionRate=volume*HeImplantRateLocal/atomsize
+!		zCoord=myMesh(cell)%coordinates(3)
+!		HeImplantRateLocal=findHeImplantRateLocal(zCoord)
+!		findReactionRate=volume*HeImplantRateLocal/atomsize
 		
-	else
-		write(*,*) 'Error implant distribution not recognized'
-	endif
+!	else
+!		write(*,*) 'Error implant distribution not recognized'
+!	endif
 	
 else if(ReactionParameter%functionType==13) then	!Frenkel-Pair implantation disallowed in grain boundaries
 
@@ -3060,7 +3060,7 @@ if(reactionParameter%functionType==3) then
 	num=findNumDefect(defectType,cell)		!number of clusters of this type
 	Diff=findDiffusivity(matNum,defectType)		!diffusivity of clusters of this type
 	
-	if(defectType(3) .NE. 0) then !interstitial defect
+	if(defectType(3) /= 0) then !interstitial defect
 		reactionRate=Zint*dislocationDensity*diff*dble(num)
 	else
 		reactionRate=dislocationDensity*diff*dble(num)

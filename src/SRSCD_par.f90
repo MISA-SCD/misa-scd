@@ -246,19 +246,15 @@ CuAtomsEverMeshTemp = aint(CuContent * atomsEverMesh)
 write(CuAtomsEverMeshTemp2,'(f20.0)') CuAtomsEverMeshTemp
 read(CuAtomsEverMeshTemp2,'(i19)') CuAtomsEverMesh
 
-initialCeqv = dexp(-FormSingle(1,2)%Ef / (kboltzmann*temperature))
-initialCeqi = dexp(-FormSingle(1,3)%Ef / (kboltzmann*temperature))
+!initialCeqv = dexp(-FormSingle(1,2)%Ef / (kboltzmann*temperature))
+!initialCeqi = dexp(-FormSingle(1,3)%Ef / (kboltzmann*temperature))
 
-initialTotalV = floor(initialCeqv*atomsEverMesh*totalMesh)
-initialTotalSIA = floor(initialCeqi*atomsEverMesh*totalMesh)
+!initialTotalV = floor(initialCeqv*atomsEverMesh*totalMesh)
+!initialTotalSIA = floor(initialCeqi*atomsEverMesh*totalMesh)
 
-vacancyEverMesh = floor(initialCeqv*atomsEverMesh)
-SIAEverMesh = floor(initialCeqi*atomsEverMesh)
+!vacancyEverMesh = floor(initialCeqv*atomsEverMesh)
+!SIAEverMesh = floor(initialCeqi*atomsEverMesh)
 
-write(*,*) 'atomsEverMesh', atomsEverMesh, 'CuEverMesh', CuAtomsEverMesh
-write(*,*) 'initialTotalV', initialTotalV, 'initialTotalSIA', initialTotalSIA
-write(*,*) 'initialCeqv', initialCeqv, 'vacancyEverMesh', vacancyEverMesh
-write(*,*) 'initialCeqi', initialCeqi, 'SIAEverMesh', SIAEverMesh
 !**********************************************
 !Initialization
 Vconcent = initialCeqv
@@ -268,13 +264,19 @@ call initializeRandomSeeds()		!set unique random number seeds in each processor
 allocate(defectList(numCells))		!Create list of defects - array
 allocate(reactionList(numCells))	!Create list of reactions - array
 allocate(totalRateVol(numCells))	!Create array of total rates in each volume element
+call initializeVIdefect()			!2019.05.30 Add
 call initializeDefectList()			!initialize defects within myMesh
 call initializeBoundaryDefectList()	!initialize defects on boundary of myMesh (in other procs)
 call initializeReactionList()		!initialize reactions within myMesh
 call initializeTotalRate()			!initialize totalRate and maxRate using reactionList(:)
 call initializeDebugRestart()		!input defects into coarse mesh from restart file (for debugging)
 
-!call DEBUGPrintReactionList(0)		!prints all reaction lists at a given Monte Carlo step
+write(*,*) 'atomsEverMesh', atomsEverMesh, 'CuEverMesh', CuAtomsEverMesh
+write(*,*) 'initialTotalV', initialTotalV, 'initialTotalSIA', initialTotalSIA
+write(*,*) 'initialCeqv', initialCeqv, 'vacancyEverMesh', vacancyEverMesh
+write(*,*) 'initialCeqi', initialCeqi, 'SIAEverMesh', SIAEverMesh
+
+call DEBUGPrintReactionList(0)		!prints all reaction lists at a given Monte Carlo step
 !call DEBUGPrintDefectList(0)
 !******************************************************************
 !Initialize Counters
@@ -676,6 +678,8 @@ do while(elapsedTime < totalTime)
 		
 		if(myProc%taskid==MASTER) then
 			call cpu_time(time2)
+			write(*,*)
+			write(*,*) 'Cudiffusivity'
 			write(*,*) 'time', elapsedTime, 'dpa', dpa, 'steps', step
 			write(*,*) 'Cascades/Frenkel pairs', totalImplantEvents, 'computation time', time2-time1
 			!write postpr.out
@@ -693,7 +697,6 @@ do while(elapsedTime < totalTime)
 			end if
 			
 			write(84,*)
-			write(*,*)
 		end if
 		
 		!Several defect output optionas available, these outputs should be chosen in input file (currently hard coded)

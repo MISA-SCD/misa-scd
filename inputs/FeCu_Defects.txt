@@ -60,7 +60,7 @@ numFunction
 
 single			!Indicates that we are about to read in single defect parameters
 1	0	0	0			!Cu_1
-D0	6.3d15	Em 	2.29d0
+D0	6.3d13	Em 	2.29d0
 0	1	0	0			!V_1
 D0	1.0d14	Em	1.3d0
 0	2	0	0			!V_2
@@ -376,14 +376,14 @@ nmin	0	nmax	0
 2							!reactionRate form 2
 
 sinkRemoval					!These reactions involve removing defects from the mesh by dislocations
-4							!number of defect types that can be removed this way
+2							!number of defect types that can be removed this way
 
-1	0	0	0				!Cu trapping
-nmin	1	nmax	40
-nmin	0	nmax	0
-nmin	0	nmax	0
-nmin	0	nmax	0
-3							!reactionRate form 3 (used for all dislocation removal events, hard coded)
+!1	0	0	0				!Cu trapping
+!nmin	1	nmax	4
+!nmin	0	nmax	0
+!nmin	0	nmax	0
+!nmin	0	nmax	0
+!3							!reactionRate form 3 (used for all dislocation removal events, hard coded)
 
 0	1	0	0				!V trapping
 nmin	0	nmax	0
@@ -399,12 +399,12 @@ nmin	1 	nmax	-1
 nmin	0	nmax	0
 3							!reactionRate form 3
 
-1	1	0	0				!CuV trapping
-nmin	1	nmax	1
-mmin	1	mmax	1
-nmin	0	nmax	0
-nmin	0	nmax	0
-3							!reactionRate form 3
+!1	1	0	0				!CuV trapping
+!nmin	1	nmax	1
+!mmin	1	mmax	1
+!nmin	0	nmax	0
+!nmin	0	nmax	0
+!3							!reactionRate form 3
 
 impurityTrapping			!These reactions involve changing mobile SIA loops to sessile SIA loops via trapping by impurities
 1							!Only one defect type can be affected by this

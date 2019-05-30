@@ -20,14 +20,14 @@ meshType		!Tells meshGen whether to create a material with periodic BC's or free
 periodic
 
 length (nm)		!Specify the length of volume elements in nm (uniform cubic mesh only)
-80d0
+10d0
 
 numx
-2
+2500
 numy
-2
+2500
 numz
-2
+2500
 
 end
 

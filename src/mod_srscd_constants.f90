@@ -40,6 +40,7 @@ integer numCellsCascade									!<number of volume elements within a cascade (fi
 integer numxCascade										!<number of elements in cascade x-direction
 integer numyCascade										!<number of elements in cascade y-direction
 integer numzCascade										!<number of elements in cascade z-direction
+double precision, allocatable :: globalMeshCoord(:,:)
 integer, allocatable :: cascadeConnectivity(:,:) 		!<connectivity matrix for cascade meshes (same for all fine meshes)
 double precision fineLength								!<length of a cascade volume element (nm)
 double precision cascadeElementVol						!<volume of a cascade element (nm^3)
@@ -75,7 +76,7 @@ integer, allocatable :: numClusterReac(:)	!<Number of clustering reactions in in
 integer, allocatable :: numImplantReac(:)	!<Number of implantation reactions in input file (cascade, Frenkel pair, He currently implemented)
 
 !constants
-double precision, parameter :: kboltzmann=8.6173324d-5	!<Boltzmann's constant (eV/K)
+double precision, parameter :: kboltzmann=8.625d-5	!<Boltzmann's constant (eV/K)
 double precision, parameter :: pi=3.141592653589793		!<Pi
 double precision, parameter :: Zint = 1.2				!<Constant representing preference for clustering of interstitials by interstitial clusters (increases clustering cross-section)
 double precision, parameter :: Zv = 1.0
@@ -83,7 +84,7 @@ double precision, parameter :: reactionRadius=0.65	!<Material parameter used for
 
 !2019.04.30 Add
 !Cu solubility CeqCu(T) = exp(DelatS/kB)*exp(-Omega/(kB*T))  Reference: (F. Christien and A. Barbu, 2004)
-double precision, parameter :: lattice = 2.6d-1          !<lattice constant (nm)
+double precision, parameter :: lattice = 2.867d-1          !<lattice constant (nm)
 double precision initialCeqv    !Thermal equilibrium concentration of vacancy
 double precision initialCeqi    !Thermal equilibrium concentration of SIA
 double precision Vconcent       !Vacancy concentration
@@ -95,6 +96,13 @@ integer SIAEverMesh             !Initial number of SIAs in one mesh
 integer initialTotalV
 integer initialTotalSIA
 integer totalMesh               !total meshes in the sysytem
+
+double precision, allocatable :: VmeshCoordinatesList(:.:)
+double precision, allocatable :: ImeshCoordinatesList(:.:)
+double precision meshLength
+
+!For testing
+double precision CuDiffusivity
 
 !simulation parameters, to be read during readParameters() in main program
 double precision temperature			!<Temperature (K)

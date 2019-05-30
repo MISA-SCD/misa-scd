@@ -58,7 +58,7 @@ logical flag
 double precision volumeFaces(3), totalArea, length, tempCoord(3)
 integer element, localElements(3), localElem, numxLocal, numyLocal, numzLocal, globalCell, globalNeighbor, maxElement
 integer tracker
-double precision, allocatable :: globalMeshCoord(:,:)
+!double precision, allocatable :: globalMeshCoord(:,:)
 double precision, allocatable :: globalStrain(:,:)
 integer, allocatable :: globalMeshConnect(:,:), globalMaterial(:)
 
@@ -107,6 +107,8 @@ do while(flag .eqv. .FALSE.)
 	end if
 end do
 flag=.FALSE.
+
+meshLength = length
 
 !************************************************
 !Step 1: read in the global coordinates (max, min)

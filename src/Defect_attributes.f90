@@ -271,12 +271,12 @@ if(i==numSingleBind(matNum)+1) then	!did not find defect in single defect list
 		write(*,*) DefectType
 		write(*,*) ProductType
 		Eb=0d0
-	endif
-endif
+	end if
+end if
 
-if(Eb .LT. 0d0) then
+if(Eb < 0d0) then
 	Eb=0d0
-endif
+end if
 
 findBinding=Eb
 end function
@@ -439,11 +439,11 @@ integer defectType(numSpecies), max, i
 
 !Hard-coded below and may be changed if the rules for defect size change.
 max=0
-do 10 i=1, numSpecies
-	if(defectType(i) .GT. max) then
+do i=1, numSpecies
+	if(defectType(i) > max) then
 		max=defectType(i)
 	endif
-10 continue
+end do
 
 findDefectSize=max
 end function
