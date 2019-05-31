@@ -8,7 +8,7 @@ subroutine initializeVIdefect()
 	implicit none
 	include 'mpif.h'
 
-	integer cell, i,j
+	integer cell, i,j,tempID,x,y,z
 	double precision initialTotalVtemp, initialTotalItemp, totalAtoms
 	double precision rtemp, r1
 	rtemp = 0d0
@@ -23,7 +23,7 @@ subroutine initializeVIdefect()
 	initialTotalV = nint(initialCeqv * totalAtoms)
 	initialTotalSIA = nint(initialCeqi * totalAtoms)
 
-	allocate(VmeshCoordinatesList(initialTotalV,3))
+	allocate(VcoordinateList(initialTotalV,3))
 
 	!V
 	if(myProc%taskid==MASTER) then
@@ -32,10 +32,17 @@ subroutine initializeVIdefect()
 
 			inter: do cell=1, totalMesh
 				rtemp = rtemp + cell/totalMesh
-				if(r1 <= rtemp)
-					VmeshCoordinatesList(i,1) = globalMeshCoord(cell,1)
-					VmeshCoordinatesList(i,2) = globalMeshCoord(cell,2)
-					VmeshCoordinatesList(i,3) = globalMeshCoord(cell,3)
+				if(r1 <= rtemp) tnen
+					tempID = cell-1
+					x = mod(tempID,totalX) +1
+					tempID = tempID /totalX
+					y = mod(tempID,totalY)+1
+					z = tempID / totalZ +1
+					!coordinate
+					VcoordinateList(i,1) = meshLength*(x-1)+ meshLength/2d0
+					VcoordinateList(i,2) = meshLength*(y-1)+ meshLength/2d0
+					VcoordinateList(i,3) = meshLength*(z-1)+ meshLength/2d0
+
 					rtemp = 0d0
 					exit inter
 				end if
@@ -43,7 +50,7 @@ subroutine initializeVIdefect()
 		end do outer
 	end if
 
-call MPI_BCAST(VmeshCoordinatesList, 3*initialTotalV, MPI_DOUBLE_PRECISION, MASTER, MPI_COMM_WORLD,ierr)
+call MPI_BCAST(VcoordinateList, 3*initialTotalV, MPI_DOUBLE_PRECISION, MASTER, MPI_COMM_WORLD,ierr)
 
 
 end subroutine
@@ -60,8 +67,9 @@ use DerivedType
 use mod_srscd_constants
 implicit none
 
-integer cell, i
+integer cell, i, x,y,z,tempID
 type(defect), pointer :: defectCurrent
+double precision tempCoordinate(3)
 
 nullify(defectCurrent)
 
@@ -113,16 +121,17 @@ do cell=1,numCells
 end do
 
 do i=1, initialTotalV
-	if(VmeshCoordinatesList(i,1) > myProc%localCoord(1) .AND. &
-			VmeshCoordinatesList(i,1) <= myProc%localCoord(2) .AND. &
-			VmeshCoordinatesList(i,2) > myProc%localCoord(3) .AND. &
-			VmeshCoordinatesList(i,2) <= myProc%localCoord(4) .AND. &
-			VmeshCoordinatesList(i,3) > myProc%localCoord(5) .AND. &
-			VmeshCoordinatesList(i,3) <= myProc%localCoord(6)) then
+
+	if(VcoordinateList(i,1) > myProc%localCoord(1) .AND. &
+			VcoordinateList(i,1) <= myProc%localCoord(2) .AND. &
+			VcoordinateList(i,2) > myProc%localCoord(3) .AND. &
+			VcoordinateList(i,2) <= myProc%localCoord(4) .AND. &
+			VcoordinateList(i,3) > myProc%localCoord(5) .AND. &
+			VcoordinateList(i,3) <= myProc%localCoord(6)) then
 		inter: do cell=1, numCells
-			if(VmeshCoordinatesList(i,1)==myMesh(cell)%coordinates(1) .AND. &
-					VmeshCoordinatesList(i,2)==myMesh(cell)%coordinates(2) .AND. &
-					VmeshCoordinatesList(i,3)==myMesh(cell)%coordinates(3)) then
+			if(VcoordinateList(i,1)==myMesh(cell)%coordinates(1) .AND. &
+					VcoordinateList(i,2)==myMesh(cell)%coordinates(2) .AND. &
+					VcoordinateList(i,3)==myMesh(cell)%coordinates(3)) then
 
 				defectCurrent=>defectList(cell)	!0 0 0 0
 				defectCurrent=>defectCurrent%next	!1 0 0 0
@@ -563,7 +572,7 @@ do cell=1,numCells
 		reactionCurrent%numProducts=0
 		allocate(reactionCurrent%reactants(reactionCurrent%numReactants, numSpecies))
 		allocate(reactionCurrent%cellNumber(reactionCurrent%numReactants))
-		allocatE(reactionCurrent%taskid(reactionCurrent%numReactants))
+		allocate(reactionCurrent%taskid(reactionCurrent%numReactants))
 
 		do reac=1,numSinkReac(matNum)
 			if(SinkReactions(matNum,reac)%reactants(1,1)==0 .AND. SinkReactions(matNum,reac)%reactants(1,2)==1 .AND. &
@@ -574,7 +583,7 @@ do cell=1,numCells
 
 		do i=1,SinkReactions(matNum,reac)%numReactants
 			do j=1,numSpecies
-				reactionCurrent%reactants(1,j)=SinkReactions(matNum,reac)%reactants(1,j)
+				reactionCurrent%reactants(i,j)=SinkReactions(matNum,reac)%reactants(i,j)
 			end do
 			reactionCurrent%cellNumber(i)=cell
 			reactionCurrent%taskid(i)=myMesh(cell)%proc
@@ -888,9 +897,9 @@ do cell=1,numCells
 					!V
 					do j=1, initialTotalV
 						if(dir==1) then
-							if(VmeshCoordinatesList(i,1)==(myMesh(cell)%coordinates(1)+meshLength) .AND. &
-									VmeshCoordinatesList(i,2)==myMesh(cell)%coordinates(2) .AND. &
-									VmeshCoordinatesList(i,3)==myMesh(cell)%coordinates(3)) then
+							if(VcoordinateList(i,1)==(myMesh(cell)%coordinates(1)+meshLength) .AND. &
+									VcoordinateList(i,2)==myMesh(cell)%coordinates(2) .AND. &
+									VcoordinateList(i,3)==myMesh(cell)%coordinates(3)) then
 
 								defectCurrent=>myBoundary(dir,myMesh(cell)%neighbors(dir,k))%defectList	!0 0 0 0
 								defectCurrent=>defectCurrent%next	!1 0 0 0
@@ -900,9 +909,9 @@ do cell=1,numCells
 								nullify(defectCurrent)
 							end if
 						else if(dir==2) then
-							if(VmeshCoordinatesList(i,1)==(myMesh(cell)%coordinates(1)-meshLength) .AND. &
-									VmeshCoordinatesList(i,2)==myMesh(cell)%coordinates(2) .AND. &
-									VmeshCoordinatesList(i,3)==myMesh(cell)%coordinates(3)) then
+							if(VcoordinateList(i,1)==(myMesh(cell)%coordinates(1)-meshLength) .AND. &
+									VcoordinateList(i,2)==myMesh(cell)%coordinates(2) .AND. &
+									VcoordinateList(i,3)==myMesh(cell)%coordinates(3)) then
 
 								defectCurrent=>myBoundary(dir,myMesh(cell)%neighbors(dir,k))%defectList	!0 0 0 0
 								defectCurrent=>defectCurrent%next	!1 0 0 0
@@ -912,9 +921,9 @@ do cell=1,numCells
 								nullify(defectCurrent)
 							end if
 						else if(dir==3) then
-							if(VmeshCoordinatesList(i,1)==myMesh(cell)%coordinates(1) .AND. &
-									VmeshCoordinatesList(i,2)==(myMesh(cell)%coordinates(2)+meshLength) .AND. &
-									VmeshCoordinatesList(i,3)==myMesh(cell)%coordinates(3)) then
+							if(VcoordinateList(i,1)==myMesh(cell)%coordinates(1) .AND. &
+									VcoordinateList(i,2)==(myMesh(cell)%coordinates(2)+meshLength) .AND. &
+									VcoordinateList(i,3)==myMesh(cell)%coordinates(3)) then
 
 								defectCurrent=>myBoundary(dir,myMesh(cell)%neighbors(dir,k))%defectList	!0 0 0 0
 								defectCurrent=>defectCurrent%next	!1 0 0 0
@@ -924,9 +933,9 @@ do cell=1,numCells
 								nullify(defectCurrent)
 							end if
 						else if(dir==4) then
-							if(VmeshCoordinatesList(i,1)==myMesh(cell)%coordinates(1) .AND. &
-									VmeshCoordinatesList(i,2)==(myMesh(cell)%coordinates(2)-meshLength) .AND. &
-									VmeshCoordinatesList(i,3)==myMesh(cell)%coordinates(3)) then
+							if(VcoordinateList(i,1)==myMesh(cell)%coordinates(1) .AND. &
+									VcoordinateList(i,2)==(myMesh(cell)%coordinates(2)-meshLength) .AND. &
+									VcoordinateList(i,3)==myMesh(cell)%coordinates(3)) then
 
 								defectCurrent=>myBoundary(dir,myMesh(cell)%neighbors(dir,k))%defectList	!0 0 0 0
 								defectCurrent=>defectCurrent%next	!1 0 0 0
@@ -936,9 +945,9 @@ do cell=1,numCells
 								nullify(defectCurrent)
 							end if
 						else if(dir==5) then
-							if(VmeshCoordinatesList(i,1)==myMesh(cell)%coordinates(1) .AND. &
-									VmeshCoordinatesList(i,2)==myMesh(cell)%coordinates(2) .AND. &
-									VmeshCoordinatesList(i,3)==(myMesh(cell)%coordinates(3)+meshLength)) then
+							if(VcoordinateList(i,1)==myMesh(cell)%coordinates(1) .AND. &
+									VcoordinateList(i,2)==myMesh(cell)%coordinates(2) .AND. &
+									VcoordinateList(i,3)==(myMesh(cell)%coordinates(3)+meshLength)) then
 
 								defectCurrent=>myBoundary(dir,myMesh(cell)%neighbors(dir,k))%defectList	!0 0 0 0
 								defectCurrent=>defectCurrent%next	!1 0 0 0
@@ -948,9 +957,9 @@ do cell=1,numCells
 								nullify(defectCurrent)
 							end if
 						else if(dir==6) then
-							if(VmeshCoordinatesList(i,1)==myMesh(cell)%coordinates(1) .AND. &
-									VmeshCoordinatesList(i,2)==myMesh(cell)%coordinates(2) .AND. &
-									VmeshCoordinatesList(i,3)==(myMesh(cell)%coordinates(3)-meshLength)) then
+							if(VcoordinateList(i,1)==myMesh(cell)%coordinates(1) .AND. &
+									VcoordinateList(i,2)==myMesh(cell)%coordinates(2) .AND. &
+									VcoordinateList(i,3)==(myMesh(cell)%coordinates(3)-meshLength)) then
 
 								defectCurrent=>myBoundary(dir,myMesh(cell)%neighbors(dir,k))%defectList	!0 0 0 0
 								defectCurrent=>defectCurrent%next	!1 0 0 0

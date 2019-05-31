@@ -58,7 +58,7 @@ logical flag
 double precision volumeFaces(3), totalArea, length, tempCoord(3)
 integer element, localElements(3), localElem, numxLocal, numyLocal, numzLocal, globalCell, globalNeighbor, maxElement
 integer tracker
-!double precision, allocatable :: globalMeshCoord(:,:)
+double precision, allocatable :: globalMeshCoord(:,:)
 double precision, allocatable :: globalStrain(:,:)
 integer, allocatable :: globalMeshConnect(:,:), globalMaterial(:)
 
@@ -297,6 +297,9 @@ flag=.FALSE.
 
 numTotal=numx*numy*numz	!total cell in the system
 totalMesh = numTotal
+totalX = numx
+totalY = numy
+totalZ = numz
 
 !These arrays create a global mesh and global list of material numbers and coordinates, but are discarded
 !once the local mesh is finished.
@@ -304,6 +307,7 @@ allocate(globalMaterial(numTotal))
 allocate(globalMeshCoord(numTotal,3))
 allocate(globalMeshConnect(numTotal,6))
 allocate(globalStrain(numTotal,6))	!first 3 coordinates are mesh coordinates, last 6 coordinates are strain tensor
+
 
 !Create global connectivity (uniform cubic mesh - use same rule as above, count by x then y then z)
 if(meshType=='periodic') then
@@ -410,6 +414,9 @@ allocate(myMesh(numxLocal*numyLocal*numzLocal))
 
 !this variable is used at various points in SRSCD; lets us know the length fo myMesh(:)
 numCells=numxLocal*numyLocal*numzLocal	!total cells of this processor
+localX=numxLocal
+localY=numyLocal
+localZ=numzLocal
 
 do i=1,numCells
 	myMesh(i)%length=length
@@ -529,7 +536,7 @@ do i=1,numxLocal*numyLocal*numzLocal
 			myBoundary(j,myMesh(i)%neighbors(j,1))%proc=myMesh(i)%neighborProcs(j,1)	!set proc # of elements in myBoundary
 			myBoundary(j,myMesh(i)%neighbors(j,1))%length=length						!set length of elements in myBoundary
 			myBoundary(j,myMesh(i)%neighbors(j,1))%volume=length**3d0					!set volume of elements in myBoundary (changes with cascade addition)
-			globalCell=findGlobalCell(myMesh(i)%coordinates, globalMeshCoord)			!find global cell # of element in myBoundary
+			globalCell=findGlobalCell(myMesh(i)%coordinates,globalMeshCoord)			!find global cell # of element in myBoundary
 			globalNeighbor=globalMeshConnect(globalCell,j)								!use global cell # to find material # of element in myBoundary
 			myBoundary(j,myMesh(i)%neighbors(j,1))%material=globalMaterial(globalNeighbor)	!set material # of elements in myBoundary
 			myBoundary(j,myMesh(i)%neighbors(j,1))%localNeighbor=i
@@ -717,7 +724,7 @@ do cell=1,numCells
 			myMesh(cell)%neighbors(1,1)=cell-numx+1	!use periodic rules from uniform cubic mesh
 		else
 			!find global cell number of this cell and the neighboring cell.
-			globalCell=findGlobalCell(myMesh(cell)%coordinates, globalMeshCoord)
+			globalCell=findGlobalCell(myMesh(cell)%coordinates,globalMeshCoord)
 			globalNeighbor=globalMeshConnect(globalCell,1)
 			
 			!add these items to sendList, a buffer that is used at the end of this subroutine to communicate
@@ -745,7 +752,7 @@ do cell=1,numCells
 		if(myMesh(cell)%neighborProcs(2,1)==myProc%taskid) then
 			myMesh(cell)%neighbors(2,1)=cell+numx-1
 		else
-			globalCell=findGlobalCell(myMesh(cell)%coordinates, globalMeshCoord)
+			globalCell=findGlobalCell(myMesh(cell)%coordinates,globalMeshCoord)
 			globalNeighbor=globalMeshConnect(globalCell,2)
 			numSendRecv=numSendRecv+1
 			sendList(numSendRecv,1)=cell
@@ -784,7 +791,7 @@ do cell=1,numCells
 		if(myMesh(cell)%neighborProcs(4,1)==myProc%taskid) then
 			myMesh(cell)%neighbors(4,1)=cell+(numx*(numy-1))
 		else
-			globalCell=findGlobalCell(myMesh(cell)%coordinates, globalMeshCoord)
+			globalCell=findGlobalCell(myMesh(cell)%coordinates,globalMeshCoord)
 			globalNeighbor=globalMeshConnect(globalCell,4)
 			numSendRecv=numSendRecv+1
 			sendList(numSendRecv,1)=cell
@@ -803,7 +810,7 @@ do cell=1,numCells
 		if(myMesh(cell)%neighborProcs(5,1)==myProc%taskid) then
 			myMesh(cell)%neighbors(5,1)=cell-(numx*numy*(numz-1))
 		else
-			globalCell=findGlobalCell(myMesh(cell)%coordinates, globalMeshCoord)
+			globalCell=findGlobalCell(myMesh(cell)%coordinates,globalMeshCoord)
 			globalNeighbor=globalMeshConnect(globalCell,5)
 			numSendRecv=numSendRecv+1
 			sendList(numSendRecv,1)=cell
@@ -822,7 +829,7 @@ do cell=1,numCells
 		if(myMesh(cell)%neighborProcs(6,1)==myProc%taskid) then
 			myMesh(cell)%neighbors(6,1)=cell+(numx*numy*(numz-1))
 		else
-			globalCell=findGlobalCell(myMesh(cell)%coordinates, globalMeshCoord)
+			globalCell=findGlobalCell(myMesh(cell)%coordinates,globalMeshCoord)
 			globalNeighbor=globalMeshConnect(globalCell,6)
 			numSendRecv=numSendRecv+1
 			sendList(numSendRecv,1)=cell
@@ -898,7 +905,7 @@ do cell=1,numCells
 		if(myMesh(cell)%neighborProcs(1,1)==myProc%taskid) then
 			myMesh(cell)%neighbors(1,1)=cell-numx+1
 		else
-			globalCell=findGlobalCell(myMesh(cell)%coordinates, globalMeshCoord)
+			globalCell=findGlobalCell(myMesh(cell)%coordinates,globalMeshCoord)
 			globalNeighbor=globalMeshConnect(globalCell,1)
 			numSendRecv=numSendRecv+1
 			sendList(numSendRecv,1)=cell
@@ -917,7 +924,7 @@ do cell=1,numCells
 		if(myMesh(cell)%neighborProcs(2,1)==myProc%taskid) then
 			myMesh(cell)%neighbors(2,1)=cell+numx-1
 		else
-			globalCell=findGlobalCell(myMesh(cell)%coordinates, globalMeshCoord)
+			globalCell=findGlobalCell(myMesh(cell)%coordinates,globalMeshCoord)
 			globalNeighbor=globalMeshConnect(globalCell,2)
 			numSendRecv=numSendRecv+1
 			sendList(numSendRecv,1)=cell
@@ -936,7 +943,7 @@ do cell=1,numCells
 		if(myMesh(cell)%neighborProcs(3,1)==myProc%taskid) then
 			myMesh(cell)%neighbors(3,1)=cell-(numx*(numy-1))
 		else
-			globalCell=findGlobalCell(myMesh(cell)%coordinates, globalMeshCoord)
+			globalCell=findGlobalCell(myMesh(cell)%coordinates,globalMeshCoord)
 			globalNeighbor=globalMeshConnect(globalCell,3)
 			numSendRecv=numSendRecv+1
 			sendList(numSendRecv,1)=cell
@@ -955,7 +962,7 @@ do cell=1,numCells
 		if(myMesh(cell)%neighborProcs(4,1)==myProc%taskid) then
 			myMesh(cell)%neighbors(4,1)=cell+(numx*(numy-1))
 		else
-			globalCell=findGlobalCell(myMesh(cell)%coordinates, globalMeshCoord)
+			globalCell=findGlobalCell(myMesh(cell)%coordinates,globalMeshCoord)
 			globalNeighbor=globalMeshConnect(globalCell,4)
 			numSendRecv=numSendRecv+1
 			sendList(numSendRecv,1)=cell
@@ -970,7 +977,7 @@ do cell=1,numCells
 	
 	if(mod(cell,numx*numy*numz) > numx*numy*(numz-1) .OR. mod(cell, numx*numy*numz)==0) then
 		myMesh(cell)%neighborProcs(5,1)=myProc%procNeighbor(5)
-		globalCell=findGlobalCell(myMesh(cell)%coordinates, globalMeshCoord)
+		globalCell=findGlobalCell(myMesh(cell)%coordinates,globalMeshCoord)
 		globalNeighbor=globalMeshConnect(globalCell,5)
 		if(globalNeighbor==0) then
 			!free surface, set proc id to -1 and cell id to 0 to indicate free surface
@@ -994,7 +1001,7 @@ do cell=1,numCells
 	
 	if(mod(cell,numx*numy*numz) <= numx*numy .AND. (mod(cell,numx*numy*numz) /= 0 .OR. numz==1)) then
 		myMesh(cell)%neighborProcs(6,1)=myProc%procNeighbor(6)
-		globalCell=findGlobalCell(myMesh(cell)%coordinates, globalMeshCoord)
+		globalCell=findGlobalCell(myMesh(cell)%coordinates,globalMeshCoord)
 		globalNeighbor=globalMeshConnect(globalCell,6)
 		if(globalNeighbor==0) then
 			!free surface, set proc id to -1 and cell id to 0 to indicate free surface
@@ -1048,7 +1055,7 @@ integer function findGlobalCell(coord, gCoord)
 implicit none
 
 double precision coord(3)
-double precision, allocatable :: gCoord(:,:)
+!double precision, allocatable :: gCoord(:,:)
 integer i
 logical flag
 
@@ -1096,14 +1103,16 @@ character*50 filename, filename2, filename3
 logical flag
 double precision volumeFaces(3), totalArea, length
 integer elem, localElements(3), localElem, numxLocal, numyLocal, numzLocal, maxNumNeighbors, globalMaxNeighbors
-double precision, allocatable :: globalMeshCoord(:,:), globalLength(:), procCoordList(:,:)
+double precision, allocatable :: globalMeshCoord(:,:)
+double precision, allocatable :: globalLength(:), procCoordList(:,:)
 integer, allocatable :: globalMeshConnect(:,:,:), globalMaterial(:), globalNumNeighbors(:,:)
 integer globalCell, globalNeighbor, maxElement
 
 interface
 
 	subroutine createConnectLocal(globalMeshConnect, globalMeshCoord, localElem, procCoordList)
-	double precision, allocatable :: globalMeshCoord(:,:), procCoordList(:,:)
+	double precision, allocatable :: globalMeshCoord(:,:)
+	double precision, allocatable :: procCoordList(:,:)
 	integer, allocatable :: globalMeshConnect(:,:,:)
 	integer localElem
 	end subroutine
@@ -1460,7 +1469,7 @@ do i=1,localElem
 		do k=1,myMesh(i)%numNeighbors(j)
 			if(myMesh(i)%neighborProcs(j,k) /= myProc%taskid) then
 				myBoundary(j,myMesh(i)%neighbors(j,k))%proc=myMesh(i)%neighborProcs(j,k)	!set proc # of elements in myBoundary
-				globalCell=findGlobalCell(myMesh(i)%coordinates, globalMeshCoord)			!find global cell # of element in myBoundary
+				globalCell=findGlobalCell(myMesh(i)%coordinates,globalMeshCoord)			!find global cell # of element in myBoundary
 				globalNeighbor=globalMeshConnect(globalCell,j,k)								!use global cell # to find material # of element in myBoundary
 				myBoundary(j,myMesh(i)%neighbors(j,1))%material=globalMaterial(globalNeighbor)	!set material # of elements in myBoundary
 				myBoundary(j,myMesh(i)%neighbors(j,k))%length=globalLength(globalNeighbor)		!set length of elements in myBoundary
@@ -1781,7 +1790,8 @@ use mod_srscd_constants
 implicit none
 
 include 'mpif.h'
-double precision, allocatable :: globalMeshCoord(:,:), procCoordList(:,:)
+double precision, allocatable :: globalMeshCoord(:,:)
+double precision, allocatable :: procCoordList(:,:)
 integer, allocatable :: globalMeshConnect(:,:,:)
 integer localElem, elem, neighbor, dir, globalCell, localNeighbor, globalNeighbor, numSendRecv
 integer sendList(6*localElem, 5), i, status(MPI_STATUS_SIZE), neighborProc
@@ -1792,7 +1802,7 @@ integer sendList(6*localElem, 5), i, status(MPI_STATUS_SIZE), neighborProc
 
 numSendRecv=0
 do elem=1,localElem
-	globalCell=findGlobalCell(myMesh(elem)%coordinates, globalMeshCoord)
+	globalCell=findGlobalCell(myMesh(elem)%coordinates,globalMeshCoord)
 	do dir=1,6
 		do neighbor=1,myMesh(elem)%numNeighbors(dir)
 			globalNeighbor=globalMeshConnect(globalCell,dir,neighbor)
@@ -1943,7 +1953,8 @@ use DerivedType
 use mod_srscd_constants
 implicit none
 
-double precision, allocatable :: globalMeshCoord(:,:), procCoordList(:,:)
+double precision, allocatable :: globalMeshCoord(:,:)
+double precision, allocatable :: procCoordList(:,:)
 integer elem, i
 
 do 10 i=1,myProc%numtasks

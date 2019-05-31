@@ -21,6 +21,9 @@ type(processorData) myProc								!<Contains processor information (id, neighbor
 type(mesh), allocatable :: myMesh(:)					!<Contains (local) mesh information
 type(boundaryMesh), allocatable ::  myBoundary(:,:)		!<Boundary elements (direction, element #)
 integer numCells										!<Number of cells in local mesh
+integer totalMesh               !total meshes in the sysytem
+integer totalX,totalY,totalZ
+integer localX,localY,localZ
 
 !reaction and defect lists
 type(reaction), pointer :: reactionList(:)				!<List of reactions in local (coarse) mesh
@@ -40,7 +43,7 @@ integer numCellsCascade									!<number of volume elements within a cascade (fi
 integer numxCascade										!<number of elements in cascade x-direction
 integer numyCascade										!<number of elements in cascade y-direction
 integer numzCascade										!<number of elements in cascade z-direction
-double precision, allocatable :: globalMeshCoord(:,:)
+!double precision, allocatable :: globalMeshCoord(:,:)
 integer, allocatable :: cascadeConnectivity(:,:) 		!<connectivity matrix for cascade meshes (same for all fine meshes)
 double precision fineLength								!<length of a cascade volume element (nm)
 double precision cascadeElementVol						!<volume of a cascade element (nm^3)
@@ -95,10 +98,9 @@ integer vacancyEverMesh         !Initial number of vacancies in one mesh
 integer SIAEverMesh             !Initial number of SIAs in one mesh
 integer initialTotalV
 integer initialTotalSIA
-integer totalMesh               !total meshes in the sysytem
 
-double precision, allocatable :: VmeshCoordinatesList(:.:)
-double precision, allocatable :: ImeshCoordinatesList(:.:)
+double precision, allocatable :: VcoordinateList(:,:)
+double precision, allocatable :: IcoordinateList(:,:)
 double precision meshLength
 
 !For testing
