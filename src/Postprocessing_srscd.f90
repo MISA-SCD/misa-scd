@@ -36,7 +36,7 @@ if(myProc%taskid==MASTER) then
 	do i=1,numCells
 		defectCurrent=>defectList(i)%next
 		write(82,*) 'coordinates', myMesh(i)%coordinates, 'cell', i
-        write(82,*) 'Cu',Tab, 'V',Tab, 'SIA_m',Tab, 'SIA_im',Tab, 'num'
+        write(82,*) 'Cu  ', 'V  ','SIA_m  ', 'SIA_im  ', 'num  '
 		do while(associated(defectCurrent))
 			write(82,*) defectCurrent%defectType, defectCurrent%num
 			defectCurrent=>defectCurrent%next
@@ -60,7 +60,7 @@ if(myProc%taskid==MASTER) then
 
             !!call MPI_RECV(coordinatesRecv,3,MPI_DOUBLE_PRECISION,i,100,MPI_COMM_WORLD,status,ierr)
             write(82,*) 'coordinates',(cellDefectRecv(l,1),l=1,3) , 'cell', j
-            write(82,*) 'Cu',Tab, 'V',Tab, 'SIA_m',Tab, 'SIA_im',Tab, 'num'
+            write(82,*) 'Cu  ', 'V  ', 'SIA_m  ', 'SIA_im  ', 'num'
 
             !!call MPI_RECV(cellDefectRecv,numDefectsRecv*(numSpecies+2),MPI_DOUBLE_PRECISION,i,102,MPI_COMM_WORLD,status,ierr)
 
@@ -388,7 +388,7 @@ if(myProc%taskid==MASTER) then
 	!Output defect list
 !	write(*,*) 'Defects ', 'num'
     !Output totdat.out
-	write(83,*) 'Cu',Tab,'V',Tab,'SIA_m',Tab,'SIA_im',Tab,'num'
+	write(83,*) 'Cu  ','V  ','SIA_m  ','SIA_im  ','num'
 	defectCurrentList=>outputDefectList
 	
 	!Initialize Defect counters

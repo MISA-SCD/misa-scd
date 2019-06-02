@@ -6,7 +6,7 @@
 
 !Tell computer location of mesh input file
 meshFile
-'../../inputs/Mesh_IsoAnneal.txt'
+'../../meshes/Mesh_IsoAnneal.txt'
 
 !Tell computer if this is a uniform or non-uniform mesh file
 meshType

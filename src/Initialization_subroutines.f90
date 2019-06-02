@@ -17,6 +17,8 @@ subroutine initializeVIdefect()
 			(myProc%globalCoord(4)-myProc%globalCoord(3))/lattice * &
 			(myProc%globalCoord(6)-myProc%globalCoord(5))/lattice * 2
 
+	CuAtomsEverMesh = anint(CuContent*totalAtoms /dble(totalMesh))
+
 	initialCeqv = dexp(-FormSingle(1,2)%Ef / (kboltzmann*temperature))
 	initialCeqi = dexp(-FormSingle(1,3)%Ef / (kboltzmann*temperature))
 

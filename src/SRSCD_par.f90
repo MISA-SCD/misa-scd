@@ -39,8 +39,8 @@ double precision rateDiff	!temporary
 type(Reaction), pointer :: reactionTemp
 
 !2019.05.13 Add: used to change double to integer
-double precision CuAtomsEverMeshTemp
-character*20 CuAtomsEverMeshTemp2
+!double precision CuAtomsEverMeshTemp
+!character*20 CuAtomsEverMeshTemp2
 
 !***********************************************************************
 !7.2.2015 Adding an iterative search for sink efficiency. Variables below:
@@ -125,18 +125,16 @@ end interface
 
 call cpu_time(time1)
 
-Tab = character(9)  !used to output whitespace
+!Tab = character(9)  !used to output whitespace
 
 open(81, file='parameters.txt',action='read', status='old')
 
 !Initialize MPI interface
-
 call MPI_INIT(ierr)
 call MPI_COMM_SIZE(MPI_COMM_WORLD, myProc%numtasks, ierr)		!read number of processors
 call MPI_COMM_RANK(MPI_COMM_WORLD, myProc%taskid, ierr)			!read processor ID of this processor
 
 !Initialize input parameters
-
 call initializeMesh()			!open Mesh_xx.txt file and carry out parallel mesh initialization routine
 call selectMaterialInputs()		!open material input files (Fe_Defects.txt) and read all relevant data (migration and binding energies, etc)
 call readCascadeList()			!input cascade list (Fe_Cascades.txt) from file to cascadeList (global variable)
@@ -241,12 +239,12 @@ end if
 !random number seeds.
 !**********************************************
 !2019.05.04 add
-atomsEverMesh = ((myProc%globalCoord(2)-myProc%globalCoord(1))/lattice * &
-		(myProc%globalCoord(4)-myProc%globalCoord(3))/lattice * &
-		(myProc%globalCoord(6)-myProc%globalCoord(5))/lattice * 2) / totalMesh
-CuAtomsEverMeshTemp = aint(CuContent * atomsEverMesh)
-write(CuAtomsEverMeshTemp2,'(f20.0)') CuAtomsEverMeshTemp
-read(CuAtomsEverMeshTemp2,'(i19)') CuAtomsEverMesh
+!atomsEverMesh = ((myProc%globalCoord(2)-myProc%globalCoord(1))/lattice * &
+!		(myProc%globalCoord(4)-myProc%globalCoord(3))/lattice * &
+!		(myProc%globalCoord(6)-myProc%globalCoord(5))/lattice * 2) / totalMesh
+!CuAtomsEverMeshTemp = aint(CuContent * atomsEverMesh)
+!write(CuAtomsEverMeshTemp2,'(f20.0)') CuAtomsEverMeshTemp
+!read(CuAtomsEverMeshTemp2,'(i19)') CuAtomsEverMesh
 
 !initialCeqv = dexp(-FormSingle(1,2)%Ef / (kboltzmann*temperature))
 !initialCeqi = dexp(-FormSingle(1,3)%Ef / (kboltzmann*temperature))
@@ -259,8 +257,6 @@ read(CuAtomsEverMeshTemp2,'(i19)') CuAtomsEverMesh
 
 !**********************************************
 !Initialization
-Vconcent = initialCeqv
-SIAconcent = initialCeqi
 
 call initializeRandomSeeds()		!set unique random number seeds in each processor
 allocate(defectList(numCells))		!Create list of defects - array
@@ -269,6 +265,7 @@ allocate(totalRateVol(numCells))	!Create array of total rates in each volume ele
 call initializeVIdefect()			!2019.05.30 Add
 call initializeDefectList()			!initialize defects within myMesh
 call initializeBoundaryDefectList()	!initialize defects on boundary of myMesh (in other procs)
+call computeVconcent()
 call initializeReactionList()		!initialize reactions within myMesh
 call initializeTotalRate()			!initialize totalRate and maxRate using reactionList(:)
 call initializeDebugRestart()		!input defects into coarse mesh from restart file (for debugging)
