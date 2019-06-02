@@ -1,5 +1,3 @@
-! $Header: /home/CVS//srscd/src/Defect_attributes.f90,v 1.13 2015/10/09 15:36:46 aydunn Exp $
-
 !*****************************************************************************************
 !>double precision function find diffusivity - returns the diffusivity of a given defect type
 !!
@@ -30,12 +28,12 @@ double precision, parameter :: Param=0d0
 !If it is in neither, it outputs an error message (defect type should not exist)
 !***************************************************************************************************
 
-do i=1,numSingleDiff(matNum)
+outer: do i=1,numSingleDiff(matNum)
 	numSame=0
 	do j=1,numSpecies
 		if(DefectType(j)==DiffSingle(matNum,i)%defectType(j)) then
 			numSame=numSame+1
-		endif
+		end if
 	end do
 	if (numSame==numSpecies) then
 		if(matNum==2) then
@@ -43,25 +41,26 @@ do i=1,numSingleDiff(matNum)
 					.AND. totalDPA > 0 .AND. DPARate > 0d0) then
 				Diff=DiffSingle(matNum,i)%D*dexp(-(DiffSingle(matNum,i)%Em-Param)/(kboltzmann*temperature)) * &
 							(Vconcent / initialCeqv)
+				exit outer
 			else
 				Diff=DiffSingle(matNum,i)%D*dexp(-(DiffSingle(matNum,i)%Em-Param)/(kboltzmann*temperature))
+				exit outer
 			end if
-			!Diff=DiffSingle(matNum,i)%D*dexp(-(DiffSingle(matNum,i)%Em-Param)/(kboltzmann*temperature))
-			exit
+
 		else
 			if(DefectType(1)==1 .AND. DefectType(2)==0 .AND. DefectType(3)==0 .AND. DefectType(4)==0 &
 					.AND. totalDPA > 0 .AND. DPARate > 0d0) then
 				Diff=DiffSingle(matNum,i)%D*dexp(-DiffSingle(matNum,i)%Em/(kboltzmann*temperature)) * &
 					(Vconcent / initialCeqv)
+				exit  outer
 			else
 				Diff=DiffSingle(matNum,i)%D*dexp(-DiffSingle(matNum,i)%Em/(kboltzmann*temperature))
+				exit outer
 			end if
-			!Diff=DiffSingle(matNum,i)%D*dexp(-DiffSingle(matNum,i)%Em/(kboltzmann*temperature))
-			exit
 		
 		end if
 	end if
-end do
+end do outer
 
 if(i==numSingleDiff(matNum)+1) then	!did not find defect in single defect list
 	do i=1,numFuncDiff(matNum)
@@ -85,8 +84,8 @@ if(i==numSingleDiff(matNum)+1) then	!did not find defect in single defect list
 		endif
 	end do
 	if(i==numFuncDiff(matNum)+1) then
-		write(*,*) 'error defect diffusion not allowed'
-		write(*,*) DefectType
+		!write(*,*) 'error defect diffusion not allowed'
+		!write(*,*) DefectType
 		Diff=0d0
 	endif
 endif
@@ -200,17 +199,17 @@ double precision BindingCompute
 !Temporary: used as a parameter to vary the binding energy of all defects on GB
 double precision, parameter :: Param=0d0
 
-do 10 i=1,numSingleBind(matNum)
+do i=1,numSingleBind(matNum)
 	numSame=0
 	numSameProduct=0
-	do 11 j=1,numSpecies
+	do j=1,numSpecies
 		if(DefectType(j)==BindSingle(matNum,i)%defectType(j)) then
 			numSame=numSame+1
 		endif
 		if(productType(j)==BindSingle(matNum,i)%product(j)) then
 			numSameProduct=numSameProduct+1
 		endif
-	11 continue
+	end do
 	if (numSame==numSpecies .AND. numSameProduct==numSpecies) then
 		if(matNum==2) then
 			
@@ -224,18 +223,18 @@ do 10 i=1,numSingleBind(matNum)
 			
 		endif
 	endif
-10 continue
+end do
 
 if(i==numSingleBind(matNum)+1) then	!did not find defect in single defect list
-	do 12 i=1,numFuncBind(matNum)
+	do i=1,numFuncBind(matNum)
 		numSame=0
 		numSameProduct=0
-		do 13 j=1,numSpecies
+		do j=1,numSpecies
 			if(DefectType(j)==0 .AND. BindFunc(matNum,i)%defectType(j)==0) then
 				numSame=numSame+1
-			else if(DefectType(j) .NE. 0 .AND. BindFunc(matNum,i)%defectType(j)==1) then
-				if(DefectType(j) .GE. BindFunc(matNum,i)%min(j)) then
-				if(DefectType(j) .LE. BindFunc(matNum,i)%max(j) .OR. BindFunc(matNum,i)%max(j)==-1) then
+			else if(DefectType(j) /= 0 .AND. BindFunc(matNum,i)%defectType(j)==1) then
+				if(DefectType(j) >= BindFunc(matNum,i)%min(j)) then
+				if(DefectType(j) <= BindFunc(matNum,i)%max(j) .OR. BindFunc(matNum,i)%max(j)==-1) then
 					numSame=numSame+1
 				endif
 				endif
@@ -244,10 +243,10 @@ if(i==numSingleBind(matNum)+1) then	!did not find defect in single defect list
 				numSameProduct=numSameProduct+1
 			else if(productType(j) == 1 .AND. BindFunc(matNum,i)%product(j)==1) then	!used to find dissociation binding energy
 				numSameProduct=numSameProduct+1
-			else if(productType(j) .NE. 0 .AND. BindFunc(matNum,i)%product(j)==-1) then	!used to identify de-pinning binding energy
+			else if(productType(j) /= 0 .AND. BindFunc(matNum,i)%product(j)==-1) then	!used to identify de-pinning binding energy
 				numSameProduct=numSameProduct+1
 			endif
-		13 continue
+		end do
 		if(numSame==numSpecies .AND. numSameProduct==numSpecies) then
 			
 			if(matNum==2) then	!Adjust binding energies on GB
@@ -265,11 +264,11 @@ if(i==numSingleBind(matNum)+1) then	!did not find defect in single defect list
 			endif
 			
 		endif
-	12 continue
+	end do
 	if(i==numFuncBind(matNum)+1) then
-		write(*,*) 'error dissociation reaction not allowed'
-		write(*,*) DefectType
-		write(*,*) ProductType
+		!write(*,*) 'error dissociation reaction not allowed'
+		!write(*,*) DefectType
+		!write(*,*) ProductType
 		Eb=0d0
 	end if
 end if
@@ -296,7 +295,7 @@ use mod_srscd_constants
 implicit none
 
 integer DefectType(numSpecies), product(numSpecies)
-integer functionType, numParameters, num, HeNum, VNum, SIANum, i
+integer functionType, numParameters, num, CuNum, VNum, SIANum, i
 double precision parameters(numParameters)
 double precision Eb, Eb_VOnly, Eb_HeV
 
@@ -304,114 +303,47 @@ double precision Eb, Eb_VOnly, Eb_HeV
 !This function computes diffusivity using functional form and parameters given in the input file
 !***************************************************************************************************
 
-if(functionType==1) then
-	!used for zero functions
-	Eb=0d0
-else if(functionType==2) then
+if(functionType==2) then
 	!used for Cu cluster dislocation
-	Eb=parameters(1)+parameters(2)*(dble(HeNum)**(0.85d0)-dble(HeNum+1)**(0.85d0))
-else if(functionType==3) then
-	!Mobile SIA loop diffusivity
-	write(*,*) 'error no functionType 3 in BindingCompute'
+	Eb=parameters(1)*kboltzmann-parameters(2)*kboltzmann*tempStore- &
+			(36d0*pi)**(1d0/3d0)*atomsize**(2d0/3d0)*parameters(3)*(dble(CuNum)**(2d0/3d0)-dble(CuNum-1)**(2d0/3d0))
+
 else if(functionType==4) then
 	num=0
-	do 10 i=1,numSpecies
-		if(DefectType(i) .GT. num) then
+	do i=1,numSpecies
+		if(DefectType(i) > num) then
 			num=DefectType(i)
 		endif
-	10 continue
-!
-! Reference:
-!
+	end do
+
 	Eb=parameters(1)+(parameters(2)-parameters(1))*(dble(num)**(2d0/3d0)-dble(num-1)**(2d0/3d0))/(2d0**(2d0/3d0)-1d0)
-else if(functionType==5) then
-	write(*,*) 'error no functionType 5 in BindingCompute'
+
 else if(functionType==6) then
-	HeNum=DefectType(1)
+	CuNum=DefectType(1)
 	VNum=DefectType(2)
-	Eb=parameters(1)+parameters(2)*(dble(HeNum)**(0.85d0)-dble(HeNum+1)**(0.85d0))-&
+	Eb=parameters(1)+parameters(2)*(dble(CuNum)**(0.85d0)-dble(CuNum+1)**(0.85d0))-&
 			parameters(3)*(dble(VNum)**(1d0/3d0)-dble(VNum)**(2d0/3d0))
 
-	!<if(dble(HeNum)/dble(VNum) .LE. .5d0) then
-		!helium cannot dissociate from HeV clusters with mostly V
-	!<	Eb=10d0
-	!<else
-		!Use He_mV_n binding energy (does not apply for low m/n ratios)
-		!Eb=parameters(1)-parameters(2)*dlog(dble(HeNum)/dble(VNum))/dlog(10d0)-&
-		!	parameters(3)*dlog(dble(HeNum)/dble(VNum))**2d0/(dlog(10d0)**2d0) !Marion and Bulatov, from Terentyev
-		
-		!EDIT: 2014.10.08: Helium cannot dissociate from HeV clusters at all.
-	!<	Eb=10d0
-		
-		
-	!<	if(Eb .LT. 0d0) then
-	!<		Eb=0d0
-	!<	endif
-	
-	!<endif
 else if(functionType==7) then
-	HeNum=DefectType(1)
+	CuNum=DefectType(1)
 	VNum=DefectType(2)
 	Eb=parameters(1)-parameters(2)*(dble(VNum)**(1d0/3d0)-dble(VNum+1)**(1d0/3d0))+&
-			parameters(3)*(dble(VNum)**(2d0/3d0)-dble(VNum+1)**(2d0/3d0))-parameters(3)*dble(HeNum)*&
+			parameters(3)*(dble(VNum)**(2d0/3d0)-dble(VNum+1)**(2d0/3d0))-parameters(3)*dble(CuNum)*&
 			(dble(VNum)**(1d0/3d0)-dble(VNum+1)**(1d0/3d0)+dble(VNum)**(2d0/3d0)-dble(VNum+1)**(2d0/3d0))
 
-!	if(dble(HeNum)/dble(VNum) .LE. .5d0) then
-
-!		!use vacancy cluster binding energy
-!		Eb=parameters(1)+(parameters(2)-parameters(1))*(dble(VNum)**(2d0/3d0)-dble(VNum-1)**(2d0/3d0))/(2d0**(2d0/3d0)-1d0)
-		
-!		if(Eb .LT. 0d0) then
-!			Eb=0d0
-!		endif
-
-!	else
-	
-		!vacancy cluster binding energy
-!
-! Reference:
-!
-	!<	Eb_VOnly=parameters(1)+(parameters(2)-parameters(1))*(dble(VNum)**(2d0/3d0)-dble(VNum-1)**(2d0/3d0))/(2d0**(2d0/3d0)-1d0)
-		
-	!<	if(Eb_VOnly .LT. 0d0) then
-	!<		Eb_VOnly=0d0
-	!<	endif
-
-		!He_mV_n binding energy (does not apply for low m/n ratios)
-		!Eb_HeV=parameters(3)+parameters(4)*dlog(dble(HeNum)/dble(VNum))/dlog(10d0)+&
-		!	parameters(5)*dlog(dble(HeNum)/dble(VNum))**2d0/(dlog(10d0)**2d0) !Marion and Bulatov, from Terentyev
-	!<	Eb_HeV=parameters(3)*(dble(HeNum)/dble(VNum))**parameters(4)
-		
-	!<	if(Eb_HeV .LT. 0d0) then
-	!<		Eb_HeV=0d0
-	!<	endif
-		
-		!Modification 2015.03.19: choose the larger binding energy between the V_only functional form and the He_V functional form
-	
-!		if(Eb_VOnly .GT. Eb_HeV) then
-!			Eb=Eb_VOnly+1d0
-!		else
-!			Eb=Eb_HeV+1d0
-!		endif
-
-	!<	Eb=Eb_VOnly+Eb_HeV
-		
-!	endif
-	
-else if(functionType==8) then
+!!else if(functionType==8) then
 	
 	!SIA sessile - glissile binding energy
 	!Using (made-up) empirical functional form
-	SIANum=DefectType(4)
+!	SIANum=DefectType(4)
 	
 	!2/3 power law
 	!Eb=parameters(1)-parameters(2)*(dble(SIANum)**(2d0/3d0)-dble(SIANum-1)**(2d0/3d0))
 	
 	!linear binding energy dependence
-!
-! Reference:
-!
-	Eb=parameters(1)*SIANum+parameters(2)
+
+	! Reference:
+!!	Eb=parameters(1)*SIANum+parameters(2)
 
 else
 	write(*,*) 'error incorrect Eb function chosen'
@@ -471,34 +403,34 @@ integer cell
 
 strainE=0d0
 
-do 10 i=1,numDipole
+do i=1,numDipole
 	
 	!search for defect type in dipole tensor
 	same=0
-	do 11 j=1,numSpecies
-		if(defectType(j) .GE. dipoleStore(i)%min(j) .AND. defectType(j) .LE. dipoleStore(i)%max(j)) then
+	do j=1,numSpecies
+		if(defectType(j) >= dipoleStore(i)%min(j) .AND. defectType(j) <= dipoleStore(i)%max(j)) then
 			same=same+1
 		endif
-	11 continue
+	end do
 	
 	if(same==numSpecies) then
 		exit
 	endif
 	
-10 continue
+end do
 
-if(i .LE. numDipole) then	!we have identified a dipole tensor
+if(i <= numDipole) then	!we have identified a dipole tensor
 	write(*,*) 'finding strain energy'
 	write(*,*) defectType
 	
-	do 12 j=1,6
-		if(j .LE. 3) then
+	do j=1,6
+		if(j <= 3) then
 			strainE=strainE+myMesh(cell)%strain(j)*dipoleStore(i)%equilib(j)
 		else
 			strainE=strainE+2d0*myMesh(cell)%strain(j)*dipoleStore(i)%equilib(j)
 		endif
 		write(*,*) 'j', j, 'strain', myMesh(cell)%strain(j), 'dipole', dipoleStore(i)%equilib(j)
-	12 continue
+	end do
 
 	read(*,*)
 endif
@@ -531,31 +463,31 @@ integer cell, dir
 
 strainE=0d0
 
-do 10 i=1,numDipole
+do i=1,numDipole
 	
 	!search for defect type in dipole tensor
 	same=0
-	do 11 j=1,numSpecies
-		if(defectType(j) .GE. dipoleStore(i)%min(j) .AND. defectType(j) .LE. dipoleStore(i)%max(j)) then
+	do j=1,numSpecies
+		if(defectType(j) >= dipoleStore(i)%min(j) .AND. defectType(j) <= dipoleStore(i)%max(j)) then
 			same=same+1
 		endif
-	11 continue
+	end do
 	
 	if(same==numSpecies) then
 		exit
 	endif
 	
-10 continue
+end do
 
-if(i .LE. numDipole) then	!we have identified a dipole tensor
+if(i <= numDipole) then	!we have identified a dipole tensor
 
-	do 12 j=1,6
-		if(j .LE. 3) then
+	do j=1,6
+		if(j <= 3) then
 			strainE=strainE+myBoundary(dir,cell)%strain(j)*dipoleStore(i)%equilib(j)
 		else
 			strainE=strainE+2d0*myBoundary(dir,cell)%strain(j)*dipoleStore(i)%equilib(j)
 		endif
-	12 continue
+	end do
 
 endif
 

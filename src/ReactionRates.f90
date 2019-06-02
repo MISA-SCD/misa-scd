@@ -66,22 +66,22 @@ numProducts=2
 allocate(reactants(numReactants,numSpecies))
 allocate(products(numProducts,numSpecies))
 
-
-do 10 i=1, numDissocReac(matNum)
+!Dissociation reactions
+do i=1, numDissocReac(matNum)
 	count=0
 	
 	!Check if the defect type is accepted by this dissociation reaction
-	do 11 j=1,numSpecies
+	do j=1,numSpecies
 		if(defectType(j) == 0 .AND. DissocReactions(matNum,i)%reactants(1,j) == 0) then
 			count=count+1
-		else if(defectType(j) .NE. 0 .AND. DissocReactions(matNum,i)%reactants(1,j) .NE. 0) then
-			if(defectType(j) .GE. DissocReactions(matNum,i)%min(j)) then
-				if((defectType(j) .LE. DissocReactions(matNum,i)%max(j)) .OR. DissocReactions(matNum,i)%max(j)==-1) then
+		else if(defectType(j) /= 0 .AND. DissocReactions(matNum,i)%reactants(1,j) /= 0) then
+			if(defectType(j) >= DissocReactions(matNum,i)%min(j)) then
+				if((defectType(j) <= DissocReactions(matNum,i)%max(j)) .OR. DissocReactions(matNum,i)%max(j)==-1) then
 					count=count+1
-				endif
-			endif
-		endif
-	11 continue
+				end if
+			end if
+		end if
+	end do
 	
 	if(count==numSpecies) then	!this defect type is accepted for this dissociation reaction
 		!point reactionCurrent at the reaction and reactionPrev at the reaction before it
@@ -89,7 +89,7 @@ do 10 i=1, numDissocReac(matNum)
 		!to the end of the list)
 		
 		!Create temporary arrays with the defect types associated with this reaction (dissociation)
-		do 12 j=1,numSpecies
+		do j=1,numSpecies
 			
 			reactants(1,j)=defectType(j)
 			
@@ -97,15 +97,15 @@ do 10 i=1, numDissocReac(matNum)
 			
 			products(1,j)=reactants(1,j)-products(2,j)
 
-		12 continue
+		end do
 		
 		!************************************************************************************
 		!Hard coded: Frenkel pair creation from HeV cluster with He/V .GT. 5
 		!HARD CODED: what to do with dissociation of mobile defects from sessile SIA clusters
 		!************************************************************************************
 		
-		if(products(1,3) .LT. 0) then
-			if(products(1,1) .NE. 0 .AND. products(1,2) .NE. 0) then	!Kick-out mechanism
+		if(products(1,3) .LT. 0) then	!numSIA_m <0
+			if(products(1,1) /= 0 .AND. products(1,2) /= 0) then	!Kick-out mechanism
 				products(1,3)=0
 				products(1,2)=products(1,2)+products(2,3)
 			else														!dissociation of mobile defects from sessile SIA clusters
@@ -119,7 +119,7 @@ do 10 i=1, numDissocReac(matNum)
 		!***********************************
 		
 		!sessile cluster becomes mobile when it shrinks below max3DInt
-		if(products(1,4) .NE. 0 .AND. products(1,4) .LE. max3DInt) then
+		if(products(1,4) /= 0 .AND. products(1,4) /= max3DInt) then
 			products(1,3)=products(1,4)
 			products(1,4)=0
 		endif
@@ -229,7 +229,7 @@ do 10 i=1, numDissocReac(matNum)
 		endif
 
 	endif
-10 continue
+end do
 
 !Sink reactions
 
@@ -2678,41 +2678,41 @@ end function
 !! an arbitrary number of unique formulas for computing reaction rates. Each formula has a
 !! function type associated with it, that function type is assigned in the input file.
 
-double precision function findReactionRateFine(cell, reactionParameter)
-use mod_srscd_constants
-use DerivedType
-implicit none
+!double precision function findReactionRateFine(cell, reactionParameter)
+!use mod_srscd_constants
+!use DerivedType
+!implicit none
 
-integer cell
-type(reactionParameters) :: reactionParameter
+!integer cell
+!type(reactionParameters) :: reactionParameter
 
-integer numReactants, numProducts
-integer, allocatable :: reactants(:,:), products(:,:)
-double precision Diff, Eb, volume, HeImplantRateLocal, zCoord
-integer n, numClusters
+!integer numReactants, numProducts
+!integer, allocatable :: reactants(:,:), products(:,:)
+!double precision Diff, Eb, volume, HeImplantRateLocal, zCoord
+!integer n, numClusters
 
-if(ReactionParameter%functionType==12) then	!He implantation
+!if(ReactionParameter%functionType==12) then	!He implantation
 	
 	!This is the rate of Helium implantation events inside a cell with given volume
-	volume=cascadeElementVol
+!	volume=cascadeElementVol
 	
-	if(implantDist=='Uniform') then
-		findReactionRateFine=volume*HeDPARatio*DPARate/atomsize
-	else if(implantDist=='NonUniform') then
+!	if(implantDist=='Uniform') then
+!		findReactionRateFine=volume*HeDPARatio*DPARate/atomsize
+!	else if(implantDist=='NonUniform') then
 		
-		zCoord=myMesh(cell)%coordinates(3)
-		HeImplantRateLocal=findHeImplantRateLocal(zCoord)
-		findReactionRateFine=volume*HeImplantRateLocal/atomsize
+!		zCoord=myMesh(cell)%coordinates(3)
+!		HeImplantRateLocal=findHeImplantRateLocal(zCoord)
+!		findReactionRateFine=volume*HeImplantRateLocal/atomsize
 		
-	else
-		write(*,*) 'Error implant distribution not recognized'
-	endif
+!	else
+!		write(*,*) 'Error implant distribution not recognized'
+!	endif
 	
-else
-	write(*,*) 'error function type', ReactionParameter%functionType
-endif
+!else
+!	write(*,*) 'error function type', ReactionParameter%functionType
+!endif
 
-end function
+!end function
 
 !***************************************************************************************************
 !This function will return the reaction rate of a function of type given by reactionParameter and
@@ -3062,8 +3062,8 @@ if(reactionParameter%functionType==3) then
 	
 	if(defectType(3) /= 0) then !interstitial defect
 		reactionRate=Zint*dislocationDensity*diff*dble(num)
-	else
-		reactionRate=dislocationDensity*diff*dble(num)
+	else	!vacancy defect
+		reactionRate=Zv*dislocationDensity*diff*dble(num)
 	endif
 else
 	write(*,*) 'error sink function type only admits 3'

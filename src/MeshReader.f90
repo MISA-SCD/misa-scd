@@ -1055,7 +1055,7 @@ integer function findGlobalCell(coord, gCoord)
 implicit none
 
 double precision coord(3)
-!double precision, allocatable :: gCoord(:,:)
+double precision, allocatable :: gCoord(:,:)
 integer i
 logical flag
 

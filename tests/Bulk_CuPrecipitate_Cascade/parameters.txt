@@ -68,7 +68,7 @@ implantFile
 start			!begin parameters
 
 temperature		!Temperature, in K
-563d0
+573d0
 
 CuContent       !Initial content of Cu in iron
 0.5d-2
@@ -77,10 +77,7 @@ annealTemp
 563d0			!Annealing temperature, in K
 				
 dpaRate			! NOTE: if the implant profile is non-uniform, this should be the AVERAGE DPA rate.
-2d-9
-
-HeDPA			! Helium/DPA ratio! He ImplantRate (atomic fraction / sec) - only used if implantDist='Uniform'
-0d0				!(NOTE: if implantDist='NonUniform', must have HeDPA .NE. 0d0 to add nonuniform He implant rates)	
+1.4d-7
 
 atomSize
 1.182d-2 		!(Fe) 			8.79d-3 		!(Cu)		! atomsize (nm^3)
@@ -101,7 +98,7 @@ grainSize
 300d0			! Mean free path for interstitial clusters to travel before removal (nm)
 
 dislocDensity
-1d-6			! dislocation density (nm^-2)
+5.0d-5			! dislocation density (nm^-2)
 
 impurityConc
 30d-6			! carbon impurity concentration (atomic fraction)

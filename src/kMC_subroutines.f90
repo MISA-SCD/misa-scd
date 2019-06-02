@@ -4038,11 +4038,8 @@ do while(associated(defectUpdateCurrent))
 	if(defectUpdateCurrent%proc==myProc%taskid) then
 		
 		!*******************************************************************************************
-		!
 		! defectUpdateCurrent%cascadeNumber==0 means a defect has changed in the coarse mesh
-		!
 		! if the defect is within the coarse mesh, then update all relevant reactions in the coarse mesh
-		!
 		!*******************************************************************************************
 
 		if(defectUpdateCurrent%cascadeNumber==0) then

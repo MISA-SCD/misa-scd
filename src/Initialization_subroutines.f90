@@ -32,7 +32,7 @@ subroutine initializeVIdefect()
 
 			inter: do cell=1, totalMesh
 				rtemp = rtemp + cell/totalMesh
-				if(r1 <= rtemp) tnen
+				if(r1 <= rtemp) then
 					tempID = cell-1
 					x = mod(tempID,totalX) +1
 					tempID = tempID /totalX
@@ -67,9 +67,8 @@ use DerivedType
 use mod_srscd_constants
 implicit none
 
-integer cell, i, x,y,z,tempID
+integer cell, i
 type(defect), pointer :: defectCurrent
-double precision tempCoordinate(3)
 
 nullify(defectCurrent)
 
@@ -119,7 +118,7 @@ do cell=1,numCells
 
 	nullify(defectCurrent%next)
 end do
-
+if(initialTotalV > 0) then
 do i=1, initialTotalV
 
 	if(VcoordinateList(i,1) > myProc%localCoord(1) .AND. &
@@ -144,7 +143,7 @@ do i=1, initialTotalV
 		end do inter
 	end if
 end do
-
+end if
 
 end subroutine
 
@@ -895,6 +894,7 @@ do cell=1,numCells
 					nullify(defectCurrent%next)
 
 					!V
+					if(initialTotalV>0) then
 					do j=1, initialTotalV
 						if(dir==1) then
 							if(VcoordinateList(i,1)==(myMesh(cell)%coordinates(1)+meshLength) .AND. &
@@ -971,6 +971,7 @@ do cell=1,numCells
 						end if
 
 					end do
+					end if
 
 				end if
 
@@ -1048,44 +1049,44 @@ do cell=1,numCellsCascade
 	CascadeCurrent%localDefects(cell)%cellNumber=cell   !fineMeshID
 
     !initialize the reaction list for each fine mesh
-	if(HeDPARatio > 0d0) then
+!	if(HeDPARatio > 0d0) then
 	
-		CascadeCurrent%reactionList(cell)%numReactants=0
-		CascadeCurrent%reactionList(cell)%numProducts=1
-		allocate(CascadeCurrent%reactionList(cell)%products(CascadeCurrent%reactionList(cell)%numProducts, numSpecies))
+!		CascadeCurrent%reactionList(cell)%numReactants=0
+!		CascadeCurrent%reactionList(cell)%numProducts=1
+!		allocate(CascadeCurrent%reactionList(cell)%products(CascadeCurrent%reactionList(cell)%numProducts, numSpecies))
 		
 		!search ImplantList for He implant reactions
-		do reac=1,numImplantReac(matNum)
-			if(ImplantReactions(matNum,reac)%numReactants==0 .AND. ImplantReactions(matNum,Reac)%numProducts==1) then
-				exit
-			endif
-		end do
+!		do reac=1,numImplantReac(matNum)
+!			if(ImplantReactions(matNum,reac)%numReactants==0 .AND. ImplantReactions(matNum,Reac)%numProducts==1) then
+!				exit
+!			endif
+!		end do
 		
-		do i=1,ImplantReactions(matNum,reac)%numProducts
-			do j=1,numSpecies
-				CascadeCurrent%reactionList(cell)%products(i,j)=ImplantReactions(matNum,reac)%products(i,j)
-			end do
-			CascadeCurrent%reactionList(cell)%cellNumber(i)=cell
-			CascadeCurrent%reactionList(cell)%taskid(i)=myMesh(cell)%proc
-		end do
+!		do i=1,ImplantReactions(matNum,reac)%numProducts
+!			do j=1,numSpecies
+!				CascadeCurrent%reactionList(cell)%products(i,j)=ImplantReactions(matNum,reac)%products(i,j)
+!			end do
+!			CascadeCurrent%reactionList(cell)%cellNumber(i)=cell
+!			CascadeCurrent%reactionList(cell)%taskid(i)=myMesh(cell)%proc
+!		end do
 		
 		!Find reaction rate for He ion implantation using ImplantReactions(reac), which is input from file.
-		CascadeCurrent%reactionList(cell)%reactionRate=findReactionRateFine(CascadeCurrent%cellNumber, ImplantReactions(matNum,reac))
+!		CascadeCurrent%reactionList(cell)%reactionRate=findReactionRateFine(CascadeCurrent%cellNumber, ImplantReactions(matNum,reac))
 		
 		!Add this reaction rate to total rate both for the cascade and for the entire volume element
-		totalRate=totalRate+CascadeCurrent%reactionList(cell)%reactionRate
-		CascadeCurrent%totalRate(cell)=CascadeCurrent%totalRate(cell)+CascadeCurrent%reactionList(cell)%reactionRate
+!		totalRate=totalRate+CascadeCurrent%reactionList(cell)%reactionRate
+!		CascadeCurrent%totalRate(cell)=CascadeCurrent%totalRate(cell)+CascadeCurrent%reactionList(cell)%reactionRate
 		
-		nullify(CascadeCurrent%reactionList(cell)%next)
+!		nullify(CascadeCurrent%reactionList(cell)%next)
 	
-	else
+!	else
 		
 		CascadeCurrent%reactionList(cell)%numReactants=0
 		CascadeCurrent%reactionList(cell)%numProducts=0
 		CascadeCurrent%reactionList(cell)%reactionRate=0d0
 		nullify(CascadeCurrent%reactionList(cell)%next)
 		
-	end if
+!	end if
 end do
 
 !defectCurrentCoarse and defectPrevCoarse will be used to peruse defects in coarse mesh and place in fine mesh
@@ -1444,7 +1445,7 @@ temperature=annealTemp
 
 !Coarse mesh
 
-do 10 cell=1,numCells
+do cell=1,numCells
 	reactionCurrent=>reactionList(cell)
 	
 	!remove this reaction rate from totalRate
@@ -1455,45 +1456,45 @@ do 10 cell=1,numCells
 	
 	reactionCurrent%reactionRate=0d0
 	
-	if(HeDPARatio .GT. 0d0) then
-		reactionCurrent=>reactionCurrent%next
+!	if(HeDPARatio .GT. 0d0) then
+!		reactionCurrent=>reactionCurrent%next
 		
 		!remove this reaction rate from totalRate
-		totalRate=totalRate-reactionCurrent%reactionRate
-		totalRateVol(cell)=totalRateVol(cell)-reactionCurrent%reactionRate
+!		totalRate=totalRate-reactionCurrent%reactionRate
+!		totalRateVol(cell)=totalRateVol(cell)-reactionCurrent%reactionRate
 		
-		reactionCurrent%reactionRate=0d0
-	endif
+!		reactionCurrent%reactionRate=0d0
+!	endif
 	
-10 continue
+end do
 
 !Fine mesh
 
 !Here, we only zero the first reaction rate if we have He implantation
 !(normally, no defects are implanted into the fine mesh except He)
 
-if(HeDPARatio .GT. 0d0) then
+!if(HeDPARatio .GT. 0d0) then
 
-	CascadeCurrent=>ActiveCascades
+!	CascadeCurrent=>ActiveCascades
 	
-	do 11 while(associated(CascadeCurrent))
+!	do 11 while(associated(CascadeCurrent))
 	
-		do 12 cell=1,numCellsCascade
+!		do 12 cell=1,numCellsCascade
 			
-			reactionCurrent=>CascadeCurrent%reactionList(cell)
+!			reactionCurrent=>CascadeCurrent%reactionList(cell)
 			
 			!remove this reaction rate from totalRate
-			totalRate=totalRate-reactionCurrent%reactionRate
-			CascadeCurrent%totalRate=CascadeCurrent%totalRate-reactionCurrent%reactionRate
+!			totalRate=totalRate-reactionCurrent%reactionRate
+!			CascadeCurrent%totalRate=CascadeCurrent%totalRate-reactionCurrent%reactionRate
 			
-			reactionCurrent%reactionRate=0d0
+!			reactionCurrent%reactionRate=0d0
 		
-		12 continue
+!		12 continue
 		
-		CascadeCurrent=>CascadeCurrent%next
+!		CascadeCurrent=>CascadeCurrent%next
 		
-	11 continue
+!	11 continue
 	
-endif
+!endif
 
 end subroutine

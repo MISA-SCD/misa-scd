@@ -24,6 +24,7 @@ integer numCells										!<Number of cells in local mesh
 integer totalMesh               !total meshes in the sysytem
 integer totalX,totalY,totalZ
 integer localX,localY,localZ
+double precision meshLength
 
 !reaction and defect lists
 type(reaction), pointer :: reactionList(:)				!<List of reactions in local (coarse) mesh
@@ -53,8 +54,8 @@ integer numMaterials						!<Number of material types (eg. copper, niobium or bul
 integer numSpecies							!<Number of chemical species (typically set to 4: He, V, SIA_glissile, SIA_sessile)
 
 type(formationSingle), allocatable :: FormSingle(:,:)           !<Parameters for formation of single defects
-type(diffusionFunction), allocatable :: DiffFunc(:,:)			!<Parameters for functional forms of diffusion rates for defects
 type(diffusionSingle), allocatable :: DiffSingle(:,:)			!<Parameters for diffusion of single defects
+type(diffusionFunction), allocatable :: DiffFunc(:,:)			!<Parameters for functional forms of diffusion rates for defects
 type(bindingSingle), allocatable :: BindSingle(:,:)				!<Parameters for binding of single defects
 type(bindingFunction), allocatable :: BindFunc(:,:)				!<Parameters for functional forms of binding energies for defects
 type(reactionParameters), allocatable :: DissocReactions(:,:)	!<List of allowed dissociation reactions (and ref. to functional form of reaction rate)
@@ -65,7 +66,6 @@ type(reactionParameters), allocatable :: ClusterReactions(:,:)	!<List of allowed
 type(reactionParameters), allocatable :: ImplantReactions(:,:)	!<List of allowed implantation reactions (and ref. to functional form of reaction rate)
 
 integer, allocatable :: numSingleForm(:)    !<Number of single defect formation energy in input file
-integer, allocatable :: numFuncForm(:)      !<Number of functional forms for formation energy in input files
 integer, allocatable :: numSingleDiff(:)	!<Number of single defect diffusion rates in input file
 integer, allocatable :: numFuncDiff(:)		!<Number of functional forms for diffusion rates in input files
 integer, allocatable :: numSingleBind(:)	!<Number of single defect binding energies in input file
@@ -84,10 +84,10 @@ double precision, parameter :: pi=3.141592653589793		!<Pi
 double precision, parameter :: Zint = 1.2				!<Constant representing preference for clustering of interstitials by interstitial clusters (increases clustering cross-section)
 double precision, parameter :: Zv = 1.0
 double precision, parameter :: reactionRadius=0.65	!<Material parameter used for reaction distances (impacts reaction rates) (nm)
+double precision, parameter :: lattice = 2.867d-1          !<lattice constant (nm)
 
 !2019.04.30 Add
 !Cu solubility CeqCu(T) = exp(DelatS/kB)*exp(-Omega/(kB*T))  Reference: (F. Christien and A. Barbu, 2004)
-double precision, parameter :: lattice = 2.867d-1          !<lattice constant (nm)
 double precision initialCeqv    !Thermal equilibrium concentration of vacancy
 double precision initialCeqi    !Thermal equilibrium concentration of SIA
 double precision Vconcent       !Vacancy concentration
@@ -101,7 +101,9 @@ integer initialTotalSIA
 
 double precision, allocatable :: VcoordinateList(:,:)
 double precision, allocatable :: IcoordinateList(:,:)
-double precision meshLength
+
+character *1 Tab
+
 
 !For testing
 double precision CuDiffusivity
@@ -110,7 +112,7 @@ double precision CuDiffusivity
 double precision temperature			!<Temperature (K)
 double precision tempStore				!<Temperature read in (K) - used when temp. changes several times during a simulation
 double precision CuContent              !<The initial content of Cu in iron
-double precision HeDPARatio				!<Helium to dpa ratio (atoms per atom)   default = 0d0
+!double precision HeDPARatio				!<Helium to dpa ratio (atoms per atom)   default = 0d0
 double precision DPARate				!<DPA rate in dpa/s
 double precision atomsize				!<atomic volume (nm^3)
 double precision DPA					!<DPA tracker (not a parameter)
@@ -118,6 +120,7 @@ double precision defectDensity			!<total density of defects (?), not sure if thi
 double precision dislocationDensity		!<density of dislocations (sinks for point defects)
 double precision impurityDensity		!<denstiy of impurity atoms (traps for SIA loops)
 double precision totalDPA				!<total DPA in simulation
+double precision agingTime              !<Thermal aging time (s)
 double precision burgers				!<magnitude of burgers vector, equal to lattice constant
 double precision numDisplacedAtoms		!<number of atoms displaced per cascade, read from cascade file
 double precision meanFreePath			!<mean free path before a defect is absorbed by a grain boundary (AKA avg. grain size)
@@ -139,9 +142,6 @@ integer			 annealSteps			!<Number of annealing steps
 double precision annealTempInc			!<Temperature increment at each annealing step (additive or multipliciative)
 character*20 	 annealType				!<('mult' or 'add') toggles additive or multiplicative anneal steps
 logical 		 annealIdentify			!<(.TRUE. if in annealing phase, .FALSE. otherwise) used to determine how to reset reaction rates (should we include implantation or not)
-
-!2019.04.30  Add
-double precision agingTime              !<Thermal aging time (s)
 
 integer numSims							!<Number of times to repeat simulation
 integer max3DInt						!<largest SIA size that can diffuse in 3D as spherical cluster
@@ -185,7 +185,7 @@ integer, parameter :: maxBufferSize=50	!<Used to define the max size of a send/r
 integer numImplantEvents			!<Postprocessing: number of Frenkel pairs / cascades (local)
 !integer numHeImplantEvents			!<Postprocessing: number of He implantation events (local)
 integer totalImplantEvents			!<Postprocessing: number of implant events across all processors 
-integer numHeImplantTotal			!<Postprocessing: number of He implant events across all processors
+!integer numHeImplantTotal			!<Postprocessing: number of He implant events across all processors
 integer numAnnihilate				!<Postprocessing: number of annihilation reactions carried out
 
 !counters for sink efficiency

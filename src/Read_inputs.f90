@@ -63,21 +63,19 @@ flag=.FALSE.
 !************************************************
 !The following is for formation energies parameters only
 !************************************************
-
 do while(flag .eqv. .FALSE.)
 	read(80,*) char
-	if(char=='numSingle') then
+	if(char=='formationEnergies') then
 		flag=.TRUE.
-		read(80,*) numSingleForm(matNum)
 	end if
 end do
 flag=.FALSE.
 
 do while(flag .eqv. .FALSE.)
 	read(80,*) char
-	if(char=='numFunction') then
+	if(char=='numSingle') then
 		flag=.TRUE.
-		read(80,*) numFuncForm(matNum)
+		read(80,*) numSingleForm(matNum)
 	end if
 end do
 flag=.FALSE.
@@ -787,7 +785,6 @@ flag=.FALSE.
 
 !Allocate all of the counters for the number of reactions, etc...
 allocate(numSingleForm(numMaterials))
-allocate(numFuncForm(numMaterials))
 allocate(numSingleDiff(numMaterials))
 allocate(numFuncDiff(numMaterials))
 allocate(numSingleBind(numMaterials))
@@ -827,14 +824,6 @@ do i=1,numMaterials
 	end if
 end do
 allocate(FormSingle(numMaterials,maxNum))
-
-maxNum=0
-do i=1,numMaterials
-	if(numFuncForm(i) > maxNum) then
-		maxNum=numFuncForm(i)
-	end if
-end do
-!allocate(FormFunc(numMaterials,maxNum))
 
 maxNum=0
 do i=1,numMaterials
@@ -955,7 +944,7 @@ integer procVol, volume
 tempStore		=273d0
 CuContent		=0.5d-2
 dpaRate			=1d-4
-HeDPARatio		=0d0
+!HeDPARatio		=0d0
 atomsize		=1.182d-2
 burgers			=0.287d0
 totalDPA		=1d-1
@@ -1022,9 +1011,9 @@ do while(flag .eqv. .FALSE.)
 		else if(char=='dpaRate') then
 			flag2=.TRUE.
 			read(81,*) DPARate
-		else if(char=='HeDPA') then
-			flag2=.TRUE.
-			read(81,*) HeDPARatio
+		!else if(char=='HeDPA') then
+		!	flag2=.TRUE.
+		!	read(81,*) HeDPARatio
 		else if(char=='atomSize') then
 			flag2=.TRUE.
 			read(81,*) atomsize
@@ -1263,15 +1252,6 @@ do while(flag .eqv. .FALSE.)
 	if(char=='numSingle') then
 		flag=.TRUE.
 		read(80,*) numSingleForm(matNum)
-	end if
-end do
-flag=.FALSE.
-
-do while(flag .eqv. .FALSE.)
-	read(80,*) char
-	if(char=='numFunction') then
-		flag=.TRUE.
-		read(80,*) numFuncForm(matNum)
 	end if
 end do
 flag=.FALSE.

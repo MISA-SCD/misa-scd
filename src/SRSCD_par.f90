@@ -125,6 +125,8 @@ end interface
 
 call cpu_time(time1)
 
+Tab = character(9)  !used to output whitespace
+
 open(81, file='parameters.txt',action='read', status='old')
 
 !Initialize MPI interface

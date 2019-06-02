@@ -258,46 +258,46 @@ else if(implantType=='Cascade') then
 	endif
 	
 	!Part 2: He implantation rate
-	if(HeDPARatio .GT. 0d0) then
+!	if(HeDPARatio .GT. 0d0) then
 		
 		!Point reactionCurrent at He implantation
-		reactionCurrent=>reactionList(cell)%next
+!		reactionCurrent=>reactionList(cell)%next
 		
 		!Verify that it is pointed correctly
-		if(reactionCurrent%numReactants==0 .AND. reactionCurrent%numProducts==1) then
+!		if(reactionCurrent%numReactants==0 .AND. reactionCurrent%numProducts==1) then
 			!Do nothing
-		else
-			write(*,*) 'error second reaction in list not He implantation'
-		endif
+!		else
+!			write(*,*) 'error second reaction in list not He implantation'
+!		endif
 		
-		do 23 reac=1,numImplantReac(matNum)
-			if(ImplantReactions(matNum,reac)%numReactants==0 .AND. ImplantReactions(matNum,reac)%numProducts==1) then
+!		do 23 reac=1,numImplantReac(matNum)
+!			if(ImplantReactions(matNum,reac)%numReactants==0 .AND. ImplantReactions(matNum,reac)%numProducts==1) then
 				
 				!we have found He implantation
-				exit
+!				exit
 			
-			endif
-		23 continue
+!			endif
+!		23 continue
 	
 		!Update the total reaction rate by subtracting the old reaction rate and adding the new one
-		totalRate=totalRate-reactionCurrent%reactionRate
-		totalRateVol(cell)=totalRateVol(cell)-reactionCurrent%reactionRate
+!		totalRate=totalRate-reactionCurrent%reactionRate
+!		totalRateVol(cell)=totalRateVol(cell)-reactionCurrent%reactionRate
 		
 		!Update the reaction rate for implanting helium
-		reactionCurrent%reactionRate=findReactionRate(cell, ImplantReactions(matNum,reac))
+!		reactionCurrent%reactionRate=findReactionRate(cell, ImplantReactions(matNum,reac))
 		
 		!Finish updating the total reaction rate
-		totalRate=totalRate+reactionCurrent%reactionRate
-		totalRateVol(cell)=totalRateVol(cell)+reactionCurrent%reactionRate
+!		totalRate=totalRate+reactionCurrent%reactionRate
+!		totalRateVol(cell)=totalRateVol(cell)+reactionCurrent%reactionRate
 		
 		!At this point, only Cascade implantation and He implantation are initialized, all other reactions should be deleted.
-		nullify(reactionCurrent%next)
+!		nullify(reactionCurrent%next)
 		
-	else
+!	else
 	
 		nullify(reactionList(cell)%next)
 	
-	endif
+!	endif
 
 else
 
@@ -487,19 +487,19 @@ implicit none
 integer cellNumber
 type(reaction), pointer :: reactionCurrent, reactionPrev
 
-if(HeDPARatio == 0d0) then
+!if(HeDPARatio == 0d0) then
 
 	!leave the first reaction alone (cascade implantation reaction)
 	reactionCurrent=>reactionList(cellNumber)%next	
 
-elseif(HeDPARatio > 0d0) then
+!elseif(HeDPARatio > 0d0) then
 
 	!don't delete first or second reactions (cascade and He implantation)
-	reactionCurrent=>reactionList(cellNumber)%next%next		
+!	reactionCurrent=>reactionList(cellNumber)%next%next
 
-else
-	write(*,*) 'Error negative HeDPARatio'
-end if
+!else
+!	write(*,*) 'Error negative HeDPARatio'
+!end if
 
 do while(associated(reactionCurrent))
 	reactionPrev=>reactionCurrent
@@ -518,12 +518,12 @@ do while(associated(reactionCurrent))
 	deallocate(reactionPrev)
 end do
 
-if(HeDPARatio == 0d0) then
+!if(HeDPARatio == 0d0) then
 	nullify(reactionList(cellnumber)%next)
-else if(HeDPARatio > 0d0) then
-	nullify(reactionList(cellnumber)%next%next)
-else
-	write(*,*) 'Error negative HeDPARatio'
-end if
+!else if(HeDPARatio > 0d0) then
+!	nullify(reactionList(cellnumber)%next%next)
+!else
+!	write(*,*) 'Error negative HeDPARatio'
+!end if
 
 end subroutine

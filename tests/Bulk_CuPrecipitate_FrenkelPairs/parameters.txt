@@ -79,14 +79,11 @@ annealTemp
 dpaRate			! NOTE: if the implant profile is non-uniform, this should be the AVERAGE DPA rate.
 2d-9
 
-HeDPA			! Helium/DPA ratio! He ImplantRate (atomic fraction / sec) - only used if implantDist='Uniform'
-0d0				!(NOTE: if implantDist='NonUniform', must have HeDPA .NE. 0d0 to add nonuniform He implant rates)	
-
 atomSize
 8.79d-3 		!(Fe) 			8.79d-3 		!(Cu)		! atomsize (nm^3)
 
 burgers
-0.132d0 			!(Fe) 			.36d0 			!(Cu)		! dislocation loop burgers vector (lattice constant) (nm)
+0.132d0 		!(Fe) 			.36d0 			!(Cu)		! dislocation loop burgers vector (lattice constant) (nm)
 
 totalDPA
 2d-2			! total DPA in simulation 1
