@@ -4214,14 +4214,14 @@ do while(associated(defectUpdateCurrent))
 
 			CascadeCurrent=>ActiveCascades
 			
-			do 161 while(associated(CascadeCurrent))
+			do while(associated(CascadeCurrent))
 				
 				if(CascadeCurrent%cascadeID==defectUpdateCurrent%cascadeNumber) then
 					exit
 				endif
 			
 				CascadeCurrent=>CascadeCurrent%next
-			161 continue
+			end do
 
 			!Check to make sure that we have exited at the correct cascade
 			if(.NOT. associated(CascadeCurrent)) then

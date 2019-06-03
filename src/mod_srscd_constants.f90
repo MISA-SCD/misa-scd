@@ -150,7 +150,7 @@ integer numGrains						!<Number of grains inside polycrystal (default 1)
 
 character*20 implantType				!<(Frenkel pairs or cascades), used to determine the type of damage in the simulation
 character*20 grainBoundaryToggle		!<Used to determine whether or not we are using grain boundaries to remove defects from simulation
-character*20 HeSIAToggle				!<Toggles whether or not we allow HeSIA clusters to form ('yes' or 'no')
+!character*20 HeSIAToggle				!<Toggles whether or not we allow HeSIA clusters to form ('yes' or 'no')
 character*20 SIAPinToggle				!<Toggles whether or not we allow HeV clusters to pin SIA clusters (without annihilating V+SIA)
 character*20 meshingType				!<(adaptive or nonAdaptive), used to determine whether we are simulating cascade implantation with adaptive meshing
 character*20 implantScheme				!<(MonteCarlo or explicit), used to determine if cascades are implanted through Monte Carlo algorithm or explicitly
