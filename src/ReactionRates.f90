@@ -100,26 +100,25 @@ do i=1, numDissocReac(matNum)
 		end do
 		
 		!************************************************************************************
-		!Hard coded: Frenkel pair creation from HeV cluster with He/V .GT. 5
-		!HARD CODED: what to do with dissociation of mobile defects from sessile SIA clusters
+		!Dissociation of mobile defects from sessile SIA clusters
 		!************************************************************************************
 		
-		if(products(1,3) .LT. 0) then	!numSIA_m <0
-			if(products(1,1) /= 0 .AND. products(1,2) /= 0) then	!Kick-out mechanism
+		if(products(1,3) < 0) then	!dissociation of mobile defects from sessile SIA clusters
+			if(products(1,1) /= 0 .AND. products(1,2) /= 0) then	!Kick-out mechanism. Cu_V dissociates a SIA_m
 				products(1,3)=0
 				products(1,2)=products(1,2)+products(2,3)
-			else														!dissociation of mobile defects from sessile SIA clusters
+			else    !dissociation of SIA_m from sessile SIA clusters
 				products(1,3)=0
 				products(1,4)=products(1,4)-products(2,3)
 			endif
 		endif
 		
 		!***********************************
-		!Hard coded: mobilize SIA clusters that decrease in size below max3Dint
+		!Mobilize SIA clusters that decrease in size below max3Dint
 		!***********************************
 		
 		!sessile cluster becomes mobile when it shrinks below max3DInt
-		if(products(1,4) /= 0 .AND. products(1,4) /= max3DInt) then
+		if(products(1,4) /= 0 .AND. products(1,4) <= max3DInt) then
 			products(1,3)=products(1,4)
 			products(1,4)=0
 		endif
@@ -128,9 +127,9 @@ do i=1, numDissocReac(matNum)
 		call findReactionInList(reactionCurrent, reactionPrev, cell, reactants, products, numReactants, numProducts)
 		
 		!*************************************************************************************
-		!HARD CODED: if HeSIA or large He clusters left over, need to disallow this reaction
-		!HARD CODED: if He/V ratio .GE. 5 then SIA kick-out activated
-		!HARD CODED: disallow He1V1 dissociation where the product is V1, to avoid double-counting
+		!HARD CODED: if CSIA or large He clusters left over, need to disallow this reaction
+		!HARD CODED: if Cu/V ratio .GE. 5 then SIA kick-out activated
+		!HARD CODED: disallow Cu1V1 dissociation where the product is V1, to avoid double-counting
 		!*************************************************************************************
 		
 		call checkReactionLegality(numProducts, products, isLegal)
@@ -160,37 +159,12 @@ do i=1, numDissocReac(matNum)
 			deallocate(reactionCurrent)
 		
 		!if reactionRate .NE. 0 and reaction doesn't exist, then create it. Add to totalRate
-		else if(.NOT. associated(reactionCurrent) .AND. reactionRate .NE. 0d0) then
+		else if(.NOT. associated(reactionCurrent) .AND. reactionRate /= 0d0) then
 			
 			!Update total rate (entire processor and this volume element)
 			totalRate=totalRate+reactionRate
 			totalRateVol(cell)=totalRateVol(cell)+reactionRate
-			
-			!Point reactionSort and reactionSortPrev at the two reactions that reactionCurrent should be
-			!inserted between
-			
-			!Step 1: skip the first 1 or 2 reactions (don't want to change order of implantation reactions)
-!			if(HeDPARatio .GT. 0d0) then
-!				reactionSort=>reactionList(cell)%next%next
-!				reactoinSortPrev=>reactionList(cell)%next
-!			else
-!				reactionSort=>reactionList(cell)%next
-!				reactionSortPrev=>reactionList(cell)
-!			endif
-			
-!			!Step 2: point reactionSort and reactionSortPrev where reactionCurrent should be inserted
-!			call sortReactionList(reactionSort, reactionSortPrev, reactionRate)
-			
-!			!Step 3: create new reaction in between reactionSort and reactionSortPrev
-!			nullify(reactionSortPrev%next)
-!			allocate(reactionSortPrev%next)
-!			reactionCurrent=>reactionSortPrev%next
-!			if(associated(reactionSort)) then
-!				reactionCurrent%next=>reactionSort
-!			else
-!				nullify(reactionCurrent%next)
-!			endif
-			
+
 			allocate(reactionCurrent)
 			reactionCurrent%numReactants=1
 			reactionCurrent%numProducts=2
@@ -200,22 +174,22 @@ do i=1, numDissocReac(matNum)
 			allocate(reactionCurrent%taskid(reactionCurrent%numReactants+reactionCurrent%numProducts))
 			nullify(reactionCurrent%next)
 			reactionPrev%next=>reactionCurrent
-			do 13 j=1,numSpecies
+			do j=1,numSpecies
 				reactionCurrent%reactants(1,j)=reactants(1,j)
 				reactionCurrent%products(1,j)=products(1,j)
 				reactionCurrent%products(2,j)=products(2,j)
-			13 continue
-			do 14 j=1,reactionCurrent%numReactants+reactionCurrent%numProducts
+			end do
+			do j=1,reactionCurrent%numReactants+reactionCurrent%numProducts
 				reactionCurrent%cellNumber(j)=cell
 				reactionCurrent%taskid(j)=myProc%taskid
-			14 continue
+			end do
 			reactionCurrent%reactionRate=reactionRate
 			
 		!if reactionRate==0 adn reaction doesn't exist, do nothing
 		else if(.NOT. associated(reactionCurrent) .AND. reactionRate==0d0) then
 			!do nothing
 		!if reactionRate .NE. 0 and reaction exists, update the reaction rate. Add/subtract to totalRate
-		else if(associated(reactionCurrent) .AND. reactionRate .NE. 0d0) then
+		else if(associated(reactionCurrent) .AND. reactionRate /= 0d0) then
 		
 			!Update total rate (entire processor and this volume element)
 			totalRate=totalRate-reactionCurrent%reactionRate+reactionRate
@@ -239,21 +213,21 @@ deallocate(reactants)
 deallocate(products)
 allocate(reactants(numReactants,numSpecies))
 
-do 20 i=1, numSinkReac(matNum)
+do i=1, numSinkReac(matNum)
 	count=0
 	
 	!Check if the defect type is accepted by this sink reaction
-	do 21 j=1,numSpecies
+	do j=1,numSpecies
 		if(defectType(j) == 0 .AND. SinkReactions(matNum,i)%reactants(1,j) == 0) then
 			count=count+1
-		else if(defectType(j) .NE. 0 .AND. SinkReactions(matNum,i)%reactants(1,j) .NE. 0) then
-			if(defectType(j) .GE. SinkReactions(matNum,i)%min(j)) then
-				if((defectType(j) .LE. SinkReactions(matNum,i)%max(j)) .OR. SinkReactions(matNum,i)%max(j)==-1) then
+		else if(defectType(j) /= 0 .AND. SinkReactions(matNum,i)%reactants(1,j) /= 0) then
+			if(defectType(j) >= SinkReactions(matNum,i)%min(j)) then
+				if((defectType(j) <= SinkReactions(matNum,i)%max(j)) .OR. SinkReactions(matNum,i)%max(j)==-1) then
 					count=count+1
-				endif
-			endif
-		endif
-	21 continue
+				end if
+			end if
+		end if
+	end do
 	
 	if(count==numSpecies) then	!this defect type is accepted for this dissociation reaction
 		!point reactionCurrent at the reaction and reactionPrev at the reaction before it
@@ -261,9 +235,9 @@ do 20 i=1, numSinkReac(matNum)
 		!to the end of the list)
 		
 		!Create temporary arrays with the defect types associated with this reaction (sinks)
-		do 22 j=1,numSpecies
+		do j=1,numSpecies
 			reactants(1,j)=defectType(j)
-		22 continue
+		end do
 		
 		reactionCurrent=>reactionList(cell)
 		call findReactionInList(reactionCurrent, reactionPrev, cell, reactants, products, numReactants, numProducts)
@@ -296,7 +270,7 @@ do 20 i=1, numSinkReac(matNum)
 			deallocate(reactionCurrent)
 		
 		!if reactionRate .NE. 0 and reaction doesn't exist, then create it. Add to totalRate
-		else if(.NOT. associated(reactionCurrent) .AND. reactionRate .NE. 0d0) then
+		else if(.NOT. associated(reactionCurrent) .AND. reactionRate /= 0d0) then
 			
 			!Update total rate (entire processor and this volume element)
 			totalRate=totalRate+reactionRate
@@ -312,20 +286,20 @@ do 20 i=1, numSinkReac(matNum)
 			allocate(reactionCurrent%taskid(reactionCurrent%numReactants+reactionCurrent%numProducts))
 			nullify(reactionCurrent%next)
 			reactionPrev%next=>reactionCurrent
-			do 23 j=1,numSpecies
+			do j=1,numSpecies
 				reactionCurrent%reactants(1,j)=reactants(1,j)
-			23 continue
-			do 24 j=1,reactionCurrent%numReactants+reactionCurrent%numProducts
+			end do
+			do j=1,reactionCurrent%numReactants+reactionCurrent%numProducts
 				reactionCurrent%cellNumber(j)=cell
 				reactionCurrent%taskid(j)=myProc%taskid
-			24 continue
+			end do
 			reactionCurrent%reactionRate=reactionRate
 			
 		!if reactionRate==0 adn reaction doesn't exist, do nothing
 		else if(.NOT. associated(reactionCurrent) .AND. reactionRate==0d0) then
 			!do nothing
 		!if reactionRate .NE. 0 and reaction exists, update the reaction rate. Add/subtract to totalRate
-		else if(associated(reactionCurrent) .AND. reactionRate .NE. 0d0) then
+		else if(associated(reactionCurrent) .AND. reactionRate /= 0d0) then
 		
 			!Update total rate (entire processor and this volume element)
 			totalRate=totalRate-reactionCurrent%reactionRate+reactionRate
@@ -336,11 +310,11 @@ do 20 i=1, numSinkReac(matNum)
 		
 		else
 			write(*,*) 'error updating reaction list - sinks'
-		endif
+		end if
 
-	endif
+	end if
 	
-20 continue
+end do
 
 !Impurity reactions
 
@@ -353,21 +327,21 @@ endif
 allocate(reactants(numReactants,numSpecies))
 allocate(products(numProducts,numSpecies))
 
-do 30 i=1, numImpurityReac(matNum)
+do i=1, numImpurityReac(matNum)
 	count=0
 	
 	!Check if the defect type is accepted by this impurity reaction
-	do 31 j=1,numSpecies
+	do j=1,numSpecies
 		if(defectType(j) == 0 .AND. ImpurityReactions(matNum,i)%reactants(1,j) == 0) then
 			count=count+1
-		else if(defectType(j) .NE. 0 .AND. ImpurityReactions(matNum,i)%reactants(1,j) .NE. 0) then
-			if(defectType(j) .GE. ImpurityReactions(matNum,i)%min(j)) then
-				if((defectType(j) .LE. ImpurityReactions(matNum,i)%max(j)) .OR. ImpurityReactions(matNum,i)%max(j)==-1) then
+		else if(defectType(j) /= 0 .AND. ImpurityReactions(matNum,i)%reactants(1,j) /= 0) then
+			if(defectType(j) >= ImpurityReactions(matNum,i)%min(j)) then
+				if((defectType(j) <= ImpurityReactions(matNum,i)%max(j)) .OR. ImpurityReactions(matNum,i)%max(j)==-1) then
 					count=count+1
 				endif
 			endif
 		endif
-	31 continue
+	end do
 	if(count==numSpecies) then	!this defect type is accepted for this dissociation reaction
 		!point reactionCurrent at the reaction and reactionPrev at the reaction before it
 		!(if reaction does not already exist, reactionCurrent is unallocated and reactionPrev points
@@ -376,20 +350,20 @@ do 30 i=1, numImpurityReac(matNum)
 		!Create temporary arrays with the defect types associated with this reaction (impurities)
 		!Impurities change defect types from glissile SIA loops to sesile SIA loops. Therefore,
 		!we must change the defectType from 0 0 n 0 to 0 0 0 n. This is hard-coded in here.
-		do 32 j=1,numSpecies
+		do j=1,numSpecies
 			reactants(1,j)=defectType(j)
-			if(reactants(1,j) .NE. 0d0) then
-				storeTemp=reactants(1,j)
-			endif
-		32 continue
+			if(reactants(1,j) /= 0d0) then
+				storeTemp=reactants(1,j)    !reactan=0 0 n 0, storeTemp=n
+			end if
+		end do
 		
-		do 35 j=1,numSpecies
-			if(ImpurityReactions(matNum,i)%products(1,j)==1) then
+		do j=1,numSpecies
+			if(ImpurityReactions(matNum,i)%products(1,j)==1) then   !0 0 0 1
 				products(1,j)=storeTemp
 			else
 				products(1,j)=0
 			endif
-		35 continue
+		end do
 		
 		reactionCurrent=>reactionList(cell)
 		call findReactionInList(reactionCurrent, reactionPrev, cell, reactants, products, numReactants, numProducts)
@@ -420,7 +394,7 @@ do 30 i=1, numImpurityReac(matNum)
 			deallocate(reactionCurrent)
 		
 		!if reactionRate .NE. 0 and reaction doesn't exist, then create it. Add to totalRate
-		else if(.NOT. associated(reactionCurrent) .AND. reactionRate .NE. 0d0) then
+		else if(.NOT. associated(reactionCurrent) .AND. reactionRate /= 0d0) then
 			
 			!Update total rate (entire processor and this volume element)
 			totalRate=totalRate+reactionRate
@@ -436,21 +410,21 @@ do 30 i=1, numImpurityReac(matNum)
 			allocate(reactionCurrent%taskid(reactionCurrent%numReactants+reactionCurrent%numProducts))
 			nullify(reactionCurrent%next)
 			reactionPrev%next=>reactionCurrent
-			do 33 j=1,numSpecies
+			do j=1,numSpecies
 				reactionCurrent%reactants(1,j)=reactants(1,j)
 				reactionCurrent%products(1,j)=products(1,j)
-			33 continue
-			do 34 j=1,reactionCurrent%numReactants+reactionCurrent%numProducts
+			end do
+			do j=1,reactionCurrent%numReactants+reactionCurrent%numProducts
 				reactionCurrent%cellNumber(j)=cell
 				reactionCurrent%taskid(j)=myProc%taskid
-			34 continue
+			end do
 			reactionCurrent%reactionRate=reactionRate
 			
 		!if reactionRate==0 adn reaction doesn't exist, do nothing
 		else if(.NOT. associated(reactionCurrent) .AND. reactionRate==0d0) then
 			!do nothing
 		!if reactionRate .NE. 0 and reaction exists, update the reaction rate. Add/subtract to totalRate
-		else if(associated(reactionCurrent) .AND. reactionRate .NE. 0d0) then
+		else if(associated(reactionCurrent) .AND. reactionRate /= 0d0) then
 			
 			!Update total rate (entire processor and this volume element)
 			totalRate=totalRate-reactionCurrent%reactionRate+reactionRate
@@ -464,7 +438,7 @@ do 30 i=1, numImpurityReac(matNum)
 		endif
 
 	endif
-30 continue
+end do
 
 end subroutine
 
@@ -3910,22 +3884,13 @@ end function
 !***************************************************************************************************
 ! subroutine findReactionInList
 !
-! points reactionCurrent at the reaction in fine mesh with matching reactants and products in cell
+! points reactionCurrent at the reaction in coarse or fine mesh with matching reactants and products in cell
 ! If reaction is not present, reactionCurrent is not associated and reactionPrev points to the end
 ! of the list.
 !
 ! Inputs: cell, reactants(:,:), products(:,:), numReactants, numProducts
 ! Outputs: reactionCurrent, reactionPrev (pointers)
 !***************************************************************************************************
-
-!>Subroutine find Reaction In List
-!!
-!!Points reactionCurrent at the reaction in coarse or fine mesh with matching reactants and products in cell
-!!If reaction is not present, reactionCurrent is not associated and reactionPrev points to the end
-!!of the list.
-!!
-!!Inputs: cell, reactants(:,:), products(:,:), numReactants, numProducts
-!!Outputs: reactionCurrent, reactionPrev (pointers)
 
 subroutine findReactionInList(reactionCurrent, reactionPrev, cell, reactants, products, numReactants, numProducts)
 use mod_srscd_constants
@@ -3937,43 +3902,43 @@ integer, allocatable :: reactants(:,:), products(:,:)
 integer numReactants, numProducts, count(numReactants+numProducts), i, j, cell
 logical flag
 
-do 10 while(associated(reactionCurrent))
+do while(associated(reactionCurrent))
 	
 	if(reactionCurrent%numReactants==numReactants .AND. reactionCurrent%numProducts==numProducts) then
 		
-		do 11 i=1,numReactants
+		do i=1,numReactants
 			count(i)=0
-			do 12 j=1,numSpecies
+			do j=1,numSpecies
 				if(reactionCurrent%reactants(i,j)==reactants(i,j)) then
 					count(i)=count(i)+1
 				endif
-			12 continue
-		11 continue
+			end do
+		end do
 		
-		do 13 i=1,numProducts
+		do i=1,numProducts
 			count(i+numReactants)=0
-			do 14 j=1,numSpecies
+			do j=1,numSpecies
 				if(reactionCurrent%products(i,j)==products(i,j)) then
 					count(i+numReactants)=count(i+numReactants)+1
 				endif
-			14 continue
-		13 continue
+			end do
+		end do
 		
 		flag=.FALSE.
-		do 15 i=1,numReactants+numProducts
-			if(count(i) .NE. numSpecies) then
+		do i=1,numReactants+numProducts
+			if(count(i) /= numSpecies) then
 				flag=.TRUE.
 			endif
-		15 continue
+		end do
 		
 		if(flag .EQV. .FALSE.) then	!we have found the reaction
 			exit
 		endif
-	endif
+	end if
 	
 	reactionPrev=>reactionCurrent
 	reactionCurrent=>reactionCurrent%next
-10 continue
+end do
 	
 end subroutine
 
@@ -4246,15 +4211,6 @@ end subroutine
 !
 !***************************************************************************************************
 
-!>Subroutine check Reaction Legality
-!!
-!!This subroutine looks at the products of a combination reaction and checks to see if the reaction
-!!is allowed (using hard-coded information). If not, the subroutine returns a value of .FALSE. to 
-!!isLegal.
-!!
-!!Inputs: numProducts, products(numProducts, numSpecies)
-!!Output: isLegal (boolean variable)
-
 subroutine checkReactionLegality(numProducts, products, isLegal)
 use mod_srscd_constants
 use DerivedType
@@ -4266,59 +4222,59 @@ logical isLegal
 
 isLegal=.TRUE.
 
-!Check for He+SIA
+!Check for Cu+SIA
 
-do 10 i=1,numProducts
+do i=1,numProducts
 
-	!2014.10.08: Allowing He-SIA clusters to form
+	!2014.10.08: Allowing Cu-SIA clusters to form
 	
-	if(HeSIAToggle=='no') then
-		if(products(i,1) .NE. 0 .AND. products(i,3) .NE. 0) then
+!	if(CuSIAToggle=='no') then
+		if(products(i,1) /= 0 .AND. products(i,3) /= 0) then
 			isLegal=.FALSE.
 		endif
 		
-		if(products(i,1) .NE. 0 .AND. products(i,4) .NE. 0) then
+		if(products(i,1) /= 0 .AND. products(i,4) /= 0) then
 			isLegal=.FALSE.
 		endif
-	else if(HeSIAToggle=='yes') then
+!	else if(HeSIAToggle=='yes') then
 		!do nothing
-	else
-		write(*,*) 'Error unknown HeSIAToggle'
-	endif
+!	else
+!		write(*,*) 'Error unknown HeSIAToggle'
+!	endif
 	
-	!Check for interstitial He greater than 4
+	!Check for interstitial Cu greater than 4
 	
-	if(products(i,1) .GT. 4 .AND. products(i,2)==0 .AND. &
-		products(i,3)==0 .AND. products(i,4)==0) then
+!	if(products(i,1) > 4 .AND. products(i,2)==0 .AND. &
+!		products(i,3)==0 .AND. products(i,4)==0) then
 		
-		isLegal=.FALSE.
-	endif
+!		isLegal=.FALSE.
+!	endif
 
-10 continue
+end do
 
-!Check for HeV kick-out
+!Check for CuV kick-out
 if(numProducts==2) then
-	if(products(1,1) .NE. 0 .AND. products(2,3) .NE. 0) then
+!	if(products(1,1) /= 0 .AND. products(2,3) /= 0) then
 	
 		!we are attempting to see if a HeV-> HeV + SIA kickout is legal
 		!This reaction is only allowed if He/V .GE. 5. Therefore, we check
 		!the reactant's He/V ratio.
 		
-		if(dble(products(1,1)/(products(1,2)-1)) .LT. 5d0) then
-			isLegal=.FALSE.
-		endif
-	endif
+!		if(dble(products(1,1)/(products(1,2)-1)) > 5d0) then
+!			isLegal=.FALSE.
+!		end if
+!	end if
 	
-	!Check for He1V1 dissociation: only allow one version of this to avoid
+	!Check for C1V1 dissociation: only allow one version of this to avoid
 	!double-counting the reaction.
 	if(products(1,1)==1 .AND. products(1,2)==0 .AND. products(1,3)==0 .AND. products(1,4)==0) then
-	if(products(2,1)==0 .AND. products(2,2)==1 .AND. products(2,3)==0 .AND. products(2,4)==0) then
+        if(products(2,1)==0 .AND. products(2,2)==1 .AND. products(2,3)==0 .AND. products(2,4)==0) then
 	
 			isLegal=.FALSE.
 	
-	endif
-	endif
-endif
+	    end if
+	end if
+end if
 
 end subroutine
 

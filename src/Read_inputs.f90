@@ -959,7 +959,7 @@ annealType		='add'
 annealTempInc	=0d0
 
 grainBoundaryToggle	='no'
-heSIAToggle			='no'
+!CuSIAToggle			='no'
 SIAPinToggle		='no'
 polycrystal			='no'
 singleElemKMC		='no'
@@ -1062,9 +1062,9 @@ do while(flag .eqv. .FALSE.)
 		else if(char=='cascRxnLimit') then
 			flag2=.TRUE.
 			read(81,*) cascadeReactionLimit
-		else if(char=='HeSIAToggle') then
-			flag2=.TRUE.
-			read(81,*) HeSIAToggle
+!		else if(char=='CuSIAToggle') then
+!			flag2=.TRUE.
+!			read(81,*) CuSIAToggle
 		else if(char=='SIAPinToggle') then
 			flag2=.TRUE.
 			read(81,*) SIAPinToggle

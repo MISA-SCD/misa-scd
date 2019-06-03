@@ -1,4 +1,3 @@
-! $Header: /home/CVS//srscd/src/CoarseMesh_subroutines.f90,v 1.9 2015/10/19 19:43:22 aydunn Exp $
 !***************************************************************************************************
 !>Subroutine Find defect in list - points defectCurrent at the appropriate defect in a linked list
 !!
@@ -177,8 +176,6 @@ do cell=1,numCells
 	end do
 
 end do
-
-!Get info from other procs
 
 call MPI_ALLREDUCE(reactionCounter,reactionsCoarse, 1, MPI_INTEGER, MPI_SUM, MPI_COMM_WORLD, ierr)
 	

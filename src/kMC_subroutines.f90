@@ -4051,12 +4051,12 @@ do while(associated(defectUpdateCurrent))
 			!all defect types in the defect list)
 			defectCurrent=>defectList(defectUpdateCurrent%cellNumber)
 			
-			do 59 while(associated(defectCurrent))
-				if(defectCurrent%num .NE. 0) then
+			do while(associated(defectCurrent))
+				if(defectCurrent%num /= 0) then
 					call addMultiDefectReactions(defectUpdateCurrent%cellNumber,defectTemp, defectCurrent%defectType)
 				endif
 				defectCurrent=>defectCurrent%next
-			59 continue
+			end do
 			
 			!NOTE: there is a problem with annihilation reactions: if two defects annihilate and the
 			!result is that there are no defects left of those two types in the cell (example, SIA+V->0
