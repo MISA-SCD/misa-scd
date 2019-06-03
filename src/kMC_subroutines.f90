@@ -370,7 +370,7 @@ implicit none
 include 'mpif.h'
 
 type(reaction), pointer :: reactionCurrent
-type(defect), pointer :: defectCurrent, defectPrev, defectTemp, defectStoreList, defectStore
+type(defect), pointer :: defectCurrent, defectPrev, defectTemp, defectStoreList, defectStore, defectStoreNext
 type(cascadeDefect), pointer :: cascadeDefectTemp
 type(defectUpdateTracker), pointer :: defectUpdate, defectUpdateCurrent
 type(cascade), pointer :: CascadeCurrent, CascadePrev
@@ -380,6 +380,7 @@ integer cellNumber, mixingEvents, mixingTemp, findCellWithCoordinatesFineMesh
 logical combineBoolean, cascadeMixingCheck
 
 integer i, j, k, l, m, same, products(numSpecies), tag, tracker, totalLocalRecv, chooseRandomCell
+integer product2(numSpecies)
 double precision diffusionRandom
 logical flag
 
@@ -684,9 +685,45 @@ if(associated(reactionCurrent)) then	!if we have not chosen a null event
 						!This subroutine is placed in reactionRates.f90 in accordance with the
 						!other clustering combination rules that are hard-coded.
 						!***********************************************************************
-						
-						call defectCombinationRules(defectStore%defectType, defectTemp)
-						
+						do i=1, numSpecies
+							product2(i)=0
+						end do
+
+						call defectCombinationRules(defectStore%defectType,product2, defectTemp)
+
+						if(product2(3)/=0 .OR. product2(4)/=0) then
+							nullify(defectStoreNext)
+
+							defectStoreNext=>defectStore
+							if(associated(defectStore%next)) then !defectStore is at the missle of defectStoreList
+								nullify(defectStoreNext%next)
+								allocate(defectStoreNext%next)
+								nullify(defectStoreNext%next%next)
+								defectStoreNext=>defectStoreNext%next
+								allocate(defectStoreNext%defectType(numSpecies))
+								defectStoreNext%cellNumber=defectStore%cellNumber
+								defectStoreNext%num=1
+								do i=1, numSpecies
+									defectStoreNext%defectType(i)=product2(i)
+								end do
+								defectStoreNext%next=>defectStore%next
+								defectStore%next=>defectStoreNext
+							else	!defectStore is at the end of defectStoreList
+								nullify(defectStoreNext%next)
+								allocate(defectStoreNext%next)
+								nullify(defectStoreNext%next%next)
+								defectStoreNext=>defectStoreNext%next
+								allocate(defectStoreNext%defectType(numSpecies))
+								defectStoreNext%cellNumber=defectStore%cellNumber
+								defectStoreNext%num=1
+								do i=1, numSpecies
+									defectStoreNext%defectType(i)=product2(i)
+								end do
+								defectStore%next=>defectStoreNext
+							end if
+
+
+
 						!NEXT: remove DefectTemp from fine mesh
 						
 						if(defectTemp%num==0) then	!error
@@ -1113,8 +1150,43 @@ if(associated(reactionCurrent)) then	!if we have not chosen a null event
 						!This subroutine is placed in reactionRates.f90 in accordance with the
 						!other clustering combination rules that are hard-coded.
 						!***********************************************************************
-						
-						call defectCombinationRules(defectStore%defectType, defectTemp)
+						do i=1, numSpecies
+							product2(i)=0
+						end do
+
+						call defectCombinationRules(defectStore%defectType, product2,defectTemp)
+
+						if(product2(3)/=0 .OR. product2(4)/=0) then
+							nullify(defectStoreNext)
+
+							defectStoreNext=>defectStore
+							if(associated(defectStore%next)) then !defectStore is at the middle of defectStoreList
+								nullify(defectStoreNext%next)
+								allocate(defectStoreNext%next)
+								nullify(defectStoreNext%next%next)
+								defectStoreNext=>defectStoreNext%next
+								allocate(defectStoreNext%defectType(numSpecies))
+								defectStoreNext%cellNumber=defectStore%cellNumber
+								defectStoreNext%num=1
+								do i=1, numSpecies
+									defectStoreNext%defectType(i)=product2(i)
+								end do
+								defectStoreNext%next=>defectStore%next
+								defectStore%next=>defectStoreNext
+							else	!!defectStore is at the end of defectStoreList
+								nullify(defectStoreNext%next)
+								allocate(defectStoreNext%next)
+								nullify(defectStoreNext%next%next)
+								defectStoreNext=>defectStoreNext%next
+								allocate(defectStoreNext%defectType(numSpecies))
+								defectStoreNext%cellNumber=defectStore%cellNumber
+								defectStoreNext%num=1
+								do i=1, numSpecies
+									defectStoreNext%defectType(i)=product2(i)
+								end do
+								defectStore%next=>defectStoreNext
+							end if
+						end if
 						
 						!NEXT: remove DefectTemp from fine mesh
 						
@@ -1148,7 +1220,7 @@ if(associated(reactionCurrent)) then	!if we have not chosen a null event
 					
 				end do
 			
-			endif
+			end if
 			
 			defectStore=>defectStoreList%next
 
@@ -4183,7 +4255,7 @@ do while(associated(defectUpdateCurrent))
 				
 			CascadeCurrent=>ActiveCascades
 			
-			do 62 while(associated(CascadeCurrent))
+			do while(associated(CascadeCurrent))
 			
 				if(CascadeCurrent%cellNumber==defectUpdateCurrent%cellNumber) then
 					
@@ -4198,7 +4270,7 @@ do while(associated(defectUpdateCurrent))
 				
 				CascadeCurrent=>CascadeCurrent%next
 				
-			62 continue
+			end do
 
 		!*******************************************************************************************
 		!
@@ -4234,8 +4306,8 @@ do while(associated(defectUpdateCurrent))
 			!Multi-defect reactions associated with defects of type defectTemp and defectCurrent%defectType (Scan over
 			!all defect types in the defect list)
 			defectCurrent=>CascadeCurrent%localDefects(defectUpdateCurrent%cellNumber)
-			do 159 while(associated(defectCurrent))
-				if(defectCurrent%num .NE. 0) then
+			do while(associated(defectCurrent))
+				if(defectCurrent%num /= 0) then
 				
 					call addMultiDefectReactionsFine(defectUpdateCurrent%cascadeNumber, defectUpdateCurrent%cellNumber,&
 						defectTemp, defectCurrent%defectType)
@@ -4244,7 +4316,7 @@ do while(associated(defectUpdateCurrent))
 					
 				defectCurrent=>defectCurrent%next
 				
-			159 continue
+			end do
 
 			!See above for explanation of this section
 			defectUpdateNext=>defectUpdateCurrent%next

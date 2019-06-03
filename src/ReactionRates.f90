@@ -4285,12 +4285,12 @@ end subroutine
 !!defect combination in the case of cascade-defect interactions. In the future, may want to 
 !!move all defect combination rules to this subroutine so that they only need to be changed once.
 
-subroutine defectCombinationRules(products, defectTemp)
+subroutine defectCombinationRules(products, product2, defectTemp)
 use derivedType
 use mod_srscd_constants
 implicit none
 
-integer products(numSpecies)
+integer products(numSpecies), product2(numSpecies)
 integer l
 type(defect), pointer :: defectTemp
 !SIA+SIA clustering
@@ -4306,6 +4306,22 @@ do l=1,numSpecies
 	products(l)=products(l)+defectTemp%defectType(l)
 end do
 
+!SIA+CuV
+if(products(1)/=0 .AND. products(3) >= products(2)) then
+    product2(3)=products(3)-products(2)
+    products(2)=0
+    products(3)=0
+else if(products(1)/=0 .AND. products(4) >= products(2)) then
+    product2(4)=products(4)-products(2)
+    products(2)=0
+    products(4)=0
+    if(product2(4)/=0 .AND. product2(4) <= max3DInt) then
+        product2(3)=product2(4)
+        product2(4)=0
+    end if
+end if
+
+
 !V+SIA recombination
 if(products(2) >= products(3)) then
 	products(2)=products(2)-products(3)
@@ -4313,7 +4329,7 @@ if(products(2) >= products(3)) then
 else if(products(3) >= products(2)) then
 	products(3)=products(3)-products(2)
 	products(2)=0
-endif
+end if
 
 if(products(2) >= products(4)) then
 	products(2)=products(2)-products(4)
@@ -4321,12 +4337,7 @@ if(products(2) >= products(4)) then
 else if(products(4) >= products(2)) then
 	products(4)=products(4)-products(2)
 	products(2)=0
-	!sessile cluster becomes mobile again when it shrinks below max3DInt
-	if(products(4) /= 0 .AND. products(4) <= max3DInt) then
-		products(3)=products(4)
-		products(4)=0
-	end if
-endif
+end if
 
 !sessile+mobile SIA cluster makes sessile cluster
 if(products(3) /= 0. .AND. products(4) /= 0) then
@@ -4341,10 +4352,10 @@ if(products(3) > 4) then
 end if
 
 !sessile cluster becomes mobile again when it shrinks below max3DInt
-!if(products(4) /= 0 .AND. products(4) <= max3DInt) then
-!	products(3)=products(4)
-!	products(4)=0
-!endif
+if(products(4) /= 0 .AND. products(4) <= max3DInt) then
+	products(3)=products(4)
+	products(4)=0
+end if
 
 end subroutine
 
