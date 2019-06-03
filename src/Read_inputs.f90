@@ -960,7 +960,7 @@ annealTempInc	=0d0
 
 grainBoundaryToggle	='no'
 !CuSIAToggle			='no'
-SIAPinToggle		='no'
+SIAPinToggle		='yes'
 polycrystal			='no'
 singleElemKMC		='no'
 sinkEffSearch		='no'	!< This toggle is mostly legacy code and should be set to ’no’

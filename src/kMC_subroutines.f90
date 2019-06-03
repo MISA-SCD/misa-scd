@@ -4072,8 +4072,8 @@ do while(associated(defectUpdateCurrent))
 					!we update any clustering reactions between them. This may be redundant but prevents
 					!us from missing total-annihilation reactions as described above.
 					call addMultiDefectReactions(defectUpdateCurrent%cellNumber, defectTemp, defectUpdateNext%defectType)
-				endif
-			endif
+				end if
+			end if
 			
 			!*******************
 			!Diffusion reactions
