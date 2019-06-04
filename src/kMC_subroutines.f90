@@ -382,7 +382,7 @@ logical combineBoolean, cascadeMixingCheck
 integer i, j, k, l, m, same, products(numSpecies), tag, tracker, totalLocalRecv, chooseRandomCell
 integer product2(numSpecies)
 double precision diffusionRandom
-logical flag
+logical flag, isCombined
 
 !Used for cascade recombination
 double precision r1, atemp
@@ -633,26 +633,28 @@ if(associated(reactionCurrent)) then	!if we have not chosen a null event
 				cascadeDefectTemp=>cascadeDefectTemp%next
 			590 continue
 			
-			do 570 j=1,numCellsCascade
+			do j=1,numCellsCascade
 				defectCurrent=>CascadeCurrent%localDefects(j)
 				
 				defectPrev=>defectCurrent
 				defectTemp=>defectCurrent%next
-				do 550 while(associated(defectTemp))
+				do while(associated(defectTemp))
 					
 					!Step 2:
 					!boolean variable, if FALSE then no combination with defectCurrent, if TRUE then combination
 					mixingTemp=0
-					do 571 k=1,defectTemp%num
-						combineBoolean=cascadeMixingCheck()
+					if(defectTemp%num > 0) then
+						do k=1,defectTemp%num
+							combineBoolean=cascadeMixingCheck()
 						
-						if(combineBoolean .eqv. .TRUE.) then
-							mixingTemp=mixingTemp+1
-						endif
-					571 continue
+							if(combineBoolean .eqv. .TRUE.) then
+								mixingTemp=mixingTemp+1
+							endif
+						end do
+					end if
 					
 					!Step 3:
-					do 572 k=1,mixingTemp
+					do k=1,mixingTemp
 						mixingEvents=mixingEvents+1
 						
 						!Choose which defect will be combined wtih defectTemp
@@ -662,15 +664,15 @@ if(associated(reactionCurrent)) then	!if we have not chosen a null event
 						r1=dprand()
 						
 						!Move defectStore through defectStoreList until defect chosen for recombination
-						do 573 i=1,cascadeTemp%numDefectsTotal
+						do i=1,cascadeTemp%numDefectsTotal
 							atemp=atemp+1d0/dble(cascadeTemp%numDefectsTotal)
 							
-							if(atemp .GT. r1) then
+							if(atemp > r1) then
 								exit
 							endif
 							
 							defectStore=>defectStore%next
-						573 continue
+						end do
 						
 						if( .NOT. associated(defectStore)) then
 							write(*,*) 'Error DefectStore not associated in cascade mixing'
@@ -689,7 +691,7 @@ if(associated(reactionCurrent)) then	!if we have not chosen a null event
 							product2(i)=0
 						end do
 
-						call defectCombinationRules(defectStore%defectType,product2, defectTemp)
+						call defectCombinationRules(defectStore%defectType,product2, defectTemp, isCombined)
 
 						if(product2(3)/=0 .OR. product2(4)/=0) then
 							nullify(defectStoreNext)
@@ -722,40 +724,42 @@ if(associated(reactionCurrent)) then	!if we have not chosen a null event
 								defectStore%next=>defectStoreNext
 							end if
 
-
+						end if
 
 						!NEXT: remove DefectTemp from fine mesh
+						if(isCombined ==.TRUE.	) then
+							if(defectTemp%num==0) then	!error
+								write(*,*) 'error defect num zero combining with cascade defect'
+							else if(defectTemp%num==1) then	!remove that defect from the defect list
 						
-						if(defectTemp%num==0) then	!error
-							write(*,*) 'error defect num zero combining with cascade defect'
-						else if(defectTemp%num==1) then	!remove that defect from the defect list
-						
-							if(associated(defectPrev)) then !we are not at the beginning of the list
-								if(associated(defectTemp%next)) then	!we are not at the end of the list
-									defectPrev%next=>defectTemp%next
-									deallocate(defectTemp%defectType)
-									deallocate(defectTemp)
-									defectTemp=>defectPrev
+								if(associated(defectPrev)) then !we are not at the beginning of the list
+									if(associated(defectTemp%next)) then	!we are not at the end of the list
+										defectPrev%next=>defectTemp%next
+										deallocate(defectTemp%defectType)
+										deallocate(defectTemp)
+										defectTemp=>defectPrev
+									else
+										nullify(defectPrev%next)
+										deallocate(defectTemp%defectType)
+										deallocate(defectTemp)
+										defectTemp=>defectPrev
+									endif
 								else
-									nullify(defectPrev%next)
-									deallocate(defectTemp%defectType)
-									deallocate(defectTemp)
-									defectTemp=>defectPrev
+									defectTemp%num=0 !beginning of the list is never deleted
 								endif
 							else
-								defectTemp%num=0 !beginning of the list is never deleted
+								defectTemp%num=defectTemp%num-1
 							endif
-						else
-							defectTemp%num=defectTemp%num-1
-						endif
+
+						end if
 	
-					572 continue
+					end do
 					
 					defectPrev=>defectTemp
 					defectTemp=>defectTemp%next
 					
-				550 continue
-			570 continue						
+				end do
+			end do
 				
 
 !			do 590 i=1, cascadeTemp%numDefectsTotal
@@ -1117,6 +1121,7 @@ if(associated(reactionCurrent)) then	!if we have not chosen a null event
 				do while(associated(defectTemp))
 					
 					!Step 3: choose a defect in defectStoreList to combine with the defect that exited in the coarseMesh
+					if(defectTemp%num > 0) then
 					do k=1,defectTemp%num
 						mixingEvents=mixingEvents+1
 						
@@ -1154,7 +1159,7 @@ if(associated(reactionCurrent)) then	!if we have not chosen a null event
 							product2(i)=0
 						end do
 
-						call defectCombinationRules(defectStore%defectType, product2,defectTemp)
+						call defectCombinationRules(defectStore%defectType, product2,defectTemp, isCombined)
 
 						if(product2(3)/=0 .OR. product2(4)/=0) then
 							nullify(defectStoreNext)
@@ -1189,31 +1194,33 @@ if(associated(reactionCurrent)) then	!if we have not chosen a null event
 						end if
 						
 						!NEXT: remove DefectTemp from fine mesh
+						if(isCombined ==.TRUE.	) then
+							if(defectTemp%num==0) then	!error
+								write(*,*) 'error defect num zero combining with cascade defect'
+							else if(defectTemp%num==1) then	!remove that defect from the defect list
 						
-						if(defectTemp%num==0) then	!error
-							write(*,*) 'error defect num zero combining with cascade defect'
-						else if(defectTemp%num==1) then	!remove that defect from the defect list
-						
-							if(associated(defectPrev)) then !we are not at the beginning of the list
-								if(associated(defectTemp%next)) then	!we are not at the end of the list
-									defectPrev%next=>defectTemp%next
-									deallocate(defectTemp%defectType)
-									deallocate(defectTemp)
-									defectTemp=>defectPrev
+								if(associated(defectPrev)) then !we are not at the beginning of the list
+									if(associated(defectTemp%next)) then	!we are not at the end of the list
+										defectPrev%next=>defectTemp%next
+										deallocate(defectTemp%defectType)
+										deallocate(defectTemp)
+										defectTemp=>defectPrev
+									else
+										nullify(defectPrev%next)
+										deallocate(defectTemp%defectType)
+										deallocate(defectTemp)
+										defectTemp=>defectPrev
+									endif
 								else
-									nullify(defectPrev%next)
-									deallocate(defectTemp%defectType)
-									deallocate(defectTemp)
-									defectTemp=>defectPrev
+									defectTemp%num=0 !beginning of the list is never deleted
 								endif
 							else
-								defectTemp%num=0 !beginning of the list is never deleted
+								defectTemp%num=defectTemp%num-1
 							endif
-						else
-							defectTemp%num=defectTemp%num-1
-						endif
+						end if
 	
 					end do
+					end if
 					
 					defectPrev=>defectTemp
 					defectTemp=>defectTemp%next
@@ -1225,16 +1232,16 @@ if(associated(reactionCurrent)) then	!if we have not chosen a null event
 			defectStore=>defectStoreList%next
 
 			!add all cascade mixing products and normal cascade products to the system
-			do 1557 while(associated(defectStore))
+			do while(associated(defectStore))
 			
 				defectCurrent=>defectList(defectStore%cellNumber)
 				!STEP 2: add DefectTemp+products to the system
 				count=0
-				do 1581 j=1,numSpecies
+				do j=1,numSpecies
 					if(defectStore%defectType(j)==0) then
 						count=count+1
 					endif
-				1581 continue
+				end do
 				if(count==numSpecies) then
 					!do nothing, we have total annihilation
 				else
@@ -1245,11 +1252,11 @@ if(associated(reactionCurrent)) then	!if we have not chosen a null event
 					if(associated(defectCurrent)) then !if we aren't at the end of the list
 						
 						count=0
-						do 1582 j=1,numSpecies
+						do j=1,numSpecies
 							if(defectCurrent%defectType(j)==defectStore%defectType(j)) then
 								count=count+1
 							endif
-						1582 continue
+						end do
 						if(count==numSpecies) then
 							defectCurrent%num=defectCurrent%num+1
 							!write(*,*) 'products', products
@@ -1264,9 +1271,9 @@ if(associated(reactionCurrent)) then	!if we have not chosen a null event
 							allocate(defectPrev%defectType(numSpecies))
 							defectPrev%cellNumber=defectStore%cellNumber
 							defectPrev%num=1
-							do 1554 j=1,numSpecies
+							do j=1,numSpecies
 								defectPrev%defectType(j)=defectStore%defectType(j)
-							1554 continue
+							end do
 							defectPrev%next=>defectCurrent !if inserted defect is in the middle of the list, point it to the next item in the list
 						endif
 					else 			!add a defect to the end of the list
@@ -1277,15 +1284,15 @@ if(associated(reactionCurrent)) then	!if we have not chosen a null event
 						allocate(defectPrev%defectType(numSpecies))
 						defectPrev%cellNumber=defectStore%cellNumber
 						defectPrev%num=1
-						do 1555 j=1,numSpecies
+						do j=1,numSpecies
 							defectPrev%defectType(j)=defectStore%defectType(j)
-						1555 continue
+						end do
 					endif
 					
 				endif
 				defectStore=>defectStore%next
 			
-			1557 continue
+			end do
 			
 			!Final step: set up defectUpdate for all defects in the cell
 			defectTemp=>defectList(reactionCurrent%cellNumber(1))%next

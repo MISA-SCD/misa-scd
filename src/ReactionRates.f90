@@ -1100,10 +1100,10 @@ do i=1, numClusterReac(matNum)
 			products(1,3)=0
 		endif
 
-        if(products(1,1)==1 .AND. products(1,2)==1) then
-            products(1,1)=0
-            products(1,2)=0
-        end if
+!        if(products(1,1)==1 .AND. products(1,2)==1) then
+!            products(1,1)=0
+!            products(1,2)=0
+!        end if
 !		if(products(1,1) /= 0) then
 
 			!All Cu-SIA clusters are immobile
@@ -1392,10 +1392,10 @@ do i=1, numClusterReac(matNum)
 		endif
 
         !Cu+V Annihilation
-        if(products(1,1)==1 .AND. products(1,2)==1) then
-            products(1,1)=0
-            products(1,2)=0
-        end if
+!        if(products(1,1)==1 .AND. products(1,2)==1) then
+!            products(1,1)=0
+!            products(1,2)=0
+!        end if
 
 !		if(products(1,1) /= 0) then
 
@@ -1756,10 +1756,10 @@ do i=1, numClusterReac(matNum)
 		endif
 
         !Cu+V Annihilation
-        if(products(1,1)==1 .AND. products(1,2)==1) then
-            products(1,1)=0
-            products(1,2)=0
-        end if
+!        if(products(1,1)==1 .AND. products(1,2)==1) then
+!            products(1,1)=0
+!            products(1,2)=0
+!        end if
 
 !		if(products(1,1) /= 0) then
 
@@ -2036,10 +2036,10 @@ do i=1, numClusterReac(matNum)
 		endif
 
         !Cu+V Annihilation
-        if(products(1,1)==1 .AND. products(1,2)==1) then
-            products(1,1)=0
-            products(1,2)=0
-        end if
+!        if(products(1,1)==1 .AND. products(1,2)==1) then
+!            products(1,1)=0
+!            products(1,2)=0
+!        end if
 
 !		if(products(1,1) /= 0) then
 
@@ -4285,7 +4285,7 @@ end subroutine
 !!defect combination in the case of cascade-defect interactions. In the future, may want to 
 !!move all defect combination rules to this subroutine so that they only need to be changed once.
 
-subroutine defectCombinationRules(products, product2, defectTemp)
+subroutine defectCombinationRules(products, product2, defectTemp, isCombined)
 use derivedType
 use mod_srscd_constants
 implicit none
@@ -4293,68 +4293,82 @@ implicit none
 integer products(numSpecies), product2(numSpecies)
 integer l
 type(defect), pointer :: defectTemp
-!SIA+SIA clustering
-							
-!two 1D clusters coming together to make a sessile cluster
-if(products(3) > max3DInt .AND. defectTemp%defectType(3) > max3DInt) then
-!if(products(3) > max3DInt) then
-	products(4)=products(3)
-	products(3)=0
-endif
+logical isCombined
 
-do l=1,numSpecies
-	products(l)=products(l)+defectTemp%defectType(l)
-end do
+isCombined = .TRUE.
 
-!SIA+CuV
-if(products(1)/=0 .AND. products(3) >= products(2)) then
-    product2(3)=products(3)-products(2)
-    products(2)=0
-    products(3)=0
-else if(products(1)/=0 .AND. products(4) >= products(2)) then
-    product2(4)=products(4)-products(2)
-    products(2)=0
-    products(4)=0
-    if(product2(4)/=0 .AND. product2(4) <= max3DInt) then
-        product2(3)=product2(4)
-        product2(4)=0
-    end if
-end if
+!SIA+Cu or Cu+SIA, not combine
+if(products(1)/=0 .AND. products(2)==0 .AND. &
+        (defectTemp%defectType(3)/=0 .OR. defectTemp%defectType(4)/=0)) then    !SIA+Cu
+    isCombined=.FALSE.
 
+else if(defectTemp%defectType(1)/=0 .AND. defectTemp%defectType(2)==0 .AND. &
+        (products(3)/=0 .OR. products(4)/=0)) then  !Cu+SIA
+    isCombined=.FALSE.
 
-!V+SIA recombination
-if(products(2) >= products(3)) then
-	products(2)=products(2)-products(3)
-	products(3)=0
-else if(products(3) >= products(2)) then
-	products(3)=products(3)-products(2)
-	products(2)=0
-end if
+else	!Combine
 
-if(products(2) >= products(4)) then
-	products(2)=products(2)-products(4)
-	products(4)=0
-else if(products(4) >= products(2)) then
-	products(4)=products(4)-products(2)
-	products(2)=0
-end if
+	!two 1D clusters coming together to make a sessile cluster
+	if(products(3) > max3DInt .AND. defectTemp%defectType(3) > max3DInt) then
+	!if(products(3) > max3DInt) then
+		products(4)=products(3)
+		products(3)=0
+	end if
 
-!sessile+mobile SIA cluster makes sessile cluster
-if(products(3) /= 0. .AND. products(4) /= 0) then
-	products(4)=products(3)+products(4)
-	products(3)=0
-end if
+	do l=1,numSpecies
+		products(l)=products(l)+defectTemp%defectType(l)
+	end do
 
-!mobile+mobile SIA cluster makes sessible cluster
-if(products(3) > 4) then
-	products(4)=products(3)
-	products(3)=0
-end if
+	!SIA+CuV
+	if(products(1)/=0 .AND. products(2)/=0 .AND. products(3) > products(2)) then
+    	product2(3)=products(3)-products(2)
+    	products(2)=0
+    	products(3)=0
+	else if(products(1)/=0 .AND. products(2)/=0 .AND. products(4) > products(2)) then
+    	product2(4)=products(4)-products(2)
+    	products(2)=0
+    	products(4)=0
+    	if(product2(4)/=0 .AND. product2(4) <= max3DInt) then
+        	product2(3)=product2(4)
+			product2(4)=0
+    	end if
+	end if
 
-!sessile cluster becomes mobile again when it shrinks below max3DInt
-if(products(4) /= 0 .AND. products(4) <= max3DInt) then
-	products(3)=products(4)
-	products(4)=0
+	!V+SIA recombination
+	if(products(2) >= products(3)) then
+		products(2)=products(2)-products(3)
+		products(3)=0
+	else if(products(3) >= products(2)) then
+		products(3)=products(3)-products(2)
+		products(2)=0
+	end if
+
+	if(products(2) >= products(4)) then
+		products(2)=products(2)-products(4)
+		products(4)=0
+	else if(products(4) >= products(2)) then
+		products(4)=products(4)-products(2)
+		products(2)=0
+	end if
+
+	!sessile+mobile SIA cluster makes sessile cluster
+	if(products(3) /= 0. .AND. products(4) /= 0) then
+		products(4)=products(3)+products(4)
+		products(3)=0
+	end if
+
+	!mobile+mobile SIA cluster makes sessible cluster
+	if(products(3) > 4) then
+		products(4)=products(3)
+		products(3)=0
+	end if
+
+	!sessile cluster becomes mobile again when it shrinks below max3DInt
+	if(products(4) /= 0 .AND. products(4) <= max3DInt) then
+		products(3)=products(4)
+		products(4)=0
+	end if
+
 end if
 
 end subroutine
