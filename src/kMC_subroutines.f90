@@ -370,7 +370,7 @@ implicit none
 include 'mpif.h'
 
 type(reaction), pointer :: reactionCurrent
-type(defect), pointer :: defectCurrent, defectPrev, defectTemp, defectStoreList, defectStore, defectStoreNext
+type(defect), pointer :: defectCurrent, defectPrev, defectTemp, defectStoreList, defectStore, defectStorePrev, defectStoreNext
 type(cascadeDefect), pointer :: cascadeDefectTemp
 type(defectUpdateTracker), pointer :: defectUpdate, defectUpdateCurrent
 type(cascade), pointer :: CascadeCurrent, CascadePrev
@@ -727,7 +727,7 @@ if(associated(reactionCurrent)) then	!if we have not chosen a null event
 						end if
 
 						!NEXT: remove DefectTemp from fine mesh
-						if(isCombined ==.TRUE.	) then
+						if(isCombined .eqv. .TRUE.	) then
 							if(defectTemp%num==0) then	!error
 								write(*,*) 'error defect num zero combining with cascade defect'
 							else if(defectTemp%num==1) then	!remove that defect from the defect list
@@ -1126,6 +1126,7 @@ if(associated(reactionCurrent)) then	!if we have not chosen a null event
 						mixingEvents=mixingEvents+1
 						
 						!Choose which defect in the cascade will be combined with defectTemp already presetn in the cell
+						nullify(defectStorePrev)
 						defectStore=>defectStoreList%next
 						
 						atemp=0d0
@@ -1138,22 +1139,18 @@ if(associated(reactionCurrent)) then	!if we have not chosen a null event
 							if(atemp > r1) then
 								exit
 							endif
-							
+							defectStorePrev=>defectStore
 							defectStore=>defectStore%next
 						end do
 						
 						if( .NOT. associated(defectStore)) then
 							write(*,*) 'Error DefectStore not associated in cascade mixing'
-						endif
-						
+						else	!associated(defectStore)
+
 						!***********************************************************************
 						!Hard coded: use defect combination rules to combine defectStore and defecTemp
-						!
-						!6/19/2014: These rules have been transported to a separate subroutine
+						!These rules have been transported to a separate subroutine
 						!in order to facilitate hard-coding and keep this subroutine clean.
-						!
-						!This subroutine is placed in reactionRates.f90 in accordance with the
-						!other clustering combination rules that are hard-coded.
 						!***********************************************************************
 						do i=1, numSpecies
 							product2(i)=0
@@ -1162,39 +1159,37 @@ if(associated(reactionCurrent)) then	!if we have not chosen a null event
 						call defectCombinationRules(defectStore%defectType, product2,defectTemp, isCombined)
 
 						if(product2(3)/=0 .OR. product2(4)/=0) then
-							nullify(defectStoreNext)
-
-							defectStoreNext=>defectStore
-							if(associated(defectStore%next)) then !defectStore is at the middle of defectStoreList
-								nullify(defectStoreNext%next)
-								allocate(defectStoreNext%next)
-								nullify(defectStoreNext%next%next)
-								defectStoreNext=>defectStoreNext%next
-								allocate(defectStoreNext%defectType(numSpecies))
-								defectStoreNext%cellNumber=defectStore%cellNumber
-								defectStoreNext%num=1
+							!defectStore is at the middle (or end) of defectStoreList
+							if(associated(defectStorePrev)) then
+								nullify(defectStorePrev%next)
+								allocate(defectStorePrev%next)
+								nullify(defectStorePrev%next%next)
+								defectStorePrev=>defectStorePrev%next
+								allocate(defectStorePrev%defectType(numSpecies))
+								defectStorePrev%cellNumber=defectStore%cellNumber
+								defectStorePrev%num=1
 								do i=1, numSpecies
-									defectStoreNext%defectType(i)=product2(i)
+									defectStorePrev%defectType(i)=product2(i)
 								end do
-								defectStoreNext%next=>defectStore%next
-								defectStore%next=>defectStoreNext
-							else	!!defectStore is at the end of defectStoreList
-								nullify(defectStoreNext%next)
-								allocate(defectStoreNext%next)
-								nullify(defectStoreNext%next%next)
-								defectStoreNext=>defectStoreNext%next
-								allocate(defectStoreNext%defectType(numSpecies))
-								defectStoreNext%cellNumber=defectStore%cellNumber
-								defectStoreNext%num=1
+								defectStorePrev%next=>defectStore
+							else	!defectStore is at the beginning of defectStoreList
+								defectStorePrev=>defectStoreList
+								nullify(defectStorePrev%next)
+								allocate(defectStorePrev%next)
+								nullify(defectStorePrev%next%next)
+								defectStorePrev=>defectStorePrev%next
+								allocate(defectStorePrev%defectType(numSpecies))
+								defectStorePrev%cellNumber=defectStore%cellNumber
+								defectStorePrev%num=1
 								do i=1, numSpecies
-									defectStoreNext%defectType(i)=product2(i)
+									defectStorePrev%defectType(i)=product2(i)
 								end do
-								defectStore%next=>defectStoreNext
+								defectStorePrev%next=>defectStore
 							end if
 						end if
 						
 						!NEXT: remove DefectTemp from fine mesh
-						if(isCombined ==.TRUE.	) then
+						if(isCombined .eqv. .TRUE.	) then
 							if(defectTemp%num==0) then	!error
 								write(*,*) 'error defect num zero combining with cascade defect'
 							else if(defectTemp%num==1) then	!remove that defect from the defect list
@@ -1218,7 +1213,7 @@ if(associated(reactionCurrent)) then	!if we have not chosen a null event
 								defectTemp%num=defectTemp%num-1
 							endif
 						end if
-	
+						end if
 					end do
 					end if
 					
