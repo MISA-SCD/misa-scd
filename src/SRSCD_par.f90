@@ -1,5 +1,4 @@
-! 019.05: This program is used to simulate I-V-S or W-V-He
-
+! 2019.05: This program is used to simulate I-V-S
 !***************************************************************************************************
 !>Main program
 !!
@@ -125,8 +124,6 @@ end interface
 
 call cpu_time(time1)
 
-!Tab = character(9)  !used to output whitespace
-
 open(81, file='parameters.txt',action='read', status='old')
 
 !Initialize MPI interface
@@ -237,26 +234,6 @@ end if
 !Here we initialize the random number generators on each processor with a different seed. This 
 !is done by creating random integers on the master processor and sending them to the slaves as
 !random number seeds.
-!**********************************************
-!2019.05.04 add
-!atomsEverMesh = ((myProc%globalCoord(2)-myProc%globalCoord(1))/lattice * &
-!		(myProc%globalCoord(4)-myProc%globalCoord(3))/lattice * &
-!		(myProc%globalCoord(6)-myProc%globalCoord(5))/lattice * 2) / totalMesh
-!CuAtomsEverMeshTemp = aint(CuContent * atomsEverMesh)
-!write(CuAtomsEverMeshTemp2,'(f20.0)') CuAtomsEverMeshTemp
-!read(CuAtomsEverMeshTemp2,'(i19)') CuAtomsEverMesh
-
-!initialCeqv = dexp(-FormSingle(1,2)%Ef / (kboltzmann*temperature))
-!initialCeqi = dexp(-FormSingle(1,3)%Ef / (kboltzmann*temperature))
-
-!initialTotalV = floor(initialCeqv*atomsEverMesh*totalMesh)
-!initialTotalSIA = floor(initialCeqi*atomsEverMesh*totalMesh)
-
-!vacancyEverMesh = floor(initialCeqv*atomsEverMesh)
-!SIAEverMesh = floor(initialCeqi*atomsEverMesh)
-
-!**********************************************
-!Initialization
 
 call initializeRandomSeeds()		!set unique random number seeds in each processor
 allocate(defectList(numCells))		!Create list of defects - array
@@ -288,13 +265,11 @@ if(debugToggle=='yes') then		!inpput parameter
 	!and He implant events are tracked in the master processor.
 	
 	if(myProc%taskid==MASTER) then
-		numImplantEvents	= numImplantEventsReset		!numImplantEventsReset is read in from debug restart file
-		!numHeImplantEvents	= numHeImplantEventsReset	!numHeImplantEventsReset is read in from debug restart file
+		numImplantEvents = numImplantEventsReset		!numImplantEventsReset is read in from debug restart file
 	else
-		numImplantEvents	= 0
-		!numHeImplantEvents	= 0
+		numImplantEvents = 0
 	end if
-	elapsedTime			= elapsedTimeReset
+	elapsedTime	= elapsedTimeReset
 	!Reset the reactions within this cell and diffusion to neighboring
 	!cells in the same processor
 	do i=1,numCells
@@ -317,7 +292,6 @@ if(debugToggle=='yes') then		!inpput parameter
 	
 else
 	numImplantEvents	= 0		!<Postprocessing: number of Frenkel pairs / cascades (local)
-	!numHeImplantEvents	= 0		!<Postprocessing: number of He implantation events (local)
 	numAnnihilate		= 0		!<Postprocessing: number of annihilation reactions carried out
 	elapsedTime			= 0d0	!The simulation time that has passed
 	
@@ -340,18 +314,13 @@ end if
 TotalCascades=0
 outputCounter=0
 nullify(ActiveCascades)		! pointer ActiveCascades=NULL
-annealIdentify=.FALSE.		!<(.TRUE. if in annealing phase, .FALSE. otherwise) used to determine how to reset reaction rates (should we include implantation or not)
+annealIdentify=.FALSE.		!(.TRUE. if in annealing phase, .FALSE. otherwise) used to determine how to reset reaction rates (should we include implantation or not)
 
 do while(elapsedTime < totalTime)
 	
 	step=step+1
 	call computeVconcent()
-	!just for testing
-	!if(myProc%taskid == MASTER) then
-	!	write(*,*) '$$$$$$$$$$$$$$$$$$$$$$$$$$ elapsedTime', elapsedTime
-	!end if
-	!call DEBUGPrintReactionList(step)
-	
+
 	!Logical variable tells us whether cascade communication step needs to be carried out
 	!(0=no cascade, nonzero=number of volume element where cascade event has happened)
 	cascadeCell=0
@@ -362,7 +331,7 @@ do while(elapsedTime < totalTime)
 		if(meshingType=='adaptive') then
 			write(*,*) 'Error adaptive meshing not allowed for single element kMC'
 		end if
-		rateSingle=0d0	!
+		rateSingle=0d0
 		do cell=1,numCells
 			if(totalRateVol(cell) > rateSingle) then
 				rateSingle=totalRateVol(cell)
@@ -376,7 +345,7 @@ do while(elapsedTime < totalTime)
 !*************************************************************************
 !	if(mod(step,10)==0) then
 !		!Debugging subroutine: outputs the reaction rate in each processor
-		call outputRates(elapsedTime, step)
+!		call outputRates(elapsedTime, step)
 !	endif
 !*************************************************************************
 	
@@ -557,9 +526,9 @@ do while(elapsedTime < totalTime)
 
 		if(.NOT. associated(reactionCurrent)) then
 			nullSteps=nullSteps+1
-			!!if(myProc%numtasks==1) then
-			!!	write(*,*) 'Error null event in serial SRSCD'
-			!!endif
+			!if(myProc%numtasks==1) then
+			!	write(*,*) 'Error null event in serial SRSCD'
+			!endif
 		end if
 
 		!Input: reactionCurrent
@@ -598,10 +567,7 @@ do while(elapsedTime < totalTime)
 
 !*********************************************************
 	call updateReactionList(defectUpdate)
-	!just for testing
-	!if(myProc%taskid == MASTER) then
-	!	write(*,*) '$$$$$$$$$$$$$$$$$$$$$$$$$$ elapsedTime', elapsedTime
-	!end if
+
 	!call DEBUGPrintReactionList(step)
 
 	if(totalRate < 0d0) then

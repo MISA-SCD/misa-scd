@@ -2009,15 +2009,13 @@ nullify(defectCurrent)
 end subroutine
 
 !***************************************************************************************************
-!
 !> Subroutine outputRates(step) - outputs reaction rates to a file
-!!
-!! Outputs the total reaction rate in each processor to a file. Used for debugging and for parallel
-!! analysis
-!!
-!! Inputs: integer step (the reaction step number)
-!! Outputs: reaction rate of each processor written in file
 !
+! Outputs the total reaction rate in each processor to a file. Used for debugging and for parallel
+! analysis
+!
+! Inputs: integer step (the reaction step number)
+! Outputs: reaction rate of each processor written in file
 !****************************************************************************************************
 
 subroutine outputRates(elapsedTime, step)

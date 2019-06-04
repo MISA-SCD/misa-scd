@@ -404,12 +404,12 @@ end function
 
 !***************************************************************************************************
 !> integer function findCellWithCoordinatesFineMesh(coordinates) - finds a cell with local coordinates in the fine mesh
-!!
-!! FindCellWithCoordinates returns the cell id number that contains the coordinates given in the 
-!! double precision variable coordinates (for defect implantation in fine mesh at beginning of cascade)
-!!
-!! Inputs: coordinates(3) (double precision)
-!! Output: fine mesh cell id number (according to standard cubic meshing connectivity scheme)
+!
+! FindCellWithCoordinates returns the cell id number that contains the coordinates given in the
+! double precision variable coordinates (for defect implantation in fine mesh at beginning of cascade)
+!
+! Inputs: coordinates(3) (double precision)
+! Output: fine mesh cell id number (according to standard cubic meshing connectivity scheme)
 !***************************************************************************************************
 
 integer function findCellWithCoordinatesFineMesh(coordinates)
@@ -421,25 +421,25 @@ implicit none
 double precision coordinates(3)
 integer i,j,k,cellNumber
 
-do 10 i=1,numzcascade
-	if(coordinates(3)+numzcascade*fineLength/2d0 .LE. i*fineLength) then
+do i=1,numxcascade
+	if(coordinates(1)+numxcascade*fineLength/2d0 <= i*fineLength) then
 		exit
 	endif
-10 continue
+end do
 
-do 11 j=1,numxcascade
-	if(coordinates(1)+numxcascade*fineLength/2d0 .LE. j*fineLength) then
+do j=1,numycascade
+	if(coordinates(2)+numycascade*fineLength/2d0 <= j*fineLength) then
 		exit
 	endif
-11 continue
+end do
 
-do 12 k=1,numycascade
-	if(coordinates(2)+numycascade*fineLength/2d0 .LE. k*fineLength) then
+do k=1,numzcascade
+	if(coordinates(3)+numzcascade*fineLength/2d0 <= k*fineLength) then
 		exit
 	endif
-12 continue
+end do
 
-cellNumber=j+(k-1)*numxcascade+(i-1)*(numxcascade*numycascade)
+cellNumber=i+(j-1)*numxcascade+(k-1)*(numxcascade*numycascade)
 
 findCellWithCoordinatesFineMesh=cellNumber
 

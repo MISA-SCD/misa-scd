@@ -988,14 +988,14 @@ end subroutine
 
 !***************************************************************************************************
 !>Subroutine: Initialize Fine Mesh - initializes defect and reaction lists in a newly created fine mesh
-!!
-!!Allocates the size of the fine mesh (fine defect list and reaction list included as part of the cascade derived type),
-!!populates with defects from the coarse mesh and removes those defects from the coarse mesh.
-!!
-!!This subroutine includes cascade defect interaction with pre-existing defects.
-!!
-!!Inputs: CascadeCurrent (cascade type derived type variable)
-!!Output: CascadeCurrent (initialized with defects from coarse mesh)
+!
+!Allocates the size of the fine mesh (fine defect list and reaction list included as part of the cascade derived type),
+!populates with defects from the coarse mesh and removes those defects from the coarse mesh.
+!
+!This subroutine includes cascade defect interaction with pre-existing defects.
+!
+!Inputs: CascadeCurrent (cascade type derived type variable)
+!Output: CascadeCurrent (initialized with defects from coarse mesh)
 !***************************************************************************************************
 
 subroutine initializeFineMesh(CascadeCurrent)
@@ -1037,10 +1037,10 @@ end if
 allocate(CascadeCurrent%localDefects(numCellsCascade))
 allocate(CascadeCurrent%reactionList(numCellsCascade))
 
-!For each cell, initialize the reaction list (no reaction or He ion implantation) and defect list (single He initialized with num=0)
+!For each cell, initialize the reaction list (no reaction) and defect list
 
 do cell=1,numCellsCascade
-	
+	!initialize the defect list for each fine mesh
 	allocate(CascadeCurrent%localDefects(cell)%defectType(numSpecies))
 	nullify(CascadeCurrent%localDefects(cell)%next)
 	do j=1,numSpecies
@@ -1051,44 +1051,11 @@ do cell=1,numCellsCascade
 	CascadeCurrent%localDefects(cell)%cellNumber=cell   !fineMeshID
 
     !initialize the reaction list for each fine mesh
-!	if(HeDPARatio > 0d0) then
-	
-!		CascadeCurrent%reactionList(cell)%numReactants=0
-!		CascadeCurrent%reactionList(cell)%numProducts=1
-!		allocate(CascadeCurrent%reactionList(cell)%products(CascadeCurrent%reactionList(cell)%numProducts, numSpecies))
-		
-		!search ImplantList for He implant reactions
-!		do reac=1,numImplantReac(matNum)
-!			if(ImplantReactions(matNum,reac)%numReactants==0 .AND. ImplantReactions(matNum,Reac)%numProducts==1) then
-!				exit
-!			endif
-!		end do
-		
-!		do i=1,ImplantReactions(matNum,reac)%numProducts
-!			do j=1,numSpecies
-!				CascadeCurrent%reactionList(cell)%products(i,j)=ImplantReactions(matNum,reac)%products(i,j)
-!			end do
-!			CascadeCurrent%reactionList(cell)%cellNumber(i)=cell
-!			CascadeCurrent%reactionList(cell)%taskid(i)=myMesh(cell)%proc
-!		end do
-		
-		!Find reaction rate for He ion implantation using ImplantReactions(reac), which is input from file.
-!		CascadeCurrent%reactionList(cell)%reactionRate=findReactionRateFine(CascadeCurrent%cellNumber, ImplantReactions(matNum,reac))
-		
-		!Add this reaction rate to total rate both for the cascade and for the entire volume element
-!		totalRate=totalRate+CascadeCurrent%reactionList(cell)%reactionRate
-!		CascadeCurrent%totalRate(cell)=CascadeCurrent%totalRate(cell)+CascadeCurrent%reactionList(cell)%reactionRate
-		
-!		nullify(CascadeCurrent%reactionList(cell)%next)
-	
-!	else
-		
-		CascadeCurrent%reactionList(cell)%numReactants=0
-		CascadeCurrent%reactionList(cell)%numProducts=0
-		CascadeCurrent%reactionList(cell)%reactionRate=0d0
-		nullify(CascadeCurrent%reactionList(cell)%next)
-		
-!	end if
+	CascadeCurrent%reactionList(cell)%numReactants=0
+	CascadeCurrent%reactionList(cell)%numProducts=0
+	CascadeCurrent%reactionList(cell)%reactionRate=0d0
+	nullify(CascadeCurrent%reactionList(cell)%next)
+
 end do
 
 !defectCurrentCoarse and defectPrevCoarse will be used to peruse defects in coarse mesh and place in fine mesh
@@ -1128,7 +1095,7 @@ do while(associated(defectCurrentCoarse))
 				r2=r2+dble(binomial(n,k))*dble(volumeRatio**k)*dble((1d0-volumeRatio)**(n-k))
 				if(r2 > r1) then
 					exit
-				endif
+				end if
 			end do
 		else    !Poisson distribution, then Gaussian distrubition
 			
@@ -1168,68 +1135,76 @@ do while(associated(defectCurrentCoarse))
 					rstore=r2
 				end if
 			end do
-			!read(*,*)
 			!write(*,*) 'k', k
 		end if
-		
-!		if(k .NE. 0) then
-!			write(*,*) 'k not 0', k
-!			write(*,*) 'defectType', defectCurrentCoarse%defectType
-!			!read(*,*)
-!		endif
-		
-		!***********
+
+		!************************************************************
 		!k is the number of defects being deposited into the fine mesh
-		!***********
-		
-		do num=1,k
+		!************************************************************
+		if(k >  0) then
+			do num=1,k
 			
-			!***************************************************************
-			!Generate the cell within the fine mesh that the defect will be deposited into
-			!***************************************************************
-			r1=dprand()*dble(numCellsCascade)
-			r2=0d0
-			do cell=1,numCellsCascade
-				r2=r2+dble(cell)
-				if(r2 > r1) then
-					exit
-				endif
-			end do
-			
-			!***************************************************************
-			!Deposit the defect into the fine mesh
-			!***************************************************************
-			do j=1,numSpecies
-				products(j)=defectCurrentCoarse%defectType(j)
-			end do
-			!write(*,*) 'inserting into fine mesh', (products(j), j=1,numSpecies), 'k', k
-			nullify(defectPrevFine)
-			defectCurrentFine=>CascadeCurrent%localDefects(cell)
-			!this subroutine will move defectCurrent to the place in the list where reactionCurrent%products(i,x) exists OR, if it doesn't exist,
-			! defectPrev will point to the defect before the insertion place and defectCurrent will point to the defect after insertion
-			
-			call findDefectInList(defectCurrentFine, defectPrevFine, products)
-			
-			if(associated(defectCurrentFine)) then !if we aren't at the end of the list
-				
-				count=0
-				!Check to see if this defect already exists in the fine mesh list
-				do j=1,numSpecies
-					if(defectCurrentFine%defectType(j)==products(j)) then
-						count=count+1
+				!***************************************************************
+				!Generate the cell within the fine mesh that the defect will be deposited into
+				!***************************************************************
+				r1=dprand()*dble(numCellsCascade)
+				r2=0d0
+				do cell=1,numCellsCascade
+					r2=r2+dble(cell)
+					if(r2 > r1) then
+						exit
 					endif
 				end do
+			
+				!***************************************************************
+				!Deposit the defect into the fine mesh
+				!***************************************************************
+				do j=1,numSpecies
+					products(j)=defectCurrentCoarse%defectType(j)
+				end do
+				!write(*,*) 'inserting into fine mesh', (products(j), j=1,numSpecies), 'k', k
+				nullify(defectPrevFine)
+				defectCurrentFine=>CascadeCurrent%localDefects(cell)
+				!this subroutine will move defectCurrent to the place in the list where reactionCurrent%products(i,x) exists OR, if it doesn't exist,
+				! defectPrev will point to the defect before the insertion place and defectCurrent will point to the defect after insertion
+			
+				call findDefectInList(defectCurrentFine, defectPrevFine, products)
+			
+				if(associated(defectCurrentFine)) then !if we aren't at the end of the list
 				
-				if(count==numSpecies) then
+					count=0
+					!Check to see if this defect already exists in the fine mesh list
+					do j=1,numSpecies
+						if(defectCurrentFine%defectType(j)==products(j)) then
+							count=count+1
+						endif
+					end do
 				
-					defectCurrentFine%num=defectCurrentFine%num+1
+					if(count==numSpecies) then
+				
+						defectCurrentFine%num=defectCurrentFine%num+1
 					
-				else		!if the defect is to be inserted in the list
+					else		!if the defect is to be inserted in the list
 					
-					if(.NOT. associated(defectPrevFine)) then
-						write(*,*) 'error defectPrevFine not associated'
+						if(.NOT. associated(defectPrevFine)) then
+							write(*,*) 'error defectPrevFine not associated'
+						endif
+					
+						nullify(defectPrevFine%next)
+						allocate(defectPrevFine%next)
+						nullify(defectPrevFine%next%next)
+						defectPrevFine=>defectPrevFine%next
+						allocate(defectPrevFine%defectType(numSpecies))
+						defectPrevFine%cellNumber=cell
+						defectPrevFine%num=1
+						do j=1,numSpecies
+							defectPrevFine%defectType(j)=products(j)
+						end do
+						!if inserted defect is in the middle of the list, point it to the next item in the list
+						defectPrevFine%next=>defectCurrentFine
+					
 					endif
-					
+				else 			!add a defect to the end of the list
 					nullify(defectPrevFine%next)
 					allocate(defectPrevFine%next)
 					nullify(defectPrevFine%next%next)
@@ -1240,63 +1215,87 @@ do while(associated(defectCurrentCoarse))
 					do j=1,numSpecies
 						defectPrevFine%defectType(j)=products(j)
 					end do
-					defectPrevFine%next=>defectCurrentFine !if inserted defect is in the middle of the list, point it to the next item in the list
-					
-				endif
-			else 			!add a defect to the end of the list
-				nullify(defectPrevFine%next)
-				allocate(defectPrevFine%next)
-				nullify(defectPrevFine%next%next)
-				defectPrevFine=>defectPrevFine%next
-				allocate(defectPrevFine%defectType(numSpecies))
-				defectPrevFine%cellNumber=cell
-				defectPrevFine%num=1
-				do j=1,numSpecies
-					defectPrevFine%defectType(j)=products(j)
-				end do
-			endif
+				end if
 			
+				!***************************************************************
+				!Remove the defect from the coarse mesh
+				!***************************************************************
+!				if(.NOT. associated(defectCurrentCoarse)) then
+!					write(*,*) 'Tried to delete defect that wasnt there fine mesh initialization'
+			
+				!if defectCurrentCoarse is in the middle of the list and there is 1 of them
+!				else if(defectCurrentCoarse%num==1 .AND. associated(defectCurrentCoarse%next) .AND. associated(defectPrevCoarse)) then
+				
+!					defectPrevCoarse%next=>defectCurrentCoarse%next !remove that defect type from the system
+!					deallocate(defectCurrentCoarse%defectType)
+!					deallocate(defectCurrentCoarse)
+!					defectCurrentCoarse=>defectPrevCoarse
+			
+				!if defectCurrentCoarse is at the end of the list and there is one of them
+!				else if(defectCurrentCoarse%num==1 .AND. associated(defectPrevCoarse)) then
+!					deallocate(defectCurrentCoarse%defectType)
+!					deallocate(defectCurrentCoarse)
+!					defectCurrentCoarse=>defectPrevCoarse	!remove the last defect from the system
+!					nullify(defectPrevCoarse%next)
+			
+				!if defectCurrentCoarse is at the beginning of the list and there is one of them
+!				else if(defectCurrentCoarse%num==1 .AND. associated(defectCurrentCoarse%next)) then !removing first defect from cell i
+!					defectCurrentCoarse%num=0 !first defect in system never deallocates, it is single helium. set number equal to zero.
+			
+				!if there is only one element in the list and there is one of them
+!				else if(defectCurrentCoarse%num==1) then 	!removing only defect from cell i (single helium) - this is redundant but will keep for now
+!					defectCurrentCoarse%num=0
+			
+				!if we are trying to remove more defects than are actually present (the calculator in prev. step chose k incorrectly)
+!				else if(defectCurrentCoarse%num==0) then
+!					write(*,*) 'trying to remove a defect that isnt there (fine mesh)'
+!					write(*,*) 'k', k, 'num', num, 'num defects coarse', n
+!				else
+			
+				!If there is more than 1 defect of this type, we don't have to to do anything with the pointers
+				!and just subtract 1 from the number of defects in the system.
+!					defectCurrentCoarse%num=defectCurrentCoarse%num-1 !remove the defect from the system instead of the entire entry in the list
+!				endif
+			
+			end do
+
 			!***************************************************************
 			!Remove the defect from the coarse mesh
 			!***************************************************************
-			if(.NOT. associated(defectCurrentCoarse)) then
-				write(*,*) 'Tried to delete defect that wasnt there fine mesh initialization'
-			
-			!if defectCurrentCoarse is in the middle of the list and there is 1 of them
-			else if(defectCurrentCoarse%num==1 .AND. associated(defectCurrentCoarse%next) .AND. associated(defectPrevCoarse)) then
-				
-				defectPrevCoarse%next=>defectCurrentCoarse%next !remove that defect type from the system
-				deallocate(defectCurrentCoarse%defectType)
-				deallocate(defectCurrentCoarse)
-				defectCurrentCoarse=>defectPrevCoarse
-			
-			!if defectCurrentCoarse is at the end of the list and there is one of them
-			else if(defectCurrentCoarse%num==1 .AND. associated(defectPrevCoarse)) then
-				deallocate(defectCurrentCoarse%defectType)
-				deallocate(defectCurrentCoarse)
-				defectCurrentCoarse=>defectPrevCoarse	!remove the last defect from the system
-				nullify(defectPrevCoarse%next)
-			
-			!if defectCurrentCoarse is at the beginning of the list and there is one of them
-			else if(defectCurrentCoarse%num==1 .AND. associated(defectCurrentCoarse%next)) then !removing first defect from cell i
-				defectCurrentCoarse%num=0 !first defect in system never deallocates, it is single helium. set number equal to zero.
-			
-			!if there is only one element in the list and there is one of them
-			else if(defectCurrentCoarse%num==1) then 							!removing only defect from cell i (single helium) - this is redundant but will keep for now
+			if(k < n) then
+				defectCurrentCoarse%num=defectCurrentCoarse%num-k !remove the defect from the system instead of the entire entry in the list
+			else if(k == n) then	!defects of this type are all deposited into fine meshes
+
+				if(.NOT. associated(defectCurrentCoarse)) then
+					write(*,*) 'Tried to delete defect that wasnt there fine mesh initialization'
+
+				!if defectCurrentCoarse is in the middle of the list
+				else if(associated(defectCurrentCoarse%next) .AND. associated(defectPrevCoarse)) then
+
+					defectPrevCoarse%next=>defectCurrentCoarse%next !remove that defect type from the system
+					deallocate(defectCurrentCoarse%defectType)
+					deallocate(defectCurrentCoarse)
+					defectCurrentCoarse=>defectPrevCoarse
+
+				!if defectCurrentCoarse is at the end of the list
+				else if(associated(defectPrevCoarse)) then
+					deallocate(defectCurrentCoarse%defectType)
+					deallocate(defectCurrentCoarse)
+					defectCurrentCoarse=>defectPrevCoarse	!remove the last defect from the system
+					nullify(defectPrevCoarse%next)
+
+				!if defectCurrentCoarse is at the beginning of the list and there is one of them
+				else if(associated(defectCurrentCoarse%next)) then !removing first defect from cell i
+					defectCurrentCoarse%num=0 !first defect in system never deallocates, it is single helium. set number equal to zero.
+
+				!if there is only one element in the list and there is one of them
+				else if(defectCurrentCoarse%num==1) then 	!removing only defect from cell i (single helium) - this is redundant but will keep for now
 				defectCurrentCoarse%num=0
-			
-			!if we are trying to remove more defects than are actually present (the calculator in prev. step chose k incorrectly)
-			else if(defectCurrentCoarse%num==0) then
-				write(*,*) 'trying to remove a defect that isnt there (fine mesh)'
-				write(*,*) 'k', k, 'num', num, 'num defects coarse', n
-			else
-			
-			!If there is more than 1 defect of this type, we don't have to to do anything with the pointers
-			!and just subtract 1 from the number of defects in the system.
-				defectCurrentCoarse%num=defectCurrentCoarse%num-1 !remove the defect from the system instead of the entire entry in the list
-			endif
-			
-		end do
+
+				endif
+
+			end if
+		end if
 	end if
 	
 	defectPrevCoarse=>defectCurrentCoarse

@@ -30,15 +30,13 @@ end do
 end subroutine
 
 !***************************************************************************************************
-!
 !> Integer function cascadeCount()
-!!
-!! This subroutine counts how many cascades are active in the LOCAL mesh (not on all processors)
-!! and returns that value
-!!
-!! Inputs: none
-!! Outputs: number of cascades present
 !
+! This subroutine counts how many cascades are active in the LOCAL mesh (not on all processors)
+! and returns that value
+!
+! Inputs: none
+! Outputs: number of cascades present
 !***************************************************************************************************
 
 integer function CascadeCount()
@@ -53,27 +51,25 @@ CascadeCurrent=>ActiveCascades
 	
 count=0
 
-do 10 while(associated(CascadeCurrent))
+do while(associated(CascadeCurrent))
 	count=count+1
 	
 	CascadeCurrent=>CascadeCurrent%next
-10 continue
+end do
 
 CascadeCount=count
 
 end function
 
 !***************************************************************************************************
-!
 !> subroutine addCascadeExplicit
-!!
-!! This subroutine takes the place of chooseReaction in the case of explicit cascade implantation.
-!! It forces the program to 'choose' a cascade reaction, instead of using the Monte Carlo algorithm
-!! to do so.
-!!
-!! Inputs: none
-!! Outputs: reactionCurrent and CascadeCurrent, pointing at cascade reaction.
 !
+! This subroutine takes the place of chooseReaction in the case of explicit cascade implantation.
+! It forces the program to 'choose' a cascade reaction, instead of using the Monte Carlo algorithm
+! to do so.
+!
+! Inputs: none
+! Outputs: reactionCurrent and CascadeCurrent, pointing at cascade reaction.
 !***************************************************************************************************
 
 subroutine addCascadeExplicit(reactionCurrent)
@@ -125,12 +121,12 @@ end subroutine
 
 !***************************************************************************************************
 !> logical function cascadeMixingCheck()
-!!
-!! cascadeMixingCheck checks whether a given defect in the fine mesh interacts with the cascade. It 
-!! returns a logical value of true or false.
-!!
-!! Input: none
-!! Output: logical value for whether or not a fine mesh defect combines with a cascade.
+!
+! cascadeMixingCheck checks whether a given defect in the fine mesh interacts with the cascade. It
+! returns a logical value of true or false.
+!
+! Input: none
+! Output: logical value for whether or not a fine mesh defect combines with a cascade.
 !***************************************************************************************************
 
 logical function cascadeMixingCheck()
@@ -143,17 +139,13 @@ logical boolean
 
 !step 1: calculate the volume fraction of defectTemp in the cell
 
-!Previous version (n*m cascade mixing checks)
-!probability=cascadeVolume/(numCellsCascade*CascadeElementVol*numDisplacedAtoms)
-
 !Current version (n cascade mixing checks)
 probability=cascadeVolume/(numCellsCascade*CascadeElementVol)
-
 !write(*,*) 'mixing probability', probability
 
 !step 4: use random number to decide on interaction
 r1=dprand()
-if(r1 .GT. probability) then
+if(r1 > probability) then
 	boolean=.FALSE.
 else
 	boolean=.TRUE.
@@ -164,31 +156,28 @@ cascadeMixingCheck=boolean
 end function
 
 !***************************************************************************************************
-!
 !> Subroutine CascadeUpdateStep(cascadeCell)
-!!
-!! Carries out the communication necessary when a cascade is created or destroyed in an element
-!! that bounds another processor.
-!!
-!! Step 1: Check to see if cascade was created/destroyed in element that is in the boundary of another
-!! 	processor.
-!!
-!! Step 2: Send message to neighboring processors about whether a cascade was created/destroyed in their
-!!	boundaries, and if so the number of defects to recieve in the boundary element
-!!
-!! Step 3: Send/recieve boundary element defects (just completely re-write boundary element defects in this
-!!	step)
-!!
-!! Step 4: Update reaction rates for all diffusion reactions from elements neighboring the boundary
-!!	elements which have been updated
-!!
-!! Inputs: cascadeCell (integer, 0 if no cascade, otherwise gives number of volume element that cascade
-!!	event has occurred in)
-!!
-!! Outputs: none
-!!
-!! Actions: see above, sends/recieves information on boundary updates and updates reaction lists.
 !
+! Carries out the communication necessary when a cascade is created or destroyed in an element
+! that bounds another processor.
+!
+! Step 1: Check to see if cascade was created/destroyed in element that is in the boundary of another
+! processor.
+!
+! Step 2: Send message to neighboring processors about whether a cascade was created/destroyed in their
+! boundaries, and if so the number of defects to recieve in the boundary element
+!
+! Step 3: Send/recieve boundary element defects (just completely re-write boundary element defects in this step)
+!
+! Step 4: Update reaction rates for all diffusion reactions from elements neighboring the boundary
+!	elements which have been updated
+!
+! Inputs: cascadeCell (integer, 0 if no cascade, otherwise gives number of volume element that cascade
+!	event has occurred in)
+!
+! Outputs: none
+!
+! Actions: see above, sends/recieves information on boundary updates and updates reaction lists.
 !***************************************************************************************************
 
 subroutine cascadeUpdateStep(cascadeCell)
@@ -607,11 +596,11 @@ end subroutine
 
 !***************************************************************************************************
 !> subroutine createCascadeConnectivity()
-!!
-!! This subroutine assigns values to the connectivity matrix (global variable) used for all cascades
-!!
-!! Input: numxcascade, numycascade, nunmzcascade (global variables) : from parameters.txt
-!! Output: cascadeConnectivity (global variable)
+!
+! This subroutine assigns values to the connectivity matrix (global variable) used for all cascades
+!
+! Input: numxcascade, numycascade, nunmzcascade (global variables) : from parameters.txt
+! Output: cascadeConnectivity (global variable)
 !***************************************************************************************************
 
 subroutine createCascadeConnectivity()

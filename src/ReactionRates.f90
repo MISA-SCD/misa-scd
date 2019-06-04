@@ -128,7 +128,6 @@ do i=1, numDissocReac(matNum)
 		
 		!*************************************************************************************
 		!HARD CODED: if CSIA or large He clusters left over, need to disallow this reaction
-		!HARD CODED: if Cu/V ratio .GE. 5 then SIA kick-out activated
 		!HARD CODED: disallow Cu1V1 dissociation where the product is V1, to avoid double-counting
 		!*************************************************************************************
 		
@@ -1104,24 +1103,13 @@ do i=1, numClusterReac(matNum)
 !            products(1,1)=0
 !            products(1,2)=0
 !        end if
-!		if(products(1,1) /= 0) then
 
-			!All Cu-SIA clusters are immobile
-!			if(products(1,3) /= 0) then
-!				products(1,4)=products(1,3)+products(1,4)
-!				products(1,3)=0
-!			endif
-
-!		else
-		
         !sessile cluster becomes mobile when it shrinks below max3DInt
         if(products(1,4) /= 0 .AND. products(1,4) <= max3DInt) then
             products(1,3)=products(1,4)
             products(1,4)=0
         end if
-		
-!		endif
-		
+
 		!Total Annihilation
 		count=0
 		do j=1,numSpecies
@@ -1230,7 +1218,6 @@ do i=1, numClusterReac(matNum)
 	end if
 
     !*******************************************************
-    !In turn.
     !defectType1 = ClusterReactions(matNum,i)%reactants(2,:)
     !defectType2 = ClusterReactions(matNum,i)%reactants(1,:)
     !*******************************************************
@@ -1397,24 +1384,12 @@ do i=1, numClusterReac(matNum)
 !            products(1,2)=0
 !        end if
 
-!		if(products(1,1) /= 0) then
-
-			!All Cu-SIA clusters are immobile
-!			if(products(1,3) /= 0) then
-!				products(1,4)=products(1,3)+products(1,4)
-!				products(1,3)=0
-!			endif
-
-!		else
-		
-			!sessile cluster becomes mobile when it shrinks below max3DInt
+		!sessile cluster becomes mobile when it shrinks below max3DInt
         if(products(1,4) /= 0 .AND. products(1,4) <= max3DInt) then
             products(1,3)=products(1,4)
             products(1,4)=0
         end if
-		
-!		endif
-		
+
 		!Total Annihilation
 		count=0
 		do j=1,numSpecies
@@ -1761,24 +1736,12 @@ do i=1, numClusterReac(matNum)
 !            products(1,2)=0
 !        end if
 
-!		if(products(1,1) /= 0) then
-
-			!All He-SIA clusters are immobile
-!			if(products(1,3) /= 0) then
-!				products(1,4)=products(1,3)
-!				products(1,3)=0
-!			endif
-
-!		else
-		
         !sessile cluster becomes mobile when it shrinks below max3DInt
         if(products(1,4) /= 0 .AND. products(1,4) <= max3DInt) then
             products(1,3)=products(1,4)
             products(1,4)=0
         endif
-		
-!		endif
-		
+
 		!Total Annihilation
 		count=0
 		do j=1,numSpecies
@@ -1877,7 +1840,6 @@ do i=1, numClusterReac(matNum)
 	end if
 
     !*******************************************************
-    !In turn.
     !defectType1 = ClusterReactions(matNum,i)%reactants(2,:)
     !defectType2 = ClusterReactions(matNum,i)%reactants(1,:)
     !*******************************************************
@@ -2041,24 +2003,12 @@ do i=1, numClusterReac(matNum)
 !            products(1,2)=0
 !        end if
 
-!		if(products(1,1) /= 0) then
-
-			!All He-SIA clusters are immobile
-!			if(products(1,3) /= 0) then
-!				products(1,4)=products(1,3)
-!				products(1,3)=0
-!			endif
-
-!		else
-		
         !sessile cluster becomes mobile when it shrinks below max3DInt
         if(products(1,4) /= 0 .AND. products(1,4) <= max3DInt) then
             products(1,3)=products(1,4)
             products(1,4)=0
         end if
-		
-!		endif
-		
+
 		!Total Annihilation
 		count=0
 		do j=1,numSpecies
@@ -2160,29 +2110,30 @@ end do
 
 end subroutine
 
-!>Subroutine add diffusion reactions - adds reactions to a reaction list representing diffusion 
-!!between volume elements. 
-!!
-!! Inputs: initial and final cell numbers, initial and final processors (if diffusion occurs between
-!!domains of multiple processors), direction (1-6), and defect type (we are adding all diffusion reactions associated with 
-!!a single defect type, which was a defect that changed in the previous Monte Carlo step)
-!!
-!!Structure of subroutine:
-!!
-!!1) Identify if the defect type corresponds to an allowed diffusion reaction reaction using reaction lists
-!!
-!!2) Find the reaction in the reaction list for this volume element (if it exists) and go to the
-!!end of the list if not (NOTE: list is unsorted as of now, 03/31/2015)
-!!
-!!3) Calculate the reaction rate based on the defect type and numbers of defects of this type
-!!in this element and in the neighboring element
-!!
-!!4) Update the reaction rate / add the reaction / remove the reaction, depending on if the
-!!reaction is already present and if the reaction rate is nonzero.
-!!
-!!2015.04.06: Potential bug: if a volume element shares multiple faces with another grain, 
-!!we are only creating one reaction for diffusion from the grain to the grain boundary.
-!!Need to include diffusion direction in findReactionInListDiff
+!*************************************************************************************************
+!>Subroutine add diffusion reactions - adds reactions to a reaction list representing diffusion between volume elements.
+!
+! Inputs: initial and final cell numbers, initial and final processors (if diffusion occurs between
+!domains of multiple processors), direction (1-6), and defect type (we are adding all diffusion reactions associated with
+!a single defect type, which was a defect that changed in the previous Monte Carlo step)
+!
+!Structure of subroutine:
+!
+!1) Identify if the defect type corresponds to an allowed diffusion reaction reaction using reaction lists
+!
+!2) Find the reaction in the reaction list for this volume element (if it exists) and go to the
+!end of the list if not (NOTE: list is unsorted as of now, 03/31/2015)
+!
+!3) Calculate the reaction rate based on the defect type and numbers of defects of this type
+!in this element and in the neighboring element
+!
+!4) Update the reaction rate / add the reaction / remove the reaction, depending on if the
+!reaction is already present and if the reaction rate is nonzero.
+!
+!2015.04.06: Potential bug: if a volume element shares multiple faces with another grain,
+!we are only creating one reaction for diffusion from the grain to the grain boundary.
+!Need to include diffusion direction in findReactionInListDiff
+!***********************************************************************************************
 
 subroutine addDiffusionReactions(cell1, cell2, proc1, proc2, dir, defectType)
 use mod_srscd_constants
@@ -2322,35 +2273,26 @@ end do
 end subroutine
 
 !***************************************************************************************************
-! Subroutine addDiffusionCoarseToFine
+!>Subroutine add diffusion reactions from the coarse mesh to a fine mesh element (cascade) -
+!adds reactions to a reaction list representing diffusion between volume elements.
 !
-! Updates diffusion reaction rates associated wtih defectType from cell1 in coarse mesh to CasacadeCurrent
-! fine mesh.
-!
-! Inputs: cell (cell number in coarse mesh), proc (of coarse mesh cell), CascadeCurrent (contains all
-! 	cascade data), defectType(numSpecies)
-!
+! Inputs: coarse mesh cell number, processor, cascade ID number, and defect type (we are adding all diffusion reactions associated with
+!a single defect type, which was a defect that changed in the previous Monte Carlo step)
 ! Outputs: creates new reaction in reactionList for diffusion from coarse mesh to fine mesh
+!
+!Structure of subroutine:
+!
+!1) Identify if the defect type corresponds to an allowed diffusion reaction reaction using reaction lists
+!
+!2) Find the reaction in the reaction list for this volume element (if it exists) and go to the
+!end of the list if not (NOTE: list is unsorted as of now, 03/31/2015)
+!
+!3) Calculate the reaction rate based on the defect type and numbers of defects of this type
+!in this element and in the entire fine mesh. A modified reaction distance is used for this reaction rate.
+!
+!4) Update the reaction rate / add the reaction / remove the reaction, depending on if the
+!reaction is already present and if the reaction rate is nonzero.
 !***************************************************************************************************
-
-!>Subroutine add diffusion reactions from the coarse mesh to a fine mesh element (cascade) - adds reactions to a reaction list representing diffusion 
-!!between volume elements. 
-!!
-!! Inputs: coarse mesh cell number, processor, cascade ID number, and defect type (we are adding all diffusion reactions associated with 
-!!a single defect type, which was a defect that changed in the previous Monte Carlo step)
-!!
-!!Structure of subroutine:
-!!
-!!1) Identify if the defect type corresponds to an allowed diffusion reaction reaction using reaction lists
-!!
-!!2) Find the reaction in the reaction list for this volume element (if it exists) and go to the
-!!end of the list if not (NOTE: list is unsorted as of now, 03/31/2015)
-!!
-!!3) Calculate the reaction rate based on the defect type and numbers of defects of this type
-!!in this element and in the entire fine mesh. A modified reaction distance is used for this reaction rate.
-!!
-!!4) Update the reaction rate / add the reaction / remove the reaction, depending on if the
-!!reaction is already present and if the reaction rate is nonzero.
 
 subroutine addDiffusionCoarseToFine(cell, proc, CascadeCurrent, defectType)
 use mod_srscd_constants
@@ -2508,36 +2450,29 @@ do 10 i=1, numDiffReac(matNum)
 end subroutine
 
 !***************************************************************************************************
-! Subroutine addDiffusionReactionsFine
-!
-! Updates diffusion reaction rates associated with defectType1 from cell1 to cell2 in fine mesh of cascade. 
-!
-! Inputs: cascade (cascade ID number), cell1, cell2, (volume element ID numbers), proc1, proc2 (processor numbers),
-! dir (diffusion direction), defectType
-! Outputs: updates multi-defect reaction rates in CascadeCurrent%reactionList(cell) for the correct cascade
-!***************************************************************************************************
-
 !>Subroutine add diffusion reactions (fine mesh) - adds reactions to a reaction list representing diffusion 
-!!between volume elements inside a cascade mesh. 
-!!
-!!Inputs: cascade ID number, initial and final cell numbers, initial and final processors (if diffusion occurs between
-!!domains of multiple processors), direction (1-6), and defect type (we are adding all diffusion reactions associated with 
-!!a single defect type, which was a defect that changed in the previous Monte Carlo step)
-!!
-!!Structure of subroutine:
-!!
-!!1) Identify if the defect type corresponds to an allowed diffusion reaction reaction using reaction lists
-!!
-!!2) Find the reaction in the reaction list for this volume element (if it exists) and go to the
-!!end of the list if not (NOTE: list is unsorted as of now, 03/31/2015)
-!!
-!!3) Calculate the reaction rate based on the defect type and numbers of defects of this type
-!!in this element and in the neighboring element (using the fine mesh element volume)
-!!
-!!4) Update the reaction rate / add the reaction / remove the reaction, depending on if the
-!!reaction is already present and if the reaction rate is nonzero.
-!!
-!!NOTE: includes possibility of diffusion from fine mesh to coarse mesh.
+!between volume elements inside a cascade mesh.
+!
+!Inputs: cascade ID number, initial and final cell numbers, initial and final processors (if diffusion occurs between
+!domains of multiple processors), direction (1-6), and defect type (we are adding all diffusion reactions associated with
+!a single defect type, which was a defect that changed in the previous Monte Carlo step)
+! Outputs: updates multi-defect reaction rates in CascadeCurrent%reactionList(cell) for the correct cascade
+!
+!Structure of subroutine:
+!
+!1) Identify if the defect type corresponds to an allowed diffusion reaction reaction using reaction lists
+!
+!2) Find the reaction in the reaction list for this volume element (if it exists) and go to the
+!end of the list if not (NOTE: list is unsorted as of now, 03/31/2015)
+!
+!3) Calculate the reaction rate based on the defect type and numbers of defects of this type
+!in this element and in the neighboring element (using the fine mesh element volume)
+!
+!4) Update the reaction rate / add the reaction / remove the reaction, depending on if the
+!reaction is already present and if the reaction rate is nonzero.
+!
+!NOTE: includes possibility of diffusion from fine mesh to coarse mesh.
+!***************************************************************************************************
 
 subroutine addDiffusionReactionsFine(cascadeID, cell1, cell2, proc1, proc2, dir, defectType)
 use mod_srscd_constants
@@ -2688,13 +2623,7 @@ do 10 i=1, numDiffReac(matNum)
 
 end subroutine
 
-
 !***************************************************************************************************
-!TEMP example function used to inform the structure of other functions in this module.
-!This will be deleted in the final version of the program.
-!This subroutine is used to initialize the reaction list in coarse mesh.
-!***************************************************************************************************
-
 !> Function find reaction rate - finds reaction rate for implantation reaction (He, Frenkel pairs, cascades).
 !!
 !! Inputs: cell ID, reaction parameters (input from file)
@@ -2707,6 +2636,7 @@ end subroutine
 !! NOTE: for the case of non-uniform implantation, reaction rates can be dependent on the z-coordinate
 !! of a volume element, using a local DPA rate and helium implantation rate read in from an 
 !! input file.
+!***************************************************************************************************
 
 double precision function findReactionRate(cell, reactionParameter)
 use mod_srscd_constants
@@ -2783,24 +2713,16 @@ endif
 end function
 
 !***************************************************************************************************
+!> Function find reaction rate fine - finds reaction rate for implantation reaction (Helium only) in a fine mesh.
+! Cascades cannot be implanted inside other cascades
 !
-! This subroutine finds the reaction rate for implantation reactions (He only for now) within the
-! fine mesh.
-! This subroutine is used to initialize the reaction list in fine mesh.
-!
-! Inputs: cell number in fine mesh, reaction parameters
+! Inputs: cell ID, reaction parameters (input from file)
 ! Outputs: reaction rate for He implantation or error message
 !
+! Calculates reaction rates according to hard-coded formulas. Have the possibility to create
+! an arbitrary number of unique formulas for computing reaction rates. Each formula has a
+! function type associated with it, that function type is assigned in the input file.
 !***************************************************************************************************
-
-!> Function find reaction rate fine - finds reaction rate for implantation reaction (Helium only) in a fine mesh.
-!! Cascades cannot be implanted inside other cascades
-!!
-!! Inputs: cell ID, reaction parameters (input from file)
-!!
-!! Calculates reaction rates according to hard-coded formulas. Have the possibility to create
-!! an arbitrary number of unique formulas for computing reaction rates. Each formula has a
-!! function type associated with it, that function type is assigned in the input file.
 
 !double precision function findReactionRateFine(cell, reactionParameter)
 !use mod_srscd_constants
@@ -2847,20 +2769,19 @@ end function
 !This was seen as inevitable for this program, and this is where the majority of changes should
 !occur if we choose to change material parameters.
 !***************************************************************************************************
-
 !> Function find reaction rate impurity - finds reaction rate for trapping of SIA loops by impurities (Carbon).
-!!
-!! Inputs: cell ID, reaction parameters (input from file), defect type (array size numSpecies)
-!!
-!! Calculates reaction rates for SIA loop trapping according to hard-coded formulas. Have the possibility to create
-!! an arbitrary number of unique formulas for computing reaction rates. Each formula has a
-!! function type associated with it, that function type is assigned in the input file.
-!!
-!! In this case, glissile loops become sessile when they interact with impurities. Have the option
-!! for 3-D or 1-D diffusion of loops.
-!!
-!! We have also added the reaction rate for sessile clusters to become mobile again using a 
-!! binding energy in this subroutine. The binding energy is read in from an input file.
+!
+! Inputs: cell ID, reaction parameters (input from file), defect type (array size numSpecies)
+!
+! Calculates reaction rates for SIA loop trapping according to hard-coded formulas. Have the possibility to create
+! an arbitrary number of unique formulas for computing reaction rates. Each formula has a
+! function type associated with it, that function type is assigned in the input file.
+!
+! In this case, glissile loops become sessile when they interact with impurities. Have the option
+! for 3-D or 1-D diffusion of loops.
+!
+! We have also added the reaction rate for sessile clusters to become mobile again using a
+! binding energy in this subroutine. The binding energy is read in from an input file.
 
 double precision function findReactionRateImpurity(defectType, cell, reactionParameter)
 use mod_srscd_constants
@@ -3028,6 +2949,7 @@ findReactionRateImpurityFine=reactionRate
 
 end function
 
+!**************************************************************************************************************
 !> Function find reaction rate dissociation - finds reaction rate for point defects to dissociate from clusters
 !!
 !! Inputs: cell ID, reaction parameters (input from file), defect type (array size numSpecies), dissociating defect type
@@ -3035,6 +2957,7 @@ end function
 !! Calculates reaction rates for dissociation of a point defect from a cluster. Have the possibility to create
 !! an arbitrary number of unique formulas for computing reaction rates. Each formula has a
 !! function type associated with it, that function type is assigned in the input file.
+!**************************************************************************************************************
 
 double precision function findReactionRateDissoc(defectType, products, cell, reactionParameter)
 use mod_srscd_constants
@@ -4263,27 +4186,19 @@ end do
 end subroutine
 
 !***************************************************************************************************
-! defectCombinationRules (subroutine)
-!
-! Hard-coded information on what happens to defects when they cluster (for example, annihilation, 
-! formation of sessile SIA clusters, etc
-!
-! Inputs: products(numSpecies), defectTemp
-! Outputs: products(numSpeices), updated using the combination rules from defectTemp
-!***************************************************************************************************
-
 !>defectCombinationRules (subroutine)
-!!
-!!Hard-coded information on what happens to defects when they cluster (for example, annihilation, 
-!!formation of sessile SIA clusters, etc). 
-!!
-!!Inputs: products(numSpecies), defectTemp
-!!Outputs: products(numSpeices), updated using the combination rules from defectTemp
-!!
-!!NOTE: defect combination rules are primarily input directly into subroutines addMultiDefectReactions
-!!and addMultiDefectReactionsFine, and this subroutine is only called in order to get correct
-!!defect combination in the case of cascade-defect interactions. In the future, may want to 
-!!move all defect combination rules to this subroutine so that they only need to be changed once.
+!
+!Hard-coded information on what happens to defects when they cluster (for example, annihilation,
+!formation of sessile SIA clusters, etc).
+!
+!Inputs: products(numSpecies), product2(numSpecies), defectTemp, isCombined
+!Outputs: products(numSpeices), updated using the combination rules from defectTemp
+!
+!NOTE: defect combination rules are primarily input directly into subroutines addMultiDefectReactions
+!and addMultiDefectReactionsFine, and this subroutine is only called in order to get correct
+!defect combination in the case of cascade-defect interactions. In the future, may want to
+!move all defect combination rules to this subroutine so that they only need to be changed once.
+!***************************************************************************************************
 
 subroutine defectCombinationRules(products, product2, defectTemp, isCombined)
 use derivedType
@@ -4428,7 +4343,6 @@ end if
 end subroutine
 
 !***************************************************************************************************
-!
 ! Function findDPARateLocal(zCoord)
 !
 ! This function finds the DPA rate in a non-uniform implantation profile given a z-coordinate of the

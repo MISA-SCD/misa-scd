@@ -103,8 +103,6 @@ double precision, allocatable :: VcoordinateList(:,:)
 double precision, allocatable :: IcoordinateList(:,:)
 
 !character *1 Tab
-
-
 !For testing
 double precision CuDiffusivity
 
@@ -112,7 +110,6 @@ double precision CuDiffusivity
 double precision temperature			!<Temperature (K)
 double precision tempStore				!<Temperature read in (K) - used when temp. changes several times during a simulation
 double precision CuContent              !<The initial content of Cu in iron
-!double precision HeDPARatio				!<Helium to dpa ratio (atoms per atom)   default = 0d0
 double precision DPARate				!<DPA rate in dpa/s
 double precision atomsize				!<atomic volume (nm^3)
 double precision DPA					!<DPA tracker (not a parameter)
@@ -151,7 +148,7 @@ integer numGrains						!<Number of grains inside polycrystal (default 1)
 character*20 implantType				!<(Frenkel pairs or cascades), used to determine the type of damage in the simulation
 character*20 grainBoundaryToggle		!<Used to determine whether or not we are using grain boundaries to remove defects from simulation
 !character*20 HeSIAToggle				!<Toggles whether or not we allow HeSIA clusters to form ('yes' or 'no')
-character*20 SIAPinToggle				!<Toggles whether or not we allow HeV clusters to pin SIA clusters (without annihilating V+SIA)
+!character*20 SIAPinToggle				!<Toggles whether or not we allow HeV clusters to pin SIA clusters (without annihilating V+SIA)
 character*20 meshingType				!<(adaptive or nonAdaptive), used to determine whether we are simulating cascade implantation with adaptive meshing
 character*20 implantScheme				!<(MonteCarlo or explicit), used to determine if cascades are implanted through Monte Carlo algorithm or explicitly
 character*20 implantDist				!<(Uniform or NonUniform), used to determine if defects are implanted uniformly or if DPA rate / He implant rate are given for each volume element
