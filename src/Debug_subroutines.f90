@@ -1,4 +1,3 @@
-! $Header: /home/CVS//srscd/src/Debug_subroutines.f90,v 1.5 2015/06/09 20:51:19 aydunn Exp $
 !***************************************************************************************************
 !
 !> subroutine DEBUGcheckForUnadmissibleDefects(reactionCurrent) - checks to see if any defects are not allowed
@@ -37,14 +36,14 @@ interface
 end interface
 
 !Check coarse mesh
-do 10 i=1,numCells
+do i=1,numCells
 	defectCurrent=>defectList(i)
 	count=0
-	do 11 j=1,numSpecies
-		if(defectCurrent%defectType(j) .NE. 0) then
+	do j=1,numSpecies
+		if(defectCurrent%defectType(j) /= 0) then
 			count=count+1
 		endif
-	11 continue
+	end do
 	
 	!No admissible defects have 3 or 4 nonzero numbers in defectType()
 	if(count == 3 .OR. count == 4) then
@@ -53,20 +52,20 @@ do 10 i=1,numCells
 		call DEBUGPrintDefects(step)
 	endif
 	defectCurrent=>defectCurrent%next
-10 continue
+end do
 
 !Check fine mesh
 CascadeCurrent=>ActiveCascades
 
-do 12 while(Associated(CascadeCurrent))
-	do 13 i=1,numCellsCascade
+do while(associated(CascadeCurrent))
+	do i=1,numCellsCascade
 		defectCurrent=>CascadeCurrent%localDefects(i)
 		count=0
-		do 14 j=1,numSpecies
-			if(defectCurrent%defectType(j) .NE. 0) then
+		do j=1,numSpecies
+			if(defectCurrent%defectType(j) /= 0) then
 				count=count+1
 			endif
-		14 continue
+		end do
 		
 		!No admissible defects have 3 or 4 nonzero numbers in defectType()
 		if(count == 3 .OR. count == 4) then
@@ -75,9 +74,9 @@ do 12 while(Associated(CascadeCurrent))
 			call DEBUGPrintDefects(step)
 		endif
 		defectCurrent=>defectCurrent%next
-	13 continue
+	end do
 	CascadeCurrent=>CascadeCurrent%next
-12 continue
+end do
 
 end subroutine
 
@@ -292,24 +291,26 @@ type(Cascade), pointer :: CascadeCurrent
 !if(myProc%taskid==MASTER) then
 	write(*,*) 'processor', myProc%taskid, 'cascade defects after step', step
 	CascadeCurrent=>ActiveCascades
-	do 18 while(associated(CascadeCurrent))
-		write(*,*) 'Cascade', CascadeCurrent%cascadeID, 'coarse cell', CascadeCurrent%cellNumber, 'defects'
-		do 19 i=1,numCellsCascade
+	do while(associated(CascadeCurrent))
+		write(*,*) 'Cascade', CascadeCurrent%cascadeID, 'coarse cell', CascadeCurrent%cellNumber
+		write(*,*) 'defects: '
+		do i=1,numCellsCascade
 			defectCurrent=>CascadeCurrent%localDefects(i)%next
-			do 20 while(Associated(defectCurrent))
-				write(*,*) defectCurrent%defectType, defectCurrent%cellNumber, defectCurrent%num
+			do while(Associated(defectCurrent))
+				write(*,*) 'type',defectCurrent%defectType, 'cellNumber',&
+						defectCurrent%cellNumber, 'num',defectCurrent%num
 				defectCurrent=>defectCurrent%next
-			20 continue
-		19 continue
+			end do
+		end do
 		
 		do i=1,numCellsCascade
-			write(*,*) 'cell', i, 'total rate', CascadeCurrent%totalRate(i), 'total rate', totalRate
+			write(*,*) 'cell',i,'cell total rate',CascadeCurrent%totalRate(i),'processor total rate',totalRate
 		end do
 
 		write(*,*) 'cascade reaction limit', CascadeReactionLimit
 		write(*,*)
 		CascadeCurrent=>CascadeCurrent%next
-	18 continue
+	end do
 !endif
 
 end subroutine

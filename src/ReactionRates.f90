@@ -1005,47 +1005,28 @@ do i=1, numClusterReac(matNum)
 
 		else if(defectType1(1)/=0 .AND. defectType1(2)/=0 .AND.  defectType2(4)>defectType1(2)) then
 
-			if((defectType2(4)-defectType1(2))<=max3DInt) then
-				numProducts=2
-				allocate(products(numProducts,numSpecies))
-				
-				!Create temporary arrays with the defect types associated with this reaction (SIA pinning)
-				do j=1,numSpecies
-					reactants(1,j)=defectType1(j)
-					reactants(2,j)=defectType2(j)
-                    if(j==2) then
-                        products(1,j)=0
-                    else
-                        products(1,j)=defectType1(j)
-                    end if
-					if(j==3) then
-                        products(2,j)=defectType2(4)-defectType1(2)
-					else if(j==4) then
-						products(2,j)=0
-					else
-						products(2,j)=defectType2(j)
-					endif
-				end do
-			else
-                numProducts=2
-                allocate(products(numProducts,numSpecies))
+			numProducts=2
+			allocate(products(numProducts,numSpecies))
 
-                !Create temporary arrays with the defect types associated with this reaction (SIA pinning)
-                do j=1,numSpecies
-                    reactants(1,j)=defectType1(j)
-                    reactants(2,j)=defectType2(j)
-                    if(j==2) then
-                        products(1,j)=0
-                    else
-                        products(1,j)=defectType1(j)
-                    end if
-                    if(j==4) then
-                        products(2,j)=defectType2(4)-defectType1(2)
-                    else
-                        products(2,j)=defectType2(j)
-                    endif
-                end do
+			!Create temporary arrays with the defect types associated with this reaction (SIA pinning)
+			do j=1,numSpecies
+				reactants(1,j)=defectType1(j)
+				reactants(2,j)=defectType2(j)
+				if(j==2) then
+					products(1,j)=0
+				else
+					products(1,j)=defectType1(j)
+				end if
+				if(j==4) then
+					products(2,j)=defectType2(4)-defectType1(2)
+				else
+					products(2,j)=defectType2(j)
+				endif
+			end do
 
+			if(products(2,4)<=max3DInt) then
+				products(2,3)=products(2,4)
+				products(2,4)=0
 			end if
 		else
 			numProducts=1
@@ -1289,45 +1270,29 @@ do i=1, numClusterReac(matNum)
 
 		else if(defectType2(1)/=0 .AND. defectType2(2)/=0 .AND.  defectType1(4)>defectType2(2)) then
 
-			if((defectType1(4)-defectType2(2))<=max3DInt) then
-				numProducts=2
-				allocate(products(numProducts,numSpecies))
+			numProducts=2
+			allocate(products(numProducts,numSpecies))
 
-				do j=1,numSpecies
-					reactants(2,j)=defectType1(j)
-					reactants(1,j)=defectType2(j)
-                    if(j==2) then
-                        products(1,j)=0
-                    else
-                        products(1,j)=defectType2(j)
-                    end if
-                    if(j==3) then
-                        products(2,j)=defectType1(4)-defectType2(2)
-                    else if(j==4) then
-                        products(2,j)=0
-                    else
-                        products(2,j)=defectType1(j)
-                    end if
-				end do
-			else
-				numProducts=2
-				allocate(products(numProducts,numSpecies))
+			do j=1,numSpecies
+				reactants(2,j)=defectType1(j)
+				reactants(1,j)=defectType2(j)
+				if(j==2) then
+					products(1,j)=0
+				else
+					products(1,j)=defectType2(j)
+				end if
+				if(j==4) then
+					products(2,j)=defectType1(4)-defectType2(2)
+				else
+					products(2,j)=defectType1(j)
+				end if
+			end do
 
-				do j=1,numSpecies
-					reactants(2,j)=defectType1(j)
-					reactants(1,j)=defectType2(j)
-                    if(j==2) then
-                        products(1,j)=0
-                    else
-                        products(1,j)=defectType2(j)
-                    end if
-                    if(j==4) then
-                        products(2,j)=defectType1(4)-defectType2(2)
-                    else
-                        products(2,j)=defectType1(j)
-                    end if
-				end do
-			endif
+			if(products(2,4) <= max3DInt) then
+				products(2,3)=products(2,4)
+				products(2,4)=0
+			end if
+
 		else
 			numProducts=1
 			allocate(products(numProducts,numSpecies))
@@ -1640,48 +1605,30 @@ do i=1, numClusterReac(matNum)
 
 		else if(defectType1(1)/=0 .AND. defectType1(2)/=0 .AND.  defectType2(4)>defectType1(2)) then
 
-			if((defectType2(4)-defectType1(2))<=max3DInt) then
-				numProducts=2
-				allocate(products(numProducts,numSpecies))
-				
-				!Create temporary arrays with the defect types associated with this reaction (SIA pinning)
-				do j=1,numSpecies
-					reactants(1,j)=defectType1(j)
-					reactants(2,j)=defectType2(j)
-					if(j==2) then
-                        products(1,j)=0
-                    else
-                        products(1,j)=defectType1(j)
-                    end if
-					if(j==3) then
-                        products(2,j)=defectType2(4)-defectType1(2)
-					else if(j==4) then
-                        products(2,j)=0
-					else
-						products(2,j)=defectType2(j)
-					endif
-				end do
-			else
-                numProducts=2
-                allocate(products(numProducts,numSpecies))
+			numProducts=2
+			allocate(products(numProducts,numSpecies))
 
-                !Create temporary arrays with the defect types associated with this reaction (SIA pinning)
-                do j=1,numSpecies
-                    reactants(1,j)=defectType1(j)
-                    reactants(2,j)=defectType2(j)
-                    if(j==2) then
-                        products(1,j)=0
-                    else
-                        products(1,j)=defectType1(j)
-                    end if
-                    if(j==4) then
-                        products(2,j)=defectType2(4)-defectType1(2)
-                    else
-                        products(2,j)=defectType2(j)
-                    endif
-                end do
+			!Create temporary arrays with the defect types associated with this reaction (SIA pinning)
+			do j=1,numSpecies
+				reactants(1,j)=defectType1(j)
+				reactants(2,j)=defectType2(j)
+				if(j==2) then
+					products(1,j)=0
+				else
+					products(1,j)=defectType1(j)
+				end if
+				if(j==4) then
+					products(2,j)=defectType2(4)-defectType1(2)
+				else
+					products(2,j)=defectType2(j)
+				endif
+			end do
 
+			if(products(2,4) <= max3DInt) then
+				products(2,3)=products(2,4)
+				products(2,4)=0
 			end if
+
 		else
 			numProducts=1
 			allocate(products(numProducts,numSpecies))
@@ -1767,7 +1714,7 @@ do i=1, numClusterReac(matNum)
 		!find the reaction rate
 		call checkReactionLegality(numProducts, products, isLegal)
 		
-		if(isLegal .eqv. .TRUE.) then
+		if(isLegal .EQV. .TRUE.) then
 			reactionRate=findReactionRateMultipleFine(CascadeCurrent, defectType1, defectType2, cell, ClusterReactions(matNum,i))
 		else
 			reactionRate=0d0
@@ -1890,6 +1837,7 @@ do i=1, numClusterReac(matNum)
 
         !SIA+CuV
         if(defectType2(1)/=0 .AND. defectType2(2)/=0 .AND.  defectType1(3)>defectType2(2)) then
+			numProducts=2
             allocate(products(numProducts,numSpecies))
             !Create temporary arrays with the defect types associated with this reaction (SIA pinning)
             do j=1,numSpecies
@@ -1909,46 +1857,29 @@ do i=1, numClusterReac(matNum)
 
 		else if(defectType2(1)/=0 .AND. defectType2(2)/=0 .AND.  defectType1(4)>defectType2(2)) then
 
-			if((defectType1(4)-defectType2(2))<=max3DInt) then
-				numProducts=2
-				allocate(products(numProducts,numSpecies))
-				
-				!Create temporary arrays with the defect types associated with this reaction (clustering)
-                do j=1,numSpecies
-                    reactants(2,j)=defectType1(j)
-                    reactants(1,j)=defectType2(j)
-                    if(j==2) then
-                        products(1,j)=0
-                    else
-                        products(1,j)=defectType2(j)
-                    end if
-                    if(j==3) then
-                        products(2,j)=defectType1(4)-defectType2(2)
-                    else if(j==4) then
-                        products(2,j)=0
-                    else
-                        products(2,j)=defectType1(j)
-                    end if
-                end do
-			else
-                numProducts=2
-                allocate(products(numProducts,numSpecies))
+			numProducts=2
+			allocate(products(numProducts,numSpecies))
 
-                do j=1,numSpecies
-                    reactants(2,j)=defectType1(j)
-                    reactants(1,j)=defectType2(j)
-                    if(j==2) then
-                        products(1,j)=0
-                    else
-                        products(1,j)=defectType2(j)
-                    end if
-                    if(j==4) then
-                        products(2,j)=defectType1(4)-defectType2(2)
-                    else
-                        products(2,j)=defectType1(j)
-                    end if
-                end do
+			do j=1,numSpecies
+				reactants(2,j)=defectType1(j)
+				reactants(1,j)=defectType2(j)
+				if(j==2) then
+					products(1,j)=0
+				else
+					products(1,j)=defectType2(j)
+				end if
+				if(j==4) then
+					products(2,j)=defectType1(4)-defectType2(2)
+				else
+					products(2,j)=defectType1(j)
+				end if
+			end do
+
+			if(products(2,4) <= max3DInt) then
+				products(2,3)=products(2,4)
+				products(2,4)=0
 			end if
+
 		else
 			numProducts=1
 			allocate(products(numProducts,numSpecies))

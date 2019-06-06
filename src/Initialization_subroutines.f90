@@ -1264,7 +1264,7 @@ do while(associated(defectCurrentCoarse))
 			!***************************************************************
 			if(k < n) then
 				defectCurrentCoarse%num=defectCurrentCoarse%num-k !remove the defect from the system instead of the entire entry in the list
-			else if(k == n) then	!defects of this type are all deposited into fine meshes
+			else	!defects of this type are all deposited into fine meshes
 
 				if(.NOT. associated(defectCurrentCoarse)) then
 					write(*,*) 'Tried to delete defect that wasnt there fine mesh initialization'
@@ -1289,8 +1289,8 @@ do while(associated(defectCurrentCoarse))
 					defectCurrentCoarse%num=0 !first defect in system never deallocates, it is single helium. set number equal to zero.
 
 				!if there is only one element in the list and there is one of them
-				else if(defectCurrentCoarse%num==1) then 	!removing only defect from cell i (single helium) - this is redundant but will keep for now
-				defectCurrentCoarse%num=0
+!				else if(defectCurrentCoarse%num==1) then 	!removing only defect from cell i (single helium) - this is redundant but will keep for now
+!				defectCurrentCoarse%num=0
 
 				endif
 

@@ -533,7 +533,7 @@ do while(elapsedTime < totalTime)
 
 		!Input: reactionCurrent
 		!Output: defectUpdateCurrent, CascadeCurrent
-		call updateDefectList(reactionCurrent, defectUpdateCurrent, CascadeCurrent)
+		call updateDefectList(reactionCurrent, defectUpdateCurrent, CascadeCurrent, step)
 
 		!call DEBUGPrintDefectList(step)
 
@@ -882,7 +882,7 @@ do annealIter=1,annealSteps	!default value: annealSteps = 1
 						end if
 					end if
 			
-					call updateDefectList(reactionCurrent, defectUpdateCurrent, CascadeCurrent)
+					call updateDefectList(reactionCurrent, defectUpdateCurrent, CascadeCurrent,step)
 			
 					!call DEBUGPrintDefectUpdate(defectUpdate)
 			
@@ -921,7 +921,7 @@ do annealIter=1,annealSteps	!default value: annealSteps = 1
 				!write(*,*) 'null step', myProc%taskid
 			end if
 	
-			call updateDefectList(reactionCurrent, defectUpdateCurrent, CascadeCurrent)
+			call updateDefectList(reactionCurrent, defectUpdateCurrent, CascadeCurrent, step)
 		
 			if(associated(reactionCurrent)) then
 				if(reactionCurrent%numReactants==-10) then

@@ -95,7 +95,7 @@ atemp_test = atemp_cell
 !***********************************************************************
 if(r2timesa <= atemp) then
 	!do nothing, we have already chosen our reaction
-else
+else	!r2timesa > atemp
 	CascadeCurrent=>ActiveCascades
 	
 	outer2: do while(associated(CascadeCurrent))
@@ -360,7 +360,7 @@ end subroutine
 !actual defect numbers and not defectCurrentUpdate%num.
 !***************************************************************************************************
 
-subroutine updateDefectList(reactionCurrent, defectUpdateCurrent, CascadeCurrent)
+subroutine updateDefectList(reactionCurrent, defectUpdateCurrent, CascadeCurrent, step)
 use mod_srscd_constants
 use DerivedType
 use ReactionRates
@@ -369,7 +369,7 @@ implicit none
 include 'mpif.h'
 
 type(reaction), pointer :: reactionCurrent
-type(defect), pointer :: defectCurrent, defectPrev, defectTemp, defectStoreList, defectStore, defectStorePrev, defectStoreNext
+type(defect), pointer :: defectCurrent, defectPrev, defectTemp, defectStoreList, defectStore, defectStorePrev
 type(cascadeDefect), pointer :: cascadeDefectTemp
 type(defectUpdateTracker), pointer :: defectUpdate, defectUpdateCurrent
 type(cascade), pointer :: CascadeCurrent, CascadePrev
@@ -382,6 +382,7 @@ integer i, j, k, l, m, same, products(numSpecies), tag, tracker, totalLocalRecv,
 integer product2(numSpecies)
 double precision diffusionRandom
 logical flag, isCombined
+integer step
 
 !Used for cascade recombination
 double precision r1, atemp
@@ -557,7 +558,7 @@ if(associated(reactionCurrent)) then	!if we have not chosen a null event
 				defectStoreList%defectType(i)=0
 			end do
 			defectStoreList%num=0
-			defectStore%cellNumber=0	!unknown
+			defectStoreList%cellNumber=0	!unknown
 
 			nullify(defectStoreList%next)
 			defectStore=>defectStoreList
@@ -1236,7 +1237,7 @@ if(associated(reactionCurrent)) then	!if we have not chosen a null event
 				write(*,*) 'rate', reactionCurrent%reactionRate
 				write(*,*) 'cascade number', cascadeCurrent%cascadeID
 				
-				call DEBUGPrintDefects(0)
+				call DEBUGPrintDefects(step)
 				call MPI_ABORT(MPI_COMM_WORLD,ierr)
 			
 			!if there is one defect of this type and it is in the middle of the list, remove it from the list
@@ -3982,11 +3983,9 @@ do while(associated(defectUpdateCurrent))
 			end do
 
 		!*******************************************************************************************
-		!
 		! DefectUpdateCurrent%cascadeNumber .NE. 0 means that the defect that has been updated is inside a cascade.
 		! 
-		! Therefore we update all relevant reactions within the correct cascade's fine mesh
-		!
+		! Therefore we update all relevant reactions within the correct cascade's fine mes
 		!*******************************************************************************************
 			
 		else
@@ -4007,7 +4006,7 @@ do while(associated(defectUpdateCurrent))
 			!Check to make sure that we have exited at the correct cascade
 			if(.NOT. associated(CascadeCurrent)) then
 				write(*,*) 'error CascadeCurrent not associated in updateReactionList'
-			endif
+			end if
 
 			!Single-defect reactions associated with defects of type defectTemp in fine mesh	
 			call addSingleDefectReactionsFine(defectUpdateCurrent%cascadeNumber,defectUpdateCurrent%cellNumber,defectTemp)
@@ -4021,7 +4020,7 @@ do while(associated(defectUpdateCurrent))
 					call addMultiDefectReactionsFine(defectUpdateCurrent%cascadeNumber, defectUpdateCurrent%cellNumber,&
 						defectTemp, defectCurrent%defectType)
 				
-				endif
+				end if
 					
 				defectCurrent=>defectCurrent%next
 				

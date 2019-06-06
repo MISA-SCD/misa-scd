@@ -224,14 +224,14 @@ else if(implantType=='Cascade') then
 	!Part 1: Cascade implantation rate
 	
 	!search ImplantList for cascade reactions
-	do 22 reac=1,numImplantReac(matNum)
+	do reac=1,numImplantReac(matNum)
 		if(ImplantReactions(matNum,reac)%numReactants==-10 .AND. ImplantReactions(matNum,reac)%numProducts==0) then	
 			
 			!we have found cascade implantation
 			exit
 		
 		endif
-	22 continue
+	end do
 	
 	!Update the total reaction rate by subtracting the old reaction rate and adding the new one
 	totalRate=totalRate-reactionList(cell)%reactionRate
@@ -253,48 +253,10 @@ else if(implantType=='Cascade') then
 	else
 		write(*,*) 'error implant scheme in reaction list update'
 	endif
+
 	
-	!Part 2: He implantation rate
-!	if(HeDPARatio .GT. 0d0) then
-		
-		!Point reactionCurrent at He implantation
-!		reactionCurrent=>reactionList(cell)%next
-		
-		!Verify that it is pointed correctly
-!		if(reactionCurrent%numReactants==0 .AND. reactionCurrent%numProducts==1) then
-			!Do nothing
-!		else
-!			write(*,*) 'error second reaction in list not He implantation'
-!		endif
-		
-!		do 23 reac=1,numImplantReac(matNum)
-!			if(ImplantReactions(matNum,reac)%numReactants==0 .AND. ImplantReactions(matNum,reac)%numProducts==1) then
-				
-				!we have found He implantation
-!				exit
-			
-!			endif
-!		23 continue
-	
-		!Update the total reaction rate by subtracting the old reaction rate and adding the new one
-!		totalRate=totalRate-reactionCurrent%reactionRate
-!		totalRateVol(cell)=totalRateVol(cell)-reactionCurrent%reactionRate
-		
-		!Update the reaction rate for implanting helium
-!		reactionCurrent%reactionRate=findReactionRate(cell, ImplantReactions(matNum,reac))
-		
-		!Finish updating the total reaction rate
-!		totalRate=totalRate+reactionCurrent%reactionRate
-!		totalRateVol(cell)=totalRateVol(cell)+reactionCurrent%reactionRate
-		
-		!At this point, only Cascade implantation and He implantation are initialized, all other reactions should be deleted.
-!		nullify(reactionCurrent%next)
-		
-!	else
-	
-		nullify(reactionList(cell)%next)
-	
-!	endif
+	nullify(reactionList(cell)%next)
+
 
 else
 
@@ -305,15 +267,13 @@ endif
 end subroutine
 
 !***************************************************************************************************
-!
 !> subroutine resetReactionListSingleCell(cell) - resets an entire reaction list in a single volume element
-!!
-!! Resets the reaction list for all reactions within a single cell (used when a cascade is created or
-!! deleted within that cell, all reaction rates change because volume changes)
-!!
-!! Input: cell (integer): cell number
-!! Outputs: reaction rates for all reactions in a cell
 !
+! Resets the reaction list for all reactions within a single cell (used when a cascade is created or
+! deleted within that cell, all reaction rates change because volume changes)
+!
+! Input: cell (integer): cell number
+! Outputs: reaction rates for all reactions in a cell
 !***************************************************************************************************
 
 subroutine resetReactionListSingleCell(cell)
@@ -337,15 +297,15 @@ call clearReactionListSingleCell(cell)
 if(annealIdentify .eqv. .FALSE.) then
 	!Reset the reaction rate for cascade implantation (changed due to volume change in the cell)
 	call updateImplantRateSingleCell(cell)
-endif
+end if
 
 defectUpdate=>defectList(cell)
 
-do 10 while(associated(defectUpdate))
+do while(associated(defectUpdate))
 	
-	do 11 i=1,numSpecies
+	do i=1,numSpecies
 		defectTemp(i)=defectUpdate%defectType(i)
-	11 continue
+	end do
 	
 	!Single-defect reactions associated with defects of type defectTemp	
 	call addSingleDefectReactions(cell,defectTemp)
@@ -353,19 +313,19 @@ do 10 while(associated(defectUpdate))
 	!Multi-defect reactions associated with defects of type defectTemp and defectCurrent%defectType (Scan over
 	!all defect types in the defect list)
 	defectCurrent=>defectList(cell)
-	do 59 while(associated(defectCurrent))
+	do while(associated(defectCurrent))
 		call addMultiDefectReactions(cell, defectTemp, defectCurrent%defectType)
 		defectCurrent=>defectCurrent%next
-	59 continue
+	end do
 
 	!Diffusion reactions
-	do 60 j=1,6
+	do j=1,6
 		
 		if (myMesh(cell)%numNeighbors(j)==0) then
 			write(*,*) 'error myMesh does not have neighbors in this direction'
 		endif
 		
-		do 61 k=1,myMesh(cell)%numNeighbors(j)
+		do k=1,myMesh(cell)%numNeighbors(j)
 
 			!Add diffusion reactions from this cell to neighbors and from neighbors to this cell		
 			if(polycrystal=='yes') then
@@ -374,8 +334,8 @@ do 10 while(associated(defectUpdate))
 				localGrainID=myMesh(cell)%material
 				
 				!Find the grain ID number of the neighboring volume element
-				if(myMesh(cell)%neighborProcs(j,k) .NE. myProc%taskid .AND. &
-					myMesh(cell)%neighborProcs(j,k) .NE. -1) then
+				if(myMesh(cell)%neighborProcs(j,k) /= myProc%taskid .AND. &
+					myMesh(cell)%neighborProcs(j,k) /= -1) then
 				
 					neighborGrainID=myBoundary(j,myMesh(cell)%neighbors(j,k))%material
 				else if(myMesh(cell)%neighborProcs(j,k) == -1) then
@@ -395,14 +355,14 @@ do 10 while(associated(defectUpdate))
 					!Assume perfect sinks at grain boundaries - treat grain boundaries like free surfaces for now
 					call addDiffusionReactions(cell, 0, myProc%taskid, -1, j, defectTemp)													
 				
-				endif
+				end if
 
 			else
 			
 				call addDiffusionReactions(cell, myMesh(cell)%neighbors(j,k), myProc%taskid, &
 					myMesh(cell)%neighborProcs(j,k), j, defectTemp)
 			
-			endif
+			end if
 				
 			!Add diffusion reactions from the neighboring cell into this one
 			if(myMesh(cell)%neighborProcs(j,k)==myProc%taskid) then
@@ -416,11 +376,11 @@ do 10 while(associated(defectUpdate))
 					call addDiffusionReactions(myMesh(cell)%neighbors(j,k), cell, myProc%taskid, &
 						myProc%taskid, j, defectTemp)
 				
-				endif
-			endif
-		61 continue
+				end if
+			end if
+		end do
 		
-	60 continue
+	end do
 
 	!***********************************************************************************
 	!Diffusion between coarse mesh and fine mesh - coarse to fine
@@ -440,8 +400,8 @@ do 10 while(associated(defectUpdate))
 		
 	CascadeCurrent=>ActiveCascades
 	
-	do 62 while(associated(CascadeCurrent))
-	
+	do while(associated(CascadeCurrent))
+
 		if(CascadeCurrent%cellNumber==cell) then
 			
 !			if(myProc%taskid==MASTER) then
@@ -455,11 +415,11 @@ do 10 while(associated(defectUpdate))
 		
 		CascadeCurrent=>CascadeCurrent%next
 		
-	62 continue
+	end do
 
 	defectUpdate=>defectUpdate%next
 	
-10 continue
+end do
 
 end subroutine
 
