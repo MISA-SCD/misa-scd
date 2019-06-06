@@ -1,4 +1,4 @@
-! $Header: /home/CVS//srscd/src/MeshReader.f90,v 1.11 2015/12/10 18:19:18 aydunn Exp $
+!**************************************************************************************************
 !>Module Mesh Reader: creates a processor mesh and volume element mesh using input from file
 !!
 !!This module is responsible for reading the mesh from a file (in a specific format) and creating
@@ -17,6 +17,7 @@
 !!5.28.2014: NOTE: the SRSCD_par program is currently unable to accept meshes in which the processor
 !!of a neighboring element in a given direction is not equal to the (global) neighboring processor in that same
 !!direction (can be caused by uneven meshing and irregular division of elements)
+!**************************************************************************************************
 
 module MeshReader
 use mod_srscd_constants
@@ -26,23 +27,20 @@ implicit none
 contains
 
 !***************************************************************************************************
-!Subroutines for creating uniform mesh. Some subroutines are re-used in non-uniform mesh, but 
-!most are different.
-!***************************************************************************************************
-
 !>Subroutine read Mesh Uniform - creates processor and mesh files from uniform mesh input
-!!
-!!This is the main subroutine that controls reading the uniform mesh. It reads in the mesh
-!!from a file and divides the volume elements between the processors in the parallel
-!!simulation. If a division such that each processor has at least one element is not possible,
-!!then the subroutine returns an error. It also creates a 'processor mesh', indicating
-!!the bounds of each processor. NOTE: this subroutine is for uniform meshes only, a different
-!!subroutine has been created to read in non-uniform meshes (and these have not been 
-!!implemented in the rest of the program)
-!!
-!!Input: filename of mesh file
-!!
-!!Outputs: myProc (processors with meshes), myMesh, and myBoundary
+!
+!This is the main subroutine that controls reading the uniform mesh. It reads in the mesh
+!from a file and divides the volume elements between the processors in the parallel
+!simulation. If a division such that each processor has at least one element is not possible,
+!then the subroutine returns an error. It also creates a 'processor mesh', indicating
+!the bounds of each processor. NOTE: this subroutine is for uniform meshes only, a different
+!subroutine has been created to read in non-uniform meshes (and these have not been
+!implemented in the rest of the program)
+!
+!Input: filename of mesh file
+!
+!Outputs: myProc (processors with meshes), myMesh, and myBoundary
+!***************************************************************************************************
 
 subroutine readMeshUniform(filename)
 use mod_srscd_constants
@@ -57,6 +55,7 @@ character*50 filename, filename2, filename3
 logical flag
 double precision volumeFaces(3), totalArea, length, tempCoord(3)
 integer element, localElements(3), localElem, numxLocal, numyLocal, numzLocal, globalCell, globalNeighbor, maxElement
+integer tempx1,tempx2,tempy1,tempy2,tempz1,tempz2
 integer tracker
 double precision, allocatable :: globalMeshCoord(:,:)
 double precision, allocatable :: globalStrain(:,:)
@@ -334,6 +333,55 @@ element=1
 systemVol=0d0
 
 localElements(3)=0
+
+if(myProc%localCoord(1)==myProc%globalCoord(1) .AND. myProc%localCoord(2)==myProc%globalCoord(2)) then
+	numxLocal=numx
+else if(myProc%localCoord(1)==myProc%globalCoord(1)) then	!on the left border
+	tempx1=0
+	tempx2 = myProc%localCoord(2)/(length/2d0)
+	if((dble(tempx2)*(length/2d0)) <=  myProc%localCoord(2) < (dble(tempx2+1)*(length/2d0))) then
+		if(mod(tempx2,2)==0) then
+			tempx2 = tempx2/2
+		else
+			tempx2 = (tempx2+1)/2
+		end if
+	end if
+	numxLocal=tempx2
+else if(myProc%localCoord(2)==myProc%globalCoord(2)) then	!on the right border
+	tempx2=0
+	tempx1 = myProc%localCoord(1)/(length/2d0)
+	if((dble(tempx1)*(length/2d0)) <=  myProc%localCoord(1) < (dble(tempx1+1)*(length/2d0))) then
+		if(mod(tempx1,2)==0) then
+			tempx1 = tempx1/2
+		else
+			tempx1 = (tempx1+1)/2
+		end if
+	end if
+	numxLocal=numx-tempx1
+
+else	!in the middle
+	tempx1 = myProc%localCoord(1)/(length/2d0)
+	tempx2 = myProc%localCoord(2)/(length/2d0)
+	if((dble(tempx1)*(length/2d0)) <=  myProc%localCoord(1) < (dble(tempx1+1)*(length/2d0))) then
+		if(mod(tempx1,2)==0) then
+			tempx1 = tempx1/2
+		else
+			tempx1 = (tempx1+1)/2
+		end if
+	end if
+	if((dble(tempx2)*(length/2d0)) <=  myProc%localCoord(2) < (dble(tempx2+1)*(length/2d0))) then
+		if(mod(tempx2,2)==0) then
+			tempx2 = tempx2/2
+		else
+			tempx2 = (tempx2+1)/2
+		end if
+	end if
+	numxLocal = tempx2-tempx1
+
+end if
+
+
+!read meshes
 do k=1,numz
 	localElements(2)=0
 	do j=1,numy

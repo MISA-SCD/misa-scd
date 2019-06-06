@@ -185,7 +185,6 @@ if(iMPALEtoggle=='no'.AND.nanoporous=='no') then
 
 	grain=1
 	n=1
-	
 	do i=1,numz
 		if(dble(i) > dble(n*numz)/dble(numGrains)) then
 			grain=grain+1
@@ -193,6 +192,7 @@ if(iMPALEtoggle=='no'.AND.nanoporous=='no') then
 		endif
 		do j=1,numy
 			do k=1,numx
+
 				write(82,*) (k-1)*length+length/2d0, (j-1)*length+length/2d0, (i-1)*length+length/2d0, grain
 			end do
 			write(82,*)

@@ -21,10 +21,10 @@ type(processorData) myProc								!<Contains processor information (id, neighbor
 type(mesh), allocatable :: myMesh(:)					!<Contains (local) mesh information
 type(boundaryMesh), allocatable ::  myBoundary(:,:)		!<Boundary elements (direction, element #)
 integer numCells										!<Number of cells in local mesh
-integer totalMesh               !total meshes in the sysytem
+integer totalMesh                                       !<Total meshes in the sysytem
+double precision meshLength                             !<Length of a coarse mesh
 integer totalX,totalY,totalZ
 integer localX,localY,localZ
-double precision meshLength
 
 !reaction and defect lists
 type(reaction), pointer :: reactionList(:)				!<List of reactions in local (coarse) mesh

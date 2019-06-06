@@ -1,5 +1,4 @@
 !***************************************************************************************************
-!
 !> subroutine DEBUGcheckForUnadmissibleDefects(reactionCurrent) - checks to see if any defects are not allowed
 !!
 !! This subroutine peruses the defect list and cascade defect lists and checks to see if any defects
@@ -13,7 +12,6 @@
 !!        step, used to display what step we are on
 !!
 !! OUTPUT: unadmissible defects, if any (on the screen)
-!
 !***************************************************************************************************
 
 subroutine DEBUGCheckForUnadmissible(reactionCurrent, step)
@@ -95,12 +93,12 @@ type(defectUpdateTracker), pointer :: defectUpdate, defectUpdateCurrent
 !output list of defects to update (for updating reaction list)
 if(myProc%taskid==MASTER) then
 	defectUpdateCurrent=>defectUpdate%next
-	do 18 while(Associated(defectUpdateCurrent))
+	do while(Associated(defectUpdateCurrent))
 		write(*,*) 'update defect'
 		write(*,*) defectUpdateCurrent%defectType, 'cell', defectUpdateCurrent%cellNumber, 'num', defectUpdateCurrent%num, &
 			'proc', defectUpdateCurrent%proc, 'dir', defectUpdateCurrent%dir
 		defectUpdateCurrent=>defectUpdateCurrent%next
-	18 continue
+	end do
 endif
 
 end subroutine
@@ -316,10 +314,8 @@ type(Cascade), pointer :: CascadeCurrent
 end subroutine
 
 !***********************************************************************
-!
 !> Subroutine debug print reaction - outputs the reaction chosen at a given step in the 
-!!master processor. Used for debugging.
-!
+!master processor. Used for debugging.
 !***********************************************************************
 
 subroutine DEBUGPrintReaction(reactionCurrent, step)
@@ -365,7 +361,9 @@ write(*,*)
 
 end subroutine
 
-!2019.05.09
+!***********************************************************************
+!> Subroutine debug print defectList - outputs defects in the coarse meshes of this processor.
+!***********************************************************************
 subroutine DEBUGPrintDefectList(step)
 	use mod_srscd_constants
 	use DerivedType

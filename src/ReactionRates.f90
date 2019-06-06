@@ -3810,8 +3810,8 @@ if(reactionParameter%functionType==2) then
 		!Find information on defects and volume element size in coarse mesh element containing this cascade
 
 		coarseCell=CascadeCurrent%cellNumber
-		
-		coarseLength=myMesh(coarseCell)%length
+
+        length=myMesh(coarseCell)%length
 		
 		coarseVolume=myMesh(coarseCell)%volume
 			
@@ -3827,8 +3827,8 @@ if(reactionParameter%functionType==2) then
 		!diffusion directions)
 		!***********************************************************************
 		
-		fineToCoarseLength=(coarseLength-numxCascade*fineLength)&
-			/(dlog((coarseLength-(numxCascade-1)*fineLength)**2d0/(fineLength**2d0)))
+		fineToCoarseLength=(length-numxCascade*fineLength)&
+			/(dlog((length-(numxCascade-1)*fineLength)**2d0/(fineLength**2d0)))
 			
 		!Reaction Rate using the average diffusion distance
 		
