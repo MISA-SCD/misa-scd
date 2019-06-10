@@ -61,6 +61,9 @@ double precision, allocatable :: globalMeshCoord(:,:)
 double precision, allocatable :: globalStrain(:,:)
 integer, allocatable :: globalMeshConnect(:,:), globalMaterial(:)
 
+double precision tempMeshCoord(3), tempStrain(6)
+integer tempMaterial
+
 interface
 
 	subroutine createConnectLocalPeriodic(numx, numy, numz, globalMeshCoord, globalMeshConnect)
@@ -302,18 +305,18 @@ totalZ = numz
 
 !These arrays create a global mesh and global list of material numbers and coordinates, but are discarded
 !once the local mesh is finished.
-allocate(globalMaterial(numTotal))
-allocate(globalMeshCoord(numTotal,3))
-allocate(globalMeshConnect(numTotal,6))
-allocate(globalStrain(numTotal,6))	!first 3 coordinates are mesh coordinates, last 6 coordinates are strain tensor
+!!allocate(globalMaterial(numTotal))
+!!allocate(globalMeshCoord(numTotal,3))
+!!allocate(globalMeshConnect(numTotal,6))
+!!allocate(globalStrain(numTotal,6))	!first 3 coordinates are mesh coordinates, last 6 coordinates are strain tensor
 
 
 !Create global connectivity (uniform cubic mesh - use same rule as above, count by x then y then z)
-if(meshType=='periodic') then
-	call createConnectGlobalPeriodicUniform(globalMeshConnect, numx, numy, numz)
-else if(meshType=='freeSurfaces') then
-	call createConnectGlobalFreeSurfUniform(globalMeshConnect, numx, numy, numz)
-end if
+!if(meshType=='periodic') then
+!!	call createConnectGlobalPeriodicUniform(globalMeshConnect, numx, numy, numz)
+!!else if(meshType=='freeSurfaces') then
+!!	call createConnectGlobalFreeSurfUniform(globalMeshConnect, numx, numy, numz)
+!!end if
 
 !Tells program that we are about to start reading in element coordinates and material numbers
 do while(flag .eqv. .FALSE.)
@@ -324,15 +327,11 @@ do while(flag .eqv. .FALSE.)
 end do
 flag=.FALSE.
 
-!NumxLocal, numyLocal, numzLocal are used to determine the size of the mesh inside the local processor.
-!They are calculated during the next step.
+!Step 3b: find how many volume elements are in local processor and allocate myMesh accordingly
+!numxLocal, numyLocal, numzLocal are used to determine the size of the mesh inside the local processor.
 numxLocal=0
 numyLocal=0
 numzLocal=0
-element=1
-systemVol=0d0
-
-localElements(3)=0
 
 if(myProc%localCoord(1)==myProc%globalCoord(1) .AND. myProc%localCoord(2)==myProc%globalCoord(2)) then
 	numxLocal=numx
@@ -380,143 +379,196 @@ else	!in the middle
 
 end if
 
-
-!read meshes
-do k=1,numz
-	localElements(2)=0
-	do j=1,numy
-		localElements(1)=0
-		do i=1,numx
-			!read in the coordinates and material number from file of this element (coordinates are the center of the element)
-			read(80,*) globalMeshCoord(element,1),globalMeshCoord(element,2),globalMeshCoord(element,3),&
-				globalMaterial(element)
-				
-			if(strainField=='yes') then
-			
-				read(50,*) tempCoord(1), tempCoord(2), tempCoord(3), globalStrain(element,1), globalStrain(element,2), &
-					globalStrain(element,3), globalStrain(element,4), globalStrain(element,5), globalStrain(element,6)
-					
-				if(tempCoord(1) /= globalMeshCoord(element,1)) then	!not equal
-					write(*,*) 'Error strain mesh does not match normal mesh'
-				else if(tempCoord(2) /= globalMeshcoord(element,2)) then
-					write(*,*) 'Error strain mesh does not match normal mesh'
-				else if(tempCoord(3) /= globalMeshCoord(element,3)) then
-					write(*,*) 'Error strain mesh does not match normal mesh'
-				end if
-			
-			end if
-				
-			if(numMaterials==1) then
-				systemVol=systemVol+length**3d0
-			else if(globalMaterial(element)==1) then	!only add to system volume if we are NOT at a grain boundary
-				systemVol=systemVol+length**3d0
-			else
-				!Do nothing
-			end if
-			
-			!If this element is within the local bounds of this processor, as defined in step 2
-			if(globalMeshCoord(element,1) > myProc%localCoord(1) .AND. globalMeshCoord(element,1) <= myProc%localCoord(2) &
-				.AND. globalMeshCoord(element,2) > myProc%localCoord(3) .AND. globalMeshCoord(element,2) <= myProc%localCoord(4) &
-				.AND. globalMeshCoord(element,3) > myProc%localCoord(5) .AND. globalMeshCoord(element,3) <= myProc%localCoord(6)) then
-				
-				!used to count the number of elements in the x-, y-, and z-directions within each processor
-				localElements(1)=localElements(1)+1			!add elements in the x-direction
-				if(localElements(1)==1) then
-					localElements(2)=localElements(2)+1		!create another row in y-direction
-				end if
-				if(localElements(2)==1 .AND. localElements(1)==1) then
-					localElements(3)=localElements(3)+1		!create another row in the z-direction
-				end if
-				
-				!Here, we keep increasing numxLocal, numyLocal, numzLocal until the entire local mesh
-				!is read in
-				
-				if(localElements(1) > numxLocal) then
-					numxLocal=localElements(1)
-				end if
-				if(localElements(2) > numyLocal) then
-					numyLocal=localElements(2)
-				end if
-				if(localElements(3) > numzLocal) then
-					numzLocal=localElements(3)
-				end if
-			end if
-			
-			element=element+1
-		end do
-	end do
-end do
-
-!If any processors don't have volume elements in them (too many procs), we create an error message
-if(numxLocal*numyLocal*numzLocal==0) then
-	write(*,*) 'error processors with no volume elements'
-	call MPI_ABORT(MPI_COMM_WORLD,ierr)
-	stop
-end if
-
-!Step 3b: find how many volume elements are in local processor and allocate myMesh accordingly
-
-write(*,*) 'proc', myProc%taskid, 'numx numy numz', numxLocal, numyLocal, numzLocal
-
-allocate(myMesh(numxLocal*numyLocal*numzLocal))
-
 !this variable is used at various points in SRSCD; lets us know the length fo myMesh(:)
 numCells=numxLocal*numyLocal*numzLocal	!total cells of this processor
 localX=numxLocal
 localY=numyLocal
 localZ=numzLocal
 
+!If any processors don't have volume elements in them (too many procs), we create an error message
+if(numCells==0) then
+	write(*,*) 'error processors with no volume elements'
+	call MPI_ABORT(MPI_COMM_WORLD,ierr)
+	stop
+end if
+
+write(*,*) 'proc', myProc%taskid, 'numx numy numz', numxLocal, numyLocal, numzLocal
+
+!Step 3c: Read meshes. And for each volume element in myMesh, assign coordinates and material number (and proc number)
+!We can't read from the file directly into myMesh, because we don't know how big to make it until
+!we read in all of the volume element information. Therefore, we allocate it and then reread from the
+!global mesh back into myMesh.
+allocate(myMesh(numCells))
+element=0
+localElem=0
+systemVol=0d0
+!!localElements(3)=0
+
+do k=1,numz
+!!	localElements(2)=0
+	do j=1,numy
+!!		localElements(1)=0
+		do i=1,numx
+			!read in the coordinates and material number from file of this element (coordinates are the center of the element)
+			read(80,*) tempMeshCoord(1),tempMeshCoord(2),tempMeshCoord(3),tempMaterial
+			element=element+1
+
+			if(tempMeshCoord(1) > myProc%localCoord(1) .AND. tempMeshCoord(1) <= myProc%localCoord(2) &
+					.AND. tempMeshCoord(2) > myProc%localCoord(3) .AND. tempMeshCoord(2) <= myProc%localCoord(4) &
+					.AND. tempMeshCoord(3) > myProc%localCoord(5) .AND. tempMeshCoord(3) <= myProc%localCoord(6)) then
+				localElem=localElem+1
+				myMesh(localElem)%coordinates(1)=tempMeshCoord(1)
+				myMesh(localElem)%coordinates(2)=tempMeshCoord(2)
+				myMesh(localElem)%coordinates(3)=tempMeshCoord(3)
+				myMesh(localElem)%material=tempMaterial
+				myMesh(localElem)%proc=myProc%taskid
+				myMesh(localElem)%globalID=element
+			end if
+
+			if(strainField=='yes') then
+			
+				read(50,*) tempCoord(1), tempCoord(2), tempCoord(3), tempStrain(1), tempStrain(2), &
+						tempStrain(3), tempStrain(4), tempStrain(5), tempStrain(6)
+					
+				if(tempCoord(1) /= tempMeshCoord(1)) then	!not equal
+					write(*,*) 'Error strain mesh does not match normal mesh'
+				else if(tempCoord(2) /= tempMeshCoord(2)) then
+					write(*,*) 'Error strain mesh does not match normal mesh'
+				else if(tempCoord(3) /= tempMeshCoord(3)) then
+					write(*,*) 'Error strain mesh does not match normal mesh'
+				end if
+				if(tempCoord(1) > myProc%localCoord(1) .AND. tempCoord(1) <= myProc%localCoord(2) &
+						.AND. tempCoord(2) > myProc%localCoord(3) .AND. tempCoord(2) <= myProc%localCoord(4) &
+						.AND. tempCoord(3) > myProc%localCoord(5) .AND. tempCoord(3) <= myProc%localCoord(6)) then
+					do l=1,6
+						myMesh(localElem)%strain(l)=tempStrain(l)
+					end do
+				end if
+			end if
+				
+			if(numMaterials==1) then
+				systemVol=systemVol+length**3d0
+			else if(tempMaterial==1) then	!only add to system volume if we are NOT at a grain boundary
+				systemVol=systemVol+length**3d0
+			else
+				!Do nothing
+			end if
+
+			!If this element is within the local bounds of this processor, as defined in step 2
+!!			if(globalMeshCoord(element,1) > myProc%localCoord(1) .AND. globalMeshCoord(element,1) <= myProc%localCoord(2) &
+!!				.AND. globalMeshCoord(element,2) > myProc%localCoord(3) .AND. globalMeshCoord(element,2) <= myProc%localCoord(4) &
+!!				.AND. globalMeshCoord(element,3) > myProc%localCoord(5) .AND. globalMeshCoord(element,3) <= myProc%localCoord(6)) then
+				
+				!used to count the number of elements in the x-, y-, and z-directions within each processor
+!!				localElements(1)=localElements(1)+1			!add elements in the x-direction
+!!				if(localElements(1)==1) then
+!!					localElements(2)=localElements(2)+1		!create another row in y-direction
+!!				end if
+!!				if(localElements(2)==1 .AND. localElements(1)==1) then
+!!					localElements(3)=localElements(3)+1		!create another row in the z-direction
+!!				end if
+				
+				!Here, we keep increasing numxLocal, numyLocal, numzLocal until the entire local mesh
+				!is read in
+				
+!!				if(localElements(1) > numxLocal) then
+!!					numxLocal=localElements(1)
+!!				end if
+!!				if(localElements(2) > numyLocal) then
+!!					numyLocal=localElements(2)
+!!				end if
+!!				if(localElements(3) > numzLocal) then
+!!					numzLocal=localElements(3)
+!!				end if
+!!			end if
+
+		end do
+	end do
+end do
+
+
 do i=1,numCells
 	myMesh(i)%length=length
 	myMesh(i)%volume=length**3d0
-	
+
 	!uniform mesh: all elements have 1 neighbor in each direction
 	allocate(myMesh(i)%neighbors(6,1))
 	allocate(myMesh(i)%neighborProcs(6,1))
 	do j=1,6
 		myMesh(i)%numNeighbors(j)=1
 	end do
-
 end do
+
+!If any processors don't have volume elements in them (too many procs), we create an error message
+!!if(numxLocal*numyLocal*numzLocal==0) then
+!!	write(*,*) 'error processors with no volume elements'
+!!	call MPI_ABORT(MPI_COMM_WORLD,ierr)
+!!	stop
+!!end if
+
+!Step 3b: find how many volume elements are in local processor and allocate myMesh accordingly
+
+!!write(*,*) 'proc', myProc%taskid, 'numx numy numz', numxLocal, numyLocal, numzLocal
+
+!!allocate(myMesh(numxLocal*numyLocal*numzLocal))
+
+!this variable is used at various points in SRSCD; lets us know the length fo myMesh(:)
+!!numCells=numxLocal*numyLocal*numzLocal	!total cells of this processor
+!!localX=numxLocal
+!!localY=numyLocal
+!!localZ=numzLocal
+
+!!do i=1,numCells
+!!	myMesh(i)%length=length
+!!	myMesh(i)%volume=length**3d0
+	
+	!uniform mesh: all elements have 1 neighbor in each direction
+!!	allocate(myMesh(i)%neighbors(6,1))
+!!	allocate(myMesh(i)%neighborProcs(6,1))
+!!	do j=1,6
+!!		myMesh(i)%numNeighbors(j)=1
+!!	end do
+
+!!end do
 
 !Step 3c: for each volume element in myMesh, assign coordinates and material number (and proc number)
 !We can't read from the file directly into myMesh, because we don't know how big to make it until
 !we read in all of the volume element information. Therefore, we allocate it and then reread from the
 !global mesh back into myMesh.
-element=1
-localElem=1
-do k=1,numz
-	do j=1, numy
-		do i=1, numx
-			if(globalMeshCoord(element,1) > myProc%localCoord(1) .AND. globalMeshCoord(element,1) <= myProc%localCoord(2) &
-				.AND. globalMeshCoord(element,2) > myProc%localCoord(3) .AND. globalMeshCoord(element,2) <= myProc%localCoord(4) &
-				.AND. globalMeshCoord(element,3) > myProc%localCoord(5) .AND. globalMeshCoord(element,3) <= myProc%localCoord(6)) then
+!!element=1
+!!localElem=1
+!!do k=1,numz
+!!	do j=1, numy
+!!		do i=1, numx
+!!			if(globalMeshCoord(element,1) > myProc%localCoord(1) .AND. globalMeshCoord(element,1) <= myProc%localCoord(2) &
+!!				.AND. globalMeshCoord(element,2) > myProc%localCoord(3) .AND. globalMeshCoord(element,2) <= myProc%localCoord(4) &
+!!				.AND. globalMeshCoord(element,3) > myProc%localCoord(5) .AND. globalMeshCoord(element,3) <= myProc%localCoord(6)) then
 				
-				myMesh(localElem)%coordinates(1)=globalMeshCoord(element,1)
-				myMesh(localElem)%coordinates(2)=globalMeshCoord(element,2)
-				myMesh(localElem)%coordinates(3)=globalMeshCoord(element,3)
-				myMesh(localElem)%material=globalMaterial(element)
-				myMesh(localElem)%proc=myProc%taskid
+!!				myMesh(localElem)%coordinates(1)=globalMeshCoord(element,1)
+!!				myMesh(localElem)%coordinates(2)=globalMeshCoord(element,2)
+!!				myMesh(localElem)%coordinates(3)=globalMeshCoord(element,3)
+!!				myMesh(localElem)%material=globalMaterial(element)
+!!				myMesh(localElem)%proc=myProc%taskid
 				
-				if(strainField=='yes') then
-					do l=1,6
-						myMesh(localElem)%strain(l)=globalStrain(element,l)
-					end do
-				end if
+!!				if(strainField=='yes') then
+!!					do l=1,6
+!!						myMesh(localElem)%strain(l)=globalStrain(element,l)
+!!					end do
+!!				end if
 				
-				localElem=localElem+1
-			end if
-			element=element+1
-		end do
-	end do
-end do
+!!				localElem=localElem+1
+!!			end if
+!!			element=element+1
+!!		end do
+!!	end do
+!!end do
 
 !Step 3d: assign neighbors and processor numbers for neighbors (connectivity in myMesh) - periodic or free surfaces in +/- z
 
 if(meshType=='periodic') then
-	call createConnectLocalPeriodicUniform(numxLocal, numyLocal, numzLocal, globalMeshCoord, globalMeshConnect)
+	call createConnectLocalPeriodicUniform(numxLocal, numyLocal, numzLocal, numx, numy, numz)
 else if(meshType=='freeSurfaces') then
-	call createConnectLocalFreeSurfUniform(numxLocal, numyLocal, numzLocal, globalMeshCoord, globalMeshConnect)
+!	call createConnectLocalFreeSurfUniform(numxLocal, numyLocal, numzLocal, globalMeshCoord, globalMeshConnect)
 end if
 
 !This output is optional, used to show the user what the mesh is
@@ -543,60 +595,56 @@ end if
 !endif
 
 !***************************************************************************************************
-!5/28/2014: initializing myBoundary with elements that are in neighboring processors that bound this one
+!Initializing myBoundary with elements that are in neighboring processors that bound this one
 !***************************************************************************************************
-!Using the following global mesh info:
-!
-!double precision, allocatable :: globalMeshCoord(:,:)
-!integer, allocatable :: globalMeshConnect(:,:), globalMaterial(:)
 
 !Step 1: Find the max cell# of any boundary mesh element
-maxElement=0
-do i=1, numxLocal*numyLocal*numzLocal
-	do j=1, 6
-		if(myMesh(i)%neighborProcs(j,1) /= myProc%taskid) then	!we are pointing to a different proc
-			if(myMesh(i)%neighbors(j,1) > maxElement) then		!searching for the max element number in a neighbor
-				maxElement=myMesh(i)%neighbors(j,1)
-			end if
-		end if
-	end do
-end do
+!!maxElement=0
+!!do i=1, numCells
+!!	do j=1, 6
+!!		if(myMesh(i)%neighborProcs(j,1) /= myProc%taskid) then	!we are pointing to a different proc
+!!			if(myMesh(i)%neighbors(j,1) > maxElement) then		!searching for the max element number in a neighbor
+!!				maxElement=myMesh(i)%neighbors(j,1)
+!!			end if
+!!		end if
+!!	end do
+!!end do
 
 !This tells us how large to allocate myBoundary. NOTE: many elements in myBoundary will be unused. Only
 !the elements that represent volume elements on the boundary of myMesh will be used. This represents
 !wasted memory for the sake of easier computation
 
-allocate(myBoundary(6,maxElement))	!6 directions, maxElement elements in each direction (more than needed)
+!!allocate(myBoundary(6,maxElement))	!6 directions, maxElement elements in each direction (more than needed)
 
 !initialize myBoundary with 0 in localNeighbor - signal that myBoundary is not attached to anything
-do i=1,maxElement
-	do j=1,6
-		myBoundary(j,i)%localNeighbor=0	!default, says that this is not a real element of myBoundary.
-		myBoundary(j,i)%proc=-10		!default, says that this is not a real element of myBoundary.
-	end do
-end do
+!!do i=1,maxElement
+!!	do j=1,6
+!!		myBoundary(j,i)%localNeighbor=0	!default, says that this is not a real element of myBoundary.
+!!		myBoundary(j,i)%proc=-10		!default, says that this is not a real element of myBoundary.
+!!	end do
+!!end do
 
-do i=1,numxLocal*numyLocal*numzLocal
-	do j=1,6
-		if(myMesh(i)%neighborProcs(j,1) == -1) then										!this is a free surface
+!!do i=1,numCells
+!!	do j=1,6
+!!		if(myMesh(i)%neighborProcs(j,1) == -1) then										!this is a free surface
 			!do nothing
-		else if(myMesh(i)%neighborProcs(j,1) /= myProc%taskid) then
-			myBoundary(j,myMesh(i)%neighbors(j,1))%proc=myMesh(i)%neighborProcs(j,1)	!set proc # of elements in myBoundary
-			myBoundary(j,myMesh(i)%neighbors(j,1))%length=length						!set length of elements in myBoundary
-			myBoundary(j,myMesh(i)%neighbors(j,1))%volume=length**3d0					!set volume of elements in myBoundary (changes with cascade addition)
-			globalCell=findGlobalCell(myMesh(i)%coordinates,globalMeshCoord)			!find global cell # of element in myBoundary
-			globalNeighbor=globalMeshConnect(globalCell,j)								!use global cell # to find material # of element in myBoundary
-			myBoundary(j,myMesh(i)%neighbors(j,1))%material=globalMaterial(globalNeighbor)	!set material # of elements in myBoundary
-			myBoundary(j,myMesh(i)%neighbors(j,1))%localNeighbor=i
+!!		else if(myMesh(i)%neighborProcs(j,1) /= myProc%taskid) then
+!!			myBoundary(j,myMesh(i)%neighbors(j,1))%proc=myMesh(i)%neighborProcs(j,1)	!set proc # of elements in myBoundary
+!!			myBoundary(j,myMesh(i)%neighbors(j,1))%length=length						!set length of elements in myBoundary
+!!			myBoundary(j,myMesh(i)%neighbors(j,1))%volume=length**3d0					!set volume of elements in myBoundary (changes with cascade addition)
+!!			globalCell=findGlobalCell(myMesh(i)%coordinates,globalMeshCoord)            !find global cell # of element in myBoundary
+!!			globalNeighbor=globalMeshConnect(globalCell,j)								!use global cell # to find material # of element in myBoundary
+!!			myBoundary(j,myMesh(i)%neighbors(j,1))%material=globalMaterial(globalNeighbor)	!set material # of elements in myBoundary
+!!			myBoundary(j,myMesh(i)%neighbors(j,1))%localNeighbor=i
 			
-			if(strainField=='yes') then
-				do l=1,6
-					myBoundary(j,myMesh(i)%neighbors(j,1))%strain(l)=globalStrain(globalNeighbor,l)
-				end do
-			end if
-		end if
-	end do
-end do
+!!			if(strainField=='yes') then
+!!				do l=1,6
+!!					myBoundary(j,myMesh(i)%neighbors(j,1))%strain(l)=globalStrain(globalNeighbor,l)
+!!				end do
+!!			end if
+!!		end if
+!!	end do
+!!end do
 
 !Close input files
 if(strainField=='yes') then
@@ -606,16 +654,18 @@ close(80)
 
 end subroutine
 
+!*******************************************************************************************
 !These subroutines creates a global connectivity matrix (elements and their neighbors) based
 !on the connectivity scheme of increasing x, then y, then z. (uniform cubic)
 
 !>Subroutine create global connectivity (uniform mesh, periodic boundary conditions)
-!!
-!!This subroutine creates a global mesh (not dividing between processors) as well as the 
-!!connectivity between elements for the case of a uniform cubic mesh.
-!!
-!!Inputs: numx, numy, numz
-!!Output: connectivity
+!
+!This subroutine creates a global mesh (not dividing between processors) as well as the
+!connectivity between elements for the case of a uniform cubic mesh.
+!
+!Inputs: numx, numy, numz
+!Output: connectivity
+!*******************************************************************************************
 
 subroutine createConnectGlobalPeriodicUniform(connectivity, numx, numy, numz)
 implicit none
@@ -667,14 +717,15 @@ end do
 
 end subroutine
 
-
+!***************************************************************************************
 !>Subroutine create global connectivity (uniform mesh, free surfaces in z-directions and periodic boundary conditions in other directions)
-!!
-!!This subroutine creates a global mesh (not dividing between processors) as well as the 
-!!connectivity between elements for the case of a uniform cubic mesh with free surfaces.
-!!
-!!Inputs: numx, numy, numz
-!!Output: connectivity
+!
+!This subroutine creates a global mesh (not dividing between processors) as well as the
+!connectivity between elements for the case of a uniform cubic mesh with free surfaces.
+!
+!Inputs: numx, numy, numz
+!Output: connectivity
+!***************************************************************************************
 
 subroutine createConnectGlobalFreeSurfUniform(connectivity, numx, numy, numz)
 implicit none
@@ -727,64 +778,88 @@ end do
 
 end subroutine
 
+!**************************************************************************************************
 !These subroutines create LOCAL connectivity. They identify the volume element # and processor # of
 !neighboring volume elements for each element. The connectivity scheme is the same as in the global
 !case, but neighboring processor numbers are used here.
 
 !>Subroutine create local connectivity (uniform mesh, periodic boundary conditions)
-!!
-!!This subroutine creates a local mesh (for the local processor only) as well as the 
-!!connectivity between elements for the case of a uniform cubic mesh. This subroutine
-!!has to choose which elements of the global mesh are in the local mesh, and puts those in
-!!myMesh along with the element coordinates and their neighbor element ID numbers and processors.
-!!
-!!Inputs: numx, numy, numz
-!!Inputs: numx, numy, numz, global mesh coordinates, global mesh connectivity
-!!Output: myMesh
+!
+!This subroutine creates a local mesh (for the local processor only) as well as the
+!connectivity between elements for the case of a uniform cubic mesh.
+!And creates myBoundary with elements that are in neighboring processors that bound this one.
+!This subroutine has to choose their neighbor element ID numbers and processors.
+!
+!Inputs: numxLocal, numyLocal, numzLocal, numx, numy, numz
+!Output: myMesh, myBoundary
+!**************************************************************************************************
 
-subroutine createConnectLocalPeriodicUniform(numx, numy, numz, globalMeshCoord, globalMeshConnect)
+subroutine createConnectLocalPeriodicUniform(numxLocal, numyLocal, numzLocal, numx, numy, numz)
 use DerivedType
 use mod_srscd_constants
 
 implicit none
 include 'mpif.h'
-integer numx, numy, numz, cell, numFaces(6)
+integer numxLocal, numyLocal, numzLocal, cell, numFaces(6)
+integer numx,numy,numz,maxElement
 double precision, allocatable :: globalMeshCoord(:,:)
 integer, allocatable :: globalMeshConnect(:,:)
 integer globalCell, globalNeighbor, status(MPI_STATUS_SIZE)
 
 !buffer lists to send all information at the end
-integer numSendRecv, i, dir, sendList(6*numx*numy*numz, 4)
+integer numSendRecv, i,j, dir
+double precision sendList(11, 6*numxLocal*numyLocal*numzLocal)
+
+double precision sendBuff(8), recvBuff(8)
+double precision, allocatable ::  materialStrain(:,:,:)
 
 numSendRecv=0
 
+allocate(materialStrain(7,numCells,6))
 !************************************************
 !periodic boundary condition version
 !************************************************
 do cell=1,numCells
-	if(mod(cell,numx)==0) then !identify cell to the right
+	if(mod(cell,numxLocal)==0) then !identify cell to the right
 		
 		!If we are on the right edge of the local mesh, identify the neighboring processor
 		myMesh(cell)%neighborProcs(1,1)=myProc%procNeighbor(1)
 		
 		!If the mesh is only one processor thick, then the neighboring processor is the same as this processor
 		if(myMesh(cell)%neighborProcs(1,1)==myProc%taskid) then	
-			myMesh(cell)%neighbors(1,1)=cell-numx+1	!use periodic rules from uniform cubic mesh
+			myMesh(cell)%neighbors(1,1)=cell-numxLocal+1	!use periodic rules from uniform cubic mesh
 		else
 			!find global cell number of this cell and the neighboring cell.
-			globalCell=findGlobalCell(myMesh(cell)%coordinates,globalMeshCoord)
-			globalNeighbor=globalMeshConnect(globalCell,1)
+!			globalCell=findGlobalCell(myMesh(cell)%coordinates,globalMeshCoord)
+!			globalNeighbor=globalMeshConnect(globalCell,1)
+			globalCell=myMesh(cell)%globalID
+			if(mod(globalCell,numx)==0) then !identify cell to the right
+				globalNeighbor=globalCell-numx+1
+			else
+				globalNeighbor=globalCell+1
+			end if
 			
 			!add these items to sendList, a buffer that is used at the end of this subroutine to communicate
 			!with other processors via MPI about which elements have neighbors in other cells
 			!(this cell sends information about itself, and the nieghboring cell will do the same in its
 			!processor)
-			
 			numSendRecv=numSendRecv+1		!count the number of items in buffer
-			sendList(numSendRecv,1)=cell	!localCellID in this processor
-			sendList(numSendRecv,2)=1		!direction: right
-			sendList(numSendRecv,3)=globalCell	!the globalCellID of the localCellID
-			sendList(numSendRecv,4)=globalNeighbor	!neighbor in the right
+			sendList(1,numSendRecv)=cell	!localCellID in this processor
+			sendList(2,numSendRecv)=1		!direction: right
+			sendList(3,numSendRecv)=globalCell	!the globalCellID of the localCellID
+			sendList(4,numSendRecv)=globalNeighbor	!neighbor in the right
+
+            sendList(5,numSendRecv)=myMesh(cell)%material	!Material ID number that this element is composed of
+			if(strainField=='yes') then
+				do j=1,6
+					sendList(5+j,numSendRecv)=myMesh(cell)%strain(j)
+				end do
+			else
+				do j=1,6
+					sendList(5+j,numSendRecv)=0
+				end do
+			end if
+
 		end if
 	else
 		!if we are still inside the local mesh, don't need to communicate with neighboring cells and 
@@ -794,19 +869,36 @@ do cell=1,numCells
 	end if
 	
 	!This is the same as above, except that we are pointed to the left instead of the right of the local mesh.
-	if(mod(cell+numx-1,numx)==0) then !identify cell to the left
+	if(mod(cell+numxLocal-1,numxLocal)==0) then !identify cell to the left
 		
 		myMesh(cell)%neighborProcs(2,1)=myProc%procNeighbor(2)
 		if(myMesh(cell)%neighborProcs(2,1)==myProc%taskid) then
-			myMesh(cell)%neighbors(2,1)=cell+numx-1
+			myMesh(cell)%neighbors(2,1)=cell+numxLocal-1
 		else
-			globalCell=findGlobalCell(myMesh(cell)%coordinates,globalMeshCoord)
-			globalNeighbor=globalMeshConnect(globalCell,2)
+!			globalCell=findGlobalCell(myMesh(cell)%coordinates,globalMeshCoord)
+!			globalNeighbor=globalMeshConnect(globalCell,2)
+			globalCell=myMesh(cell)%globalID
+			if(mod(globalCell+numx-1,numx)==0) then !identify cell to the left
+				globalNeighbor=globalCell+numx-1
+			else
+				globalNeighbor=globalCell-1
+			end if
 			numSendRecv=numSendRecv+1
-			sendList(numSendRecv,1)=cell
-			sendList(numSendRecv,2)=2	!direction
-			sendList(numSendRecv,3)=globalCell
-			sendList(numSendRecv,4)=globalNeighbor
+			sendList(1,numSendRecv)=cell
+			sendList(2,numSendRecv)=2	!direction
+			sendList(3,numSendRecv)=globalCell
+			sendList(4,numSendRecv)=globalNeighbor
+
+            sendList(5,numSendRecv)=myMesh(cell)%material	!Material ID number that this element is composed of
+            if(strainField=='yes') then
+                do j=1,6
+                    sendList(5+j,numSendRecv)=myMesh(cell)%strain(j)
+                end do
+            else
+                do j=1,6
+                    sendList(5+j,numSendRecv)=0
+                end do
+            end if
 		end if
 	else
 		myMesh(cell)%neighbors(2,1)=cell-1
@@ -814,79 +906,149 @@ do cell=1,numCells
 	end if
 	
 	!Front (+y)
-	if(mod(cell,numx*numy) > numx*(numy-1) .OR. mod(cell,numx*numy)==0) then
+	if(mod(cell,numxLocal*numyLocal) > numxLocal*(numyLocal-1) .OR. mod(cell,numxLocal*numyLocal)==0) then
 		
 		myMesh(cell)%neighborProcs(3,1)=myProc%procNeighbor(3)
 		if(myMesh(cell)%neighborProcs(3,1)==myProc%taskid) then
-			myMesh(cell)%neighbors(3,1)=cell-(numx*(numy-1))
+			myMesh(cell)%neighbors(3,1)=cell-(numxLocal*(numyLocal-1))
 		else
-			globalCell=findGlobalCell(myMesh(cell)%coordinates, globalMeshCoord)
-			globalNeighbor=globalMeshConnect(globalCell,3)
+!			globalCell=findGlobalCell(myMesh(cell)%coordinates, globalMeshCoord)
+!			globalNeighbor=globalMeshConnect(globalCell,3)
+			globalCell=myMesh(cell)%globalID
+			if(mod(globalCell, numx*numy)>numx*(numy-1) .OR. mod(globalCell,numx*numy)==0) then
+				globalNeighbor=globalCell-(numx*(numy-1))
+			else
+				globalNeighbor=globalCell+numx
+			end if
 			numSendRecv=numSendRecv+1
-			sendList(numSendRecv,1)=cell
-			sendList(numSendRecv,2)=3	!direction
-			sendList(numSendRecv,3)=globalCell
-			sendList(numSendRecv,4)=globalNeighbor
+			sendList(1,numSendRecv)=cell
+			sendList(2,numSendRecv)=3	!direction
+			sendList(3,numSendRecv)=globalCell
+			sendList(4,numSendRecv)=globalNeighbor
+
+            sendList(5,numSendRecv)=myMesh(cell)%material	!Material ID number that this element is composed of
+            if(strainField=='yes') then
+                do j=1,6
+                    sendList(5+j,numSendRecv)=myMesh(cell)%strain(j)
+                end do
+            else
+                do j=1,6
+                    sendList(5+j,numSendRecv)=0
+                end do
+            end if
 		end if
 	else
-		myMesh(cell)%neighbors(3,1)=cell+numx
+		myMesh(cell)%neighbors(3,1)=cell+numxLocal
 		myMesh(cell)%neighborProcs(3,1)=myProc%taskid
 	end if
 	
 	!Back (-y)
-	if(mod(cell,numx*numy) <= numx .AND. (mod(cell, numx*numy) /= 0 .OR. numy==1)) then
+	if(mod(cell,numxLocal*numyLocal) <= numxLocal .AND. (mod(cell, numxLocal*numyLocal) /= 0 .OR. numyLocal==1)) then
 		myMesh(cell)%neighborProcs(4,1)=myProc%procNeighbor(4)
 		if(myMesh(cell)%neighborProcs(4,1)==myProc%taskid) then
-			myMesh(cell)%neighbors(4,1)=cell+(numx*(numy-1))
+			myMesh(cell)%neighbors(4,1)=cell+(numxLocal*(numyLocal-1))
 		else
-			globalCell=findGlobalCell(myMesh(cell)%coordinates,globalMeshCoord)
-			globalNeighbor=globalMeshConnect(globalCell,4)
+!			globalCell=findGlobalCell(myMesh(cell)%coordinates,globalMeshCoord)
+!			globalNeighbor=globalMeshConnect(globalCell,4)
+			globalCell=myMesh(cell)%globalID
+			if(mod(globalCell,numx*numy) <= numx .AND. (mod(globalCell, numx*numy) /= 0 .OR. numy==1)) then
+				globalNeighbor=globalCell+(numx*(numy-1))
+			else
+				globalNeighbor=globalCell-numx
+			endif
 			numSendRecv=numSendRecv+1
-			sendList(numSendRecv,1)=cell
-			sendList(numSendRecv,2)=4	!direction
-			sendList(numSendRecv,3)=globalCell
-			sendList(numSendRecv,4)=globalNeighbor
+			sendList(1,numSendRecv)=cell
+			sendList(2,numSendRecv)=4	!direction
+			sendList(3,numSendRecv)=globalCell
+			sendList(4,numSendRecv)=globalNeighbor
+
+            sendList(5,numSendRecv)=myMesh(cell)%material	!Material ID number that this element is composed of
+            if(strainField=='yes') then
+                do j=1,6
+                    sendList(5+j,numSendRecv)=myMesh(cell)%strain(j)
+                end do
+            else
+                do j=1,6
+                    sendList(5+j,numSendRecv)=0
+                end do
+            end if
 		end if
 	else
-		myMesh(cell)%neighbors(4,1)=cell-numx
+		myMesh(cell)%neighbors(4,1)=cell-numxLocal
 		myMesh(cell)%neighborProcs(4,1)=myProc%taskid
 	end if
 	
 	!Up (+z)
-	if(mod(cell,numx*numy*numz) > numx*numy*(numz-1) .OR. mod(cell, numx*numy*numz)==0) then
+	if(mod(cell,numxLocal*numyLocal*numzLocal) > numxLocal*numyLocal*(numzLocal-1) &
+			.OR. mod(cell, numxLocal*numyLocal*numzLocal)==0) then
 		myMesh(cell)%neighborProcs(5,1)=myProc%procNeighbor(5)
 		if(myMesh(cell)%neighborProcs(5,1)==myProc%taskid) then
-			myMesh(cell)%neighbors(5,1)=cell-(numx*numy*(numz-1))
+			myMesh(cell)%neighbors(5,1)=cell-(numxLocal*numyLocal*(numzLocal-1))
 		else
-			globalCell=findGlobalCell(myMesh(cell)%coordinates,globalMeshCoord)
-			globalNeighbor=globalMeshConnect(globalCell,5)
+!			globalCell=findGlobalCell(myMesh(cell)%coordinates,globalMeshCoord)
+!			globalNeighbor=globalMeshConnect(globalCell,5)
+			globalCell=myMesh(cell)%globalID
+			if(mod(globalCell,numx*numy*numz) > numx*numy*(numz-1) .OR. mod(globalCell, numx*numy*numz)==0) then
+				globalNeighbor=globalCell-(numx*numy*(numz-1))
+			else
+				globalNeighbor=globalCell+numx*numy
+			endif
 			numSendRecv=numSendRecv+1
-			sendList(numSendRecv,1)=cell
-			sendList(numSendRecv,2)=5	!direction
-			sendList(numSendRecv,3)=globalCell
-			sendList(numSendRecv,4)=globalNeighbor
+			sendList(1,numSendRecv)=cell
+			sendList(2,numSendRecv)=5	!direction
+			sendList(3,numSendRecv)=globalCell
+			sendList(4,numSendRecv)=globalNeighbor
+
+            sendList(5,numSendRecv)=myMesh(cell)%material	!Material ID number that this element is composed of
+            if(strainField=='yes') then
+                do j=1,6
+                    sendList(5+j,numSendRecv)=myMesh(cell)%strain(j)
+                end do
+            else
+                do j=1,6
+                    sendList(5+j,numSendRecv)=0
+                end do
+            end if
 		end if
 	else
-		myMesh(cell)%neighbors(5,1)=cell+numx*numy
+		myMesh(cell)%neighbors(5,1)=cell+numxLocal*numyLocal
 		myMesh(cell)%neighborProcs(5,1)=myProc%taskid
 	end if
 	
 	!Down (-z)
-	if(mod(cell,numx*numy*numz) <= numx*numy .AND. (mod(cell,numx*numy*numz) /= 0 .OR. numz==1)) then
+	if(mod(cell,numxLocal*numyLocal*numzLocal) <= numxLocal*numyLocal &
+			.AND. (mod(cell,numxLocal*numyLocal*numzLocal) /= 0 .OR. numzLocal==1)) then
 		myMesh(cell)%neighborProcs(6,1)=myProc%procNeighbor(6)
 		if(myMesh(cell)%neighborProcs(6,1)==myProc%taskid) then
-			myMesh(cell)%neighbors(6,1)=cell+(numx*numy*(numz-1))
+			myMesh(cell)%neighbors(6,1)=cell+(numxLocal*numyLocal*(numzLocal-1))
 		else
-			globalCell=findGlobalCell(myMesh(cell)%coordinates,globalMeshCoord)
-			globalNeighbor=globalMeshConnect(globalCell,6)
+!			globalCell=findGlobalCell(myMesh(cell)%coordinates,globalMeshCoord)
+!			globalNeighbor=globalMeshConnect(globalCell,6)
+			globalCell=myMesh(cell)%globalID
+			if(mod(globalCell,numx*numy*numz) <= numx*numy .AND. (mod(globalCell,numx*numy*numz) /= 0 .OR. numz==1)) then
+				globalNeighbor=globalCell+(numx*numy*(numz-1))
+			else
+				globalNeighbor=globalCell-numx*numy
+			endif
 			numSendRecv=numSendRecv+1
-			sendList(numSendRecv,1)=cell
-			sendList(numSendRecv,2)=6	!direction
-			sendList(numSendRecv,3)=globalCell
-			sendList(numSendRecv,4)=globalNeighbor
+			sendList(1,numSendRecv)=cell
+			sendList(2,numSendRecv)=6	!direction
+			sendList(3,numSendRecv)=globalCell
+			sendList(4,numSendRecv)=globalNeighbor
+
+            sendList(5,numSendRecv)=myMesh(cell)%material	!Material ID number that this element is composed of
+            if(strainField=='yes') then
+                do j=1,6
+                    sendList(5+j,numSendRecv)=myMesh(cell)%strain(j)
+                end do
+            else
+                do j=1,6
+                    sendList(5+j,numSendRecv)=0
+                end do
+            end if
 		end if
 	else
-		myMesh(cell)%neighbors(6,1)=cell-numx*numy
+		myMesh(cell)%neighbors(6,1)=cell-numxLocal*numyLocal
 		myMesh(cell)%neighborProcs(6,1)=myProc%taskid
 	end if
 end do
@@ -896,21 +1058,95 @@ end do
 !We label each MPI_SEND with globalCell so that the receiving processor pairs cells correctly using globalNeighbor (see below)
 
 do i=1,numSendRecv
-	cell=sendList(i,1)
-	dir=sendList(i,2)
-	globalCell=sendList(i,3)
-	call MPI_SEND(cell, 1, MPI_INTEGER, myMesh(cell)%neighborProcs(dir,1), globalCell, MPI_COMM_WORLD, ierr)
+	cell=sendList(1,i)
+	dir=sendList(2,i)
+	globalCell=sendList(3,i)
+    sendBuff(1)=cell
+    sendBuff(2)=sendList(5,i)   !material
+    if(strainField=='yes') then
+        do j=1,6
+            sendBuff(2+j))=sendList(5+j,i)
+        end do
+    else
+        do j=1,6
+            sendBuff(2+j)=0d0
+        end do
+    end if
+!	call MPI_SEND(cell, 1, MPI_INTEGER, myMesh(cell)%neighborProcs(dir,1), globalCell, MPI_COMM_WORLD, ierr)
+    call MPI_SEND(sendBuff, 8, MPI_DOUBLE_PRECISION, myMesh(cell)%neighborProcs(dir,1), globalCell, MPI_COMM_WORLD, ierr)
 end do
 
 !Second half of send/recieve routine. Here we recieve the neighbor (we sent the cell we were in). 
 !We label the MPI_RECV with globalNeighbor to match it to globalCell in the prev. step.
-	
+
 do i=1,numSendRecv
-	cell=sendList(i,1)
-	dir=sendList(i,2)
-	globalNeighbor=sendList(i,4)
-	call MPI_RECV(myMesh(cell)%neighbors(dir,1), 1, MPI_INTEGER, myMesh(cell)%neighborProcs(dir,1), &
-				globalNeighbor, MPI_COMM_WORLD, status, ierr)
+	cell=sendList(1,i)
+	dir=sendList(2,i)
+	globalNeighbor=sendList(4,i)
+!	call MPI_RECV(myMesh(cell)%neighbors(dir,1), 1, MPI_INTEGER, myMesh(cell)%neighborProcs(dir,1), &
+!				globalNeighbor, MPI_COMM_WORLD, status, ierr)
+    call MPI_RECV(recvBuff, 8, MPI_DOUBLE_PRECISION, myMesh(cell)%neighborProcs(dir,1), &
+            globalNeighbor, MPI_COMM_WORLD, status, ierr)
+    myMesh(cell)%neighbors(dir,1)=recvBuff(1)
+    materialStrain(1,cell,dir)=recvBuff(2)  !material
+    do j=1,6
+        materialStrain(1+j,cell,dir)=recvBuff(1+j)
+    end do
+end do
+
+
+!***************************************************************************************************
+!Initializing myBoundary with elements that are in neighboring processors that bound this one
+!***************************************************************************************************
+
+!Step 1: Find the max cell# of any boundary mesh element
+maxElement=0
+do i=1, numCells
+    do j=1, 6
+        if(myMesh(i)%neighborProcs(j,1) /= myProc%taskid) then	!we are pointing to a different proc
+            if(myMesh(i)%neighbors(j,1) > maxElement) then		!searching for the max element number in a neighbor
+                maxElement=myMesh(i)%neighbors(j,1)
+            end if
+        end if
+    end do
+end do
+
+!This tells us how large to allocate myBoundary. NOTE: many elements in myBoundary will be unused. Only
+!the elements that represent volume elements on the boundary of myMesh will be used. This represents
+!wasted memory for the sake of easier computation
+
+allocate(myBoundary(6,maxElement))	!6 directions, maxElement elements in each direction (more than needed)
+
+!initialize myBoundary with 0 in localNeighbor - signal that myBoundary is not attached to anything
+do i=1,maxElement
+    do j=1,6
+        myBoundary(j,i)%localNeighbor=0	!default, says that this is not a real element of myBoundary.
+        myBoundary(j,i)%proc=-10		!default, says that this is not a real element of myBoundary.
+    end do
+end do
+
+do i=1,numCells
+    do j=1,6
+        if(myMesh(i)%neighborProcs(j,1) == -1) then										!this is a free surface
+            !do nothing
+        else if(myMesh(i)%neighborProcs(j,1) /= myProc%taskid) then
+            myBoundary(j,myMesh(i)%neighbors(j,1))%proc=myMesh(i)%neighborProcs(j,1)	!set proc # of elements in myBoundary
+            myBoundary(j,myMesh(i)%neighbors(j,1))%length=length						!set length of elements in myBoundary
+            myBoundary(j,myMesh(i)%neighbors(j,1))%volume=length**3d0					!set volume of elements in myBoundary (changes with cascade addition)
+!			 globalCell=findGlobalCell(myMesh(i)%coordinates,globalMeshCoord)
+!            globalNeighbor=globalMeshConnect(globalCell,j)								!use global cell # to find material # of element in myBoundary
+!            myBoundary(j,myMesh(i)%neighbors(j,1))%material=globalMaterial(globalNeighbor)	!set material # of elements in myBoundary
+            myBoundary(j,myMesh(i)%neighbors(j,1))%material=materialStrain(1,i,j)	!set material # of elements in myBoundary
+            myBoundary(j,myMesh(i)%neighbors(j,1))%localNeighbor=i
+
+            if(strainField=='yes') then
+                do l=1,6
+!                   myBoundary(j,myMesh(i)%neighbors(j,1))%strain(l)=globalStrain(globalNeighbor,l)
+                    myBoundary(j,myMesh(i)%neighbors(j,1))%strain(l)=materialStrain(1+l,i,j)
+                end do
+            end if
+        end if
+    end do
 end do
 
 end subroutine
@@ -1109,33 +1345,29 @@ logical flag
 
 flag=.FALSE.
 i=0
-do 10 while (flag .eqv. .FALSE.)
+do while (flag .eqv. .FALSE.)
 	i=i+1
 	if(coord(1)==gCoord(i,1) .AND. coord(2)==gCoord(i,2) .AND. coord(3)==gCoord(i,3)) then
 		flag=.TRUE.
 	endif
-10 continue
+end do
 
 findGlobalCell=i
 end function
 
-
 !***************************************************************************************************
-!subroutines for creating non-uniform (cubic) mesh.
-!***************************************************************************************************
-
 !>Subroutine read Mesh Non Uniform - creates processor and mesh files from non-uniform mesh input
-!!
-!!This is the main subroutine that controls reading the non-uniform mesh. It reads in the mesh
-!!from a file and divides the volume elements between the processors in the parallel
-!!simulation. If a division such that each processor has at least one element is not possible,
-!!then the subroutine returns an error. It also creates a 'processor mesh', indicating
-!!the bounds of each processor. NOTE: this subroutine is for non-uniform meshes only (and these have not been 
-!!implemented in the rest of the program)
-!!
-!!Input: filename of mesh file
-!!
-!!Outputs: myProc (processors with meshes), myMesh, and myBoundary
+!
+!This is the main subroutine that controls reading the non-uniform mesh. It reads in the mesh
+!from a file and divides the volume elements between the processors in the parallel
+!simulation. If a division such that each processor has at least one element is not possible,
+!then the subroutine returns an error. It also creates a 'processor mesh', indicating
+!the bounds of each processor. NOTE: this subroutine is for non-uniform meshes only (and these have not been
+!implemented in the rest of the program)
+!
+!Input: filename of mesh file
+!Outputs: myProc (processors with meshes), myMesh, and myBoundary
+!***************************************************************************************************
 
 !main subroutine that creates mesh (non-uniform cubic)
 subroutine readMeshNonUniform(filename)
@@ -1817,6 +2049,8 @@ do cell=1,numTotal
 		end if
 	end do
 end do
+
+deallocate(materialStrain)
 
 end subroutine
 

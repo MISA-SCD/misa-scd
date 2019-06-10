@@ -113,13 +113,14 @@ module DerivedType
 		double precision length						!<Side length of this volume element (assuming cubic elements)
 		double precision volume						!<Volume of this volume element
 		double precision strain(6)					!<Strain tensor at the center of this volume element (e11, e22, e33, e12, e23, e13)
+		integer globalID
 		integer proc								!<Processor ID number that this element is located inside
 		integer material							!<Material ID number that this element is composed of (currently only set up for one material type)
 		integer numNeighbors(6)						!<Number of neighbors in each direction (left, right, etc). Could be not equal to 1 in the case of free surfaces or non-uniform mesh.
 		
 		!array sizes: neighbors(direction,num) and neighborProcs(direction,num)
 		integer, allocatable :: neighbors(:,:)		!<ID number of neighboring volume elements, regardless of if they are in this processor or not. Array size (6, numNeighbors)
-		integer, allocatable :: neighborProcs(:,:)	!<Processor ID numbers of neighboring volume element. Array size (6, 6numNeighbors)
+		integer, allocatable :: neighborProcs(:,:)	!<Processor ID numbers of neighboring volume element. Array size (6, numNeighbors)
 	end type mesh
 
 	!***********************************************************************************************

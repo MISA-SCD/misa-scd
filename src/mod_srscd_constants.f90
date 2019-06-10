@@ -93,7 +93,7 @@ double precision initialCeqi    !Thermal equilibrium concentration of SIA
 double precision Vconcent       !Vacancy concentration
 double precision SIAconcent     !SIA concentration
 double precision atomsEverMesh  !number of atoms of my processor
-integer*8 CuAtomsEverMesh       !Initial number of Cu atoms in one mesh
+integer*4 CuAtomsEverMesh       !Initial number of Cu atoms in one mesh
 integer vacancyEverMesh         !Initial number of vacancies in one mesh
 integer SIAEverMesh             !Initial number of SIAs in one mesh
 integer initialTotalV

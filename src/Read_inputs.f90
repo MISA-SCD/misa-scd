@@ -12,7 +12,7 @@
 !!already been done in the subroutine readReactionListSizes().
 !***************************************************************************************************
 
-subroutine readMaterialInput(filename)
+subroutine readMaterialInput(filename)	!read FeCu_Defects.txt
 use DerivedType
 use mod_srscd_constants
 implicit none
