@@ -478,34 +478,33 @@ if(myProc%taskid==MASTER) then
 !			  (myProc%globalCoord(6)-myProc%globalCoord(5))*1d-27
 	
 	
-	write(83,*) 'CuClusterNum', CuClusterNum, 'Concentration (cm-3)', dble(CuClusterNum)/(systemVol*1d-21), &
-            'MeanRadius (nm)', CuMeanRadius
-	write(83,*) 'VClusterNum', VClusterNum, 'Concentration (cm-3)', dble(VClusterNum)/(systemVol*1d-21), &
-            'VMeanRadius (nm)', VMeanRadius
-	write(83,*)	'Voids', VoidNum, 'Concentration (cm-3)', dble(VoidNum)/(systemVol*1d-21), &
-            'VoidMeanRadius (nm)', VoidMeanRadius
-	write(83,*) 'SIAClusterNum', SIAClusterNum, 'Concentration (cm-3)', dble(SIAClusterNum)/(systemVol*1d-21)
-	write(83,*) 'SIA_small (SIANum>=16)',LoopSize(1), 'Concentration (cm-3)', dble(LoopSize(1))/(systemVol*1d-21)
-	write(83,*) 'Loops (SIANum>=20)', LoopSize(2), 'Concentration (cm-3)', dble(LoopSize(2))/(systemVol*1d-21), &
-            'LoopMeanRadius (nm)', LoopMeanRadius
-	write(83,*) 'SIA_large (SIANum>=24)', LoopSize(3), 'Concentration (cm-3)', dble(LoopSize(3))/(systemVol*1d-21)
-    write(83,*)
+	write(83,*) 'CuClusterNum', CuClusterNum, 'number density (m-3)', dble(CuClusterNum)/(systemVol*1.0d-27), &
+			'MeanRadius (nm)', CuMeanRadius
+	write(83,*) 'VClusterNum', VClusterNum, 'number density (m-3)', dble(VClusterNum)/(systemVol*1d-27), &
+			'VMeanRadius (nm)', VMeanRadius
+	write(83,*)	'Voids', VoidNum, 'number density (m-3)', dble(VoidNum)/(systemVol*1d-27), &
+			'VoidMeanRadius (nm)', VoidMeanRadius
+	write(83,*) 'SIAClusterNum', SIAClusterNum, 'number density (m-3)', dble(SIAClusterNum)/(systemVol*1d-27)
+	write(83,*) 'SIA_small (SIANum>=16)',LoopSize(1), 'number density (m-3)', dble(LoopSize(1))/(systemVol*1d-27)
+	write(83,*) 'Loops (SIANum>=20)', LoopSize(2), 'number density (m-3)', dble(LoopSize(2))/(systemVol*1d-27), &
+			'LoopMeanRadius (nm)', LoopMeanRadius
+	write(83,*) 'SIA_large (SIANum>=24)', LoopSize(3), 'number density (m-3)', dble(LoopSize(3))/(systemVol*1d-27)
     write(83,*)
 
 	!Output postpr.out
-	write(84,*) 'CuClusterNum', CuClusterNum, 'Concentration (cm-3)', dble(CuClusterNum)/(systemVol*1d-21), &
+	write(84,*) 'CuClusterNum', CuClusterNum, 'number density (m-3)', dble(CuClusterNum)/(systemVol*1d-27), &
             'At.%', dble(CuClusterNum)*atomSize/systemVol
-	write(84,*) 'VClusterNum', VClusterNum, 'Concentration (cm-3)', dble(VClusterNum)/(systemVol*1d-21), &
+	write(84,*) 'VClusterNum', VClusterNum, 'number density (m-3)', dble(VClusterNum)/(systemVol*1d-27), &
             'At.%', dble(VClusterNum)*atomSize/systemVol
-	write(84,*)	'Voids', VoidNum, 'Concentration (cm-3)', dble(VoidNum)/(systemVol*1d-21), &
+	write(84,*)	'Voids', VoidNum, 'number density (m-3)', dble(VoidNum)/(systemVol*1d-27), &
             'At.%', dble(VoidNum)*atomSize/systemVol
-	write(84,*) 'SIAClusterNum', SIAClusterNum, 'Concentration (cm-3)', dble(SIAClusterNum)/(systemVol*1d-21), &
+	write(84,*) 'SIAClusterNum', SIAClusterNum, 'number density (m-3)', dble(SIAClusterNum)/(systemVol*1d-27), &
             'At.%', dble(SIAClusterNum)*atomSize/systemVol
-	write(84,*) 'SIA_small (SIANum>=16)',LoopSize(1), 'Concentration (cm-3)', dble(LoopSize(1))/(systemVol*1d-21), &
+	write(84,*) 'SIA_small (SIANum>=16)',LoopSize(1), 'number density (m-3)', dble(LoopSize(1))/(systemVol*1d-27), &
             'At.%', dble(LoopSize(1))*atomSize/systemVol
-	write(84,*) 'Loops (SIANum>=20)', LoopSize(2), 'Concentration (cm-3)', dble(LoopSize(2))/(systemVol*1d-21), &
+	write(84,*) 'Loops (SIANum>=20)', LoopSize(2), 'number density (m-3)', dble(LoopSize(2))/(systemVol*1d-27), &
             'At.%', dble(LoopSize(2))*atomSize/systemVol
-	write(84,*) 'SIA_large (SIANum>=24)', LoopSize(3), 'Concentration (cm-3)', dble(LoopSize(3))/(systemVol*1d-21), &
+	write(84,*) 'SIA_large (SIANum>=24)', LoopSize(3), 'number density (m-3)', dble(LoopSize(3))/(systemVol*1d-27), &
             'At.%', dble(LoopSize(3))*atomSize/systemVol
     write(84,*)
 	

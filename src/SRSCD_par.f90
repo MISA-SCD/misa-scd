@@ -633,7 +633,7 @@ do while(elapsedTime < totalTime)
 	! Output according to outputCounter
 	!********************************************************************************
 	
-	if(elapsedTime > totalTime/200d0*(2d0)**(outputCounter)) then
+	if(elapsedTime > 1.0d-4*(10d0)**(outputCounter)) then
 	! or if(mod(step,100000)==0) then
 		call MPI_ALLREDUCE(numImplantEvents,totalImplantEvents, 1, MPI_INTEGER, MPI_SUM, MPI_COMM_WORLD, ierr)
 		!call MPI_ALLREDUCE(numHeImplantEvents,numHeImplantTotal,1,MPI_INTEGER, MPI_SUM, MPI_COMM_WORLD, ierr)
@@ -644,13 +644,19 @@ do while(elapsedTime < totalTime)
 		if(myProc%taskid==MASTER) then
 			call cpu_time(time2)
 			write(*,*)
-			write(*,*) 'Cudiffusivity'
 			write(*,*) 'time', elapsedTime, 'dpa', dpa, 'steps', step
-			write(*,*) 'Cascades/Frenkel pairs', totalImplantEvents, 'computation time', time2-time1
-			!write postpr.out
 			write(84,*) 'time', elapsedTime, 'dpa', dpa, 'steps', step
-			write(84,*) 'Cascades/Frenkel pairs', totalImplantEvents, 'computation time', time2-time1
-			
+			if(implantType=='FrenkelPair') then
+				write(*,*) 'Frenkel pairs', totalImplantEvents, 'computation time', time2-time1
+				write(84,*) 'Frenkel pairs', totalImplantEvents, 'computation time', time2-time1
+			else if(implantType=='Cascade')	then
+				write(*,*) 'Cascades', totalImplantEvents, 'computation time', time2-time1
+				write(84,*) 'Cascades', totalImplantEvents, 'computation time', time2-time1
+			else
+				write(*,*) 'No implantation', totalImplantEvents, 'computation time', time2-time1
+				write(84,*) 'No implantation', totalImplantEvents, 'computation time', time2-time1
+			end if
+
 			!Optional: output average number of cascades present per step in local processor
 			!write(84,*) 'Processor ', myProc%taskid, 'Avg. cascades present', dble(TotalCascades)/dble(step)
 			

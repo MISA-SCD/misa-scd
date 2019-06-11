@@ -17,7 +17,7 @@ subroutine initializeVIdefect()
 			(myProc%globalCoord(4)-myProc%globalCoord(3))/lattice * &
 			(myProc%globalCoord(6)-myProc%globalCoord(5))/lattice * 2
 
-	CuAtomsEverMesh = anint(CuContent*totalAtoms /dble(totalMesh))
+	CuAtomsEverMesh = anint(CuContent*totalAtoms /dble(numTotal))
 
 	initialCeqv = dexp(-FormSingle(1,2)%Ef / (kboltzmann*temperature))
 	initialCeqi = dexp(-FormSingle(1,3)%Ef / (kboltzmann*temperature))
@@ -32,14 +32,14 @@ subroutine initializeVIdefect()
 		outer: do i=1, initialTotalV
 			r1 = dprand()
 
-			inter: do cell=1, totalMesh
-				rtemp = rtemp + cell/totalMesh
+			inter: do cell=1, numTotal
+				rtemp = rtemp + cell/numTotal
 				if(r1 <= rtemp) then
 					tempID = cell-1
-					x = mod(tempID,totalX) +1
-					tempID = tempID /totalX
-					y = mod(tempID,totalY)+1
-					z = tempID / totalZ +1
+					x = mod(tempID,numx) +1
+					tempID = tempID /numx
+					y = mod(tempID,numy)+1
+					z = tempID / numz +1
 					!coordinate
 					VcoordinateList(i,1) = meshLength*(x-1)+ meshLength/2d0
 					VcoordinateList(i,2) = meshLength*(y-1)+ meshLength/2d0
@@ -1411,9 +1411,9 @@ end if
 !these subroutines (located in MeshReader.f90) initialize the mesh and connectivity.
 if(meshType=='uniform') then
 	call readMeshUniform(filename)
-else if(meshType=='nonUniform') then
-	call readMeshNonUniform(filename)
-else
+!else if(meshType=='nonUniform') then
+!	call readMeshNonUniform(filename)
+!else
 	write(*,*) 'error mesh type unknown'
 end if
 
