@@ -24,7 +24,7 @@ integer numCells										!<Number of cells in local mesh
 integer numTotal                                        !<Total meshes in the sysytem
 double precision meshLength                             !<Length of a coarse mesh
 integer numx,numy,numz                                  !<Number of meshes on x/y/z
-integer numxLocal,numxLocal,numxLocal                            !<Number of meshes on x/y/z in this processor
+integer numxLocal,numyLocal,numzLocal                            !<Number of meshes on x/y/z in this processor
 
 !reaction and defect lists
 type(reaction), pointer :: reactionList(:)				!<List of reactions in local (coarse) mesh

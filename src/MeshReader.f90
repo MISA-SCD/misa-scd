@@ -312,7 +312,7 @@ numzLocal=0
 !get numxLocal
 if(myProc%localCoord(1)==myProc%globalCoord(1) .AND. myProc%localCoord(2)==myProc%globalCoord(2)) then
 	numxLocal=numx
-else if(myProc%localCoord(1)==myProc%globalCoord(1) .AND. myProc%localCoord(2)<myProc%globalCoord(2)) then	!at xmin
+else if(myProc%localCoord(1)==myProc%globalCoord(1)) then	!at xmin
 	tempx1=0
 	tempx2 = myProc%localCoord(2)/(length/2d0)
 	if((dble(tempx2)*(length/2d0)) <=  myProc%localCoord(2) < (dble(tempx2+1)*(length/2d0))) then
@@ -323,10 +323,10 @@ else if(myProc%localCoord(1)==myProc%globalCoord(1) .AND. myProc%localCoord(2)<m
 		end if
 	end if
 	numxLocal=tempx2
-else if(myProc%localCoord(1)>myProc%globalCoord(1) .AND. myProc%localCoord(2)==myProc%globalCoord(2)) then	!at xmax
+else if(myProc%localCoord(2)==myProc%globalCoord(2)) then	!at xmax
 	tempx2=0
 	tempx1 = myProc%localCoord(1)/(length/2d0)
-	if((dble(tempx1)*(length/2d0)) <=  myProc%localCoord(1) < (dble(tempx1+1)*(length/2d0))) then
+	if((dble(tempx1)*(length/2d0)) <=  myProc%localCoord(1) .AND. myProc%localCoord(1) < (dble(tempx1+1)*(length/2d0))) then
 		if(mod(tempx1,2)==0) then
 			tempx1 = tempx1/2
 		else
@@ -338,14 +338,14 @@ else if(myProc%localCoord(1)>myProc%globalCoord(1) .AND. myProc%localCoord(2)==m
 else	!in the middle
 	tempx1 = myProc%localCoord(1)/(length/2d0)
 	tempx2 = myProc%localCoord(2)/(length/2d0)
-	if((dble(tempx1)*(length/2d0)) <=  myProc%localCoord(1) < (dble(tempx1+1)*(length/2d0))) then
+	if((dble(tempx1)*(length/2d0)) <=  myProc%localCoord(1) .AND. myProc%localCoord(1) < (dble(tempx1+1)*(length/2d0))) then
 		if(mod(tempx1,2)==0) then
 			tempx1 = tempx1/2
 		else
 			tempx1 = (tempx1+1)/2
 		end if
 	end if
-	if((dble(tempx2)*(length/2d0)) <=  myProc%localCoord(2) < (dble(tempx2+1)*(length/2d0))) then
+	if((dble(tempx2)*(length/2d0)) <=  myProc%localCoord(2) .AND. myProc%localCoord(2) < (dble(tempx2+1)*(length/2d0))) then
 		if(mod(tempx2,2)==0) then
 			tempx2 = tempx2/2
 		else
@@ -359,10 +359,10 @@ end if
 !get numyLocal
 if(myProc%localCoord(3)==myProc%globalCoord(3) .AND. myProc%localCoord(4)==myProc%globalCoord(4)) then
 	numyLocal=numy
-else if(myProc%localCoord(3)==myProc%globalCoord(3) .AND. myProc%localCoord(4)<myProc%globalCoord(4)) then	!at ymin
+else if(myProc%localCoord(3)==myProc%globalCoord(3)) then	!at ymin
 	tempy1=0
 	tempy2 = myProc%localCoord(4)/(length/2d0)
-	if((dble(tempy2)*(length/2d0)) <=  myProc%localCoord(4) < (dble(tempy2+1)*(length/2d0))) then
+	if((dble(tempy2)*(length/2d0)) <=  myProc%localCoord(4) .AND. myProc%localCoord(4) < (dble(tempy2+1)*(length/2d0))) then
 		if(mod(tempy2,2)==0) then
 			tempy2 = tempy2/2
 		else
@@ -370,10 +370,10 @@ else if(myProc%localCoord(3)==myProc%globalCoord(3) .AND. myProc%localCoord(4)<m
 		end if
 	end if
 	numyLocal=tempy2
-else if(myProc%localCoord(3)>myProc%globalCoord(3) .AND. myProc%localCoord(4)==myProc%globalCoord(4)) then	!at ymax
+else if(myProc%localCoord(4)==myProc%globalCoord(4)) then	!at ymax
 	tempy2=0
 	tempy1 = myProc%localCoord(3)/(length/2d0)
-	if((dble(tempy1)*(length/2d0)) <=  myProc%localCoord(3) < (dble(tempy1+1)*(length/2d0))) then
+	if((dble(tempy1)*(length/2d0)) <=  myProc%localCoord(3) .AND. myProc%localCoord(3) < (dble(tempy1+1)*(length/2d0))) then
 		if(mod(tempy1,2)==0) then
 			tempy1 = tempy1/2
 		else
@@ -385,14 +385,14 @@ else if(myProc%localCoord(3)>myProc%globalCoord(3) .AND. myProc%localCoord(4)==m
 else	!in the middle
 	tempy1 = myProc%localCoord(3)/(length/2d0)
 	tempy2 = myProc%localCoord(4)/(length/2d0)
-	if((dble(tempy1)*(length/2d0)) <=  myProc%localCoord(3) < (dble(tempy1+1)*(length/2d0))) then
+	if((dble(tempy1)*(length/2d0)) <=  myProc%localCoord(3) .AND. myProc%localCoord(3) < (dble(tempy1+1)*(length/2d0))) then
 		if(mod(tempy1,2)==0) then
 			tempy1 = tempy1/2
 		else
 			tempy1 = (tempy1+1)/2
 		end if
 	end if
-	if((dble(tempy2)*(length/2d0)) <=  myProc%localCoord(4) < (dble(tempy2+1)*(length/2d0))) then
+	if((dble(tempy2)*(length/2d0)) <=  myProc%localCoord(4) .AND. myProc%localCoord(4) < (dble(tempy2+1)*(length/2d0))) then
 		if(mod(tempy2,2)==0) then
 			tempy2 = tempy2/2
 		else
@@ -406,10 +406,10 @@ end if
 !get numzLocal
 if(myProc%localCoord(5)==myProc%globalCoord(5) .AND. myProc%localCoord(6)==myProc%globalCoord(6)) then
 	numzLocal=numz
-else if(myProc%localCoord(5)==myProc%globalCoord(5) .AND. myProc%localCoord(6)<myProc%globalCoord(6)) then	!at zmin
+else if(myProc%localCoord(5)==myProc%globalCoord(5)) then	!at zmin
 	tempz1=0
 	tempz2 = myProc%localCoord(6)/(length/2d0)
-	if((dble(tempz2)*(length/2d0)) <=  myProc%localCoord(6) < (dble(tempz2+1)*(length/2d0))) then
+	if((dble(tempz2)*(length/2d0)) <=  myProc%localCoord(6) .AND. myProc%localCoord(6) < (dble(tempz2+1)*(length/2d0))) then
 		if(mod(tempz2,2)==0) then
 			tempz2 = tempz2/2
 		else
@@ -417,10 +417,10 @@ else if(myProc%localCoord(5)==myProc%globalCoord(5) .AND. myProc%localCoord(6)<m
 		end if
 	end if
 	numzLocal=tempz2
-else if(myProc%localCoord(5)>myProc%globalCoord(5) .AND. myProc%localCoord(6)==myProc%globalCoord(6)) then	!at zmax
+else if(myProc%localCoord(6)==myProc%globalCoord(6)) then	!at zmax
 	tempz2=0
 	tempz1 = myProc%localCoord(5)/(length/2d0)
-	if((dble(tempz1)*(length/2d0)) <=  myProc%localCoord(5) < (dble(tempz1+1)*(length/2d0))) then
+	if((dble(tempz1)*(length/2d0)) <=  myProc%localCoord(5) .AND. myProc%localCoord(5)< (dble(tempz1+1)*(length/2d0))) then
 		if(mod(tempz1,2)==0) then
 			tempz1 = tempz1/2
 		else
@@ -432,14 +432,14 @@ else if(myProc%localCoord(5)>myProc%globalCoord(5) .AND. myProc%localCoord(6)==m
 else	!in the middle
 	tempz1 = myProc%localCoord(5)/(length/2d0)
 	tempz2 = myProc%localCoord(6)/(length/2d0)
-	if((dble(tempz1)*(length/2d0)) <=  myProc%localCoord(5) < (dble(tempz1+1)*(length/2d0))) then
+	if((dble(tempz1)*(length/2d0)) <=  myProc%localCoord(5) .AND. myProc%localCoord(5) < (dble(tempz1+1)*(length/2d0))) then
 		if(mod(tempz1,2)==0) then
 			tempz1 = tempz1/2
 		else
 			tempz1 = (tempz1+1)/2
 		end if
 	end if
-	if((dble(tempz2)*(length/2d0)) <=  myProc%localCoord(6) < (dble(tempz2+1)*(length/2d0))) then
+	if((dble(tempz2)*(length/2d0)) <=  myProc%localCoord(6) .AND. myProc%localCoord(6) < (dble(tempz2+1)*(length/2d0))) then
 		if(mod(tempz2,2)==0) then
 			tempz2 = tempz2/2
 		else
