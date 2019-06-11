@@ -67,14 +67,16 @@ integer tempMaterial
 
 interface
 
-	subroutine createConnectLocalPeriodicUniform()
+	subroutine createConnectLocalPeriodicUniform(length)
 	use DerivedType
 	use mod_srscd_constants
+	integer length
 	end subroutine
 	
-	subroutine createConnectLocalFreeSurfUniform()
+	subroutine createConnectLocalFreeSurfUniform(length)
 	use DerivedType
 	use mod_srscd_constants
+	integer length
 	end subroutine
 
 end interface
@@ -315,7 +317,7 @@ if(myProc%localCoord(1)==myProc%globalCoord(1) .AND. myProc%localCoord(2)==myPro
 else if(myProc%localCoord(1)==myProc%globalCoord(1)) then	!at xmin
 	tempx1=0
 	tempx2 = myProc%localCoord(2)/(length/2d0)
-	if((dble(tempx2)*(length/2d0)) <=  myProc%localCoord(2) < (dble(tempx2+1)*(length/2d0))) then
+	if((dble(tempx2)*(length/2d0)) <=  myProc%localCoord(2) .AND. myProc%localCoord(2)< (dble(tempx2+1)*(length/2d0))) then
 		if(mod(tempx2,2)==0) then
 			tempx2 = tempx2/2
 		else
@@ -535,9 +537,9 @@ end do
 
 !Step 3d: assign neighbors and processor numbers for neighbors (connectivity in myMesh) - periodic or free surfaces in +/- z
 if(meshType=='periodic') then
-	call createConnectLocalPeriodicUniform()
+	call createConnectLocalPeriodicUniform(length)
 else if(meshType=='freeSurfaces') then
-	call createConnectLocalFreeSurfUniform()
+	call createConnectLocalFreeSurfUniform(length)
 end if
 
 !This output is optional, used to show the user what the mesh is
@@ -639,13 +641,13 @@ end subroutine
 !Output: myMesh, myBoundary
 !**************************************************************************************************
 
-subroutine createConnectLocalPeriodicUniform()
+subroutine createConnectLocalPeriodicUniform(length)
 use DerivedType
 use mod_srscd_constants
 
 implicit none
 include 'mpif.h'
-integer cell, maxElement
+integer cell, maxElement, length
 
 integer status(MPI_STATUS_SIZE)
 
@@ -926,12 +928,12 @@ end subroutine
 !!Inputs: numx, numy, numz, global mesh coordinates, global mesh connectivity
 !!Output: myMesh
 
-subroutine createConnectLocalFreeSurfUniform()
+subroutine createConnectLocalFreeSurfUniform(length)
 use DerivedType
 
 implicit none
 include 'mpif.h'
-integer cell, maxElement, findGlobalNeighborFreeSurf
+integer cell, maxElement, findGlobalNeighborFreeSurf, length
 
 integer globalCell, globalNeighbor, status(MPI_STATUS_SIZE)
 
@@ -1327,12 +1329,12 @@ use DerivedType
 implicit none
 include 'mpif.h'
 
-integer status(MPI_STATUS_SIZE), procDivision(3), i, j, k, numx, numy, numz, numTotal, matNum
+integer status(MPI_STATUS_SIZE), procDivision(3), i, j, k, matNum
 character*20 readIn, meshType
 character*50 filename, filename2, filename3
 logical flag
 double precision volumeFaces(3), totalArea, length
-integer elem, localElements(3), localElem, numxLocal, numyLocal, numzLocal, maxNumNeighbors, globalMaxNeighbors
+integer elem, localElements(3), localElem,  maxNumNeighbors, globalMaxNeighbors
 double precision, allocatable :: globalMeshCoord(:,:)
 double precision, allocatable :: globalLength(:), procCoordList(:,:)
 integer, allocatable :: globalMeshConnect(:,:,:), globalMaterial(:), globalNumNeighbors(:,:)
@@ -1347,18 +1349,16 @@ interface
 	integer localElem
 	end subroutine
 
-	subroutine createConnectGlobalPeriodic(Connect, Coord, NumNeighbors, Length, numTotal, bdryCoord)
+	subroutine createConnectGlobalPeriodic(Connect, Coord, NumNeighbors, Length, bdryCoord)
 	double precision, allocatable :: Coord(:,:), Length(:)
 	integer, allocatable :: Connect(:,:,:), NumNeighbors(:,:)
 	double precision bdryCoord(6)
-	integer numTotal
 	end subroutine
 
-	subroutine createConnectGlobalFreeSurf(Connect, Coord, NumNeighbors, Length, numTotal, bdryCoord)
+	subroutine createConnectGlobalFreeSurf(Connect, Coord, NumNeighbors, Length,  bdryCoord)
 	double precision, allocatable :: Coord(:,:), Length(:)
 	integer, allocatable :: Connect(:,:,:), NumNeighbors(:,:)
 	double precision bdryCoord(6)
-	integer numTotal
 	end subroutine
 
 end interface
@@ -1611,10 +1611,10 @@ allocate(globalMeshConnect(numTotal,6,globalMaxNeighbors))
 
 if(meshType=='periodic') then
 	call createConnectGlobalPeriodicNonUniform(globalMeshConnect, globalMeshCoord, globalNumNeighbors, globalLength, &
-		numTotal, myProc%globalCoord)
+		 myProc%globalCoord)
 else if(meshType=='freeSurfaces') then
 	call createConnectGlobalFreeSurfNonUniform(globalMeshConnect, globalMeshCoord, globalNumNeighbors, globalLength, &
-		numTotal, myProc%globalCoord)
+		 myProc%globalCoord)
 end if
 
 !if(myProc%taskid==MASTER) then
@@ -1724,12 +1724,12 @@ end subroutine
 !!Inputs: coordinates list, length list, total number of elements, coordinates of boundary
 !!Output: connectivity, number of neighbors for each element
 
-subroutine createConnectGlobalPeriodicNonUniform(Connect, Coord, NumNeighbors, Length, numTotal, bdryCoord)
+subroutine createConnectGlobalPeriodicNonUniform(Connect, Coord, NumNeighbors, Length,  bdryCoord)
 implicit none
 
 double precision, allocatable :: Coord(:,:), Length(:)
 integer, allocatable :: Connect(:,:,:), NumNeighbors(:,:)
-integer numTotal, cell, dir, i, searchElem, neighbor
+integer  cell, dir, i, searchElem, neighbor
 double precision neighborElem, bdryCoord(6)
 
 !********************************************************
@@ -1872,12 +1872,12 @@ end subroutine
 !!Inputs: coordinates list, length list, total number of elements, coordinates of boundary
 !!Output: connectivity, number of neighbors for each element
 
-subroutine createConnectGlobalFreeSurfNonUniform(Connect, Coord, NumNeighbors, Length, numTotal, bdryCoord)
+subroutine createConnectGlobalFreeSurfNonUniform(Connect, Coord, NumNeighbors, Length,  bdryCoord)
 implicit none
 
 double precision, allocatable :: Coord(:,:), Length(:)
 integer, allocatable :: Connect(:,:,:), NumNeighbors(:,:)
-integer numTotal, cell, dir, i, searchElem, neighbor
+integer  cell, dir, i, searchElem, neighbor
 double precision neighborElem, bdryCoord(6)
 
 !********************************************************
@@ -2000,7 +2000,6 @@ do cell=1,numTotal
 	end do
 end do
 
-deallocate(materialStrain)
 
 end subroutine
 
@@ -2096,6 +2095,37 @@ do i=1,numSendRecv
 end do
 
 end subroutine
+
+!This finds the global cell number of a cell given its coordinates and the global coordinate list
+
+!>Subroutine find Global Cell
+!!
+!!This subroutine searches through a list of global cell coordinates and identifies which
+!!global cell ID number the coordinates provided corresponds to
+!!
+!!Inputs: coordinates of cell we are searching for, list of global cell coordinates
+!!Output: cell ID
+
+integer function findGlobalCell(coord, gCoord)
+	implicit none
+
+	double precision coord(3)
+	double precision, allocatable :: gCoord(:,:)
+	integer i
+	logical flag
+
+	flag=.FALSE.
+	i=0
+	do while (flag .eqv. .FALSE.)
+		i=i+1
+		if(coord(1)==gCoord(i,1) .AND. coord(2)==gCoord(i,2) .AND. coord(3)==gCoord(i,3)) then
+			flag=.TRUE.
+		endif
+	end do
+
+	findGlobalCell=i
+end function
+
 
 !Find the cell number in the local mesh using coordinates
 !>Function find local cell
