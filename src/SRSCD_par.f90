@@ -75,11 +75,12 @@ interface
 	type(reaction), pointer :: reactionCurrent
 	end subroutine
 	
-	subroutine updateDefectList(reactionCurrent, defectUpdateCurrent, CascadeCurrent)
+	subroutine updateDefectList(reactionCurrent, defectUpdateCurrent, CascadeCurrent, step)
 	use DerivedType
 	type(reaction), pointer :: reactionCurrent
 	type(DefectUpdateTracker), pointer :: defectUpdateCurrent
 	type(cascade), pointer :: CascadeCurrent
+	integer step
 	end subroutine
 	
 	subroutine updateDefectListMultiple(reactionChoiceCurrent, defectUpdateCurrent, CascadeCurrent)

@@ -3758,7 +3758,7 @@ implicit none
 integer cell1, proc1, cell2, proc2, defectType(numSpecies), num1, num2, dir, coarseCell
 type(ReactionParameters) :: reactionParameter
 type(cascade), pointer :: CascadeCurrent
-double precision Diff, area1, area2, areaShared, Vol1, Vol2, length1, length2, reactionRate, coarseLength
+double precision Diff, area1, area2, areaShared, Vol1, Vol2, length,length1, length2, reactionRate, coarseLength
 double precision fineToCoarseLength, coarseVolume
 integer findNumDefect, matNum, grainNum
 double precision findDiffusivity

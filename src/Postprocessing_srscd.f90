@@ -1243,7 +1243,6 @@ integer, allocatable :: defectProfileArray(:,:)
 integer, allocatable :: defectNumArray(:,:)
 integer, allocatable :: tempProfileArray(:,:)
 integer, allocatable :: tempNumArray(:,:)
-integer numZ, numX, numY
 integer zEntry, xEntry, yEntry
 integer i, j, k, procID, status(MPI_STATUS_SIZE), sim
 type(defect), pointer :: defectCurrent
@@ -1270,9 +1269,9 @@ end interface
 !First calculate the number of z-coordinates in the entire system
 
 !Assuming uniform mesh (if nonuniform, we cannot use myMesh(1)%length as the length of every element
-numZ=int(((myProc%globalCoord(6)-myProc%globalCoord(5))/myMesh(1)%length))
-numX=int(((myProc%globalCoord(2)-myProc%globalCoord(1))/myMesh(1)%length))
-numY=int(((myProc%globalCoord(4)-myProc%globalCoord(3))/myMesh(1)%length))
+!numZ=int(((myProc%globalCoord(6)-myProc%globalCoord(5))/myMesh(1)%length))
+!numX=int(((myProc%globalCoord(2)-myProc%globalCoord(1))/myMesh(1)%length))
+!numY=int(((myProc%globalCoord(4)-myProc%globalCoord(3))/myMesh(1)%length))
 
 !Allocate and initialize array of defect numbers in each processor
 allocate(defectProfileArray(numZ,numSpecies))
@@ -1282,7 +1281,7 @@ allocate(defectProfile(numZ))
 allocate(tempProfileArray(numZ,numSpecies))
 allocate(tempNumArray(numZ,numSpecies))
 
-do i=1,numZ
+do i=1,numz
 	allocate(defectProfile(i)%defectType(numSpecies))
 	do j=1,numSpecies
 		defectProfileArray(i,j)=0
@@ -1392,10 +1391,10 @@ if(myProc%taskid==MASTER) then
 
 	do procID=1,myProc%numTasks-1
 
-		call MPI_RECV(tempProfileArray,numZ*numSpecies,MPI_INTEGER, procID, 700, MPI_COMM_WORLD, status, ierr)
-		call MPI_RECV(tempNumArray,numZ*numSpecies,MPI_INTEGER, procID, 600,MPI_COMM_WORLD, status, ierr)
+		call MPI_RECV(tempProfileArray,numz*numSpecies,MPI_INTEGER, procID, 700, MPI_COMM_WORLD, status, ierr)
+		call MPI_RECV(tempNumArray,numz*numSpecies,MPI_INTEGER, procID, 600,MPI_COMM_WORLD, status, ierr)
 		
-		do i=1,numZ
+		do i=1,numz
 
 			!call MPI_RECV(tempArray,numSpecies,MPI_INTEGER, procID, i*700, MPI_COMM_WORLD, status, ierr)
 			
@@ -1506,16 +1505,16 @@ if(myProc%taskid==MASTER) then
 	
 	!write(99,*) 'XCoord ', 'HeConc ', 'VConc ', 'SIAMobileConc ', 'SIASessileConc'
 	
-	do i=1,numZ
+	do i=1,numz
 		!XCoord=(i-1)*myMesh(1)%length+myMesh(1)%length/2d0
 		ZCoord=(i-1)*myMesh(1)%length+myMesh(1)%length/2d0
 		
-		!write(99,*) XCoord, (dble(defectProfileArray(i,j)/(numY*numZ*((1d-9*myMesh(1)%length)**3d0))),&
+		!write(99,*) XCoord, (dble(defectProfileArray(i,j)/(numY*numz*((1d-9*myMesh(1)%length)**3d0))),&
 		!	j=1,3)
 		
 		!Vacancy concen
-		write(99,*) ZCoord, dble(defectProfileArray(i,2)/(numY*numX*((1d-9*myMesh(1)%length)**3d0))), &
-			dble(defectNumArray(i,2)/(numY*numX*((1d-9*myMesh(1)%length)**3d0)))
+		write(99,*) ZCoord, dble(defectProfileArray(i,2)/(numy*numx*((1d-9*myMesh(1)%length)**3d0))), &
+			dble(defectNumArray(i,2)/(numy*numx*((1d-9*myMesh(1)%length)**3d0)))
 			
 		defectListCurrent=>defectProfile(i)
 		do while(associated(defectListCurrent))
@@ -1533,10 +1532,10 @@ if(myProc%taskid==MASTER) then
 else
 	
 	!Send local array to be added to master processor array
-	call MPI_SEND(defectProfileArray,numZ*numSpecies,MPI_INTEGER, MASTER, 700, MPI_COMM_WORLD, ierr)
-	call MPI_SEND(defectNumArray, numZ*numSpecies, MPI_INTEGER, MASTER, 600, MPI_COMM_WORLD, ierr)
+	call MPI_SEND(defectProfileArray,numz*numSpecies,MPI_INTEGER, MASTER, 700, MPI_COMM_WORLD, ierr)
+	call MPI_SEND(defectNumArray, numz*numSpecies, MPI_INTEGER, MASTER, 600, MPI_COMM_WORLD, ierr)
 
-	do i=1,numZ
+	do i=1,numz
 		!call MPI_SEND(defectProfileArray(i,:),numSpecies,MPI_INTEGER, MASTER, i*700, MPI_COMM_WORLD, ierr)
 		
 		!call MPI_SEND(defectNumArray(i,:), numSpecies, MPI_INTEGER, MASTER, i*600, MPI_COMM_WORLD, ierr)
@@ -1586,7 +1585,7 @@ deallocate(tempProfileArray)
 deallocate(tempNumArray)
 
 !Deallocate defect list
-do i=1,numZ
+do i=1,numz
 	deallocate(defectProfile(i)%defectType)
 	defectListCurrent=>defectProfile(i)%next
 
@@ -1767,7 +1766,7 @@ use DerivedType
 implicit none
 include 'mpif.h'
 
-integer fileNumber, numx, numy, numz
+integer fileNumber
 integer i,j,k
 integer xindex, yindex, zindex
 integer numV, numCu, numSIA, GrainID
@@ -1789,9 +1788,9 @@ if(myProc%taskid==MASTER) then
 
 	!Step 1: Find the dimensions of the (global) mesh (assume cubic elements)
 
-	numx=(myProc%globalCoord(2)-myProc%globalCoord(1))/myMesh(1)%length
-	numy=(myProc%globalCoord(4)-myProc%globalCoord(3))/myMesh(1)%length
-	numz=(myProc%globalCoord(6)-myProc%globalCoord(5))/myMesh(1)%length
+!	numx=(myProc%globalCoord(2)-myProc%globalCoord(1))/myMesh(1)%length
+!	numy=(myProc%globalCoord(4)-myProc%globalCoord(3))/myMesh(1)%length
+!	numz=(myProc%globalCoord(6)-myProc%globalCoord(5))/myMesh(1)%length
 
 	xlength=myMesh(1)%length
 	ylength=myMesh(1)%length

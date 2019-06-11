@@ -65,22 +65,6 @@ integer tempx1,tempx2,tempy1,tempy2,tempz1,tempz2	!used to determine numxLocal, 
 double precision tempMeshCoord(3), tempStrain(6)
 integer tempMaterial
 
-interface
-
-	subroutine createConnectLocalPeriodicUniform(length)
-	use DerivedType
-	use mod_srscd_constants
-	integer length
-	end subroutine
-	
-	subroutine createConnectLocalFreeSurfUniform(length)
-	use DerivedType
-	use mod_srscd_constants
-	integer length
-	end subroutine
-
-end interface
-
 open(80, file=filename,action='read', status='old')
 if(strainField=='yes') then
 	open(50, file=strainFileName, action='read', status='old')
@@ -647,7 +631,8 @@ use mod_srscd_constants
 
 implicit none
 include 'mpif.h'
-integer cell, maxElement, length
+integer cell, maxElement
+double precision length
 
 integer status(MPI_STATUS_SIZE)
 
@@ -794,8 +779,42 @@ end do
 !have neighbors on other processors, we send out the cell numbers of these cells to the neighboring procs.
 !We label each MPI_SEND with globalCell so that the receiving processor pairs cells correctly using globalNeighbor (see below)
 
+!*******************************************************
+!Send
 if(myProc%procNeighbor(1)/=myProc%taskid) then	!right
 	call MPI_SEND(sendRight, 2*numyLocal*numzLocal, MPI_INTEGER, myProc%procNeighbor(1), 1, MPI_COMM_WORLD, ierr)
+
+end if
+
+if(myProc%procNeighbor(2)/=myProc%taskid) then	!left
+	call MPI_SEND(sendLeft, 2*numyLocal*numzLocal, MPI_INTEGER, myProc%procNeighbor(2), 2, MPI_COMM_WORLD, ierr)
+
+end if
+
+if(myProc%procNeighbor(3)/=myProc%taskid) then	!front
+	call MPI_SEND(sendFront, 2*numxLocal*numzLocal, MPI_INTEGER, myProc%procNeighbor(3), 3, MPI_COMM_WORLD, ierr)
+
+end if
+
+if(myProc%procNeighbor(4)/=myProc%taskid) then	!back
+	call MPI_SEND(sendBack, 2*numxLocal*numzLocal, MPI_INTEGER, myProc%procNeighbor(4), 4, MPI_COMM_WORLD, ierr)
+
+end if
+
+if(myProc%procNeighbor(5)/=myProc%taskid) then	!up
+	call MPI_SEND(sendUp, 2*numxLocal*numyLocal, MPI_INTEGER, myProc%procNeighbor(5), 5, MPI_COMM_WORLD, ierr)
+
+end if
+
+if(myProc%procNeighbor(6)/=myProc%taskid) then	!down
+	call MPI_SEND(sendDown, 2*numxLocal*numyLocal, MPI_INTEGER, myProc%procNeighbor(6), 6, MPI_COMM_WORLD, ierr)
+
+end if
+
+!******************************************************************
+!Recv
+if(myProc%procNeighbor(1)/=myProc%taskid) then	!right
+
 	call MPI_RECV(recvRight, 2*numyLocal*numzLocal, MPI_INTEGER, myProc%procNeighbor(1), 2, MPI_COMM_WORLD, status, ierr)
 
 	do i=1, numyLocal*numzLocal
@@ -807,7 +826,7 @@ if(myProc%procNeighbor(1)/=myProc%taskid) then	!right
 end if
 
 if(myProc%procNeighbor(2)/=myProc%taskid) then	!left
-	call MPI_SEND(sendLeft, 2*numyLocal*numzLocal, MPI_INTEGER, myProc%procNeighbor(2), 2, MPI_COMM_WORLD, ierr)
+
 	call MPI_RECV(recvLeft, 2*numyLocal*numzLocal, MPI_INTEGER, myProc%procNeighbor(2), 1, MPI_COMM_WORLD, status, ierr)
 
 	do i=1, numyLocal*numzLocal
@@ -818,7 +837,7 @@ if(myProc%procNeighbor(2)/=myProc%taskid) then	!left
 end if
 
 if(myProc%procNeighbor(3)/=myProc%taskid) then	!front
-	call MPI_SEND(sendFront, 2*numxLocal*numzLocal, MPI_INTEGER, myProc%procNeighbor(3), 3, MPI_COMM_WORLD, ierr)
+
 	call MPI_RECV(recvFront, 2*numxLocal*numzLocal, MPI_INTEGER, myProc%procNeighbor(3), 4, MPI_COMM_WORLD, status, ierr)
 
 	do i=1, numxLocal*numzLocal
@@ -829,7 +848,7 @@ if(myProc%procNeighbor(3)/=myProc%taskid) then	!front
 end if
 
 if(myProc%procNeighbor(4)/=myProc%taskid) then	!back
-	call MPI_SEND(sendBack, 2*numxLocal*numzLocal, MPI_INTEGER, myProc%procNeighbor(4), 4, MPI_COMM_WORLD, ierr)
+
 	call MPI_RECV(recvBack, 2*numxLocal*numzLocal, MPI_INTEGER, myProc%procNeighbor(4), 3, MPI_COMM_WORLD, status, ierr)
 
 	do i=1, numxLocal*numzLocal
@@ -840,7 +859,7 @@ if(myProc%procNeighbor(4)/=myProc%taskid) then	!back
 end if
 
 if(myProc%procNeighbor(5)/=myProc%taskid) then	!up
-	call MPI_SEND(sendUp, 2*numxLocal*numyLocal, MPI_INTEGER, myProc%procNeighbor(5), 5, MPI_COMM_WORLD, ierr)
+
 	call MPI_RECV(recvUp, 2*numxLocal*numyLocal, MPI_INTEGER, myProc%procNeighbor(5), 6, MPI_COMM_WORLD, status, ierr)
 
 	do i=1, numxLocal*numyLocal
@@ -851,7 +870,7 @@ if(myProc%procNeighbor(5)/=myProc%taskid) then	!up
 end if
 
 if(myProc%procNeighbor(6)/=myProc%taskid) then	!down
-	call MPI_SEND(sendDown, 2*numxLocal*numyLocal, MPI_INTEGER, myProc%procNeighbor(6), 6, MPI_COMM_WORLD, ierr)
+
 	call MPI_RECV(recvDown, 2*numxLocal*numyLocal, MPI_INTEGER, myProc%procNeighbor(6), 5, MPI_COMM_WORLD, status, ierr)
 
 	do i=1, numxLocal*numyLocal
@@ -860,7 +879,6 @@ if(myProc%procNeighbor(6)/=myProc%taskid) then	!down
 		materialBuff(cell)=recvDown(2,i)	!materialID
 	end do
 end if
-
 
 !***************************************************************************************************
 !Initializing myBoundary with elements that are in neighboring processors that bound this one
@@ -933,7 +951,8 @@ use DerivedType
 
 implicit none
 include 'mpif.h'
-integer cell, maxElement, findGlobalNeighborFreeSurf, length
+integer cell, maxElement
+double precision length
 
 integer globalCell, globalNeighbor, status(MPI_STATUS_SIZE)
 
@@ -1070,8 +1089,36 @@ do cell=1,numCells
 	end if
 end do
 
+!***************************************************************
+!Send
 if(myProc%procNeighbor(1)/=myProc%taskid) then	!right
 	call MPI_SEND(sendRight, 2*numyLocal*numzLocal, MPI_INTEGER, myProc%procNeighbor(1), 1, MPI_COMM_WORLD, ierr)
+end if
+
+if(myProc%procNeighbor(2)/=myProc%taskid) then	!left
+	call MPI_SEND(sendLeft, 2*numyLocal*numzLocal, MPI_INTEGER, myProc%procNeighbor(2), 2, MPI_COMM_WORLD, ierr)
+end if
+
+if(myProc%procNeighbor(3)/=myProc%taskid) then	!front
+	call MPI_SEND(sendFront, 2*numxLocal*numzLocal, MPI_INTEGER, myProc%procNeighbor(3), 3, MPI_COMM_WORLD, ierr)
+end if
+
+if(myProc%procNeighbor(4)/=myProc%taskid) then	!back
+	call MPI_SEND(sendBack, 2*numxLocal*numzLocal, MPI_INTEGER, myProc%procNeighbor(4), 4, MPI_COMM_WORLD, ierr)
+end if
+
+if(myProc%procNeighbor(5)/=myProc%taskid) then	!up
+	call MPI_SEND(sendUp, 2*numxLocal*numyLocal, MPI_INTEGER, myProc%procNeighbor(5), 5, MPI_COMM_WORLD, ierr)
+end if
+
+if(myProc%procNeighbor(6)/=myProc%taskid) then	!down
+	call MPI_SEND(sendDown, 2*numxLocal*numyLocal, MPI_INTEGER, myProc%procNeighbor(6), 6, MPI_COMM_WORLD, ierr)
+end if
+
+!************************************************************
+!Recv
+if(myProc%procNeighbor(1)/=myProc%taskid) then	!right
+
 	call MPI_RECV(recvRight, 2*numyLocal*numzLocal, MPI_INTEGER, myProc%procNeighbor(1), 2, MPI_COMM_WORLD, status, ierr)
 
 	do i=1, numyLocal*numzLocal
@@ -1083,7 +1130,7 @@ if(myProc%procNeighbor(1)/=myProc%taskid) then	!right
 end if
 
 if(myProc%procNeighbor(2)/=myProc%taskid) then	!left
-	call MPI_SEND(sendLeft, 2*numyLocal*numzLocal, MPI_INTEGER, myProc%procNeighbor(2), 2, MPI_COMM_WORLD, ierr)
+
 	call MPI_RECV(recvLeft, 2*numyLocal*numzLocal, MPI_INTEGER, myProc%procNeighbor(2), 1, MPI_COMM_WORLD, status, ierr)
 
 	do i=1, numyLocal*numzLocal
@@ -1094,7 +1141,7 @@ if(myProc%procNeighbor(2)/=myProc%taskid) then	!left
 end if
 
 if(myProc%procNeighbor(3)/=myProc%taskid) then	!front
-	call MPI_SEND(sendFront, 2*numxLocal*numzLocal, MPI_INTEGER, myProc%procNeighbor(3), 3, MPI_COMM_WORLD, ierr)
+
 	call MPI_RECV(recvFront, 2*numxLocal*numzLocal, MPI_INTEGER, myProc%procNeighbor(3), 4, MPI_COMM_WORLD, status, ierr)
 
 	do i=1, numxLocal*numzLocal
@@ -1105,7 +1152,7 @@ if(myProc%procNeighbor(3)/=myProc%taskid) then	!front
 end if
 
 if(myProc%procNeighbor(4)/=myProc%taskid) then	!back
-	call MPI_SEND(sendBack, 2*numxLocal*numzLocal, MPI_INTEGER, myProc%procNeighbor(4), 4, MPI_COMM_WORLD, ierr)
+
 	call MPI_RECV(recvBack, 2*numxLocal*numzLocal, MPI_INTEGER, myProc%procNeighbor(4), 3, MPI_COMM_WORLD, status, ierr)
 
 	do i=1, numxLocal*numzLocal
@@ -1116,7 +1163,7 @@ if(myProc%procNeighbor(4)/=myProc%taskid) then	!back
 end if
 
 if(myProc%procNeighbor(5)/=myProc%taskid) then	!up
-	call MPI_SEND(sendUp, 2*numxLocal*numyLocal, MPI_INTEGER, myProc%procNeighbor(5), 5, MPI_COMM_WORLD, ierr)
+
 	call MPI_RECV(recvUp, 2*numxLocal*numyLocal, MPI_INTEGER, myProc%procNeighbor(5), 6, MPI_COMM_WORLD, status, ierr)
 
 	do i=1, numxLocal*numyLocal
@@ -1127,7 +1174,7 @@ if(myProc%procNeighbor(5)/=myProc%taskid) then	!up
 end if
 
 if(myProc%procNeighbor(6)/=myProc%taskid) then	!down
-	call MPI_SEND(sendDown, 2*numxLocal*numyLocal, MPI_INTEGER, myProc%procNeighbor(6), 6, MPI_COMM_WORLD, ierr)
+
 	call MPI_RECV(recvDown, 2*numxLocal*numyLocal, MPI_INTEGER, myProc%procNeighbor(6), 5, MPI_COMM_WORLD, status, ierr)
 
 	do i=1, numxLocal*numyLocal
