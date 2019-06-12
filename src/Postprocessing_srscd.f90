@@ -1,11 +1,9 @@
-
 !***************************************************************************************************
 !>subroutine outputDefects - outputs raw data for defect populations in various volume elements
-!!
-!!Outputs into file: rawdat.out. These contain the complete
-!!defect populations per volume element.
-!!
-!!Compiles data from local as well as global processors.
+!
+!Outputs into file: rawdat.out. These contain the complete defect populations per volume element.
+!
+!Compiles data from local as well as global processors.
 !***************************************************************************************************
 
 subroutine outputDefects(elapsedTime,step)
@@ -35,7 +33,7 @@ if(myProc%taskid==MASTER) then
 	write(82,*) 'processor', myProc%taskid
 	do i=1,numCells
 		defectCurrent=>defectList(i)%next
-		write(82,*) 'coordinates', myMesh(i)%coordinates, 'cell', i
+		write(82,*) 'cell', i,'globalCell', myMesh(i)%globalID
         write(82,*) 'Cu  ', 'V  ','SIA_m  ', 'SIA_im  ', 'num  '
 		do while(associated(defectCurrent))
 			write(82,*) defectCurrent%defectType, defectCurrent%num
@@ -392,11 +390,9 @@ if(myProc%taskid==MASTER) then
 	defectCurrentList=>outputDefectList
 	
 	!Initialize Defect counters
-	!HeNum=0
     CuClusterNum=0
     VClusterNum=0
     SIAClusterNum=0
-	!totalHe=0
     totalCu=0
 	totalVac=0
 	totalSIA=0
@@ -534,7 +530,6 @@ if(myProc%taskid==MASTER) then
 	write(84,*) 'NumReactionsFine', reactionsFine
 	write(84,*) 'AverageTimestep', elapsedTime/dble(step)
 	write(84,*)
-    write(84,*)
 
 else	!other processors
 	numDefectsSend=0

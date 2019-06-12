@@ -286,7 +286,7 @@ nmin	17	nmax	-1
 nmin	0	nmax	0
 nmin	0	nmax	0
 ftype	4	param	2			!functional form type 4 (hard-coded in)
-1.6d0	0.8d0					!parameters for functional form type 4 (only 2)
+1.6d0	0.215d0					!parameters for functional form type 4 (only 2)
 
 0	0	1	0		0	0	1	0	!nSIA->SIA+(n-1)SIA
 nmin	0	nmax	0

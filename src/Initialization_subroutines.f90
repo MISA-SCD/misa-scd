@@ -20,8 +20,15 @@ totalAtoms = (myProc%globalCoord(2)-myProc%globalCoord(1))/lattice * &
 
 CuAtomsEverMesh = anint(CuContent*totalAtoms /dble(numTotal))
 
-initialCeqv = dexp(-FormSingle(1,2)%Ef / (kboltzmann*temperature))
-initialCeqi = dexp(-FormSingle(1,3)%Ef / (kboltzmann*temperature))
+do i=1, numSingleForm(1)
+	if(FormSingle(1,i)%defectType(1)==0 .AND. FormSingle(1,i)%defectType(2)==1 .AND. &
+			FormSingle(1,i)%defectType(3)==0 .AND. FormSingle(1,i)%defectType(4)==0) then	!V
+		initialCeqv = dexp(-FormSingle(1,i)%Ef / (kboltzmann*temperature))
+	else if(FormSingle(1,i)%defectType(1)==0 .AND. FormSingle(1,i)%defectType(2)==0 .AND. &
+			FormSingle(1,i)%defectType(3)==1 .AND. FormSingle(1,i)%defectType(4)==0) then
+		initialCeqi = dexp(-FormSingle(1,i)%Ef / (kboltzmann*temperature))
+	end if
+end do
 
 initialTotalV = nint(initialCeqv * totalAtoms)
 initialTotalSIA = nint(initialCeqi * totalAtoms)

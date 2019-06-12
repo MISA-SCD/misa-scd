@@ -4154,6 +4154,12 @@ else if(defectTemp%defectType(1)/=0 .AND. defectTemp%defectType(2)==0 .AND. &
 
 else	!Combine
 
+	!only point defect is mobile
+!	if(products(3) > max3DInt) then
+!		products(4)=products(3)
+!		products(3)=0
+!	end if
+
 	!two 1D clusters coming together to make a sessile cluster
 	if(products(3) > max3DInt .AND. defectTemp%defectType(3) > max3DInt) then
 	!if(products(3) > max3DInt) then
@@ -4184,7 +4190,7 @@ else	!Combine
 	if(products(2) >= products(3)) then
 		products(2)=products(2)-products(3)
 		products(3)=0
-	else if(products(3) >= products(2)) then
+	else if(products(3) > products(2)) then
 		products(3)=products(3)-products(2)
 		products(2)=0
 	end if
@@ -4192,7 +4198,7 @@ else	!Combine
 	if(products(2) >= products(4)) then
 		products(2)=products(2)-products(4)
 		products(4)=0
-	else if(products(4) >= products(2)) then
+	else if(products(4) > products(2)) then
 		products(4)=products(4)-products(2)
 		products(2)=0
 	end if
@@ -4200,12 +4206,6 @@ else	!Combine
 	!sessile+mobile SIA cluster makes sessile cluster
 	if(products(3) /= 0. .AND. products(4) /= 0) then
 		products(4)=products(3)+products(4)
-		products(3)=0
-	end if
-
-	!mobile+mobile SIA cluster makes sessible cluster
-	if(products(3) > 4) then
-		products(4)=products(3)
 		products(3)=0
 	end if
 
@@ -4220,7 +4220,6 @@ end if
 end subroutine
 
 !***************************************************************************************************
-!
 ! Subroutine checkReactionLegality
 !
 ! This subroutine looks at the products of a combination reaction and checks to see if the reaction
@@ -4229,7 +4228,6 @@ end subroutine
 !
 ! Inputs: numProducts, products(numProducts, numSpecies)
 ! Output: isLegal (boolean variable)
-!
 !***************************************************************************************************
 
 subroutine checkReactionLegality(numProducts, products, isLegal)
@@ -4282,7 +4280,6 @@ end subroutine
 !
 ! Input: zCoord, the z-coordinate of the center of the mesh element we are looking for
 ! Output: the DPA rate at that point in the non-uniform implantation profile, based on the input file
-!
 !***************************************************************************************************
 
 !>Function find DPA Rate Local (zCoord)
@@ -4302,26 +4299,29 @@ implicit none
 double precision zCoord, xi
 integer i
 
-do 10 i=1,numImplantDataPoints
+do i=1,numImplantDataPoints
 	if(implantRateData(i,1)==zCoord) then
 		findDPARateLocal=implantRateData(i,2)
 		exit
-	elseif(implantRateData(i,1) .GT. zCoord .AND. i .NE. 1) then
-	
+	elseif(implantRateData(i,1) > zCoord .AND. i /= 1) then
+		!First-order interpolation polynomial: L1(x)=(x-x1)/(x0-x1)*y0+(x-x0)/(x1-x0)*y1
+		findDPARateLocal=(zCoord-implantRateData(i,1))/(implantRateData(i-1,1)-implantRateData(i,1))* &
+				implantRateData(i-1,2) + (zCoord-implantRateData(i-1,1))/(implantRateData(i,1)-implantRateData(i-1,1))*&
+				implantRateData(i,2)
+
 		!xi is used in interpolaton between points if zCoord does not fall on a coordinate given in the data file
-		xi=(zCoord-implantRateData(i-1,1))/(implantRateData(i,1)-implantRateData(i-1,1))
-		
-		findDPARateLocal=implantRateData(i,2)*xi+implantRateData(i-1,2)*(1d0-xi)	!interpolate between points in data file
+!		xi=(zCoord-implantRateData(i-1,1))/(implantRateData(i,1)-implantRateData(i-1,1))
+!		findDPARateLocal=implantRateData(i,2)*xi+implantRateData(i-1,2)*(1d0-xi)	!interpolate between points in data file
 		exit
-	elseif(implantRateData(i,1) .GT. zCoord .AND. i == 1) then
+	elseif(implantRateData(i,1) > zCoord .AND. i == 1) then
 		
 		!The first point in the data file is greater than the first point in the mesh, meaning that
 		!we cannot use the data file. Return an error.
 		
 		write(*,*) 'error DPA rate file starts after mesh in z-direction'
 		exit
-	endif
-10 continue
+	end if
+end do
 
 if(i==numImplantDataPoints+1) then
 
