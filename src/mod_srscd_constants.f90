@@ -102,10 +102,6 @@ integer initialTotalSIA
 double precision, allocatable :: VcoordinateList(:,:)
 double precision, allocatable :: IcoordinateList(:,:)
 
-!character *1 Tab
-!For testing
-double precision CuDiffusivity
-
 !simulation parameters, to be read during readParameters() in main program
 double precision temperature			!<Temperature (K)
 double precision tempStore				!<Temperature read in (K) - used when temp. changes several times during a simulation

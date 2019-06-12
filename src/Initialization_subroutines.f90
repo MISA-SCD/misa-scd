@@ -447,7 +447,7 @@ do cell=1,numCells
 	!32 continue
 !		reactionCurrent%reactionRate = 0d0
 	!reactionCurrent%reactionRate=findReactionRateDiff(reactionCurrent%reactants(1,:), cell, &
-	!		myProc%taskid, myMesh(cell)%neighbors(1,dir), myMesh(cell)%neighborProcs(1,dir), dir, &
+	!		myProc%taskid, myMesh(cell)%neighbors(dir,1), myMesh(cell)%neighborProcs(dir,1), dir, &
 	!		DiffReactions(matNum,reac))
 !		nullify(reactionCurrent%next)
 
@@ -573,7 +573,7 @@ do cell=1,numCells
 				reactionCurrent%taskid(2)=myMesh(cell)%neighborProcs(dir,1)
 			end do
 			reactionCurrent%reactionRate=findReactionRateDiff(reactionCurrent%reactants(1,:), cell, &
-				myProc%taskid, myMesh(cell)%neighbors(1,dir), myMesh(cell)%neighborProcs(1,dir), dir, &
+				myProc%taskid, myMesh(cell)%neighbors(dir,1), myMesh(cell)%neighborProcs(dir,1), dir, &
 				DiffReactions(matNum,reac))
 			nullify(reactionCurrent%next)
 
@@ -1411,9 +1411,9 @@ end if
 !these subroutines (located in MeshReader.f90) initialize the mesh and connectivity.
 if(meshType=='uniform') then
 	call readMeshUniform(filename)
-!else if(meshType=='nonUniform') then
-!	call readMeshNonUniform(filename)
-!else
+else if(meshType=='nonUniform') then
+	call readMeshNonUniform(filename)
+else
 	write(*,*) 'error mesh type unknown'
 end if
 

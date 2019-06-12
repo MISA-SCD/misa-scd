@@ -6,7 +6,7 @@
 # -------------------End-macro-Defs---------------------------
 #define all fortan source code
 
-FF = mpif90 
+FF = mpif90 -g
 FFLAGS =  
 CC = 
 CCFLAGS = 
