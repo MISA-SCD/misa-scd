@@ -94,13 +94,11 @@ double precision Vconcent       !Vacancy concentration
 double precision SIAconcent     !SIA concentration
 double precision atomsEverMesh  !number of atoms of my processor
 integer CuAtomsEverMesh       !Initial number of Cu atoms in one mesh
-integer vacancyEverMesh         !Initial number of vacancies in one mesh
-integer SIAEverMesh             !Initial number of SIAs in one mesh
 integer initialTotalV
 integer initialTotalSIA
 
-double precision, allocatable :: VcoordinateList(:,:)
-double precision, allocatable :: IcoordinateList(:,:)
+integer, allocatable :: VcoordinateList(:)
+integer, allocatable :: IcoordinateList(:)
 
 !simulation parameters, to be read during readParameters() in main program
 double precision temperature			!<Temperature (K)

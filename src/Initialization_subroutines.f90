@@ -2,57 +2,91 @@
 !
 !***************************************************************************************
 subroutine initializeVIdefect()
-	use DerivedType
-	use mod_srscd_constants
-	use randdp
-	implicit none
-	include 'mpif.h'
+use DerivedType
+use mod_srscd_constants
+use randdp
+implicit none
+include 'mpif.h'
 
-	integer cell, i,j,tempID,x,y,z
-	double precision initialTotalVtemp, initialTotalItemp, totalAtoms
-	double precision rtemp, r1
-	rtemp = 0d0
+integer cell, i,j
+integer tempID,x,y,z
+double precision totalAtoms
+double precision rtemp, r1
 
-	totalAtoms = (myProc%globalCoord(2)-myProc%globalCoord(1))/lattice * &
-			(myProc%globalCoord(4)-myProc%globalCoord(3))/lattice * &
-			(myProc%globalCoord(6)-myProc%globalCoord(5))/lattice * 2
 
-	CuAtomsEverMesh = anint(CuContent*totalAtoms /dble(numTotal))
+totalAtoms = (myProc%globalCoord(2)-myProc%globalCoord(1))/lattice * &
+		(myProc%globalCoord(4)-myProc%globalCoord(3))/lattice * &
+		(myProc%globalCoord(6)-myProc%globalCoord(5))/lattice * 2
 
-	initialCeqv = dexp(-FormSingle(1,2)%Ef / (kboltzmann*temperature))
-	initialCeqi = dexp(-FormSingle(1,3)%Ef / (kboltzmann*temperature))
+CuAtomsEverMesh = anint(CuContent*totalAtoms /dble(numTotal))
 
-	initialTotalV = nint(initialCeqv * totalAtoms)
-	initialTotalSIA = nint(initialCeqi * totalAtoms)
+initialCeqv = dexp(-FormSingle(1,2)%Ef / (kboltzmann*temperature))
+initialCeqi = dexp(-FormSingle(1,3)%Ef / (kboltzmann*temperature))
 
-	allocate(VcoordinateList(initialTotalV,3))
+initialTotalV = nint(initialCeqv * totalAtoms)
+initialTotalSIA = nint(initialCeqi * totalAtoms)
 
-	!V
-	if(myProc%taskid==MASTER) then
-		outer: do i=1, initialTotalV
-			r1 = dprand()
+allocate(VcoordinateList(initialTotalV,3))
 
-			inter: do cell=1, numTotal
-				rtemp = rtemp + cell/numTotal
-				if(r1 <= rtemp) then
-					tempID = cell-1
-					x = mod(tempID,numx) +1
-					tempID = tempID /numx
-					y = mod(tempID,numy)+1
-					z = tempID / numz +1
-					!coordinate
-					VcoordinateList(i,1) = meshLength*(x-1)+ meshLength/2d0
-					VcoordinateList(i,2) = meshLength*(y-1)+ meshLength/2d0
-					VcoordinateList(i,3) = meshLength*(z-1)+ meshLength/2d0
+!V
+rtemp = 0d0
+if(myProc%taskid==MASTER) then
+	outer1: do i=1, initialTotalV
+		r1 = dprand()
 
-					rtemp = 0d0
-					exit inter
-				end if
-			end do inter
-		end do outer
-	end if
+		inter1: do cell=1, numTotal
+			rtemp = rtemp + cell/numTotal
+			if(r1 <= rtemp) then
+!				tempID = cell-1
+!				x = mod(tempID,numx) +1
+!				tempID = tempID /numx
+!				y = mod(tempID,numy)+1
+!				z = tempID / numz +1
+				!coordinate
+!				VcoordinateList(i,1) = meshLength*(x-1)+ meshLength/2d0
+!				VcoordinateList(i,2) = meshLength*(y-1)+ meshLength/2d0
+!				VcoordinateList(i,3) = meshLength*(z-1)+ meshLength/2d0
+				!globalCell
+				VcoordinateList(i)=cell
 
-call MPI_BCAST(VcoordinateList, 3*initialTotalV, MPI_DOUBLE_PRECISION, MASTER, MPI_COMM_WORLD,ierr)
+				rtemp = 0d0
+				exit inter1
+			end if
+		end do inter1
+	end do outer1
+end if
+
+call MPI_BCAST(VcoordinateList, initialTotalV, MPI_INTEGER, MASTER, MPI_COMM_WORLD,ierr)
+
+!SIA
+rtemp = 0d0
+if(myProc%taskid==MASTER) then
+	outer2: do i=1, initialTotalSIA
+		r1 = dprand()
+
+		inter2: do cell=1, numTotal
+			rtemp = rtemp + cell/numTotal
+			if(r1 <= rtemp) then
+!				tempID = cell-1
+!				x = mod(tempID,numx) +1
+!				tempID = tempID /numx
+!				y = mod(tempID,numy)+1
+!				z = tempID / numz +1
+				!coordinate
+!				IcoordinateList(i,1) = meshLength*(x-1)+ meshLength/2d0
+!				IcoordinateList(i,2) = meshLength*(y-1)+ meshLength/2d0
+!				IcoordinateList(i,3) = meshLength*(z-1)+ meshLength/2d0
+				!globalCell
+				IcoordinateList(i)=cell
+
+				rtemp = 0d0
+				exit inter2
+			end if
+		end do inter2
+	end do outer2
+end if
+
+call MPI_BCAST(IcoordinateList, initialTotalSIA, MPI_INTEGER, MASTER, MPI_COMM_WORLD,ierr)
 
 
 end subroutine
@@ -107,7 +141,7 @@ do cell=1,numCells
 			defectCurrent%defectType(i) = 0
 		end do
 		defectCurrent%defectType(2) = 1
-		defectCurrent%num=vacancyEverMesh
+		defectCurrent%num=0
 		defectCurrent%cellNumber=cell
 	end if
 
@@ -120,7 +154,7 @@ do cell=1,numCells
 			defectCurrent%defectType(i) = 0
 		end do
 		defectCurrent%defectType(3) = 1
-		defectCurrent%num=SIAEverMesh
+		defectCurrent%num=0
 		defectCurrent%cellNumber=cell
 	end if
 
@@ -128,19 +162,12 @@ do cell=1,numCells
 
 end do
 
+!v
 if(initialTotalV > 0) then
-do i=1, initialTotalV
+	do i=1, initialTotalV
 
-	if(VcoordinateList(i,1) > myProc%localCoord(1) .AND. &
-			VcoordinateList(i,1) <= myProc%localCoord(2) .AND. &
-			VcoordinateList(i,2) > myProc%localCoord(3) .AND. &
-			VcoordinateList(i,2) <= myProc%localCoord(4) .AND. &
-			VcoordinateList(i,3) > myProc%localCoord(5) .AND. &
-			VcoordinateList(i,3) <= myProc%localCoord(6)) then
-		inter: do cell=1, numCells
-			if(VcoordinateList(i,1)==myMesh(cell)%coordinates(1) .AND. &
-					VcoordinateList(i,2)==myMesh(cell)%coordinates(2) .AND. &
-					VcoordinateList(i,3)==myMesh(cell)%coordinates(3)) then
+		inter1: do cell=1, numCells
+			if(VcoordinateList(i)==myMesh(cell)%globalID) then
 
 				defectCurrent=>defectList(cell)	!0 0 0 0
 				defectCurrent=>defectCurrent%next	!1 0 0 0
@@ -148,11 +175,30 @@ do i=1, initialTotalV
 
 				defectCurrent%num = defectCurrent%num +1
 				nullify(defectCurrent)
-				exit inter
+				exit inter1
 			end if
-		end do inter
-	end if
-end do
+		end do inter1
+	end do
+end if
+
+!SIA
+if(initialTotalSIA > 0) then
+	do i=1, initialTotalSIA
+
+		inter2: do cell=1, numCells
+			if(IcoordinateList(i)==myMesh(cell)%globalID) then
+
+				defectCurrent=>defectList(cell)	!0 0 0 0
+				defectCurrent=>defectCurrent%next	!1 0 0 0
+				defectCurrent=>defectCurrent%next	!0 1 0 0
+				defectCurrent=>defectCurrent%next	!0 0 1 0
+
+				defectCurrent%num = defectCurrent%num +1
+				nullify(defectCurrent)
+				exit inter2
+			end if
+		end do inter2
+	end do
 end if
 
 end subroutine
@@ -901,7 +947,7 @@ do cell=1,numCells
 							defectCurrent%defectType(i) = 0
 						end do
 						defectCurrent%defectType(2) = 1
-						defectCurrent%num=vacancyEverMesh
+						defectCurrent%num=0
 						defectCurrent%cellNumber=myMesh(cell)%neighbors(dir,k)
 					end if
 
@@ -914,7 +960,7 @@ do cell=1,numCells
 							defectCurrent%defectType(i) = 0
 						end do
 						defectCurrent%defectType(3) = 1
-						defectCurrent%num=SIAEverMesh
+						defectCurrent%num=0
 						defectCurrent%cellNumber=myMesh(cell)%neighbors(dir,k)
 					end if
 

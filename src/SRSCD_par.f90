@@ -248,10 +248,12 @@ call initializeReactionList()		!initialize reactions within myMesh
 call initializeTotalRate()			!initialize totalRate and maxRate using reactionList(:)
 call initializeDebugRestart()		!input defects into coarse mesh from restart file (for debugging)
 
-write(*,*) 'atomsEverMesh', atomsEverMesh, 'CuEverMesh', CuAtomsEverMesh
-write(*,*) 'initialTotalV', initialTotalV, 'initialTotalSIA', initialTotalSIA
-write(*,*) 'initialCeqv', initialCeqv, 'vacancyEverMesh', vacancyEverMesh
-write(*,*) 'initialCeqi', initialCeqi, 'SIAEverMesh', SIAEverMesh
+if(myProc%taskid==MASTER) then
+	write(*,*) 'atomsEverMesh', atomsEverMesh, 'CuEverMesh', CuAtomsEverMesh
+	write(*,*) 'initialTotalV', initialTotalV, 'initialTotalSIA', initialTotalSIA
+	write(*,*) 'initialCeqv', initialCeqv
+	write(*,*) 'initialCeqi', initialCeqi
+end if
 
 call DEBUGPrintReactionList(0)		!prints all reaction lists at a given Monte Carlo step
 !call DEBUGPrintDefectList(0)

@@ -53,14 +53,9 @@ integer status(MPI_STATUS_SIZE), procDivision(3), i, j, k, l, dir, matNum
 character*20 readIn, meshType
 character*50 filename, filename2, filename3
 logical flag
-!double precision volumeFaces(3), totalArea
 double precision length, tempCoord(3)
-!integer localElements(3), globalCell, globalNeighbor, maxElement
 integer element,  localElem
 integer tempx1,tempx2,tempy1,tempy2,tempz1,tempz2	!used to determine numxLocal, numyLocal, numzLocal
-!double precision, allocatable :: globalMeshCoord(:,:)
-!double precision, allocatable :: globalStrain(:,:)
-!integer, allocatable :: globalMeshConnect(:,:), globalMaterial(:)
 
 double precision tempMeshCoord(3), tempStrain(6)
 integer tempMaterial
@@ -146,35 +141,9 @@ end do
 !Step 2: divide processors over gobal volume
 !************************************************
 
-!find area of each face of entire volume (x-y, y-z, x-z)
-!!volumeFaces(1)=(myProc%globalCoord(2)-myProc%globalCoord(1))*(myProc%globalCoord(4)-myProc%globalCoord(3))	!x-y
-!!volumeFaces(2)=(myProc%globalCoord(4)-myProc%globalCoord(3))*(myProc%globalCoord(6)-myProc%globalCoord(5))	!y-z
-!!volumeFaces(3)=(myProc%globalCoord(2)-myProc%globalCoord(1))*(myProc%globalCoord(6)-myProc%globalCoord(5))	!x-z
-	
-!for each factorization of the number of processors, find the total shared area and minimize
-!!totalArea=dble(myProc%numtasks)*(volumeFaces(1)+volumeFaces(2)+volumeFaces(3))	!This is an upper bound estimate
-
 procDivision(1)=0	!number of processors in x
 procDivision(2)=0	!number of processors in y
 procDivision(3)=0	!number of processors in z
-!Keep factorizations of processors that minimize shared area.
-!!do i=1,myProc%numtasks
-!!	do j=1, myProc%numtasks
-!!		do k=1, myProc%numtasks
-!!			if(i*j*k==myProc%numtasks) then
-!!				!find shared area between processors using this factorization of the number of processors
-!!				if(k*volumeFaces(1)+i*volumeFaces(2)+j*volumeFaces(3) < totalArea .OR. myProc%numtasks==1) then
-!!					procDivision(1)=i
-!!					procDivision(2)=j
-!!					procDivision(3)=k
-!!					totalArea=k*volumeFaces(1)+i*volumeFaces(2)+j*volumeFaces(3)
-!!					!write(*,*) 'new division found', procDivision, totalArea
-!!				end if
-!!				!do nothing, not a factorization of numtasks
-!!			end if
-!!		end do
-!!	end do
-!!end do
 
 call MPI_DIMS_CREATE(myProc%numtasks,3,procDivision, ierr)
 
@@ -208,9 +177,6 @@ myProc%localCoord(6)=myProc%localCoord(5)+&
 	
 totalVolume=(myProc%localCoord(2)-myProc%localCoord(1))*(myProc%localCoord(4)-myProc%localCoord(3))*&
 	(myProc%localCoord(6)-myProc%localCoord(5))
-
-!write(*,*) 'proc', myProc%taskid, 'of', myProc%numtasks
-!write(*,*) 'local coordinates', myProc%localCoord
 
 !point processor myProc%procNeighbor(x) to neighboring processors
 !********
@@ -255,9 +221,6 @@ if (myProc%localCoord(6)==myProc%globalCoord(6)) then	!coordinate is at zmax
 else
 	myProc%procNeighbor(5)=myProc%taskid+procDivision(1)*procDivision(2)	!up
 end if
-
-!write(*,*) 'proc', myProc%taskid, 'of', myProc%numtasks
-!write(*,*) 'neighbors', myProc%procNeighbor
 
 !Step 4: create mesh in each processor of elements only within that processor's local coordinates
 !NOTE: this is an actual mesh of volume elements, not the 'processor mesh' created above.
@@ -540,66 +503,8 @@ end if
 !			write(*,*)
 !		26 continue
 !	25 continue
-!	
-!	write(*,*) 'connectivity order +x, -x, +y, -y, +z, -z'
-!	write(*,*) 'proc division', procDivision, 'Division order: x, y, z'
-!	write(*,*)
-!	write(*,*) 'Global coordinates (xmin, xmax, ymin, ymax, zmin, zmax)'
-!	write(*,*) myProc%globalCoord
-!	write(*,*)
+!
 !endif
-
-!***************************************************************************************************
-!Initializing myBoundary with elements that are in neighboring processors that bound this one
-!***************************************************************************************************
-
-!Step 1: Find the max cell# of any boundary mesh element
-!!maxElement=0
-!!do i=1, numCells
-!!	do j=1, 6
-!!		if(myMesh(i)%neighborProcs(j,1) /= myProc%taskid) then	!we are pointing to a different proc
-!!			if(myMesh(i)%neighbors(j,1) > maxElement) then		!searching for the max element number in a neighbor
-!!				maxElement=myMesh(i)%neighbors(j,1)
-!!			end if
-!!		end if
-!!	end do
-!!end do
-
-!This tells us how large to allocate myBoundary. NOTE: many elements in myBoundary will be unused. Only
-!the elements that represent volume elements on the boundary of myMesh will be used. This represents
-!wasted memory for the sake of easier computation
-
-!!allocate(myBoundary(6,maxElement))	!6 directions, maxElement elements in each direction (more than needed)
-
-!initialize myBoundary with 0 in localNeighbor - signal that myBoundary is not attached to anything
-!!do i=1,maxElement
-!!	do j=1,6
-!!		myBoundary(j,i)%localNeighbor=0	!default, says that this is not a real element of myBoundary.
-!!		myBoundary(j,i)%proc=-10		!default, says that this is not a real element of myBoundary.
-!!	end do
-!!end do
-
-!!do i=1,numCells
-!!	do j=1,6
-!!		if(myMesh(i)%neighborProcs(j,1) == -1) then										!this is a free surface
-			!do nothing
-!!		else if(myMesh(i)%neighborProcs(j,1) /= myProc%taskid) then
-!!			myBoundary(j,myMesh(i)%neighbors(j,1))%proc=myMesh(i)%neighborProcs(j,1)	!set proc # of elements in myBoundary
-!!			myBoundary(j,myMesh(i)%neighbors(j,1))%length=length						!set length of elements in myBoundary
-!!			myBoundary(j,myMesh(i)%neighbors(j,1))%volume=length**3d0					!set volume of elements in myBoundary (changes with cascade addition)
-!!			globalCell=findGlobalCell(myMesh(i)%coordinates,globalMeshCoord)            !find global cell # of element in myBoundary
-!!			globalNeighbor=globalMeshConnect(globalCell,j)								!use global cell # to find material # of element in myBoundary
-!!			myBoundary(j,myMesh(i)%neighbors(j,1))%material=globalMaterial(globalNeighbor)	!set material # of elements in myBoundary
-!!			myBoundary(j,myMesh(i)%neighbors(j,1))%localNeighbor=i
-			
-!!			if(strainField=='yes') then
-!!				do l=1,6
-!!					myBoundary(j,myMesh(i)%neighbors(j,1))%strain(l)=globalStrain(globalNeighbor,l)
-!!				end do
-!!			end if
-!!		end if
-!!	end do
-!!end do
 
 !Close input files
 if(strainField=='yes') then
@@ -1246,51 +1151,54 @@ end subroutine
 !***************************************************************************************
 
 integer function findGlobalNeighborPeriodic(globalID, dir)
-	implicit none
-	integer globalID, dir, neighborID
 
-	!************************************************
-	!periodic boundary condition version
-	!************************************************
+implicit none
+integer globalID, dir, neighborID
 
-	if(dir==1) then
-		if(mod(globalID,numx)==0) then !identify cell to the right
-			neighborID=globalID-numx+1
-		else
-			neighborID=globalID+1
-		endif
-	else if(dir==2) then
-		if(mod(globalID+numx-1,numx)==0) then !identify cell to the left
-			neighborID=globalID+numx-1
-		else
-			neighborID=globalID-1
-		endif
-	else if(dir==3) then
-		if(mod(globalID,numx*numy) > numx*(numy-1) .OR. mod(globalID,numx*numy)==0) then
-			neighborID=globalID-(numx*(numy-1))
-		else
-			neighborID=globalID+numx
-		endif
-	else if(dir==4) then
-		if(mod(globalID,numx*numy) <= numx .AND. (mod(globalID, numx*numy) /= 0 .OR. numy==1)) then
-			neighborID=globalID+(numx*(numy-1))
-		else
-			neighborID=globalID-numx
-		endif
-	else if(dir==5) then
-		if(mod(globalID,numx*numy*numz) > numx*numy*(numz-1) .OR. mod(globalID, numx*numy*numz)==0) then
-			neighborID=globalID-(numx*numy*(numz-1))
-		else
-			neighborID=globalID+numx*numy
-		endif
-	else if(dir==6) then
-		if(mod(globalID,numx*numy*numz) <= numx*numy .AND. (mod(globalID,numx*numy*numz) /= 0 .OR. numz==1)) then
-			neighborID=globalID+(numx*numy*(numz-1))
-		else
-			neighborID=globalID-numx*numy
-		endif
-	end if
-	findGlobalNeighborPeriodic=neighborID
+!************************************************
+!periodic boundary condition version
+!************************************************
+
+if(dir==1) then
+    if(mod(globalID,numx)==0) then !identify cell to the right
+        neighborID=globalID-numx+1
+    else
+        neighborID=globalID+1
+    end if
+else if(dir==2) then
+    if(mod(globalID+numx-1,numx)==0) then !identify cell to the left
+        neighborID=globalID+numx-1
+    else
+        neighborID=globalID-1
+    end if
+else if(dir==3) then
+    if(mod(globalID,numx*numy) > numx*(numy-1) .OR. mod(globalID,numx*numy)==0) then
+        neighborID=globalID-(numx*(numy-1))
+    else
+        neighborID=globalID+numx
+    end if
+else if(dir==4) then
+    if(mod(globalID,numx*numy) <= numx .AND. (mod(globalID, numx*numy) /= 0 .OR. numy==1)) then
+        neighborID=globalID+(numx*(numy-1))
+    else
+        neighborID=globalID-numx
+    end if
+else if(dir==5) then
+    if(mod(globalID,numx*numy*numz) > numx*numy*(numz-1) .OR. mod(globalID, numx*numy*numz)==0) then
+        neighborID=globalID-(numx*numy*(numz-1))
+    else
+        neighborID=globalID+numx*numy
+    end if
+else if(dir==6) then
+    if(mod(globalID,numx*numy*numz) <= numx*numy .AND. (mod(globalID,numx*numy*numz) /= 0 .OR. numz==1)) then
+        neighborID=globalID+(numx*numy*(numz-1))
+    else
+        neighborID=globalID-numx*numy
+    end if
+end if
+
+findGlobalNeighborPeriodic=neighborID
+
 end function
 
 !***************************************************************************************
@@ -1301,57 +1209,59 @@ end function
 !***************************************************************************************
 
 integer function findGlobalNeighborFreeSurf(globalID, dir)
-		implicit none
-		integer globalID, dir, neighborID
 
-		!************************************************
-		!PBCs in x and y, free in z (cell 0 represents free surface)
-		!************************************************
+implicit none
+integer globalID, dir, neighborID
 
-		if(dir==1) then
-			if(mod(globalID,numx)==0) then !identify cell to the right
-				neighborID=globalID-numx+1
-			else
-				neighborID=globalID+1
-			end if
-		else if(dir==2) then
-			if(mod(globalID+numx-1,numx)==0) then !identify cell to the left
-				neighborID=globalID+numx-1
-			else
-				neighborID=globalID-1
-			end if
-		else if(dir==3) then
-			if(mod(globalID,numx*numy) > numx*(numy-1) .OR. mod(globalID,numx*numy)==0) then
-				neighborID=globalID-(numx*(numy-1))
-			else
-				neighborID=globalID+numx
-			end if
-		else if(dir==4) then
-			if(mod(globalID,numx*numy) <= numx .AND. (mod(globalID, numx*numy) /= 0 .OR. numy==1)) then
-				neighborID=globalID+(numx*(numy-1))
-			else
-				neighborID=globalID-numx
-			end if
-		else if(dir==5) then
-			if(mod(globalID,numx*numy*numz) > numx*numy*(numz-1) .OR. mod(globalID, numx*numy*numz)==0) then
-				neighborID=0
-			else
-				neighborID=globalID+numx*numy
-			end if
-		else if(dir==6) then
-			if(mod(globalID,numx*numy*numz) <= numx*numy .AND. (mod(globalID,numx*numy*numz) /=0 .OR. numz==1)) then
-				neighborID=0
-			else
-				neighborID=globalID-numx*numy
-			end if
-		end if
+!************************************************
+!PBCs in x and y, free in z (cell 0 represents free surface)
+!************************************************
 
-		findGlobalNeighborFreeSurf=neighborID
+if(dir==1) then
+    if(mod(globalID,numx)==0) then !identify cell to the right
+        neighborID=globalID-numx+1
+    else
+        neighborID=globalID+1
+    end if
+else if(dir==2) then
+    if(mod(globalID+numx-1,numx)==0) then !identify cell to the left
+        neighborID=globalID+numx-1
+    else
+        neighborID=globalID-1
+    end if
+else if(dir==3) then
+    if(mod(globalID,numx*numy) > numx*(numy-1) .OR. mod(globalID,numx*numy)==0) then
+        neighborID=globalID-(numx*(numy-1))
+    else
+        neighborID=globalID+numx
+    end if
+else if(dir==4) then
+    if(mod(globalID,numx*numy) <= numx .AND. (mod(globalID, numx*numy) /= 0 .OR. numy==1)) then
+        neighborID=globalID+(numx*(numy-1))
+    else
+        neighborID=globalID-numx
+    end if
+else if(dir==5) then
+    if(mod(globalID,numx*numy*numz) > numx*numy*(numz-1) .OR. mod(globalID, numx*numy*numz)==0) then
+        neighborID=0
+    else
+        neighborID=globalID+numx*numy
+    end if
+else if(dir==6) then
+    if(mod(globalID,numx*numy*numz) <= numx*numy .AND. (mod(globalID,numx*numy*numz) /=0 .OR. numz==1)) then
+        neighborID=0
+    else
+        neighborID=globalID-numx*numy
+    end if
+end if
+
+findGlobalNeighborFreeSurf=neighborID
+
 end function
 
 
 !*********************************************************************************************************************
-!The following subroutine and function are used for nun-uniform meshes
+!The following subroutine and function are used for non-uniform meshes
 !*********************************************************************************************************************
 
 !***************************************************************************************************
@@ -1437,10 +1347,6 @@ do while(flag .eqv. .FALSE.)
 end do
 flag=.FALSE.
 
-!if(myProc%taskid==MASTER) then
-!	write(*,*) 'global coordinates'
-!	write(*,*) myProc%globalCoord
-!endif
 
 !Step 2: divide processors over gobal volume
 !NOTE: step to is identical to step 2 in the uniform case. Extended comments can be found in the uniform case.
@@ -2193,12 +2099,12 @@ logical flag
 
 flag = .FALSE.
 i=0
-do 10 while(flag .eqv. .FALSE.)
+do while(flag .eqv. .FALSE.)
 	i=i+1
 	if(coord(1)==myMesh(i)%coordinates(1) .AND. coord(2)==myMesh(i)%coordinates(2) .AND. coord(3)==myMesh(i)%coordinates(3)) then
 		flag=.TRUE.
 	endif
-10 continue
+end do
 
 findLocalCell=i
 end function
@@ -2223,7 +2129,7 @@ implicit none
 integer procDivision(3), i
 double precision, allocatable :: procCoordList(:,:)
 
-do 10 i=1,myProc%numtasks
+do i=1,myProc%numtasks
 	procCoordList(i,1)=myProc%globalCoord(1)+&
 		mod(i-1,procDivision(1))*(myProc%globalCoord(2)-myProc%globalCoord(1))/&
 		dble(procDivision(1))
@@ -2244,7 +2150,7 @@ do 10 i=1,myProc%numtasks
 	
 	procCoordList(i,6)=procCoordList(i,5)+&
 		(myProc%globalCoord(6)-myProc%globalCoord(5))/dble(procDivision(3))
-10 continue
+end do
 end subroutine
 
 !Find the number of the neighboring processor given coordinates within that processor
@@ -2266,14 +2172,14 @@ double precision, allocatable :: globalMeshCoord(:,:)
 double precision, allocatable :: procCoordList(:,:)
 integer elem, i
 
-do 10 i=1,myProc%numtasks
-	if(globalMeshCoord(elem,1) .GT. procCoordList(i,1) .AND. globalMeshCoord(elem,1) .LE. procCoordList(i,2) &
-	.AND. globalMeshCoord(elem,2) .GT. procCoordList(i,3) .AND. globalMeshCoord(elem,2) .LE. procCoordList(i,4) &
-	.AND. globalMeshCoord(elem,3) .GT. procCoordList(i,5) .AND. globalMeshCoord(elem,3) .LE. procCoordList(i,6)) then
+do i=1,myProc%numtasks
+	if(globalMeshCoord(elem,1) > procCoordList(i,1) .AND. globalMeshCoord(elem,1) <= procCoordList(i,2) &
+	.AND. globalMeshCoord(elem,2) > procCoordList(i,3) .AND. globalMeshCoord(elem,2) <= procCoordList(i,4) &
+	.AND. globalMeshCoord(elem,3) > procCoordList(i,5) .AND. globalMeshCoord(elem,3) <= procCoordList(i,6)) then
 		findNeighborProc=i-1
 		exit
 	endif
-10 continue
+end do
 
 end function
 
