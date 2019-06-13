@@ -108,7 +108,7 @@ do while(associated(CascadeCurrent))
 			reactionCurrent=>reactionCurrent%next
 		end do
 		
-		if(dabs(CascadeCurrent%totalRate(i)-rateCascade) .GT. 1d0) then
+		if(dabs(CascadeCurrent%totalRate(i)-rateCascade) > 1d0) then
 			write(*,*) 'Error: total rate differs significantly from expected in cascade', &
 				CascadeCurrent%cascadeID
 			write(*,*) 'TotalRateCascade', CascadeCurrent%totalRate(i), 'Expected Value', rateCascade

@@ -33,7 +33,8 @@ end do
 initialTotalV = nint(initialCeqv * totalAtoms)
 initialTotalSIA = nint(initialCeqi * totalAtoms)
 
-allocate(VcoordinateList(initialTotalV,3))
+allocate(VcoordinateList(initialTotalV))
+allocate(IcoordinateList(initialTotalSIA))
 
 !V
 rtemp = 0d0
@@ -172,16 +173,20 @@ end do
 !v
 if(initialTotalV > 0) then
 	do i=1, initialTotalV
-
+        nullify(defectCurrent)
 		inter1: do cell=1, numCells
 			if(VcoordinateList(i)==myMesh(cell)%globalID) then
-
-				defectCurrent=>defectList(cell)	!0 0 0 0
-				defectCurrent=>defectCurrent%next	!1 0 0 0
-				defectCurrent=>defectCurrent%next	!0 1 0 0
-
-				defectCurrent%num = defectCurrent%num +1
-				nullify(defectCurrent)
+				defectCurrent=>defectList(cell)%next
+                do while(associated(defectCurrent))
+                    if(defectCurrent%defectType(1)==0 &
+                            .AND. defectCurrent%defectType(2)==1 &
+                            .AND. defectCurrent%defectType(3)==0 &
+                            .AND. defectCurrent%defectType(4)==0) then
+                        defectCurrent%num = defectCurrent%num +1
+                    else
+                        defectCurrent=>defectCurrent%next
+                    end if
+                end do
 				exit inter1
 			end if
 		end do inter1
@@ -191,17 +196,20 @@ end if
 !SIA
 if(initialTotalSIA > 0) then
 	do i=1, initialTotalSIA
-
+        nullify(defectCurrent)
 		inter2: do cell=1, numCells
 			if(IcoordinateList(i)==myMesh(cell)%globalID) then
-
-				defectCurrent=>defectList(cell)	!0 0 0 0
-				defectCurrent=>defectCurrent%next	!1 0 0 0
-				defectCurrent=>defectCurrent%next	!0 1 0 0
-				defectCurrent=>defectCurrent%next	!0 0 1 0
-
-				defectCurrent%num = defectCurrent%num +1
-				nullify(defectCurrent)
+				defectCurrent=>defectList(cell)%next
+                do while(associated(defectCurrent))
+                    if(defectCurrent%defectType(1)==0 &
+                            .AND. defectCurrent%defectType(2)==0 &
+                            .AND. defectCurrent%defectType(3)==1 &
+                            .AND. defectCurrent%defectType(4)==0) then
+                        defectCurrent%num = defectCurrent%num +1
+                    else
+                        defectCurrent=>defectCurrent%next
+                    end if
+                end do
 				exit inter2
 			end if
 		end do inter2
@@ -900,8 +908,10 @@ use DerivedType
 use mod_srscd_constants
 implicit none
 
-integer cell, dir, k, i, j
+integer cell, dir, k, i, j, gCell,gNeighor
 type(defect), pointer :: defectCurrent
+integer, external :: findgNeighborPeriodic
+
 
 do cell=1,numCells
 	do dir=1,6
@@ -975,92 +985,54 @@ do cell=1,numCells
 
 					!V
 					if(initialTotalV > 0) then
-					do j=1, initialTotalV
-						if(dir==1) then
-							if(VcoordinateList(i,1)==(myMesh(cell)%coordinates(1)+meshLength) .AND. &
-									VcoordinateList(i,2)==myMesh(cell)%coordinates(2) .AND. &
-									VcoordinateList(i,3)==myMesh(cell)%coordinates(3)) then
-
-								defectCurrent=>myBoundary(dir,myMesh(cell)%neighbors(dir,k))%defectList	!0 0 0 0
-								defectCurrent=>defectCurrent%next	!1 0 0 0
-								defectCurrent=>defectCurrent%next	!0 1 0 0
-
-								defectCurrent%num = defectCurrent%num +1
-								nullify(defectCurrent)
-							end if
-						else if(dir==2) then
-							if(VcoordinateList(i,1)==(myMesh(cell)%coordinates(1)-meshLength) .AND. &
-									VcoordinateList(i,2)==myMesh(cell)%coordinates(2) .AND. &
-									VcoordinateList(i,3)==myMesh(cell)%coordinates(3)) then
-
-								defectCurrent=>myBoundary(dir,myMesh(cell)%neighbors(dir,k))%defectList	!0 0 0 0
-								defectCurrent=>defectCurrent%next	!1 0 0 0
-								defectCurrent=>defectCurrent%next	!0 1 0 0
-
-								defectCurrent%num = defectCurrent%num +1
-								nullify(defectCurrent)
-							end if
-						else if(dir==3) then
-							if(VcoordinateList(i,1)==myMesh(cell)%coordinates(1) .AND. &
-									VcoordinateList(i,2)==(myMesh(cell)%coordinates(2)+meshLength) .AND. &
-									VcoordinateList(i,3)==myMesh(cell)%coordinates(3)) then
-
-								defectCurrent=>myBoundary(dir,myMesh(cell)%neighbors(dir,k))%defectList	!0 0 0 0
-								defectCurrent=>defectCurrent%next	!1 0 0 0
-								defectCurrent=>defectCurrent%next	!0 1 0 0
-
-								defectCurrent%num = defectCurrent%num +1
-								nullify(defectCurrent)
-							end if
-						else if(dir==4) then
-							if(VcoordinateList(i,1)==myMesh(cell)%coordinates(1) .AND. &
-									VcoordinateList(i,2)==(myMesh(cell)%coordinates(2)-meshLength) .AND. &
-									VcoordinateList(i,3)==myMesh(cell)%coordinates(3)) then
-
-								defectCurrent=>myBoundary(dir,myMesh(cell)%neighbors(dir,k))%defectList	!0 0 0 0
-								defectCurrent=>defectCurrent%next	!1 0 0 0
-								defectCurrent=>defectCurrent%next	!0 1 0 0
-
-								defectCurrent%num = defectCurrent%num +1
-								nullify(defectCurrent)
-							end if
-						else if(dir==5) then
-							if(VcoordinateList(i,1)==myMesh(cell)%coordinates(1) .AND. &
-									VcoordinateList(i,2)==myMesh(cell)%coordinates(2) .AND. &
-									VcoordinateList(i,3)==(myMesh(cell)%coordinates(3)+meshLength)) then
-
-								defectCurrent=>myBoundary(dir,myMesh(cell)%neighbors(dir,k))%defectList	!0 0 0 0
-								defectCurrent=>defectCurrent%next	!1 0 0 0
-								defectCurrent=>defectCurrent%next	!0 1 0 0
-
-								defectCurrent%num = defectCurrent%num +1
-								nullify(defectCurrent)
-							end if
-						else if(dir==6) then
-							if(VcoordinateList(i,1)==myMesh(cell)%coordinates(1) .AND. &
-									VcoordinateList(i,2)==myMesh(cell)%coordinates(2) .AND. &
-									VcoordinateList(i,3)==(myMesh(cell)%coordinates(3)-meshLength)) then
-
-								defectCurrent=>myBoundary(dir,myMesh(cell)%neighbors(dir,k))%defectList	!0 0 0 0
-								defectCurrent=>defectCurrent%next	!1 0 0 0
-								defectCurrent=>defectCurrent%next	!0 1 0 0
-
-								defectCurrent%num = defectCurrent%num +1
-								nullify(defectCurrent)
-							end if
-						end if
-
-					end do
+					    do i=1, initialTotalV
+                            nullify(defectCurrent)
+                            gCell=myMesh(cell)%globalID
+                            gNeighor=findgNeighborPeriodic(gCell, dir)
+                            if(VcoordinateList(i)==gNeighor) then
+                                defectCurrent=>myBoundary(dir,myMesh(cell)%neighbors(dir,k))%defectList%next
+                                do while(associated(defectCurrent))
+                                    if(defectCurrent%defectType(1)==0 &
+                                        .AND. defectCurrent%defectType(2)==1 &
+                                        .AND. defectCurrent%defectType(3)==0 &
+                                        .AND. defectCurrent%defectType(4)==0) then
+                                        defectCurrent%num = defectCurrent%num +1
+                                     else
+                                        defectCurrent=>defectCurrent%next
+                                    end if
+                                end do
+                            end if
+					    end do
 					end if
 
-				end if
+                    !SIA
+                    if(initialTotalSIA > 0) then
+                        do i=1, initialTotalSIA
+                            nullify(defectCurrent)
+                            gCell=myMesh(cell)%globalID
+                            gNeighor=findgNeighborPeriodic(gCell, dir)
+                            if(IcoordinateList(i)==gNeighor) then
+                                defectCurrent=>myBoundary(dir,myMesh(cell)%neighbors(dir,k))%defectList%next
+                                do while(associated(defectCurrent))
+                                    if(defectCurrent%defectType(1)==0 &
+                                            .AND. defectCurrent%defectType(2)==0 &
+                                            .AND. defectCurrent%defectType(3)==1 &
+                                            .AND. defectCurrent%defectType(4)==0) then
+                                        defectCurrent%num = defectCurrent%num +1
+                                    else
+                                        defectCurrent=>defectCurrent%next
+                                    end if
+                                end do
+                            end if
+                        end do
+                    end if !initialTotalSIA > 0
 
-			end if
-		end do
-	end do
+				end if  !myMesh(cell)%neighborProcs(dir,k) == myProc%procNeighbor(dir)
+
+			end if  !myMesh(cell)%neighborProcs(dir,k) /= myProc%taskid
+		end do  !dir
+	end do  !cell
 end do
-
-nullify(defectCurrent)
 
 end subroutine
 

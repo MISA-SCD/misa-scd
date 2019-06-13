@@ -950,7 +950,7 @@ do cell=1,numCells
 	if(mod(cell,numx*numy*numz) > numx*numy*(numz-1) .OR. mod(cell, numx*numy*numz)==0) then
 		myMesh(cell)%neighborProcs(5,1)=myProc%procNeighbor(5)
 		globalCell=myMesh(cell)%globalID
-		globalNeighbor=findGlobalNeighborFreeSurf(globalCell, 5)
+		globalNeighbor=findgNeighborFreeSurf(globalCell, 5)
 		if(globalNeighbor==0) then
 			!free surface, set proc id to -1 and cell id to 0 to indicate free surface
 			myMesh(cell)%neighbors(5,1)=0
@@ -973,7 +973,7 @@ do cell=1,numCells
 	if(mod(cell,numx*numy*numz) <= numx*numy .AND. (mod(cell,numx*numy*numz) /= 0 .OR. numz==1)) then
 		myMesh(cell)%neighborProcs(6,1)=myProc%procNeighbor(6)
 		globalCell=myMesh(cell)%globalID
-		globalNeighbor=findGlobalNeighborFreeSurf(globalCell, 6)
+		globalNeighbor=findgNeighborFreeSurf(globalCell, 6)
 		if(globalNeighbor==0) then
 			!free surface, set proc id to -1 and cell id to 0 to indicate free surface
 			myMesh(cell)%neighbors(6,1)=0
@@ -1150,9 +1150,9 @@ end subroutine
 !Output: globalNeighborID of the globalID in the direaction
 !***************************************************************************************
 
-integer function findGlobalNeighborPeriodic(globalID, dir)
-
+integer function findgNeighborPeriodic(globalID, dir)
 implicit none
+
 integer globalID, dir, neighborID
 
 !************************************************
@@ -1208,9 +1208,9 @@ end function
 !Output: globalNeighborID of the globalID in the direaction
 !***************************************************************************************
 
-integer function findGlobalNeighborFreeSurf(globalID, dir)
-
+integer function findgNeighborFreeSurf(globalID, dir)
 implicit none
+
 integer globalID, dir, neighborID
 
 !************************************************
@@ -1255,7 +1255,7 @@ else if(dir==6) then
     end if
 end if
 
-findGlobalNeighborFreeSurf=neighborID
+findgNeighborFreeSurf=neighborID
 
 end function
 
