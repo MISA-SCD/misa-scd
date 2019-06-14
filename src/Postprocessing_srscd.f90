@@ -1613,146 +1613,86 @@ use DerivedType
 implicit none
 include 'mpif.h'
 
-integer CuCount, VCount, SIACount, numPoints, cellCount
+integer CuCount, VCount, SIACount, numPoints
 integer numCellsNeighbor
-integer i, j
+integer i,k
 integer status(MPI_STATUS_SIZE)
 !double precision coords(3)
-double precision, allocatable ::  xyzRecv(:,:)
-double precision, allocatable ::  xyzSend(:,:)
+double precision, allocatable ::  xyzRecv(:)
+double precision, allocatable ::  xyzSend(:)
+integer points(myProc%numTasks), numRecv(myProc%numTasks)
 
 type(defect), pointer :: defectCurrent
 
 double precision elapsedTime
 integer step
 
+call MPI_ALLREDUCE(numCells, numPoints, 1, MPI_INTEGER, MPI_SUM, MPI_COMM_WORLD, ierr)
+call MPI_GATHERV(numCells,1,MPI_INTEGER,points,1,MPI_INTEGER,MASTER,MPI_COMM_WORLD, ierr)
+
+do i=0, myProc%numTasks-1
+	numRecv(i+1)=points(i)*9
+end do
+
+allocate(xyzSend(9*numCells))
+allocate(xyzRecv(9*numPoints))
+
+do i=1,numCells
+
+	k=(i-1)*9
+	xyzSend(k+1) = myMesh(i)%coordinates(1)
+	xyzSend(k+2) = myMesh(i)%coordinates(2)
+	xyzSend(1+3) = myMesh(i)%coordinates(3)
+
+	xyzSend(k+4) = 0d0  !CuCount
+	xyzSend(k+5) = 0d0  !VCount
+	xyzSend(k+6) = 0d0  !SIACount
+
+	defectCurrent=>defectList(i)
+	do while(associated(defectCurrent))
+		xyzSend(k+4) = xyzSend(k+4)+defectCurrent%defectType(1)*defectCurrent%num
+		xyzSend(k+5) = xyzSend(k+5)+defectCurrent%defectType(2)*defectCurrent%num
+		xyzSend(k+6) = xyzSend(k+6)+defectCurrent%defectType(3)*defectCurrent%num + &
+				defectCurrent%defectType(4)*defectCurrent%num
+
+		xyzSend(k+7) = xyzSend(k+4)/(meshLength**3d0)	!Cu concentration
+		xyzSend(k+8) = xyzSend(k+5)/(meshLength**3d0)	!V concentration
+		xyzSend(k+9) = xyzSend(k+6)/(meshLength**3d0)	!SIA concentration
+		defectCurrent=>defectCurrent%next
+	end do
+
+end do
+
+call MPI_GATHERV(xyzSend,numRecv,MPI_DOUBLE_PRECISION,xyzRecv,numRecv,MPI_DOUBLE_PRECISION,MASTER,MPI_COMM_WORLD, ierr)
+
 if(myProc%taskid==MASTER) then
-	
-	cellCount=1	!for outputting cell number in .xyz file
-	
-	call MPI_ALLREDUCE(numCells, numPoints, 1, MPI_INTEGER, MPI_SUM, MPI_COMM_WORLD, ierr)
-
-    write(87,*) 'elapsedTime', elapsedTime, '  step', step, 'dpa', DPA
+	write(87,*) 'elapsedTime', elapsedTime, '  step', step, 'dpa', DPA
 	write(87,*) 'numPoints', numPoints
-	write(87,*) 'CellNumber ', 'x ', 'y ', 'z ', 'NumCu ', 'NumV ', 'NumSIA'
-	
-	!Write information in master processor
-	
-	do i=1,numCells
-		
-		CuCount=0
-		VCount=0
-		SIACount=0
-		
-		!Count defects in cell i
-		defectCurrent=>defectList(i)
-		do while(associated(defectCurrent))
-			
-			CuCount	 = CuCount+defectCurrent%defectType(1)*defectCurrent%num
-			VCount	 = VCount+defectCurrent%defectType(2)*defectCurrent%num
-			SIACount = SIACount+defectCurrent%defectType(3)*defectCurrent%num + &
-					   defectCurrent%defectType(4)*defectCurrent%num
-			
-			defectCurrent=>defectCurrent%next
-		
-		end do
-		
-		write(87,59) cellCount, myMesh(i)%coordinates(1), myMesh(i)%coordinates(2), &
-			& myMesh(i)%coordinates(3), CuCount, VCount, SIACount
-			
-		cellCount=cellCount+1
-		
+	write(87,*) 'CellNumber ', 'x ', 'y ', 'z ', 'NumCu ', 'NumV ', 'NumSIA', &
+			'CuCon(nm-3) ', 'VCon(nm-3) ', 'SIACon(nm-3)'
+
+	do i=1, numPoints
+		k=(i-1)*9
+		CuCount=xyzRecv(k+4)
+		VCount=xyzRecv(k+5)
+		SIACount=xyzRecv(k+6)
+
+		write(87,*) i, xyzRecv(k+1), xyzRecv(k+2), xyzRecv(k+3), CuCount, VCount, SIACount, &
+				xyzRecv(k+7),xyzRecv(k+8),xyzRecv(k+9)
 	end do
-	
-	!Recieve information from neighboring processors
-	
-	do i=1,myProc%numTasks-1
-	
-		call MPI_RECV(numCellsNeighbor, 1, MPI_INTEGER, i, 567, MPI_COMM_WORLD, status, ierr)
-        allocate(xyzRecv(6,numCellsNeighbor))
+end if
 
-        call MPI_RECV(xyzRecv, 6*numCellsNeighbor, MPI_DOUBLE_PRECISION, i, 571, MPI_COMM_WORLD, status, ierr)
+deallocate(xyzSend)
+deallocate(xyzRecv)
 
-		do j=1,numCellsNeighbor
-		
-			!call MPI_RECV(coords, 3, MPI_DOUBLE_PRECISION, i, 571, MPI_COMM_WORLD, status, ierr)
-			!call MPI_RECV(HeCount, 1, MPI_INTEGER, i, 568, MPI_COMM_WORLD, status, ierr)
-			!call MPI_RECV(VCount, 1, MPI_INTEGER, i, 569, MPI_COMM_WORLD, status, ierr)
-			!call MPI_RECV(SIACount, 1, MPI_INTEGER, i, 570, MPI_COMM_WORLD, status, ierr)
-
-			CuCount=xyzRecv(4,j)
-			VCount=xyzRecv(5,j)
-			SIACount=xyzRecv(6,j)
-			
-			write(87,59) cellCount, xyzRecv(1,j), xyzRecv(2,j), xyzRecv(3,j), &
-					CuCount, VCount, SIACount
-				
-			cellCount=cellCount+1
-			
-		end do
-
-		deallocate(xyzRecv)
-		
-	end do
-
-else
-
-	call MPI_ALLREDUCE(numCells, numPoints, 1, MPI_INTEGER, MPI_SUM, MPI_COMM_WORLD, ierr)
-	
-	call MPI_SEND(numCells, 1, MPI_INTEGER, MASTER, 567, MPI_COMM_WORLD, ierr)
-
-	allocate(xyzSend(6,numCells))
-
-	do i=1,numCells
-	
-		!call MPI_SEND(myMesh(i)%coordinates, 3, MPI_DOUBLE_PRECISION, MASTER, 571, MPI_COMM_WORLD, ierr)
-		
-		!CuCount=0
-		!VCount=0
-		!SIACount=0
-
-        xyzSend(1,i) = myMesh(i)%coordinates(1)
-		xyzSend(2,i) = myMesh(i)%coordinates(2)
-		xyzSend(3,i) = myMesh(i)%coordinates(3)
-
-		xyzSend(4,i) = 0  !CuCount
-		xyzSend(5,i) = 0  !VCount
-		xyzSend(6,i) = 0  !SIACount
-		
-		defectCurrent=>defectList(i)
-		
-		do while(associated(defectCurrent))
-
-			xyzSend(4,i) = xyzSend(4,i)+defectCurrent%defectType(1)*defectCurrent%num
-			xyzSend(5,i) = xyzSend(5,i)+defectCurrent%defectType(2)*defectCurrent%num
-			xyzSend(6,i) = xyzSend(6,i)+defectCurrent%defectType(3)*defectCurrent%num + &
-					   defectCurrent%defectType(4)*defectCurrent%num
-			
-			defectCurrent=>defectCurrent%next
-			
-		end do
-		
-		!call MPI_SEND(CuCount, 1, MPI_INTEGER, MASTER, 568, MPI_COMM_WORLD, ierr)
-		!call MPI_SEND(VCount, 1, MPI_INTEGER, MASTER, 569, MPI_COMM_WORLD, ierr)
-		!call MPI_SEND(SIACount, 1, MPI_INTEGER, MASTER, 570, MPI_COMM_WORLD, ierr)
-	
-	end do
-    call MPI_SEND(xyzSend, 6*numCells, MPI_DOUBLE_PRECISION, MASTER, 571, MPI_COMM_WORLD, ierr)
-
-	deallocate(xyzSend)
-
-endif
-
- 59		format(i4,3(1x,e12.4),3(1x,i6))
+ !59		format(i4,3(1x,e12.4),3(1x,i6))
 
 end subroutine
 
 !***********************************************************************
-!
 !> Subroutine outputDefectsVTK - outputs defect populations in vtk file format
-!!
-!! Outputs defects in a VTK formatted file (3D unstructured grid of linear cubes)
 !
+! Outputs defects in a VTK formatted file (3D unstructured grid of linear cubes)
 !***********************************************************************
 
 subroutine outputDefectsVTK(fileNumber)	!fileNumber = outputCounter

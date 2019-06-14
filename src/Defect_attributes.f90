@@ -9,7 +9,7 @@
 !!Output: diffusivity (nm^2/s)
 !*****************************************************************************************
 
-double precision function findDiffusivity(matNum, DefectType)
+double precision function findDiffusivity(matNum, defectType)
 use DerivedType
 use mod_srscd_constants
 implicit none

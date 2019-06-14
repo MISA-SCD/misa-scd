@@ -302,4 +302,5 @@ module DerivedType
 		type(reaction), pointer :: reactionList(:) 		!<Array of reaction lists (one for each element in the cascade)
 		double precision, allocatable :: totalRate(:)	!<Sum of the rates of all reactions in each cascade element
 	end type cascade
+
 end module

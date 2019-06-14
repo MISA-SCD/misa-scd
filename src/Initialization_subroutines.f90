@@ -906,12 +906,11 @@ end subroutine
 subroutine initializeBoundaryDefectList()
 use DerivedType
 use mod_srscd_constants
+use MeshReader
 implicit none
 
 integer cell, dir, k, i, j, gCell,gNeighor
 type(defect), pointer :: defectCurrent
-integer, external :: findgNeighborPeriodic
-
 
 do cell=1,numCells
 	do dir=1,6

@@ -716,6 +716,7 @@ if(myProc%procNeighbor(6)/=myProc%taskid) then	!down
 
 end if
 
+
 !******************************************************************
 !Recv
 if(myProc%procNeighbor(1)/=myProc%taskid) then	!right
@@ -1151,6 +1152,8 @@ end subroutine
 !***************************************************************************************
 
 integer function findgNeighborPeriodic(globalID, dir)
+use DerivedType
+use mod_srscd_constants
 implicit none
 
 integer globalID, dir, neighborID
@@ -1197,7 +1200,7 @@ else if(dir==6) then
     end if
 end if
 
-findGlobalNeighborPeriodic=neighborID
+findgNeighborPeriodic=neighborID
 
 end function
 
@@ -1209,6 +1212,8 @@ end function
 !***************************************************************************************
 
 integer function findgNeighborFreeSurf(globalID, dir)
+use DerivedType
+use mod_srscd_constants
 implicit none
 
 integer globalID, dir, neighborID

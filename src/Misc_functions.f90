@@ -1,4 +1,3 @@
-! $Header: /home/CVS//srscd/src/Misc_functions.f90,v 1.7 2015/04/07 14:36:22 aydunn Exp $
 !***************************************************************************************************
 !> Subroutine factorial
 !! Factorial function returns n!

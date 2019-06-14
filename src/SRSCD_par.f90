@@ -636,7 +636,7 @@ do while(elapsedTime < totalTime)
 	! Output according to outputCounter
 	!********************************************************************************
 	
-	if(elapsedTime > 1.0d-4*(1.0d1)**(outputCounter)) then
+	if(elapsedTime >= 1.0d-4*(1.0d1)**(outputCounter)) then
 	! or if(mod(step,100000)==0) then
 		call MPI_ALLREDUCE(numImplantEvents,totalImplantEvents, 1, MPI_INTEGER, MPI_SUM, MPI_COMM_WORLD, ierr)
 		!call MPI_ALLREDUCE(numHeImplantEvents,numHeImplantTotal,1,MPI_INTEGER, MPI_SUM, MPI_COMM_WORLD, ierr)
