@@ -1666,8 +1666,7 @@ do i=1,numCells
 
 end do
 
-call MPI_GATHERV(xyzSend,numRecv,MPI_DOUBLE_PRECISION,xyzRecv,numRecv,displs, &
-		MPI_DOUBLE_PRECISION,MASTER,MPI_COMM_WORLD, ierr)
+call MPI_GATHERV(xyzSend,numRecv,MPI_DOUBLE_PRECISION,xyzRecv,numRecv,displs,MPI_DOUBLE_PRECISION,MASTER,MPI_COMM_WORLD, ierr)
 
 if(myProc%taskid==MASTER) then
 	write(87,*) 'elapsedTime', elapsedTime, '  step', step, 'dpa', DPA
