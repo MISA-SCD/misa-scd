@@ -1613,14 +1613,14 @@ use DerivedType
 implicit none
 include 'mpif.h'
 
-integer CuCount, VCount, SIACount, numPoints
+integer CuCount, VCount, SIACount, numPoints, cellCount
 integer numCellsNeighbor
-integer i,k
+integer i, j
 integer status(MPI_STATUS_SIZE)
 !double precision coords(3)
-double precision, allocatable ::  xyzRecv(:)
-double precision, allocatable ::  xyzSend(:)
-integer points(myProc%numTasks), numRecv(myProc%numTasks), displs(myProc%numTasks), disp
+double precision, allocatable ::  xyzRecv(:,:)
+double precision, allocatable ::  xyzSend(:,:)
+integer points(myProc%numTasks)
 
 type(defect), pointer :: defectCurrent
 
@@ -1628,67 +1628,115 @@ double precision elapsedTime
 integer step
 
 call MPI_ALLREDUCE(numCells, numPoints, 1, MPI_INTEGER, MPI_SUM, MPI_COMM_WORLD, ierr)
-call MPI_GATHER(numCells,1,MPI_INTEGER,points,1,MPI_INTEGER,MASTER,MPI_COMM_WORLD, ierr)
-
-disp=0
-do i=0, myProc%numTasks-1
-	displs(i+1)=disp
-	numRecv(i+1)=points(i+1)*9
-	disp=disp+numRecv(i+1)
-end do
-
-allocate(xyzSend(9*numCells))
-allocate(xyzRecv(9*numPoints))
-
-do i=1,numCells
-
-	k=(i-1)*9
-	xyzSend(k+1) = myMesh(i)%coordinates(1)
-	xyzSend(k+2) = myMesh(i)%coordinates(2)
-	xyzSend(1+3) = myMesh(i)%coordinates(3)
-
-	xyzSend(k+4) = 0d0  !CuCount
-	xyzSend(k+5) = 0d0  !VCount
-	xyzSend(k+6) = 0d0  !SIACount
-
-	defectCurrent=>defectList(i)
-	do while(associated(defectCurrent))
-		xyzSend(k+4) = xyzSend(k+4)+defectCurrent%defectType(1)*defectCurrent%num
-		xyzSend(k+5) = xyzSend(k+5)+defectCurrent%defectType(2)*defectCurrent%num
-		xyzSend(k+6) = xyzSend(k+6)+defectCurrent%defectType(3)*defectCurrent%num + &
-				defectCurrent%defectType(4)*defectCurrent%num
-
-		xyzSend(k+7) = xyzSend(k+4)/(meshLength**3d0)	!Cu concentration
-		xyzSend(k+8) = xyzSend(k+5)/(meshLength**3d0)	!V concentration
-		xyzSend(k+9) = xyzSend(k+6)/(meshLength**3d0)	!SIA concentration
-		defectCurrent=>defectCurrent%next
-	end do
-
-end do
-
-call MPI_GATHERV(xyzSend,numRecv,MPI_DOUBLE_PRECISION,xyzRecv,numRecv,displs,MPI_DOUBLE_PRECISION,MASTER,MPI_COMM_WORLD, ierr)
+call MPI_GATHERV(numCells,1,MPI_INTEGER,points,1,MPI_INTEGER,MASTER,MPI_COMM_WORLD, ierr)
 
 if(myProc%taskid==MASTER) then
+
+	cellCount=1	!for outputting cell number in .xyz file
+
 	write(87,*) 'elapsedTime', elapsedTime, '  step', step, 'dpa', DPA
 	write(87,*) 'numPoints', numPoints
-	write(87,*) 'CellNumber ', 'x ', 'y ', 'z ', 'NumCu ', 'NumV ', 'NumSIA', &
+	write(87,*) 'CellNumber ', 'x ', 'y ', 'z ', 'NumCu ', 'NumV ', 'NumSIA',&
 			'CuCon(nm-3) ', 'VCon(nm-3) ', 'SIACon(nm-3)'
 
-	do i=1, numPoints
-		k=(i-1)*9
-		CuCount=xyzRecv(k+4)
-		VCount=xyzRecv(k+5)
-		SIACount=xyzRecv(k+6)
+	!Write information in master processor
 
-		write(87,*) i, xyzRecv(k+1), xyzRecv(k+2), xyzRecv(k+3), CuCount, VCount, SIACount, &
-				xyzRecv(k+7),xyzRecv(k+8),xyzRecv(k+9)
+	do i=1,numCells
+
+		CuCount=0
+		VCount=0
+		SIACount=0
+
+		!Count defects in cell i
+		defectCurrent=>defectList(i)
+		do while(associated(defectCurrent))
+
+			CuCount	 = CuCount+defectCurrent%defectType(1)*defectCurrent%num
+			VCount	 = VCount+defectCurrent%defectType(2)*defectCurrent%num
+			SIACount = SIACount+defectCurrent%defectType(3)*defectCurrent%num + &
+					defectCurrent%defectType(4)*defectCurrent%num
+
+			defectCurrent=>defectCurrent%next
+
+		end do
+
+		write(87,*) cellCount, myMesh(i)%coordinates(1), myMesh(i)%coordinates(2), &
+				myMesh(i)%coordinates(3), CuCount, VCount, SIACount, &
+				dble(CuCount)/(meshLength**3d0), dble(VCount)/(meshLength**3d0),dble(SIACount)/(meshLength**3d0)
+
+		cellCount=cellCount+1
+
 	end do
-end if
 
-deallocate(xyzSend)
-deallocate(xyzRecv)
+	!Recieve information from neighboring processors
 
- !59		format(i4,3(1x,e12.4),3(1x,i6))
+	do i=1,myProc%numTasks-1
+
+		allocate(xyzRecv(9,points(i+1)))
+
+		call MPI_RECV(xyzRecv, 9*points(i+1), MPI_DOUBLE_PRECISION, i, 571, MPI_COMM_WORLD, status, ierr)
+
+		do j=1,numCellsNeighbor
+
+			CuCount=xyzRecv(4,j)
+			VCount=xyzRecv(5,j)
+			SIACount=xyzRecv(6,j)
+
+			write(87,*) cellCount, xyzRecv(1,j), xyzRecv(2,j), xyzRecv(3,j), &
+					CuCount, VCount, SIACount, xyzRecv(7,j), xyzRecv(8,j), xyzRecv(9,j)
+
+			cellCount=cellCount+1
+
+		end do
+
+		deallocate(xyzRecv)
+
+	end do
+
+else
+
+	allocate(xyzSend(9,numCells))
+
+	do i=1,numCells
+
+		!call MPI_SEND(myMesh(i)%coordinates, 3, MPI_DOUBLE_PRECISION, MASTER, 571, MPI_COMM_WORLD, ierr)
+
+		!CuCount=0
+		!VCount=0
+		!SIACount=0
+
+		xyzSend(1,i) = myMesh(i)%coordinates(1)
+		xyzSend(2,i) = myMesh(i)%coordinates(2)
+		xyzSend(3,i) = myMesh(i)%coordinates(3)
+
+		xyzSend(4,i) = 0  !CuCount
+		xyzSend(5,i) = 0  !VCount
+		xyzSend(6,i) = 0  !SIACount
+
+		defectCurrent=>defectList(i)
+
+		do while(associated(defectCurrent))
+
+			xyzSend(4,i) = xyzSend(4,i)+defectCurrent%defectType(1)*defectCurrent%num
+			xyzSend(5,i) = xyzSend(5,i)+defectCurrent%defectType(2)*defectCurrent%num
+			xyzSend(6,i) = xyzSend(6,i)+defectCurrent%defectType(3)*defectCurrent%num + &
+					defectCurrent%defectType(4)*defectCurrent%num
+
+			defectCurrent=>defectCurrent%next
+
+		end do
+		xyzSend(7,i)=xyzSend(4,i)/(meshLength**3d0)
+		xyzSend(8,i)=xyzSend(5,i)/(meshLength**3d0)
+		xyzSend(9,i)=xyzSend(6,i)/(meshLength**3d0)
+
+	end do
+	call MPI_SEND(xyzSend, 9*numCells, MPI_DOUBLE_PRECISION, MASTER, 571, MPI_COMM_WORLD, ierr)
+
+	deallocate(xyzSend)
+
+endif
+
+!59		format(i4,3(1x,e12.4),3(1x,i6))
 
 end subroutine
 

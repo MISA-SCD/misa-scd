@@ -562,6 +562,7 @@ do cell=1,numCells
 	end do
 	defectCurrentTempV=>defectCurrent
 
+	if(associated(defectCurrent)) then
 	if(defectCurrent%num > 0) then
 
 		if(CuContent > 0d0) then
@@ -729,6 +730,8 @@ do cell=1,numCells
 
 	end if
 
+	end if
+
 	!*******************************************************
 	!initialize reactions about SIA
 	defectCurrent=>defectList(cell)
@@ -744,6 +747,7 @@ do cell=1,numCells
 	end do
 	defectCurrentTempI=>defectCurrent
 
+	if(associated(defectCurrent)) then
 	if(defectCurrent%num > 0) then
 
 		!*******************************************************************
@@ -866,8 +870,11 @@ do cell=1,numCells
 
 	end if
 
+	end if
+
 	!***********************************
 	!V+SIA->0
+	if(associated(defectCurrentTempV) .AND. associated(defectCurrentTempI)) then
 	if(defectCurrentTempV%num > 0 .AND. defectCurrentTempI%num > 0) then
 		!*******************************************************
 		!clustering: V+SIA->0
@@ -878,7 +885,6 @@ do cell=1,numCells
 		reactionCurrent%numReactants=2
 		reactionCurrent%numProducts=0
 		allocate(reactionCurrent%reactants(reactionCurrent%numReactants, numSpecies))
-		allocate(reactionCurrent%products(reactionCurrent%numProducts, numSpecies))
 		allocate(reactionCurrent%cellNumber(reactionCurrent%numReactants + reactionCurrent%numProducts))
 		allocate(reactionCurrent%taskid(reactionCurrent%numReactants + reactionCurrent%numProducts))
 
@@ -900,7 +906,6 @@ do cell=1,numCells
 			do j=1,numSpecies
 				reactionCurrent%reactants(1,j)=ClusterReactions(matNum,reac)%reactants(1,j)
 				reactionCurrent%reactants(2,j)=ClusterReactions(matNum,reac)%reactants(2,j)
-				reactionCurrent%products(1,j)=ClusterReactions(matNum,reac)%products(1,j)
 			end do
 			reactionCurrent%cellNumber(i)=cell
 			reactionCurrent%taskid(i)=myMesh(cell)%proc
@@ -909,6 +914,8 @@ do cell=1,numCells
 		reactionCurrent%reactionRate=findReactionRateMultiple(reactionCurrent%reactants(1,:), &
 				reactionCurrent%reactants(2,:), cell, ClusterReactions(matNum,reac))
 		nullify(reactionCurrent%next)
+	end if
+
 	end if
 
 end do
