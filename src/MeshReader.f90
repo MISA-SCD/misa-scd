@@ -716,7 +716,6 @@ if(myProc%procNeighbor(6)/=myProc%taskid) then	!down
 
 end if
 
-
 !******************************************************************
 !Recv
 if(myProc%procNeighbor(1)/=myProc%taskid) then	!right

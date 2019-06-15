@@ -1620,7 +1620,7 @@ integer status(MPI_STATUS_SIZE)
 !double precision coords(3)
 double precision, allocatable ::  xyzRecv(:)
 double precision, allocatable ::  xyzSend(:)
-integer points(myProc%numTasks), numRecv(myProc%numTasks)
+integer points(myProc%numTasks), numRecv(myProc%numTasks), displs(myProc%numTasks), disp
 
 type(defect), pointer :: defectCurrent
 
@@ -1628,10 +1628,13 @@ double precision elapsedTime
 integer step
 
 call MPI_ALLREDUCE(numCells, numPoints, 1, MPI_INTEGER, MPI_SUM, MPI_COMM_WORLD, ierr)
-call MPI_GATHERV(numCells,1,MPI_INTEGER,points,1,MPI_INTEGER,MASTER,MPI_COMM_WORLD, ierr)
+call MPI_GATHER(numCells,1,MPI_INTEGER,points,1,MPI_INTEGER,MASTER,MPI_COMM_WORLD, ierr)
 
+disp=0
 do i=0, myProc%numTasks-1
-	numRecv(i+1)=points(i)*9
+	displs(i+1)=disp
+	numRecv(i+1)=points(i+1)*9
+	disp=disp+numRecv(i+1)
 end do
 
 allocate(xyzSend(9*numCells))
@@ -1663,7 +1666,8 @@ do i=1,numCells
 
 end do
 
-call MPI_GATHERV(xyzSend,numRecv,MPI_DOUBLE_PRECISION,xyzRecv,numRecv,MPI_DOUBLE_PRECISION,MASTER,MPI_COMM_WORLD, ierr)
+call MPI_GATHERV(xyzSend,numRecv,MPI_DOUBLE_PRECISION,xyzRecv,numRecv,displs, &
+		MPI_DOUBLE_PRECISION,MASTER,MPI_COMM_WORLD, ierr)
 
 if(myProc%taskid==MASTER) then
 	write(87,*) 'elapsedTime', elapsedTime, '  step', step, 'dpa', DPA
