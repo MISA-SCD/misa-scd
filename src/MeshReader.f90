@@ -514,6 +514,500 @@ close(80)
 
 end subroutine
 
+!***************************************************************************************************
+!>Subroutine initial Mesh Uniform - creates processor and uniform meshes
+!
+!This is the main subroutine that controls creating the uniform mesh. It creates the mesh
+!and divides the volume elements between the processors in the parallel simulation.
+!If a division such that each processor has at least one element is not possible,
+!then the subroutine returns an error. It also creates a 'processor mesh', indicating
+!the bounds of each processor. NOTE: this subroutine is for uniform meshes only, a different
+!subroutine has been created to read in non-uniform meshes (and these have not been
+!implemented in the rest of the program)
+!
+!Input: MeshGenInput_XX.txt
+!
+!Outputs: myProc (processors with meshes), myMesh, and myBoundary
+!***************************************************************************************************
+
+subroutine initialMeshUniform(filename)
+use mod_srscd_constants
+use DerivedType
+
+implicit none
+include 'mpif.h'
+
+integer status(MPI_STATUS_SIZE), procDivision(3), i, j, k, l, dir, matNum
+character*20 readIn, meshType
+character*50 filename, filename2, filename3
+logical flag
+double precision length, tempCoord(3)
+integer element,  localElem, grain
+integer x, y, z, tempx1,tempx2,tempy1,tempy2,tempz1,tempz2	!used to determine numxLocal, numyLocal, numzLocal
+
+double precision tempMeshCoord(3), tempStrain(6), tempCenter(6)
+integer tempMaterial
+
+open(80, file=filename,action='read', status='old')	!MeshGenInput_XX.txt
+
+!if(strainField=='yes') then
+!	open(50, file=strainFileName, action='read', status='old')
+!end if
+
+!Used to read in data from files
+flag=.FALSE.
+
+!Step -1: read in mesh type (free surfaces or periodic)
+do while(flag .eqv. .FALSE.)
+			read(80,*) readIn
+			if(readIn=='meshType') then
+				read(80,*) meshType
+				flag=.TRUE.
+			end if
+end do
+flag=.FALSE.
+
+!Step 0: read in volume element lengths (true for UNIFORM CUBIC MESH ONLY)
+do while(flag .eqv. .FALSE.)
+	read(80,*) readIn
+	if(readIn=='length') then
+		read(80,*) length
+		flag=.TRUE.
+	end if
+end do
+flag=.FALSE.
+
+meshLength = length
+
+!Step 0-1: Read the number of elements in x,y,and z directions
+do while(flag .eqv. .FALSE.)
+	read(80,*) readIn
+	if(readIn=='numx') then
+		read(80,*) numx
+	else if(readIn=='numy') then
+		read(80,*) numy
+	else if(readIn=='numz') then
+		read(80,*) numz
+		flag=.TRUE.
+	end if
+end do
+flag=.FALSE.
+
+numTotal=numx*numy*numz	!total cell in the system
+
+!Tells program that we are about to start reading in element coordinates and material numbers
+do while(flag .eqv. .FALSE.)
+	read(80,*) readIn
+	if(readIn=='end') then
+		flag=.TRUE.
+	endif
+end do
+flag=.FALSE.
+
+!***********************************************************************
+!Read in the strain field into myMesh%strain(1-6)
+!***********************************************************************
+
+!if(strainField=='yes') then
+
+	!Step -1: skip to start of input data
+!	do while(flag .eqv. .FALSE.)
+!		read(50,*) readIn
+!		if(readIn=='start') then
+!			flag=.TRUE.
+!		end if
+!	end do
+!	flag=.FALSE.
+
+!	read(50,*)	!Blank line in strain input file
+
+!end if
+
+!************************************************
+!Step 1a: modify global coordinates to include entire simulation volume (not just centers of elements)
+!************************************************
+
+!The  boundary coordinates of the system (xmin,xmax,ymin,ymax,zmin,zmax)
+do i=1,5,2
+	myProc%globalCoord(i)=0d0
+end do
+myProc%globalCoord(2)=length*dble(numx)
+myProc%globalCoord(4)=length*dble(numy)
+myProc%globalCoord(6)=length*dble(numz)
+
+!************************************************
+!Step 2: divide processors over gobal volume
+!************************************************
+
+procDivision(1)=0	!number of processors in x
+procDivision(2)=0	!number of processors in y
+procDivision(3)=0	!number of processors in z
+
+call MPI_DIMS_CREATE(myProc%numtasks,3,procDivision, ierr)
+
+if(myProc%taskid==MASTER) then
+	write(*,*) 'proc division', procDivision
+end if
+
+!step 3: divide volume among processors according to the factorization above
+!This step locates the boundaries of the local processor within the global volume.
+!**********
+myProc%localCoord(1)=myProc%globalCoord(1)+&
+		mod(myProc%taskid,procDivision(1))*(myProc%globalCoord(2)-myProc%globalCoord(1))/&
+				dble(procDivision(1))
+
+myProc%localCoord(2)=myProc%localCoord(1)+&
+		(myProc%globalCoord(2)-myProc%globalCoord(1))/dble(procDivision(1))
+
+myProc%localCoord(3)=myProc%globalCoord(3)+&
+		mod(myProc%taskid/ProcDivision(1),procDivision(2))*&
+				(myProc%globalCoord(4)-myProc%globalCoord(3))/dble(procDivision(2))
+
+myProc%localCoord(4)=myProc%localCoord(3)+&
+		(myProc%globalCoord(4)-myProc%globalCoord(3))/dble(procDivision(2))
+
+myProc%localCoord(5)=myProc%GlobalCoord(5)+&
+		mod(myProc%taskid/(ProcDivision(1)*ProcDivision(2)),procDivision(3))*&
+				(myProc%globalCoord(6)-myProc%globalCoord(5))/dble(procDivision(3))
+
+myProc%localCoord(6)=myProc%localCoord(5)+&
+		(myProc%globalCoord(6)-myProc%globalCoord(5))/dble(procDivision(3))
+
+totalVolume=(myProc%localCoord(2)-myProc%localCoord(1))*(myProc%localCoord(4)-myProc%localCoord(3))*&
+		(myProc%localCoord(6)-myProc%localCoord(5))
+
+!point processor myProc%procNeighbor(x) to neighboring processors
+!********
+!This is creating a 'processor mesh' (not the actual mesh) and a connectivity between processors
+!based on how the total volume was divided in the previous steps. The connectivity
+!in this step is crated by iterating x, then y, then z
+!
+!This mesh is periodic and does not account for the possibility of free surfaces.
+!********
+if (myProc%localCoord(1)==myProc%globalCoord(1)) then	!coordinate is at xmin
+	myProc%procNeighbor(2)=myProc%taskid+procDivision(1)-1	!left
+else
+	myProc%procNeighbor(2)=myProc%taskid-1	!left
+end if
+
+if (myProc%localCoord(2)==myProc%globalCoord(2)) then	!coordinate is at xmax
+	myProc%procNeighbor(1)=myProc%taskid-procDivision(1)+1	!right
+else
+	myProc%procNeighbor(1)=myProc%taskid+1	!right
+end if
+
+if (myProc%localCoord(3)==myProc%globalCoord(3)) then	!coordinate is at ymin
+	myProc%procNeighbor(4)=myProc%taskid+procDivision(1)*(procDivision(2)-1)	!back
+else
+	myProc%procNeighbor(4)=myProc%taskid-procDivision(1)	!back
+end if
+
+if (myProc%localCoord(4)==myProc%globalCoord(4)) then	!coordinate is at ymax
+	myProc%procNeighbor(3)=myProc%taskid-procDivision(1)*(procDivision(2)-1)	!front
+else
+	myProc%procNeighbor(3)=myProc%taskid+procDivision(1)	!front
+end if
+
+if (myProc%localCoord(5)==myProc%globalCoord(5)) then	!coordinate is at zmin
+	myProc%procNeighbor(6)=myProc%taskid+procDivision(1)*procDivision(2)*(procDivision(3)-1)	!down
+else
+	myProc%procNeighbor(6)=myProc%taskid-procDivision(1)*procDivision(2)	!down
+end if
+
+if (myProc%localCoord(6)==myProc%globalCoord(6)) then	!coordinate is at zmax
+	myProc%procNeighbor(5)=myProc%taskid-procDivision(1)*procDivision(2)*(procDivision(3)-1)	!up
+else
+	myProc%procNeighbor(5)=myProc%taskid+procDivision(1)*procDivision(2)	!up
+end if
+
+!Step 4: create mesh in each processor of elements only within that processor's local coordinates
+!NOTE: this is an actual mesh of volume elements, not the 'processor mesh' created above.
+
+!Step 4b: find how many volume elements are in local processor and allocate myMesh accordingly
+!numxLocal, numyLocal, numzLocal are used to determine the size of the mesh inside the local processor.
+numxLocal=0
+numyLocal=0
+numzLocal=0
+
+!get numxLocal
+if(myProc%localCoord(1)==myProc%globalCoord(1) .AND. myProc%localCoord(2)==myProc%globalCoord(2)) then
+
+	numxLocal=numx
+	tempCenter(1)=length/2d0
+	tempCenter(2)=myProc%globalCoord(2)-length/2d0
+
+else if(myProc%localCoord(1)==myProc%globalCoord(1)) then	!at xmin
+
+	tempx1=0
+	tempx2 = myProc%localCoord(2)/(length/2d0)
+	if((dble(tempx2)*(length/2d0)) <=  myProc%localCoord(2) .AND. myProc%localCoord(2)< (dble(tempx2+1)*(length/2d0))) then
+		if(mod(tempx2,2)==0) then
+			tempx2 = tempx2/2
+		else
+			tempx2 = (tempx2+1)/2
+		end if
+	end if
+
+	numxLocal=tempx2
+	tempCenter(1)=length/2d0
+	tempCenter(2)=dble(tempx2)*length-length/2d0
+
+else if(myProc%localCoord(2)==myProc%globalCoord(2)) then	!at xmax
+	tempx2=0
+	tempx1 = myProc%localCoord(1)/(length/2d0)
+	if((dble(tempx1)*(length/2d0)) <=  myProc%localCoord(1) .AND. myProc%localCoord(1) < (dble(tempx1+1)*(length/2d0))) then
+		if(mod(tempx1,2)==0) then
+			tempx1 = tempx1/2
+		else
+			tempx1 = (tempx1+1)/2
+		end if
+	end if
+
+	numxLocal=numx-tempx1
+	tempCenter(1)=dble(tempx1)*length+length/2d0
+	tempCenter(2)=myProc%globalCoord(2)-length/2d0
+
+else	!in the middle
+	tempx1 = myProc%localCoord(1)/(length/2d0)
+	tempx2 = myProc%localCoord(2)/(length/2d0)
+	if((dble(tempx1)*(length/2d0)) <=  myProc%localCoord(1) .AND. myProc%localCoord(1) < (dble(tempx1+1)*(length/2d0))) then
+		if(mod(tempx1,2)==0) then
+			tempx1 = tempx1/2
+		else
+			tempx1 = (tempx1+1)/2
+		end if
+	end if
+	if((dble(tempx2)*(length/2d0)) <=  myProc%localCoord(2) .AND. myProc%localCoord(2) < (dble(tempx2+1)*(length/2d0))) then
+		if(mod(tempx2,2)==0) then
+			tempx2 = tempx2/2
+		else
+			tempx2 = (tempx2+1)/2
+		end if
+	end if
+
+	numxLocal = tempx2-tempx1
+	tempCenter(1)=dble(tempx1)*length+length/2d0
+	tempCenter(2)=dble(tempx2)*length-length/2d0
+
+end if
+
+!get numyLocal
+if(myProc%localCoord(3)==myProc%globalCoord(3) .AND. myProc%localCoord(4)==myProc%globalCoord(4)) then
+
+	numyLocal=numy
+	tempCenter(3)=length/2d0
+	tempCenter(4)=myProc%globalCoord(4)-length/2d0
+
+else if(myProc%localCoord(3)==myProc%globalCoord(3)) then	!at ymin
+	tempy1=0
+	tempy2 = myProc%localCoord(4)/(length/2d0)
+	if((dble(tempy2)*(length/2d0)) <=  myProc%localCoord(4) .AND. myProc%localCoord(4) < (dble(tempy2+1)*(length/2d0))) then
+		if(mod(tempy2,2)==0) then
+			tempy2 = tempy2/2
+		else
+			tempy2 = (tempy2+1)/2
+		end if
+	end if
+	numyLocal=tempy2
+	tempCenter(3)=length/2d0
+	tempCenter(4)=dble(tempy2)*length-length/2d0
+
+else if(myProc%localCoord(4)==myProc%globalCoord(4)) then	!at ymax
+	tempy2=0
+	tempy1 = myProc%localCoord(3)/(length/2d0)
+	if((dble(tempy1)*(length/2d0)) <=  myProc%localCoord(3) .AND. myProc%localCoord(3) < (dble(tempy1+1)*(length/2d0))) then
+		if(mod(tempy1,2)==0) then
+			tempy1 = tempy1/2
+		else
+			tempy1 = (tempy1+1)/2
+		end if
+	end if
+	numyLocal=numy-tempy1
+	tempCenter(3)=dble(tempy1)*length+length/2d0
+	tempCenter(4)=myProc%globalCoord(4)-length/2d0
+
+else	!in the middle
+	tempy1 = myProc%localCoord(3)/(length/2d0)
+	tempy2 = myProc%localCoord(4)/(length/2d0)
+	if((dble(tempy1)*(length/2d0)) <=  myProc%localCoord(3) .AND. myProc%localCoord(3) < (dble(tempy1+1)*(length/2d0))) then
+		if(mod(tempy1,2)==0) then
+			tempy1 = tempy1/2
+		else
+			tempy1 = (tempy1+1)/2
+		end if
+	end if
+	if((dble(tempy2)*(length/2d0)) <=  myProc%localCoord(4) .AND. myProc%localCoord(4) < (dble(tempy2+1)*(length/2d0))) then
+		if(mod(tempy2,2)==0) then
+			tempy2 = tempy2/2
+		else
+			tempy2 = (tempy2+1)/2
+		end if
+	end if
+	numyLocal = tempy2-tempy1
+	tempCenter(3)=dble(tempy1)*length+length/2d0
+	tempCenter(4)=dble(tempy2)*length-length/2d0
+
+end if
+
+!get numzLocal
+if(myProc%localCoord(5)==myProc%globalCoord(5) .AND. myProc%localCoord(6)==myProc%globalCoord(6)) then
+
+	numzLocal=numz
+	tempCenter(5)=length/2d0
+	tempCenter(6)=myProc%globalCoord(6)-length/2d0
+
+else if(myProc%localCoord(5)==myProc%globalCoord(5)) then	!at zmin
+	tempz1=0
+	tempz2 = myProc%localCoord(6)/(length/2d0)
+	if((dble(tempz2)*(length/2d0)) <=  myProc%localCoord(6) .AND. myProc%localCoord(6) < (dble(tempz2+1)*(length/2d0))) then
+		if(mod(tempz2,2)==0) then
+			tempz2 = tempz2/2
+		else
+			tempz2 = (tempz2+1)/2
+		end if
+	end if
+	numzLocal=tempz2
+	tempCenter(5)=length/2d0
+	tempCenter(6)=dble(tempz2)*length-length/2d0
+
+else if(myProc%localCoord(6)==myProc%globalCoord(6)) then	!at zmax
+	tempz2=0
+	tempz1 = myProc%localCoord(5)/(length/2d0)
+	if((dble(tempz1)*(length/2d0)) <=  myProc%localCoord(5) .AND. myProc%localCoord(5)< (dble(tempz1+1)*(length/2d0))) then
+		if(mod(tempz1,2)==0) then
+			tempz1 = tempz1/2
+		else
+			tempz1 = (tempz1+1)/2
+		end if
+	end if
+	numzLocal=numz-tempz1
+	tempCenter(5)=dble(tempz1)*length+length/2d0
+	tempCenter(6)=myProc%globalCoord(6)-length/2d0
+
+else	!in the middle
+	tempz1 = myProc%localCoord(5)/(length/2d0)
+	tempz2 = myProc%localCoord(6)/(length/2d0)
+	if((dble(tempz1)*(length/2d0)) <=  myProc%localCoord(5) .AND. myProc%localCoord(5) < (dble(tempz1+1)*(length/2d0))) then
+		if(mod(tempz1,2)==0) then
+			tempz1 = tempz1/2
+		else
+			tempz1 = (tempz1+1)/2
+		end if
+	end if
+	if((dble(tempz2)*(length/2d0)) <=  myProc%localCoord(6) .AND. myProc%localCoord(6) < (dble(tempz2+1)*(length/2d0))) then
+		if(mod(tempz2,2)==0) then
+			tempz2 = tempz2/2
+		else
+			tempz2 = (tempz2+1)/2
+		end if
+	end if
+	numzLocal = tempz2-tempz1
+	tempCenter(5)=dble(tempz1)*length+length/2d0
+	tempCenter(6)=dble(tempz2)*length-length/2d0
+
+end if
+
+!this variable is used at various points in SRSCD; lets us know the length fo myMesh(:)
+numCells=numxLocal*numyLocal*numzLocal	!total cells of this processor
+
+!If any processors don't have volume elements in them (too many procs), we create an error message
+if(numCells==0) then
+	write(*,*) 'error processors with no volume elements'
+	call MPI_ABORT(MPI_COMM_WORLD,ierr)
+	stop
+end if
+
+if(myProc%taskid==MASTER) then
+	write(*,*) 'numx numy numz', numx, numy, numz
+end if
+
+write(*,*) 'proc', myProc%taskid, 'numxLocal numyLocal numzLocal', numxLocal, numyLocal, numzLocal
+
+!Step 3c: Read meshes. And for each volume element in myMesh, assign coordinates and material number (and proc number)
+!We can't read from the file directly into myMesh, because we don't know how big to make it until
+!we read in all of the volume element information. Therefore, we allocate it and then reread from the
+!global mesh back into myMesh.
+allocate(myMesh(numCells))
+
+localElem=0
+systemVol=0d0
+
+do k=1,numzLocal
+	do j=1,numyLocal
+		do i=1,numxLocal
+
+			localElem=localElem+1
+
+			x = tempx1+i
+			y = tempy1+j
+			z = tempz1+k
+
+			myMesh(localElem)%coordinates(1)=tempCenter(1)+(i-1)*length
+			myMesh(localElem)%coordinates(2)=tempCenter(3)+(j-1)*length
+			myMesh(localElem)%coordinates(3)=tempCenter(5)+(k-1)*length
+			myMesh(localElem)%material=1
+			myMesh(localElem)%proc=myProc%taskid
+			myMesh(localElem)%globalCell=(z-1)*numx*numy+(y-1)*numx+x
+
+			myMesh(localElem)%length=length
+			myMesh(localElem)%volume=length**3d0
+
+			!uniform mesh: all elements have 1 neighbor in each direction
+			allocate(myMesh(localElem)%neighbors(6,1))
+			allocate(myMesh(localElem)%neighborProcs(6,1))
+			do dir=1,6
+				myMesh(localElem)%numNeighbors(dir)=1
+			end do
+
+
+!			if(strainField=='yes') then
+
+!				read(50,*) tempCoord(1), tempCoord(2), tempCoord(3), tempStrain(1), tempStrain(2), &
+!								tempStrain(3), tempStrain(4), tempStrain(5), tempStrain(6)
+
+!				if(tempCoord(1) /= tempMeshCoord(1)) then	!not equal
+!					write(*,*) 'Error strain mesh does not match normal mesh'
+!				else if(tempCoord(2) /= tempMeshCoord(2)) then
+!					write(*,*) 'Error strain mesh does not match normal mesh'
+!				else if(tempCoord(3) /= tempMeshCoord(3)) then
+!					write(*,*) 'Error strain mesh does not match normal mesh'
+!				end if
+!				if(tempCoord(1) > myProc%localCoord(1) .AND. tempCoord(1) <= myProc%localCoord(2) &
+!						.AND. tempCoord(2) > myProc%localCoord(3) .AND. tempCoord(2) <= myProc%localCoord(4) &
+!						.AND. tempCoord(3) > myProc%localCoord(5) .AND. tempCoord(3) <= myProc%localCoord(6)) then
+!					do l=1,6
+!						myMesh(localElem)%strain(l)=tempStrain(l)
+!					end do
+!				end if
+!			end if
+
+			if(numMaterials==1) then
+				systemVol=systemVol+length**3d0
+			else if(tempMaterial==1) then	!only add to system volume if we are NOT at a grain boundary
+				systemVol=systemVol+length**3d0
+			else
+				!Do nothing
+			end if
+
+		end do
+	end do
+end do
+
+!Step 3d: assign neighbors and processor numbers for neighbors (connectivity in myMesh) - periodic or free surfaces in +/- z
+if(meshType=='periodic') then
+	call createConnectLocalPeriodicUniform(length)
+else if(meshType=='freeSurfaces') then
+	call createConnectLocalFreeSurfUniform(length)
+end if
+
+!Close input files
+!if(strainField=='yes') then
+!	close(50)
+!end if
+close(80)
+
+end subroutine
+
 !**************************************************************************************************
 !These subroutines create LOCAL connectivity. They identify the volume element # and processor # of
 !neighboring volume elements for each element. The connectivity scheme is the same as in the global

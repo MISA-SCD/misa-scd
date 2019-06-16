@@ -1626,6 +1626,7 @@ end if
 !these subroutines (located in MeshReader.f90) initialize the mesh and connectivity.
 if(meshType=='uniform') then
 	call readMeshUniform(filename)
+!	call initialMeshUniform(filename)
 else if(meshType=='nonUniform') then
 	call readMeshNonUniform(filename)
 else
