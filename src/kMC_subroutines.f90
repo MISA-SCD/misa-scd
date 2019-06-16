@@ -1466,7 +1466,7 @@ if(associated(reactionCurrent)) then	!if we have not chosen a null event
 		
 		else
 			!If the defect has been removed due to grain boundary absorption, do nothing
-		endif
+		end if
 	
 	!***********************************************************************************************
 	! Defect update for reactions chosen in the coarse mesh.

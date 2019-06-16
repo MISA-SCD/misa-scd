@@ -33,7 +33,7 @@ if(myProc%taskid==MASTER) then
 	write(82,*) 'processor', myProc%taskid
 	do i=1,numCells
 		defectCurrent=>defectList(i)%next
-		write(82,*) 'cell', i,'globalCell', myMesh(i)%globalID
+		write(82,*) 'cell', i,'globalCell', myMesh(i)%globalCell
         write(82,*) 'Cu  ', 'V  ','SIA_m  ', 'SIA_im  ', 'num  '
 		do while(associated(defectCurrent))
 			write(82,*) defectCurrent%defectType, defectCurrent%num
@@ -1614,7 +1614,6 @@ implicit none
 include 'mpif.h'
 
 integer CuCount, VCount, SIACount, numPoints, cellCount
-integer numCellsNeighbor
 integer i, j
 integer status(MPI_STATUS_SIZE)
 !double precision coords(3)
@@ -1628,7 +1627,7 @@ double precision elapsedTime
 integer step
 
 call MPI_ALLREDUCE(numCells, numPoints, 1, MPI_INTEGER, MPI_SUM, MPI_COMM_WORLD, ierr)
-call MPI_GATHERV(numCells,1,MPI_INTEGER,points,1,MPI_INTEGER,MASTER,MPI_COMM_WORLD, ierr)
+call MPI_GATHER(numCells,1,MPI_INTEGER,points,1,MPI_INTEGER,MASTER,MPI_COMM_WORLD, ierr)
 
 if(myProc%taskid==MASTER) then
 
@@ -1676,7 +1675,7 @@ if(myProc%taskid==MASTER) then
 
 		call MPI_RECV(xyzRecv, 9*points(i+1), MPI_DOUBLE_PRECISION, i, 571, MPI_COMM_WORLD, status, ierr)
 
-		do j=1,numCellsNeighbor
+		do j=1,points(i+1)
 
 			CuCount=xyzRecv(4,j)
 			VCount=xyzRecv(5,j)

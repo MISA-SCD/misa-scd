@@ -436,7 +436,7 @@ do k=1,numz
 				myMesh(localElem)%coordinates(3)=tempMeshCoord(3)
 				myMesh(localElem)%material=tempMaterial
 				myMesh(localElem)%proc=myProc%taskid
-				myMesh(localElem)%globalID=element
+				myMesh(localElem)%globalCell=element
 
 				myMesh(localElem)%length=length
 				myMesh(localElem)%volume=length**3d0
@@ -949,7 +949,7 @@ do cell=1,numCells
 	
 	if(mod(cell,numx*numy*numz) > numx*numy*(numz-1) .OR. mod(cell, numx*numy*numz)==0) then
 		myMesh(cell)%neighborProcs(5,1)=myProc%procNeighbor(5)
-		globalCell=myMesh(cell)%globalID
+		globalCell=myMesh(cell)%globalCell
 		globalNeighbor=findgNeighborFreeSurf(globalCell, 5)
 		if(globalNeighbor==0) then
 			!free surface, set proc id to -1 and cell id to 0 to indicate free surface
@@ -972,7 +972,7 @@ do cell=1,numCells
 	
 	if(mod(cell,numx*numy*numz) <= numx*numy .AND. (mod(cell,numx*numy*numz) /= 0 .OR. numz==1)) then
 		myMesh(cell)%neighborProcs(6,1)=myProc%procNeighbor(6)
-		globalCell=myMesh(cell)%globalID
+		globalCell=myMesh(cell)%globalCell
 		globalNeighbor=findgNeighborFreeSurf(globalCell, 6)
 		if(globalNeighbor==0) then
 			!free surface, set proc id to -1 and cell id to 0 to indicate free surface

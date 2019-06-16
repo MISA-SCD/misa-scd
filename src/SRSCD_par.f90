@@ -249,8 +249,8 @@ call initializeTotalRate()			!initialize totalRate and maxRate using reactionLis
 call initializeDebugRestart()		!input defects into coarse mesh from restart file (for debugging)
 
 if(myProc%taskid==MASTER) then
-	write(*,*) 'atomsEverMesh', atomsEverMesh, 'CuEverMesh', CuAtomsEverMesh
-	write(*,*) 'initialTotalV', initialTotalV, 'initialTotalSIA', initialTotalSIA
+	write(*,*) 'atomsEverMesh', atomsEverMesh, 'CuEverMesh', numCuCell
+	write(*,*) 'initialTotalV', initialTotalV, 'initialTotalSIA', initialTotalI
 	write(*,*) 'initialCeqv', initialCeqv
 	write(*,*) 'initialCeqi', initialCeqi
 end if
@@ -636,7 +636,7 @@ do while(elapsedTime < totalTime)
 	! Output according to outputCounter
 	!********************************************************************************
 	
-	if(elapsedTime >= 1.0d-4*(1.0d1)**(outputCounter)) then
+	if(elapsedTime >= 1d-4*(10d0)**(outputCounter)) then
 	! or if(mod(step,100000)==0) then
 		call MPI_ALLREDUCE(numImplantEvents,totalImplantEvents, 1, MPI_INTEGER, MPI_SUM, MPI_COMM_WORLD, ierr)
 		!call MPI_ALLREDUCE(numHeImplantEvents,numHeImplantTotal,1,MPI_INTEGER, MPI_SUM, MPI_COMM_WORLD, ierr)
@@ -669,7 +669,7 @@ do while(elapsedTime < totalTime)
 			else
 				write(84,*) 'Fraction null steps', dble(nullSteps)/dble(step)
 			end if
-			
+			write(*,*)
 			write(84,*)
 		end if
 		

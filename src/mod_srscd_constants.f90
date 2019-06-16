@@ -93,12 +93,11 @@ double precision initialCeqi    !Thermal equilibrium concentration of SIA
 double precision Vconcent       !Vacancy concentration
 double precision SIAconcent     !SIA concentration
 double precision atomsEverMesh  !number of atoms of my processor
-integer CuAtomsEverMesh       !Initial number of Cu atoms in one mesh
-integer initialTotalV
-integer initialTotalSIA
-
-integer, allocatable :: VcoordinateList(:)
-integer, allocatable :: IcoordinateList(:)
+integer numCuCell               !Initial number of Cu atoms in one mesh
+integer initialTotalV           !Total number of initial vacancies in the whole system
+integer initialTotalI           !Total number of initial Initial self-interstitial atoms in the whole system
+integer, allocatable :: VgCellList(:)   !List the globalID of the mesh where initial vacancies are located.
+integer, allocatable :: IgCellList(:)   !List the globalID of the mesh where initial self-interstitial atoms are located.
 
 !simulation parameters, to be read during readParameters() in main program
 double precision temperature			!<Temperature (K)

@@ -18,23 +18,23 @@ totalAtoms = (myProc%globalCoord(2)-myProc%globalCoord(1))/lattice * &
 		(myProc%globalCoord(4)-myProc%globalCoord(3))/lattice * &
 		(myProc%globalCoord(6)-myProc%globalCoord(5))/lattice * 2
 
-CuAtomsEverMesh = anint(CuContent*totalAtoms /dble(numTotal))
+numCuCell = anint(CuContent*totalAtoms /dble(numTotal))
 
 do i=1, numSingleForm(1)
 	if(FormSingle(1,i)%defectType(1)==0 .AND. FormSingle(1,i)%defectType(2)==1 .AND. &
 			FormSingle(1,i)%defectType(3)==0 .AND. FormSingle(1,i)%defectType(4)==0) then	!V
 		initialCeqv = dexp(-FormSingle(1,i)%Ef / (kboltzmann*temperature))
 	else if(FormSingle(1,i)%defectType(1)==0 .AND. FormSingle(1,i)%defectType(2)==0 .AND. &
-			FormSingle(1,i)%defectType(3)==1 .AND. FormSingle(1,i)%defectType(4)==0) then
+			FormSingle(1,i)%defectType(3)==1 .AND. FormSingle(1,i)%defectType(4)==0) then	!SIA
 		initialCeqi = dexp(-FormSingle(1,i)%Ef / (kboltzmann*temperature))
 	end if
 end do
 
 initialTotalV = nint(initialCeqv * totalAtoms)
-initialTotalSIA = nint(initialCeqi * totalAtoms)
+initialTotalI = nint(initialCeqi * totalAtoms)
 
-allocate(VcoordinateList(initialTotalV))
-allocate(IcoordinateList(initialTotalSIA))
+allocate(VgCellList(initialTotalV))
+allocate(IgCellList(initialTotalI))
 
 !V
 rtemp = 0d0
@@ -55,7 +55,7 @@ if(myProc%taskid==MASTER) then
 !				VcoordinateList(i,2) = meshLength*(y-1)+ meshLength/2d0
 !				VcoordinateList(i,3) = meshLength*(z-1)+ meshLength/2d0
 				!globalCell
-				VcoordinateList(i)=cell
+				VgCellList(i)=cell
 
 				rtemp = 0d0
 				exit inter1
@@ -64,28 +64,20 @@ if(myProc%taskid==MASTER) then
 	end do outer1
 end if
 
-call MPI_BCAST(VcoordinateList, initialTotalV, MPI_INTEGER, MASTER, MPI_COMM_WORLD,ierr)
+call MPI_BCAST(VgCellList, initialTotalV, MPI_INTEGER, MASTER, MPI_COMM_WORLD,ierr)
 
 !SIA
 rtemp = 0d0
 if(myProc%taskid==MASTER) then
-	outer2: do i=1, initialTotalSIA
+	outer2: do i=1, initialTotalI
 		r1 = dprand()
 
 		inter2: do cell=1, numTotal
 			rtemp = rtemp + cell/numTotal
 			if(r1 <= rtemp) then
-!				tempID = cell-1
-!				x = mod(tempID,numx) +1
-!				tempID = tempID /numx
-!				y = mod(tempID,numy)+1
-!				z = tempID / numz +1
-				!coordinate
-!				IcoordinateList(i,1) = meshLength*(x-1)+ meshLength/2d0
-!				IcoordinateList(i,2) = meshLength*(y-1)+ meshLength/2d0
-!				IcoordinateList(i,3) = meshLength*(z-1)+ meshLength/2d0
+
 				!globalCell
-				IcoordinateList(i)=cell
+				IgCellList(i)=cell
 
 				rtemp = 0d0
 				exit inter2
@@ -94,16 +86,15 @@ if(myProc%taskid==MASTER) then
 	end do outer2
 end if
 
-call MPI_BCAST(IcoordinateList, initialTotalSIA, MPI_INTEGER, MASTER, MPI_COMM_WORLD,ierr)
+call MPI_BCAST(IgCellList, initialTotalI, MPI_INTEGER, MASTER, MPI_COMM_WORLD,ierr)
 
 
 end subroutine
 
 !*****************************************************************************************
 !>Subroutine initialize defect list - initializes defect list for each volume element
-!!
-!!Begins with a defect with type 0 0 0 0 and num 0. Note that numCells is needed in this 
-!!subroutine
+!
+!Begins with a defect with type 0 0 0 0 and num 0. Note that numCells is needed in this subroutine
 !*****************************************************************************************
 
 subroutine initializeDefectList()
@@ -127,18 +118,16 @@ do cell=1,numCells
 
 	defectCurrent=>defectList(cell)
 
-	if(CuContent > 0d0) then
-		!Cu_1
-		allocate(defectCurrent%next)
-		defectCurrent=>defectCurrent%next
-		allocate(defectCurrent%defectType(numSpecies))
-		do i=1, numSpecies
-			defectCurrent%defectType(i) = 0
-		end do
-		defectCurrent%defectType(1) = 1
-		defectCurrent%num=CuAtomsEverMesh
-		defectCurrent%cellNumber=cell
-	end if
+	!Cu_1
+	allocate(defectCurrent%next)
+	defectCurrent=>defectCurrent%next
+	allocate(defectCurrent%defectType(numSpecies))
+	do i=1, numSpecies
+		defectCurrent%defectType(i) = 0
+	end do
+	defectCurrent%defectType(1) = 1
+	defectCurrent%num=numCuCell
+	defectCurrent%cellNumber=cell
 
 	if(initialTotalV > 0) then
 		!V_1
@@ -153,7 +142,7 @@ do cell=1,numCells
 		defectCurrent%cellNumber=cell
 	end if
 
-	if(initialTotalSIA > 0) then
+	if(initialTotalI > 0) then
 		!SIA_1
 		allocate(defectCurrent%next)
 		defectCurrent=>defectCurrent%next
@@ -170,12 +159,13 @@ do cell=1,numCells
 
 end do
 
-!v
+!V
 if(initialTotalV > 0) then
 	do i=1, initialTotalV
         nullify(defectCurrent)
+
 		inter1: do cell=1, numCells
-			if(VcoordinateList(i)==myMesh(cell)%globalID) then
+			if(VgCellList(i)==myMesh(cell)%globalCell) then
 				defectCurrent=>defectList(cell)
                 do while(associated(defectCurrent))
                     if(defectCurrent%defectType(1)==0 &
@@ -190,15 +180,16 @@ if(initialTotalV > 0) then
 				exit inter1
 			end if
 		end do inter1
+
 	end do
 end if
 
 !SIA
-if(initialTotalSIA > 0) then
-	do i=1, initialTotalSIA
+if(initialTotalI > 0) then
+	do i=1, initialTotalI
         nullify(defectCurrent)
 		inter2: do cell=1, numCells
-			if(IcoordinateList(i)==myMesh(cell)%globalID) then
+			if(IgCellList(i)==myMesh(cell)%globalCell) then
 				defectCurrent=>defectList(cell)
                 do while(associated(defectCurrent))
                     if(defectCurrent%defectType(1)==0 &
@@ -1142,18 +1133,17 @@ do cell=1,numCells
 					defectCurrent%num=0
 					defectCurrent%cellNumber=myMesh(cell)%neighbors(dir,k)
 
-					if(CuContent > 0d0) then
-						!Cu_1
-						allocate(defectCurrent%next)
-						defectCurrent=>defectCurrent%next
-						allocate(defectCurrent%defectType(numSpecies))
-						defectCurrent%defectType(1)=1
-						do i=2,numSpecies
-							defectCurrent%defectType(i)=0
-						end do
-						defectCurrent%num=CuAtomsEverMesh
-						defectCurrent%cellNumber=myMesh(cell)%neighbors(dir,k)
-					end if
+
+					!Cu_1
+					allocate(defectCurrent%next)
+					defectCurrent=>defectCurrent%next
+					allocate(defectCurrent%defectType(numSpecies))
+					defectCurrent%defectType(1)=1
+					do i=2,numSpecies
+						defectCurrent%defectType(i)=0
+					end do
+					defectCurrent%num=numCuCell
+					defectCurrent%cellNumber=myMesh(cell)%neighbors(dir,k)
 
 					if(initialTotalV > 0) then
 						!V_1
@@ -1168,7 +1158,7 @@ do cell=1,numCells
 						defectCurrent%cellNumber=myMesh(cell)%neighbors(dir,k)
 					end if
 
-					if(initialTotalSIA > 0) then
+					if(initialTotalI > 0) then
 						!SIA_1
 						allocate(defectCurrent%next)
 						defectCurrent=>defectCurrent%next
@@ -1187,9 +1177,9 @@ do cell=1,numCells
 					if(initialTotalV > 0) then
 					    do i=1, initialTotalV
                             nullify(defectCurrent)
-                            gCell=myMesh(cell)%globalID
+                            gCell=myMesh(cell)%globalCell
                             gNeighor=findgNeighborPeriodic(gCell, dir)
-                            if(VcoordinateList(i)==gNeighor) then
+                            if(VgCellList(i)==gNeighor) then
                                 defectCurrent=>myBoundary(dir,myMesh(cell)%neighbors(dir,k))%defectList
                                 do while(associated(defectCurrent))
                                     if(defectCurrent%defectType(1)==0 &
@@ -1206,12 +1196,12 @@ do cell=1,numCells
 					end if
 
                     !SIA
-                    if(initialTotalSIA > 0) then
-                        do i=1, initialTotalSIA
+                    if(initialTotalI > 0) then
+                        do i=1, initialTotalI
                             nullify(defectCurrent)
-                            gCell=myMesh(cell)%globalID
+                            gCell=myMesh(cell)%globalCell
                             gNeighor=findgNeighborPeriodic(gCell, dir)
-                            if(IcoordinateList(i)==gNeighor) then
+                            if(IgCellList(i)==gNeighor) then
                                 defectCurrent=>myBoundary(dir,myMesh(cell)%neighbors(dir,k))%defectList
                                 do while(associated(defectCurrent))
                                     if(defectCurrent%defectType(1)==0 &

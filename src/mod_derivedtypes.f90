@@ -113,7 +113,7 @@ module DerivedType
 		double precision length						!<Side length of this volume element (assuming cubic elements)
 		double precision volume						!<Volume of this volume element
 		double precision strain(6)					!<Strain tensor at the center of this volume element (e11, e22, e33, e12, e23, e13)
-		integer globalID
+		integer globalCell							!<Global ID of the mesh
 		integer proc								!<Processor ID number that this element is located inside
 		integer material							!<Material ID number that this element is composed of (currently only set up for one material type)
 		integer numNeighbors(6)						!<Number of neighbors in each direction (left, right, etc). Could be not equal to 1 in the case of free surfaces or non-uniform mesh.
