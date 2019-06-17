@@ -1176,8 +1176,8 @@ omega=(48d0*pi**2/atomsize**2)**(1d0/3d0) 			!clustering rate parameter for sphe
 omegastar=(4*pi*reactionRadius)/atomsize			!clustering rate parameter modifier due to reaction radius
 omega2D=(4d0*pi/(atomsize*burgers))**(1d0/2d0)		!clustering rate parameter for 1D migrating circular clusters
 omega1D=(9d0*pi/(16d0*atomsize))**(1d0/6d0)			!clustering rate parameter for 1D migrating spherical clusters
-!omegastar1D=reactionRadius*(pi/atomsize)**(1d0/2d0)	
-omegastar1D=0d0										!clustering rate parameter modifier due to reaction radius
+omegastar1D=reactionRadius*(pi/atomsize)**(1d0/2d0)
+!omegastar1D=0d0										!clustering rate parameter modifier due to reaction radius
 omegacircle1D=(1d0/burgers)**(1d0/2d0)				!clustering rate parameter for 1D migrating circular clusters
 
 recombinationCoeff=4d0*pi*(.4466)/atomsize			!from Stoller et al., not used any longer

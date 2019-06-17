@@ -249,7 +249,7 @@ call initializeTotalRate()			!initialize totalRate and maxRate using reactionLis
 call initializeDebugRestart()		!input defects into coarse mesh from restart file (for debugging)
 
 if(myProc%taskid==MASTER) then
-	write(*,*) 'atomsEverMesh', atomsEverMesh, 'CuEverMesh', numCuCell
+	write(*,*) 'CuEverMesh', numCuCell
 	write(*,*) 'initialTotalV', initialTotalV, 'initialTotalSIA', initialTotalI
 	write(*,*) 'initialCeqv', initialCeqv
 	write(*,*) 'initialCeqi', initialCeqi
@@ -647,7 +647,7 @@ do while(elapsedTime < totalTime)
 		if(myProc%taskid==MASTER) then
 			call cpu_time(time2)
 			write(*,*)
-			write(*,*) 'time', elapsedTime, 'dpa', dpa, 'steps', step
+			write(*,*) 'time', elapsedTime, 'dpa', dpa, 'steps', step, 'tau', tau
 			write(84,*) 'time', elapsedTime, 'dpa', dpa, 'steps', step
 			if(implantType=='FrenkelPair') then
 				write(*,*) 'Frenkel pairs', totalImplantEvents, 'computation time', time2-time1
@@ -731,7 +731,7 @@ DPA=dble(totalImplantEvents)/(((myProc%globalCoord(2)-myProc%globalCoord(1))*(my
 
 if(myProc%taskid==MASTER) then
 	call cpu_time(time2)
-
+	write(*,*)
 	write(*,*) 'time', elapsedTime, 'dpa', dpa, 'steps', step
 	write(*,*) 'Cascades/Frenkel pairs', totalImplantEvents, 'computation time', time2-time1
 	write(84,*) 'time', elapsedTime, 'dpa', dpa, 'steps', step

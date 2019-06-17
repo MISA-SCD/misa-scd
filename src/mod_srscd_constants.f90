@@ -79,12 +79,12 @@ integer, allocatable :: numClusterReac(:)	!<Number of clustering reactions in in
 integer, allocatable :: numImplantReac(:)	!<Number of implantation reactions in input file (cascade, Frenkel pair, He currently implemented)
 
 !constants
-double precision, parameter :: kboltzmann=8.625d-5	!<Boltzmann's constant (eV/K)
+double precision, parameter :: kboltzmann=8.625d-5	    !<Boltzmann's constant (eV/K)
 double precision, parameter :: pi=3.141592653589793		!<Pi
 double precision, parameter :: Zint = 1.2				!<Constant representing preference for clustering of interstitials by interstitial clusters (increases clustering cross-section)
 double precision, parameter :: Zv = 1.0
-double precision, parameter :: reactionRadius=0.65	!<Material parameter used for reaction distances (impacts reaction rates) (nm)
-double precision, parameter :: lattice = 2.867d-1          !<lattice constant (nm)
+double precision, parameter :: reactionRadius=0.65	    !<Material parameter used for reaction distances (impacts reaction rates) (nm)
+double precision, parameter :: lattice = 2.867d-1       !<lattice constant (nm)
 
 !2019.04.30 Add
 !Cu solubility CeqCu(T) = exp(DelatS/kB)*exp(-Omega/(kB*T))  Reference: (F. Christien and A. Barbu, 2004)
