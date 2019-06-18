@@ -3868,11 +3868,11 @@ do while(associated(defectUpdateCurrent))
 			!update the neighbor-to-cell diffusion rate because it will be taken care of in the other
 			!processor
 			!*******************
-			do 60 j=1,6
+			do j=1,6
 				if (myMesh(defectUpdateCurrent%cellNumber)%numNeighbors(j)==0) then
 					write(*,*) 'error myMesh does not have neighbors in this direction'
-				endif
-				do 61 k=1,myMesh(defectUpdateCurrent%cellNumber)%numNeighbors(j)
+				end if
+				do k=1,myMesh(defectUpdateCurrent%cellNumber)%numNeighbors(j)	!k=1
 	
 	!				if(myProc%taskid==MASTER) then
 	!					write(*,*) 'dir', j, 'num1', findNumDefect(defectTemp, defectUpdateCurrent%cellNumber)
@@ -3890,8 +3890,8 @@ do while(associated(defectUpdateCurrent))
 						localGrainID=myMesh(defectUpdateCurrent%cellNumber)%material
 
 						!Find the grain ID number of the neighboring volume element
-						if(myMesh(defectUpdateCurrent%cellNumber)%neighborProcs(j,k) .NE. myProc%taskid .AND. &
-							myMesh(defectUpdateCurrent%cellNumber)%neighborProcs(j,k) .NE. -1) then
+						if(myMesh(defectUpdateCurrent%cellNumber)%neighborProcs(j,k) /= myProc%taskid .AND. &
+							myMesh(defectUpdateCurrent%cellNumber)%neighborProcs(j,k) /= -1) then
 						
 							neighborGrainID=myBoundary(j,myMesh(defectUpdateCurrent%cellNumber)%neighbors(j,k))%material
 						else if(myMesh(defectUpdateCurrent%cellNumber)%neighborProcs(j,k) == -1) then
@@ -3912,13 +3912,12 @@ do while(associated(defectUpdateCurrent))
 							call addDiffusionReactions(defectUpdateCurrent%cellNumber, 0, myProc%taskid, -1, j, defectTemp)													
 							
 						endif
-
 					else
 						
 						call addDiffusionReactions(defectUpdateCurrent%cellNumber, myMesh(defectUpdateCurrent%cellNumber)%neighbors(j,k),&
 							myProc%taskid, myMesh(defectUpdateCurrent%cellNumber)%neighborProcs(j,k),j,defectTemp)
 							
-					endif
+					end if
 						
 					!If the neighboring volume element is in the same processor as this element, add
 					!diffusion reactions from neighboring cells into this cell (changes reaction list
@@ -3943,9 +3942,9 @@ do while(associated(defectUpdateCurrent))
 					endif				
 					endif
 
-				61 continue
+				end do
 				
-			60 continue
+			end do
 			
 			!***********************************************************************************
 			!Diffusion between coarse mesh and fine mesh - coarse to fine

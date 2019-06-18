@@ -6,7 +6,7 @@
 
 !Tell computer location of mesh input file
 meshFile
-'../../meshes/Mesh_Bulk.txt'
+'../../meshes/MeshGenInputs/MeshGenInput_Bulk.txt'
 
 !Tell computer if this is a uniform or non-uniform mesh file
 meshType
@@ -68,25 +68,25 @@ implantFile
 start			!begin parameters
 
 temperature		!Temperature, in K
-673d0
+454d0
 
 CuContent       !Initial content of Cu in iron
 0d0
 
 annealTemp
-673d0			!Annealing temperature, in K
+454d0			!Annealing temperature, in K
 				
 dpaRate			! NOTE: if the implant profile is non-uniform, this should be the AVERAGE DPA rate.
 1.5d-4
 
 atomSize
-8.79d-3 		!(Fe) 			8.79d-3 		!(Cu)		! atomsize (nm^3)
+2.3d-2 		!(Fe) 			8.79d-3 		!(Cu)		! atomsize (nm^3)
 
 burgers
-0.132d0 		!(Fe) 			.36d0 			!(Cu)		! dislocation loop burgers vector (lattice constant) (nm)
+0.204d0 		!(Fe) 			.36d0 			!(Cu)		! dislocation loop burgers vector (lattice constant) (nm)
 
 totalDPA
-2d-2			! total DPA in simulation 1
+1.5d-2			! total DPA in simulation 1
 
 annealTime
 0d0				! total anneal time (s)

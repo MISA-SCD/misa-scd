@@ -6,7 +6,7 @@
 
 !Tell computer location of mesh input file
 meshFile
-'../../meshes/Mesh_Bulk.txt'
+'../../meshes/MeshGenInputs/MeshGenInput_Bulk.txt'
 
 !Tell computer if this is a uniform or non-uniform mesh file
 meshType
@@ -30,7 +30,7 @@ numMaterials
 
 !Tell computer the location of the material input file(s)
 materialFile
-'../../inputs/FeCu_Defects.txt'
+'../../inputs/Fe_Defects_Cu.txt'
 
 !Type of implantation ('Cascade' for cascades, 'FrenkelPair' for Frenkel pairs)
 implantType
@@ -71,7 +71,7 @@ temperature		!Temperature, in K
 563d0
 
 CuContent       !Initial content of Cu in iron
-0.5d-2
+1.34d-2
 
 annealTemp
 563d0			!Annealing temperature, in K
@@ -86,13 +86,13 @@ burgers
 0.132d0 		!(Fe) 			.36d0 			!(Cu)		! dislocation loop burgers vector (lattice constant) (nm)
 
 totalDPA
-2d-2			! total DPA in simulation 1
+2d-4			! total DPA in simulation 1
 
 annealTime
 0d0				! total anneal time (s)
 
 grainBoundaries	!Toggle whether we are going to include the effect of grain boundaries (Removing defects that travel too far)
-yes
+no
 
 grainSize
 300d0			! Mean free path for interstitial clusters to travel before removal (nm)
@@ -104,7 +104,7 @@ impurityConc
 30d-6			! carbon impurity concentration (atomic fraction)
 
 max3DInt
-4				!maximum size for SIA defect to diffuse in 3D
+1				!maximum size for SIA defect to diffuse in 3D
 
 cascadeVolume
 1000d0			!volume of cascade (nm^3) - used for cascade-defect interactions

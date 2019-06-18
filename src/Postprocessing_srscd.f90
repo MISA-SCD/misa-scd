@@ -177,8 +177,8 @@ integer numAnnihilateTotal
 !Variables for defect counting and concentration
 !integer VNum, SIANum, LoopSize(3), totalVac, totalSIA, HeNum, totalHe
 integer VClusterNum, SIAClusterNum, LoopSize(3), totalVac, totalSIA, CuClusterNum, totalCu
-double precision VMeanRadius, VoidMeanRadius, SIAMeanRadius, LoopMeanRadius, CuMeanRadius
-integer totalVoid, totalLoop, VoidNum
+double precision VMeanRadius, VoidMeanRadius, SIAMeanRadius, LoopMeanRadius, CuMeanRadius, CuVoidMeanRadius
+integer totalVoid, totalLoop, VoidNum, CuVoidNum, totalCuVoid
 
 interface
 	subroutine findDefectInList(defectCurrent, defectPrev, products)
@@ -398,6 +398,7 @@ if(myProc%taskid==MASTER) then
 	totalSIA=0
 	totalVoid=0
 	totalLoop=0
+	totalCuVoid=0
 
     !2019.05.14 Add
     VMeanRadius=0d0
@@ -410,17 +411,20 @@ if(myProc%taskid==MASTER) then
 		LoopSize(i)=0
 	end do
 	VoidNum=0
+	CuVoidNum=0
 	
 	do while(associated(defectCurrentList))
 		
 		!Compile statistics for vacancy and SIA concentrations
 		if(defectCurrentList%defectType(1) /= 0) then
-			
-			!HeNum=HeNum+defectCurrentList%num
+
             CuClusterNum = CuClusterNum + defectCurrentList%num
-			
-			!totalHe=totalHe+defectCurrentList%defectType(1)*defectCurrentList%num
+
             totalCu = totalCu + defectCurrentList%defectType(1) * defectCurrentList%num
+			if(defectCurrentList%defectType(1) > 10) then
+				CuVoidNum = CuVoidNum + defectCurrentList%num
+				totalCuVoid = totalCuVoid + defectCurrentList%defectType(1) * defectCurrentList%num
+			end if
 		
 		endif
 		
@@ -430,7 +434,8 @@ if(myProc%taskid==MASTER) then
 			
 			totalVac = totalVac + defectCurrentList%defectType(2) * defectCurrentList%num
 			
-			if(defectCurrentList%defectType(2) >= 45) then
+!			if(defectCurrentList%defectType(2) >= 45) then
+			if(defectCurrentList%defectType(2) > 10) then
 				VoidNum = VoidNum + defectCurrentList%num
 				totalVoid = totalVoid + defectCurrentList%defectType(2) * defectCurrentList%num
 			endif
@@ -440,24 +445,27 @@ if(myProc%taskid==MASTER) then
 
             SIAClusterNum = SIAClusterNum + defectCurrentList%num
 			
-			totalSIA = totalSIA + defectCurrentList%defectType(4) * defectCurrentList%num
-			totalSIA = totalSIA + defectCurrentList%defectType(3) * defectCurrentList%num
+			totalSIA = totalSIA + defectCurrentList%defectType(4) * defectCurrentList%num + &
+					defectCurrentList%defectType(3) * defectCurrentList%num
 		
-			if(defectCurrentList%defectType(4) >= 16) then
+!			if(defectCurrentList%defectType(4) >= 16) then
+			if(defectCurrentList%defectType(4) > 10 .OR. defectCurrentList%defectType(3) > 10) then
 				LoopSize(1)=LoopSize(1)+defectCurrentList%num
+				totalLoop = totalLoop + defectCurrentList%defectType(4)*defectCurrentList%num + &
+						defectCurrentList%defectType(3)*defectCurrentList%num
+
 			endif
 			
-			if(defectCurrentList%defectType(4) >= 20) then
-				LoopSize(2)=LoopSize(2)+defectCurrentList%num
-				totalLoop = totalLoop + defectCurrentList%defectType(4)*defectCurrentList%num
-			endif
+!			if(defectCurrentList%defectType(4) >= 20) then
+!				LoopSize(2)=LoopSize(2)+defectCurrentList%num
+				!totalLoop = totalLoop + defectCurrentList%defectType(4)*defectCurrentList%num
+!			endif
 			
-			if(defectCurrentList%defectType(4) >= 24) then
-				LoopSize(3)=LoopSize(3)+defectCurrentList%num
-			endif
+!			if(defectCurrentList%defectType(4) >= 24) then
+!				LoopSize(3)=LoopSize(3)+defectCurrentList%num
+!			endif
 		endif
-	
-!		write(*,*) defectCurrentList%defectType, defectCurrentList%num
+
 		write(83,*) defectCurrentList%defectType, defectCurrentList%num
 		defectCurrentList=>defectCurrentList%next
 	end do
@@ -465,8 +473,8 @@ if(myProc%taskid==MASTER) then
     CuMeanRadius = (3*(dble(totalCu)/dble(CuClusterNum))*atomSize/(4*pi))**(1d0/3d0)
     VMeanRadius = (3*(dble(totalVac)/dble(VClusterNum))*atomSize/(4*pi))**(1d0/3d0)
     VoidMeanRadius = (3*(dble(totalVoid)/dble(VoidNum))*atomSize/(4*pi))**(1d0/3d0)
-    LoopMeanRadius = ((dble(totalLoop)/dble(LoopSize(2)))*atomSize/(pi*burgers))**(1d0/2d0)
-
+    LoopMeanRadius = ((dble(totalLoop)/dble(LoopSize(1)))*atomSize/(pi*burgers))**(1d0/2d0)
+	CuVoidMeanRadius = (3*(dble(totalCuVoid)/dble(CuVoidNum))*atomSize/(4*pi))**(1d0/3d0)
 	
 !This is now calculated in MeshReader.f90
 !	systemVol=(myProc%globalCoord(2)-myProc%globalCoord(1))*&
@@ -474,35 +482,37 @@ if(myProc%taskid==MASTER) then
 !			  (myProc%globalCoord(6)-myProc%globalCoord(5))*1d-27
 	
 	
-	write(83,*) 'CuClusterNum', CuClusterNum, 'number density (m-3)', dble(CuClusterNum)/(systemVol*1.0d-27), &
+	write(83,*) 'CuClusterNum', CuClusterNum, 'number density (nm-3)', dble(CuClusterNum)/(systemVol), &
 			'MeanRadius (nm)', CuMeanRadius
-	write(83,*) 'VClusterNum', VClusterNum, 'number density (m-3)', dble(VClusterNum)/(systemVol*1d-27), &
+	write(83,*)	'CuVoids', CuVoidNum, 'number density (nm-3)', dble(CuVoidNum)/(systemVol), &
+			'VoidMeanRadius (nm)', CuVoidMeanRadius
+	write(83,*) 'VClusterNum', VClusterNum, 'number density (nm-3)', dble(VClusterNum)/(systemVol), &
 			'VMeanRadius (nm)', VMeanRadius
-	write(83,*)	'Voids', VoidNum, 'number density (m-3)', dble(VoidNum)/(systemVol*1d-27), &
+	write(83,*)	'Voids', VoidNum, 'number density (nm-3)', dble(VoidNum)/(systemVol), &
 			'VoidMeanRadius (nm)', VoidMeanRadius
-	write(83,*) 'SIAClusterNum', SIAClusterNum, 'number density (m-3)', dble(SIAClusterNum)/(systemVol*1d-27)
-	write(83,*) 'SIA_small (SIANum>=16)',LoopSize(1), 'number density (m-3)', dble(LoopSize(1))/(systemVol*1d-27)
-	write(83,*) 'Loops (SIANum>=20)', LoopSize(2), 'number density (m-3)', dble(LoopSize(2))/(systemVol*1d-27), &
-			'LoopMeanRadius (nm)', LoopMeanRadius
-	write(83,*) 'SIA_large (SIANum>=24)', LoopSize(3), 'number density (m-3)', dble(LoopSize(3))/(systemVol*1d-27)
+	write(83,*) 'SIAClusterNum', SIAClusterNum, 'number density (nm-3)', dble(SIAClusterNum)/(systemVol)
+	write(83,*) 'SIA_small (SIANum>10)',LoopSize(1), 'number density (nm-3)', dble(LoopSize(1))/(systemVol)
+!	write(83,*) 'Loops (SIANum>=20)', LoopSize(2), 'number density (nm-3)', dble(LoopSize(2))/(systemVol), &
+!			'LoopMeanRadius (nm)', LoopMeanRadius
+!	write(83,*) 'SIA_large (SIANum>=24)', LoopSize(3), 'number density (nm-3)', dble(LoopSize(3))/(systemVol)
     write(83,*)
 
 	!Output postpr.out
-	write(84,*) 'CuClusterNum', CuClusterNum, 'number density (m-3)', dble(CuClusterNum)/(systemVol*1d-27), &
+	write(84,*) 'CuClusterNum', CuClusterNum, 'number density (nm-3)', dble(CuClusterNum)/(systemVol), &
             'At.%', dble(CuClusterNum)*atomSize/systemVol
-	write(84,*) 'VClusterNum', VClusterNum, 'number density (m-3)', dble(VClusterNum)/(systemVol*1d-27), &
+	write(84,*) 'VClusterNum', VClusterNum, 'number density (nm-3)', dble(VClusterNum)/(systemVol), &
             'At.%', dble(VClusterNum)*atomSize/systemVol
-	write(84,*)	'Voids', VoidNum, 'number density (m-3)', dble(VoidNum)/(systemVol*1d-27), &
+	write(84,*)	'Voids', VoidNum, 'number density (nm-3)', dble(VoidNum)/(systemVol), &
             'At.%', dble(VoidNum)*atomSize/systemVol
-	write(84,*) 'SIAClusterNum', SIAClusterNum, 'number density (m-3)', dble(SIAClusterNum)/(systemVol*1d-27), &
+	write(84,*) 'SIAClusterNum', SIAClusterNum, 'number density (nm-3)', dble(SIAClusterNum)/(systemVol), &
             'At.%', dble(SIAClusterNum)*atomSize/systemVol
-	write(84,*) 'SIA_small (SIANum>=16)',LoopSize(1), 'number density (m-3)', dble(LoopSize(1))/(systemVol*1d-27), &
+	write(84,*) 'SIA_small (SIANum>10)',LoopSize(1), 'number density (nm-3)', dble(LoopSize(1))/(systemVol), &
             'At.%', dble(LoopSize(1))*atomSize/systemVol
-	write(84,*) 'Loops (SIANum>=20)', LoopSize(2), 'number density (m-3)', dble(LoopSize(2))/(systemVol*1d-27), &
-            'At.%', dble(LoopSize(2))*atomSize/systemVol
-	write(84,*) 'SIA_large (SIANum>=24)', LoopSize(3), 'number density (m-3)', dble(LoopSize(3))/(systemVol*1d-27), &
-            'At.%', dble(LoopSize(3))*atomSize/systemVol
-    write(84,*)
+!	write(84,*) 'Loops (SIANum>=20)', LoopSize(2), 'number density (nm-3)', dble(LoopSize(2))/(systemVol), &
+!            'At.%', dble(LoopSize(2))*atomSize/systemVol
+!	write(84,*) 'SIA_large (SIANum>=24)', LoopSize(3), 'number density (nm-3)', dble(LoopSize(3))/(systemVol), &
+!           'At.%', dble(LoopSize(3))*atomSize/systemVol
+!    write(84,*)
 	
 	!*******************************************************************
 	!Post processing: calculate relevant information (hard coded) to 

@@ -1111,6 +1111,7 @@ do i=1, numClusterReac(matNum)
 		!this reaction. Thus we could double-add reactions. Will fix later.
 		
 		reactionCurrent=>reactionList(cell)
+		nullify(reactionPrev)
 		call findReactionInListMultiple(reactionCurrent, reactionPrev, cell, reactants, products, numReactants, numProducts)
 		
 		!find the reaction rate. HARD CODED: if CuSIA left over, need to disallow this reaction

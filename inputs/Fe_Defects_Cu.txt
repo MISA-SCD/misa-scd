@@ -100,7 +100,7 @@ bindingEnergies			!indicates we are moving into binding energies
 numSingle
 46
 numFunction
-12
+11
 
 single
 2	0	0	0		1	0	0	0	!2Cu->Cu+Cu
@@ -137,9 +137,9 @@ Eb	1.14d0
 0	16	0	0		0	1	0	0	!16V->V+15V
 Eb	0.892d0
 
-0	0	2	0		0	0	1	0	!2SIA_m->SIA_m+SIA_m
+0	0	0	2		0	0	1	0	!2SIA_im->SIA_m+SIA_m
 Eb	1.2d0
-0	0	3	0		0	0	1	0	!3SIA_m->SIA_m+2SIA_m
+0	0	0	3		0	0	1	0	!3SIA_im->SIA_m+2SIA_im
 Eb	0.92d0
 
 1	1	0	0		1	0	0	0	!CuV->Cu+V   !< nCumV-> Cu + (n-1)CumV
@@ -216,14 +216,6 @@ nmin	0	nmax	0
 nmin	0	nmax	0
 ftype	4	param	2			!functional form type 4 (hard-coded in)
 1.6d0	0.8d0					!parameters for functional form type 4 (only 2)
-
-0	0	1	0		0	0	1	0	!nSIA->SIA+(n-1)SIA
-nmin	0	nmax	0
-nmin	0	nmax	0
-nmin	4	nmax	-1
-nmin	0	nmax	0
-ftype	4	param	2			!functional form type 5	(hard-coded in)
-4.3d0	1.2d0					!parameters for functional form type 5 (only 2)
 
 0	0	0	1		0	0	1	0	!nSIA->SIA+(n-1)SIA NOTE: mobile SIA ejected from Sessile SIA cluster
 nmin	0	nmax	0
@@ -303,7 +295,7 @@ ftype	7	param	4			!functional form type 7 (hard-coded in)
 singleDefect			!the following will list single-defect reactions and their rates
 
 dissociation
-6						!Number of defect dissociation types
+5						!Number of defect dissociation types
 
 1	0	0	0		1	0	0	0	!Cu cluster dissociation
 nmin	2	nmax	-1
@@ -316,13 +308,6 @@ nmin	0	nmax	0
 nmin	0	nmax	0
 nmin	2	nmax	-1
 nmin	0	nmax	0
-nmin	0	nmax	0
-1							!reactionRate form 1
-
-0	0	1	0		0	0	1	0	!nSIA_m->SIA+(n-1)SIA
-nmin	0	nmax	0
-nmin	0	nmax	0
-nmin	2	nmax	-1
 nmin	0	nmax	0
 1							!reactionRate form 1
 
@@ -376,7 +361,7 @@ sinkRemoval					!These reactions involve removing defects from the mesh by dislo
 
 0	1	0	0				!V trapping
 nmin	0	nmax	0
-nmin	1	nmax	4
+nmin	1	nmax	1
 nmin	0	nmax	0
 nmin	0	nmax	0
 3							!reactionRate form 3
@@ -384,9 +369,12 @@ nmin	0	nmax	0
 0	0	1	0				!SIA_mobile trapping
 nmin	0	nmax	0
 nmin	0	nmax	0
-nmin	1 	nmax	-1
+nmin	1 	nmax	1
 nmin	0	nmax	0
 3							!reactionRate form 3
+
+impurityTrapping			!These reactions involve changing mobile SIA loops to sessile SIA loops via trapping by impurities
+0							!Only one defect type can be affected by this
 
 multipleDefect				!the following is a list of multiple-defect reactions and their rates (clustering)
 
