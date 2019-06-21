@@ -1085,6 +1085,11 @@ do i=1, numClusterReac(matNum)
 !            products(1,2)=0
 !        end if
 
+!		if(products(1,3) /= 0 .AND. products(1,3) > max3DInt) then
+!			products(1,4)=products(1,3)
+!			products(1,3)=0
+!		end if
+
         !sessile cluster becomes mobile when it shrinks below max3DInt
         if(products(1,4) /= 0 .AND. products(1,4) <= max3DInt) then
             products(1,3)=products(1,4)
@@ -1349,6 +1354,11 @@ do i=1, numClusterReac(matNum)
 !            products(1,1)=0
 !            products(1,2)=0
 !        end if
+
+!		if(products(1,3) /= 0 .AND. products(1,3) > max3DInt) then
+!			products(1,4)=products(1,3)
+!			products(1,3)=0
+!		end if
 
 		!sessile cluster becomes mobile when it shrinks below max3DInt
         if(products(1,4) /= 0 .AND. products(1,4) <= max3DInt) then
@@ -2148,7 +2158,7 @@ do i=1, numDiffReac(matNum)
 			
 		
 		!if reactionRate .NE. 0 and reaction doesn't exist, then create it. Add to totalRate
-		else if(.NOT. associated(reactionCurrent) .AND. reactionRate .NE. 0d0) then
+		else if(.NOT. associated(reactionCurrent) .AND. reactionRate /= 0d0) then
 			
 			!Update total rate (entire processor and this volume element)
 			totalRate=totalRate+reactionRate
@@ -2164,10 +2174,10 @@ do i=1, numDiffReac(matNum)
 			allocate(reactionCurrent%taskid(reactionCurrent%numReactants+reactionCurrent%numProducts))
 			nullify(reactionCurrent%next)
 			reactionPrev%next=>reactionCurrent
-			do 13 l=1,numSpecies
+			do l=1,numSpecies
 				reactionCurrent%reactants(1,l)=reactants(1,l)
 				reactionCurrent%products(1,l)=products(1,l)
-			13 continue
+			end do
 			reactionCurrent%cellNumber(1)=cell1
 			reactionCurrent%taskid(1)=proc1
 			reactionCurrent%cellNumber(2)=cell2
@@ -2186,7 +2196,7 @@ do i=1, numDiffReac(matNum)
 		else if(.NOT. associated(reactionCurrent) .AND. reactionRate==0d0) then
 			!do nothing
 		!if reactionRate .NE. 0 and reaction exists, update the reaction rate. Add/subtract to totalRate
-		else if(associated(reactionCurrent) .AND. reactionRate .NE. 0d0) then
+		else if(associated(reactionCurrent) .AND. reactionRate /= 0d0) then
 			
 			!Update total rate (entire processor and this volume element)
 			totalRate=totalRate-reactionCurrent%reactionRate+reactionRate
@@ -4209,6 +4219,16 @@ else	!Combine
 		products(4)=products(3)+products(4)
 		products(3)=0
 	end if
+
+!	if(products(3) /= 0 .AND. products(3) > max3DInt) then
+!		products(4)=products(3)
+!		products(3)=0
+!	end if
+
+!	if(product2(3) /= 0 .AND. product2(3) > max3DInt) then
+!		product2(4)=product2(3)
+!		product2(3)=0
+!	end if
 
 	!sessile cluster becomes mobile again when it shrinks below max3DInt
 	if(products(4) /= 0 .AND. products(4) <= max3DInt) then

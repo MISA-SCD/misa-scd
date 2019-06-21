@@ -1,5 +1,5 @@
 ! **************************************************************************************
-!
+!>Subroutine initialize vacancy or SIA defect.
 !***************************************************************************************
 subroutine initializeVIdefect()
 use DerivedType
@@ -1563,8 +1563,8 @@ end if
 
 !these subroutines (located in MeshReader.f90) initialize the mesh and connectivity.
 if(meshType=='uniform') then
-	call readMeshUniform(filename)
-!	call initialMeshUniform(filename)
+!	call readMeshUniform(filename)
+	call initialMeshUniform(filename)
 else if(meshType=='nonUniform') then
 	call readMeshNonUniform(filename)
 else

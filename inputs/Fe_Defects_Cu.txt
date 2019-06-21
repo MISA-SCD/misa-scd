@@ -374,7 +374,14 @@ nmin	0	nmax	0
 3							!reactionRate form 3
 
 impurityTrapping			!These reactions involve changing mobile SIA loops to sessile SIA loops via trapping by impurities
-0							!Only one defect type can be affected by this
+1							!Only one defect type can be affected by this
+
+0	0	1	0		0	0	0	1
+nmin	0	nmax	0
+nmin	0	nmax	0
+nmin	0	nmax	0
+nmin	0	nmax	0
+4							!reactionRate form 4 (essentially clustering between SIA loop and point defect)
 
 multipleDefect				!the following is a list of multiple-defect reactions and their rates (clustering)
 

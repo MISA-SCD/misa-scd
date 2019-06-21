@@ -594,6 +594,7 @@ end do
 flag=.FALSE.
 
 numTotal=numx*numy*numz	!total cell in the system
+systemVol = dble(numTotal)*length**3d0
 
 !Tells program that we are about to start reading in element coordinates and material numbers
 do while(flag .eqv. .FALSE.)
@@ -933,7 +934,6 @@ write(*,*) 'proc', myProc%taskid, 'numxLocal numyLocal numzLocal', numxLocal, nu
 allocate(myMesh(numCells))
 
 localElem=0
-systemVol=0d0
 
 do k=1,numzLocal
 	do j=1,numyLocal
@@ -984,13 +984,13 @@ do k=1,numzLocal
 !				end if
 !			end if
 
-			if(numMaterials==1) then
-				systemVol=systemVol+length**3d0
-			else if(tempMaterial==1) then	!only add to system volume if we are NOT at a grain boundary
-				systemVol=systemVol+length**3d0
-			else
-				!Do nothing
-			end if
+!			if(numMaterials==1) then
+!				systemVol=systemVol+length**3d0
+!			else if(tempMaterial==1) then	!only add to system volume if we are NOT at a grain boundary
+!				systemVol=systemVol+length**3d0
+!			else
+!				!Do nothing
+!			end if
 
 		end do
 	end do
