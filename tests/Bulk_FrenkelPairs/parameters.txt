@@ -92,6 +92,9 @@ annealTime
 0d0				! total anneal time (s)
 
 grainBoundaries	!Toggle whether we are going to include the effect of grain boundaries (Removing defects that travel too far)
+no
+
+pointDefect     !Toggle whether point defects are allowed to move only
 yes
 
 grainSize

@@ -1085,16 +1085,32 @@ do i=1, numClusterReac(matNum)
 !            products(1,2)=0
 !        end if
 
-!		if(products(1,3) /= 0 .AND. products(1,3) > max3DInt) then
-!			products(1,4)=products(1,3)
-!			products(1,3)=0
-!		end if
+		!onle point defect can move
+		if(pointDefectToggle=='yes') then
+			if(products(1,3) /= 0 .AND. products(1,3) > max3DInt) then
+				products(1,4)=products(1,3)
+				products(1,3)=0
+			end if
+			if(numProducts==2) then
+				if(products(2,3) /= 0 .AND. products(2,3) > max3DInt) then
+					products(2,4)=products(2,3)
+					products(2,3)=0
+				end if
+			end if
+
+		end if
 
         !sessile cluster becomes mobile when it shrinks below max3DInt
         if(products(1,4) /= 0 .AND. products(1,4) <= max3DInt) then
             products(1,3)=products(1,4)
             products(1,4)=0
         end if
+		if(numProducts==2) then
+			if(products(2,4) /= 0 .AND. products(2,4) <= max3DInt) then
+				products(2,3)=products(2,4)
+				products(2,4)=0
+			end if
+		end if
 
 		!Total Annihilation
 		count=0
@@ -1355,16 +1371,33 @@ do i=1, numClusterReac(matNum)
 !            products(1,2)=0
 !        end if
 
-!		if(products(1,3) /= 0 .AND. products(1,3) > max3DInt) then
-!			products(1,4)=products(1,3)
-!			products(1,3)=0
-!		end if
+		!onle point defect can move
+		if(pointDefectToggle=='yes') then
+			if(products(1,3) /= 0 .AND. products(1,3) > max3DInt) then
+				products(1,4)=products(1,3)
+				products(1,3)=0
+			end if
+			if(numProducts==2) then
+				if(products(2,3) /= 0 .AND. products(2,3) > max3DInt) then
+					products(2,4)=products(2,3)
+					products(2,3)=0
+				end if
+			end if
+
+		end if
 
 		!sessile cluster becomes mobile when it shrinks below max3DInt
         if(products(1,4) /= 0 .AND. products(1,4) <= max3DInt) then
             products(1,3)=products(1,4)
             products(1,4)=0
         end if
+
+		if(numProducts==2) then
+			if(products(2,4) /= 0 .AND. products(2,4) <= max3DInt) then
+				products(2,3)=products(2,4)
+				products(2,4)=0
+			end if
+		end if
 
 		!Total Annihilation
 		count=0
@@ -4166,14 +4199,15 @@ else if(defectTemp%defectType(1)/=0 .AND. defectTemp%defectType(2)==0 .AND. &
 else	!Combine
 
 	!only point defect is mobile
-!	if(products(3) > max3DInt) then
-!		products(4)=products(3)
-!		products(3)=0
-!	end if
+	if(pointDefectToggle=='yes') then
+		if(products(3) > max3DInt) then
+			products(4)=products(3)
+			products(3)=0
+		end if
+	end if
 
 	!two 1D clusters coming together to make a sessile cluster
 	if(products(3) > max3DInt .AND. defectTemp%defectType(3) > max3DInt) then
-	!if(products(3) > max3DInt) then
 		products(4)=products(3)
 		products(3)=0
 	end if
@@ -4220,15 +4254,17 @@ else	!Combine
 		products(3)=0
 	end if
 
-!	if(products(3) /= 0 .AND. products(3) > max3DInt) then
-!		products(4)=products(3)
-!		products(3)=0
-!	end if
+	if(pointDefectToggle=='yes') then
+		if(products(3) /= 0 .AND. products(3) > max3DInt) then
+			products(4)=products(3)
+			products(3)=0
+		end if
 
-!	if(product2(3) /= 0 .AND. product2(3) > max3DInt) then
-!		product2(4)=product2(3)
-!		product2(3)=0
-!	end if
+		if(product2(3) /= 0 .AND. product2(3) > max3DInt) then
+			product2(4)=product2(3)
+			product2(3)=0
+		end if
+	end if
 
 	!sessile cluster becomes mobile again when it shrinks below max3DInt
 	if(products(4) /= 0 .AND. products(4) <= max3DInt) then

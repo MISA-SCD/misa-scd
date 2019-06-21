@@ -94,6 +94,9 @@ annealTime
 grainBoundaries	!Toggle whether we are going to include the effect of grain boundaries (Removing defects that travel too far)
 no
 
+pointDefect     !Toggle whether point defects are allowed to move only
+yes
+
 grainSize
 300d0			! Mean free path for interstitial clusters to travel before removal (nm)
 

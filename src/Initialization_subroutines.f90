@@ -810,12 +810,20 @@ do cell=1,numCells
 			end if
 		end do
 
+		do j=1,numSpecies
+			reactionCurrent%reactants(1,j)=ClusterReactions(matNum,reac)%reactants(1,j)
+			reactionCurrent%reactants(2,j)=ClusterReactions(matNum,reac)%reactants(2,j)
+			reactionCurrent%products(1,j)=ClusterReactions(matNum,reac)%products(1,j)
+		end do
+
+		if(pointDefectToggle=='yes') then
+			if(reactionCurrent%products(1,3) > max3DInt) then
+				reactionCurrent%products(1,4) = reactionCurrent%products(1,3)
+				reactionCurrent%products(1,3) = 0
+			end if
+		end if
+
 		do i=1,ClusterReactions(matNum,reac)%numReactants+ClusterReactions(matNum,reac)%numProducts
-			do j=1,numSpecies
-				reactionCurrent%reactants(1,j)=ClusterReactions(matNum,reac)%reactants(1,j)
-				reactionCurrent%reactants(2,j)=ClusterReactions(matNum,reac)%reactants(2,j)
-				reactionCurrent%products(1,j)=ClusterReactions(matNum,reac)%products(1,j)
-			end do
 			reactionCurrent%cellNumber(i)=cell
 			reactionCurrent%taskid(i)=myMesh(cell)%proc
 		end do

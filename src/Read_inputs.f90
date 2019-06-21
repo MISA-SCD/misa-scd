@@ -958,7 +958,7 @@ annealType		='add'
 annealTempInc	=0d0
 
 grainBoundaryToggle	='no'
-!CuSIAToggle			='no'
+pointDefectToggle	='no'
 !SIAPinToggle		='no'
 polycrystal			='no'
 singleElemKMC		='no'
@@ -974,11 +974,11 @@ numGrains			=1
 cascadeReactionLimit=100d0
 
 !Toggles for various output types
-postprToggle		='yes'
+postprToggle		='no'
 totdatToggle		='yes'
-rawdatToggle		='yes'
+rawdatToggle		='no'
 vtkToggle			='no'
-xyzToggle			='yes'
+xyzToggle			='no'
 outputDebug			='no'
 profileToggle		='no'
 
@@ -1040,6 +1040,9 @@ do while(flag .eqv. .FALSE.)
 		else if(char=='grainBoundaries') then
 			flag2=.TRUE.
 			read(81,*) grainBoundaryToggle
+		else if(char=='pointDefect') then
+			flag2=.TRUE.
+			read(81,*) pointDefectToggle
 		else if(char=='grainSize') then
 			flag2=.TRUE.
 			read(81,*) meanFreePath
