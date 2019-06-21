@@ -1,4 +1,3 @@
-! $Header: /home/CVS//srscd/src/Deallocate_Lists.f90,v 1.4 2015/05/21 15:14:09 aydunn Exp $
 !***********************************************************************
 !
 !> Subroutine deallocateBoundaryDefectList() - deallocates boundary defect lists
@@ -14,7 +13,7 @@
 
 subroutine deallocateBoundaryDefectList()
 use DerivedType
-use mod_srscd_constants
+use mod_constants
 implicit none
 
 integer cell, dir, k, i
@@ -69,7 +68,7 @@ end subroutine
 
 Subroutine deallocateCascadeList()
 use DerivedType
-use mod_srscd_constants
+use mod_constants
 implicit none
 
 type(cascadeEvent), pointer :: CascadeTemp, CascadePrev
@@ -127,7 +126,7 @@ end subroutine
 
 subroutine deallocateMaterialInput()
 use DerivedType
-use mod_srscd_constants
+use mod_constants
 implicit none
 
 integer matNum
@@ -232,7 +231,7 @@ end subroutine
 
 subroutine deallocateDefectList()
 use DerivedType
-use mod_srscd_constants
+use mod_constants
 implicit none
 
 type(defect), pointer :: defectCurrent, defectPrev
@@ -284,7 +283,7 @@ end subroutine
 
 subroutine deallocateReactionList()
 use DerivedType
-use mod_srscd_constants
+use mod_constants
 implicit none
 
 type(reaction), pointer :: reactionCurrent, reactionPrev

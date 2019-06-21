@@ -59,7 +59,7 @@ end function
 !***************************************************************************************************
 
 double precision function TotalRateCheck()
-use mod_srscd_constants
+use mod_constants
 use DerivedType
 implicit none
 
@@ -146,7 +146,7 @@ end function
 
 double precision function totalRateCascade(CascadeCurrent)
 use DerivedType
-use mod_srscd_constants
+use mod_constants
 implicit none
 
 type(cascade), pointer :: CascadeCurrent

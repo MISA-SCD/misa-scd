@@ -1,5 +1,5 @@
 !****************************************************************************************
-!> Module mod_SRSCD_constants (list of globally shared variables and pointers)
+!> Module mod_constants (list of globally shared variables and pointers)
 !!
 !! This module contains the list of all globally shared variables. This includes:
 !! 1) Processor and mesh information (code backbone)
@@ -11,7 +11,7 @@
 !! 7) Other miscellaneous variables used for MPI, debugging, or postprocessing
 !****************************************************************************************
 
-module mod_srscd_constants
+module mod_constants
 
 use DerivedType
 implicit none

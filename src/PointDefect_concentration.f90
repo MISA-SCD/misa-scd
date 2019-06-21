@@ -5,7 +5,7 @@
 
 subroutine computeVconcent()
     use DerivedType
-    use mod_srscd_constants
+    use mod_constants
     implicit none
     include 'mpif.h'
 
@@ -88,7 +88,7 @@ end subroutine
 
 subroutine computeSIAconcent()
     use DerivedType
-    use mod_srscd_constants
+    use mod_constants
     implicit none
     include 'mpif.h'
 

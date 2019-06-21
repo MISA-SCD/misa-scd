@@ -1,4 +1,3 @@
-! $Header: /home/CVS//srscd/src/kMC_subroutines.f90,v 1.12 2015/10/19 19:43:22 aydunn Exp $
 !*****************************************************************************************
 !>double precision generate timestep - chooses a timestep using random number and Monte Carlo algorithm
 !!(this is a global timestep)
@@ -6,7 +5,7 @@
 
 double precision function GenerateTimestep()
 use DerivedType
-use mod_srscd_constants
+use mod_constants
 use randdp
 implicit none
 
@@ -35,7 +34,7 @@ end function
 
 subroutine chooseReaction(reactionCurrent, CascadeCurrent)
 use DerivedType
-use mod_srscd_constants
+use mod_constants
 use randdp
 implicit none
 
@@ -221,7 +220,7 @@ end subroutine
 
 subroutine chooseReactionSingleCell(reactionCurrent, CascadeCurrent, cell)
 use DerivedType
-use mod_srscd_constants
+use mod_constants
 use randdp
 implicit none
 
@@ -361,7 +360,7 @@ end subroutine
 !***************************************************************************************************
 
 subroutine updateDefectList(reactionCurrent, defectUpdateCurrent, CascadeCurrent, step)
-use mod_srscd_constants
+use mod_constants
 use DerivedType
 use ReactionRates
 use randdp
@@ -414,7 +413,7 @@ integer status(MPI_STATUS_SIZE)
 interface
 	subroutine findDefectInList(defectCurrent, defectPrev, products)
 	use DerivedType
-	use mod_srscd_constants
+	use mod_constants
 	type(defect), pointer :: defectCurrent, defectPrev
 	integer products(numSpecies)
 	end subroutine
@@ -2571,7 +2570,7 @@ end subroutine
 !*****************************************************************************************
 
 subroutine updateDefectListMultiple(reactionCurrent, defectUpdateCurrent, CascadeCurrent)
-use mod_srscd_constants
+use mod_constants
 use DerivedType
 use ReactionRates
 use randdp
@@ -2621,7 +2620,7 @@ integer status(MPI_STATUS_SIZE)
 interface
 	subroutine findDefectInList(defectCurrent, defectPrev, products)
 	use DerivedType
-	use mod_srscd_constants
+	use mod_constants
 	type(defect), pointer :: defectCurrent, defectPrev
 	integer products(numSpecies)
 	end subroutine
@@ -3785,7 +3784,7 @@ end subroutine
 
 subroutine updateReactionList(defectUpdate)
 use DerivedType
-use mod_srscd_constants
+use mod_constants
 use ReactionRates
 implicit none
 include 'mpif.h'

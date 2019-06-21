@@ -3,7 +3,7 @@
 !***************************************************************************************
 subroutine initializeVIdefect()
 use DerivedType
-use mod_srscd_constants
+use mod_constants
 use randdp
 implicit none
 include 'mpif.h'
@@ -99,7 +99,7 @@ end subroutine
 
 subroutine initializeDefectList()
 use DerivedType
-use mod_srscd_constants
+use mod_constants
 implicit none
 
 integer cell, i
@@ -183,7 +183,7 @@ end subroutine
 !*****************************************************************************************
 
 subroutine initializeRandomSeeds()
-use mod_srscd_constants
+use mod_constants
 use DerivedType
 use randdp
 implicit none
@@ -222,7 +222,7 @@ end subroutine
 !*****************************************************************************************
 
 subroutine initializeTotalRate()
-use mod_srscd_constants
+use mod_constants
 use DerivedType
 implicit none
 
@@ -271,7 +271,7 @@ end subroutine
 
 subroutine initializeReactionList()
 use DerivedType
-use mod_srscd_constants
+use mod_constants
 use ReactionRates
 implicit none
 
@@ -899,7 +899,7 @@ end subroutine
 !***************************************************************************************************
 
 subroutine initializeDebugRestart()
-use mod_srscd_constants
+use mod_constants
 use DerivedType
 implicit none
 
@@ -918,7 +918,7 @@ type(defect), pointer :: defectCurrent, defectPrev
 interface
 	subroutine findDefectInList(defectCurrent, defectPrev, products)
 	use DerivedType
-	use mod_srscd_constants
+	use mod_constants
 	type(defect), pointer :: defectCurrent, defectPrev
 	integer products(numSpecies)
 	end subroutine
@@ -1070,7 +1070,7 @@ end subroutine
 
 subroutine initializeBoundaryDefectList()
 use DerivedType
-use mod_srscd_constants
+use mod_constants
 use MeshReader
 implicit none
 
@@ -1186,7 +1186,7 @@ end subroutine
 
 subroutine initializeFineMesh(CascadeCurrent)
 use DerivedType
-use mod_srscd_constants
+use mod_constants
 use randdp
 use ReactionRates
 implicit none
@@ -1204,7 +1204,7 @@ integer reac
 interface
 	subroutine findDefectInList(defectCurrent, defectPrev, products)
 	use DerivedType
-	use mod_srscd_constants
+	use mod_constants
 	type(defect), pointer :: defectCurrent, defectPrev
 	integer products(numSpecies)
 	end subroutine
@@ -1498,7 +1498,7 @@ end subroutine
 !! sends it to readMeshUniform() or readMeshNonUniform().
 !!
 !! NOTE: although the mesh file and creation of mesh files and connectivity differ for uniform/nonuniform
-!! meshes, the format of the final global variable created (class mesh, myMesh, in mod_srscd_constants)
+!! meshes, the format of the final global variable created (class mesh, myMesh, in mod_constants)
 !! is the same for both readMeshUniform and readMeshNonUniform. Thus the rest of the program can use
 !! it either way.
 !!
@@ -1509,7 +1509,7 @@ end subroutine
 
 subroutine initializeMesh()
 use MeshReader
-use mod_srscd_constants
+use mod_constants
 use DerivedType
 implicit none
 
@@ -1617,7 +1617,7 @@ end subroutine
 
 subroutine annealInitialization()
 use DerivedType
-use mod_srscd_constants
+use mod_constants
 implicit none
 
 integer cell

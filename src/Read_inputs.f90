@@ -14,7 +14,7 @@
 
 subroutine readMaterialInput(filename)	!read FeCu_Defects.txt
 use DerivedType
-use mod_srscd_constants
+use mod_constants
 implicit none
 
 integer i, j, count
@@ -529,7 +529,7 @@ end subroutine
 !***************************************************************************************************
 
 subroutine readCascadeList()
-use mod_srscd_constants
+use mod_constants
 use DerivedType
 
 implicit none
@@ -678,7 +678,7 @@ end subroutine
 
 subroutine readImplantData()
 use DerivedType
-use mod_srscd_constants
+use mod_constants
 implicit none
 
 logical flag
@@ -762,7 +762,7 @@ end subroutine
 !***************************************************************************************************
 
 subroutine selectMaterialInputs()
-use mod_srscd_constants
+use mod_constants
 use DerivedType
 implicit none
 
@@ -932,7 +932,7 @@ end subroutine
 !***************************************************************************************************
 
 subroutine readParameters()
-use mod_srscd_constants
+use mod_constants
 use DerivedType
 implicit none
 
@@ -1271,7 +1271,7 @@ end subroutine
 
 subroutine readReactionListSizes(filename)	!< filename is 'xx_Defects.txt'
 use DerivedType
-use mod_srscd_constants
+use mod_constants
 implicit none
 
 integer i, j, count

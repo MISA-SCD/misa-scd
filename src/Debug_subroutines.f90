@@ -15,7 +15,7 @@
 !***************************************************************************************************
 
 subroutine DEBUGCheckForUnadmissible(reactionCurrent, step)
-use mod_srscd_constants
+use mod_constants
 use DerivedType
 implicit none
 
@@ -84,7 +84,7 @@ end subroutine
 !*****************************************************************************************
 
 subroutine DEBUGPrintDefectUpdate(defectUpdate)
-use mod_srscd_constants
+use mod_constants
 use DerivedType
 implicit none
 
@@ -114,7 +114,7 @@ end subroutine
 !*****************************************************************************************
 
 subroutine DEBUGPrintReactionList(step)
-use mod_srscd_constants
+use mod_constants
 use DerivedType
 implicit none
 
@@ -230,7 +230,7 @@ end subroutine
 
 subroutine DEBUGPrintDefects(step)
 use DerivedType
-use mod_srscd_constants
+use mod_constants
 implicit none
 
 integer i, j, k, count, step
@@ -319,7 +319,7 @@ end subroutine
 !***********************************************************************
 
 subroutine DEBUGPrintReaction(reactionCurrent, step)
-use mod_srscd_constants
+use mod_constants
 use DerivedType
 implicit none
 
@@ -365,7 +365,7 @@ end subroutine
 !> Subroutine debug print defectList - outputs defects in the coarse meshes of this processor.
 !***********************************************************************
 subroutine DEBUGPrintDefectList(step)
-	use mod_srscd_constants
+	use mod_constants
 	use DerivedType
 	implicit none
 

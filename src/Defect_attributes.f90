@@ -11,7 +11,7 @@
 
 double precision function findDiffusivity(matNum, defectType)
 use DerivedType
-use mod_srscd_constants
+use mod_constants
 implicit none
 
 integer defectType(numSpecies)
@@ -103,7 +103,7 @@ end function
 !*****************************************************************************************
 
 double precision function DiffusivityCompute(DefectType, functionType, numParameters, parameters,matNum)
-use mod_srscd_constants
+use mod_constants
 use DerivedType
 implicit none
 
@@ -153,7 +153,7 @@ end function
 !**********************************************************************************
 double precision function permanentCv(matNum)
 	use DerivedType
-	use mod_srscd_constants
+	use mod_constants
 	implicit none
 
 	double precision Kiv, diffV, diffI
@@ -188,7 +188,7 @@ end function
 
 double precision function findBinding(matNum, DefectType, productType)
 use DerivedType
-use mod_srscd_constants
+use mod_constants
 implicit none
 
 integer DefectType(numSpecies), productType(numSpecies)
@@ -291,7 +291,7 @@ end function
 
 
 double precision function BindingCompute(DefectType, product, functionType, numParameters, parameters)
-use mod_srscd_constants
+use mod_constants
 implicit none
 
 integer DefectType(numSpecies), product(numSpecies)
@@ -364,7 +364,7 @@ end function
 !*****************************************************************************************
 
 integer function findDefectSize(defectType)
-use mod_srscd_constants
+use mod_constants
 implicit none
 
 integer defectType(numSpecies), max, i
@@ -393,7 +393,7 @@ end function
 
 double precision function findStrainEnergy(defectType, cell)
 use DerivedType
-use mod_srscd_constants
+use mod_constants
 implicit none
 
 integer i, j, same
@@ -453,7 +453,7 @@ end function
 
 double precision function findStrainEnergyBoundary(defectType, dir, cell)
 use DerivedType
-use mod_srscd_constants
+use mod_constants
 implicit none
 
 integer i, j, same

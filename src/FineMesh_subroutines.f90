@@ -1,4 +1,3 @@
-! $Header: /home/CVS//srscd/src/FineMesh_subroutines.f90,v 1.3 2015/04/07 14:36:22 aydunn Exp $
 !***************************************************************************************************
 !
 !> Function releaseFineMeshDefects(CascadeCurrent) - releases fine mesh back to coarse mesh when cascade is annealed
@@ -19,7 +18,7 @@
 !***************************************************************************************************
 
 subroutine releaseFineMeshDefects(CascadeCurrent)
-use mod_srscd_constants
+use mod_constants
 use DerivedType
 implicit none
 
@@ -35,7 +34,7 @@ integer i, j, count
 interface
 	subroutine findDefectInList(defectCurrent, defectPrev, products)
 	use DerivedType
-	use mod_srscd_constants
+	use mod_constants
 	type(defect), pointer :: defectCurrent, defectPrev
 	integer products(numSpecies)
 	end subroutine
@@ -329,7 +328,7 @@ end subroutine
 
 integer function findNumDefectFine(CascadeCurrent, defectType, cellNumber)
 use DerivedType
-use mod_srscd_constants
+use mod_constants
 implicit none
 
 type(defect), pointer :: defectCurrent
@@ -373,7 +372,7 @@ end function
 !***************************************************************************************************
 
 integer function findNumDefectTotalFine(defectType, CascadeCurrent)
-use mod_srscd_constants
+use mod_constants
 use DerivedType
 implicit none
 
@@ -384,7 +383,7 @@ integer cell, count
 
 interface
 	integer function findNumDefectFine(CascadeCurrent, defectType, cell)
-	use mod_srscd_constants
+	use mod_constants
 	type(cascade), pointer :: CascadeCurrent
 	integer defectType(numSpecies), cell
 	end function
@@ -413,7 +412,7 @@ end function
 !***************************************************************************************************
 
 integer function findCellWithCoordinatesFineMesh(coordinates)
-use mod_srscd_constants
+use mod_constants
 use DerivedType
 
 implicit none
@@ -451,14 +450,14 @@ end function
 !!
 !! Chooses a cell number at random from the fine mesh. (Uniform distribution)
 !!
-!! Inputs: none (just mod_srscd_constants values such as the number of cells)
+!! Inputs: none (just mod_constants values such as the number of cells)
 !! Outputs: cell number
 !
 !***************************************************************************************************
 
 integer function chooseRandomCell()
 use randdp
-use mod_srscd_constants
+use mod_constants
 implicit none
 
 double precision r, a
@@ -497,7 +496,7 @@ end function
 subroutine countReactionsFine(reactionsFine)
 
 use DerivedType
-use mod_srscd_constants
+use mod_constants
 
 implicit none
 

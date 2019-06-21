@@ -13,7 +13,7 @@
 program MISASCD
 use DerivedType			!variable classes for MISASCD
 use MeshReader			!module created for reading in mesh
-use mod_srscd_constants		!module containing all global variables
+use mod_constants		!module containing all global variables
 use randdp				!module for double precision random number generation
 implicit none
 include 'mpif.h'

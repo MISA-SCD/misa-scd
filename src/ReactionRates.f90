@@ -38,7 +38,7 @@ contains
 !***************************************************************************************************
 
 subroutine addSingleDefectReactions(cell, defectType)
-use mod_srscd_constants
+use mod_constants
 use DerivedType
 implicit none
 
@@ -464,7 +464,7 @@ end subroutine
 !***************************************************************************************************
 
 subroutine addSingleDefectReactionsFine(cascadeID, cell, defectType)
-use mod_srscd_constants
+use mod_constants
 use DerivedType
 implicit none
 
@@ -903,7 +903,7 @@ end subroutine
 !***************************************************************************************************
 
 subroutine addMultiDefectReactions(cell, defectType1, defectType2)
-use mod_srscd_constants
+use mod_constants
 use DerivedType
 implicit none
 
@@ -1537,7 +1537,7 @@ end subroutine
 !***************************************************************************************************
 
 subroutine addMultiDefectReactionsFine(cascadeID, cell, defectType1, defectType2)
-use mod_srscd_constants
+use mod_constants
 use DerivedType
 implicit none
 
@@ -2111,7 +2111,7 @@ end subroutine
 !***********************************************************************************************
 
 subroutine addDiffusionReactions(cell1, cell2, proc1, proc2, dir, defectType)
-use mod_srscd_constants
+use mod_constants
 use DerivedType
 implicit none
 
@@ -2270,7 +2270,7 @@ end subroutine
 !***************************************************************************************************
 
 subroutine addDiffusionCoarseToFine(cell, proc, CascadeCurrent, defectType)
-use mod_srscd_constants
+use mod_constants
 use DerivedType
 implicit none
 
@@ -2283,7 +2283,7 @@ double precision reactionRate
 
 interface
 	integer function findNumDefectTotalFine(defectType, CascadeCurrent)
-	use mod_srscd_constants
+	use mod_constants
 	integer defectType(numSpecies)
 	type(cascade), pointer :: CascadeCurrent
 	end function
@@ -2450,7 +2450,7 @@ end subroutine
 !***************************************************************************************************
 
 subroutine addDiffusionReactionsFine(cascadeID, cell1, cell2, proc1, proc2, dir, defectType)
-use mod_srscd_constants
+use mod_constants
 use DerivedType
 implicit none
 
@@ -2614,7 +2614,7 @@ end subroutine
 !***************************************************************************************************
 
 double precision function findReactionRate(cell, reactionParameter)
-use mod_srscd_constants
+use mod_constants
 use DerivedType
 implicit none
 
@@ -2700,7 +2700,7 @@ end function
 !***************************************************************************************************
 
 !double precision function findReactionRateFine(cell, reactionParameter)
-!use mod_srscd_constants
+!use mod_constants
 !use DerivedType
 !implicit none
 
@@ -2759,7 +2759,7 @@ end function
 ! binding energy in this subroutine. The binding energy is read in from an input file.
 
 double precision function findReactionRateImpurity(defectType, cell, reactionParameter)
-use mod_srscd_constants
+use mod_constants
 use DerivedType
 implicit none
 
@@ -2850,7 +2850,7 @@ end function
 !! binding energy in this subroutine. The binding energy is read in from an input file.
 
 double precision function findReactionRateImpurityFine(CascadeCurrent, defectType, cell, reactionParameter)
-use mod_srscd_constants
+use mod_constants
 use DerivedType
 implicit none
 
@@ -2864,7 +2864,7 @@ integer findDefectSize, findNumDefect, matNum, grainNum
 
 interface 
 	integer function findNumDefectFine(CascadeCurrent, defectType, cell)
-	use mod_srscd_constants
+	use mod_constants
 	type(cascade), pointer :: CascadeCurrent
 	integer defectType(numSpecies), cell
 	end function
@@ -2935,7 +2935,7 @@ end function
 !**************************************************************************************************************
 
 double precision function findReactionRateDissoc(defectType, products, cell, reactionParameter)
-use mod_srscd_constants
+use mod_constants
 use DerivedType
 implicit none
 
@@ -2996,7 +2996,7 @@ end function
 !! Cascade derived type is used to find the number of defects in the volume element (it is required in a later subroutine)
 
 double precision function findReactionRateDissocFine(CascadeCurrent, defectType, products, cell, reactionParameter)
-use mod_srscd_constants
+use mod_constants
 use DerivedType
 implicit none
 
@@ -3010,7 +3010,7 @@ integer findDefectSize, matNum, grainNum
 
 interface
 	integer function findNumDefectFine(CascadeCurrent, defectType, cell)
-	use mod_srscd_constants
+	use mod_constants
 	integer cell, defectType(numSpecies)
 	type(cascade), pointer :: CascadeCurrent
 	end function
@@ -3058,7 +3058,7 @@ end function
 !! function type associated with it, that function type is assigned in the input file.
 
 double precision function findReactionRateSink(defectType, cell, reactionParameter)
-use mod_srscd_constants
+use mod_constants
 use DerivedType
 implicit none
 
@@ -3115,7 +3115,7 @@ end function
 !! function type associated with it, that function type is assigned in the input file.
 
 double precision function findReactionRateSinkFine(CascadeCurrent, defectType, cell, reactionParameter)
-use mod_srscd_constants
+use mod_constants
 use DerivedType
 implicit none
 
@@ -3127,7 +3127,7 @@ double precision findDiffusivity
 
 interface
 	integer function findNumDefectFine(CascadeCurrent, defectType, cell)
-	use mod_srscd_constants
+	use mod_constants
 	integer cell, defectType(numSpecies)
 	type(cascade), pointer :: CascadeCurrent
 	end function
@@ -3173,7 +3173,7 @@ end function
 !! reaction rates for clustering between defects depending on their geometry and diffusivity
 
 double precision function findReactionRateMultiple(defectType1, defectType2, cell, reactionParameter)
-use mod_srscd_constants
+use mod_constants
 use DerivedType
 implicit none
 
@@ -3330,7 +3330,7 @@ end function
 !! reaction rates for clustering between defects depending on their geometry and diffusivity
 
 double precision function findReactionRateMultipleFine(CascadeCurrent, defectType1, defectType2, cell, reactionParameter)
-use mod_srscd_constants
+use mod_constants
 use DerivedType
 implicit none
 
@@ -3344,7 +3344,7 @@ integer matNum, grainNum
 
 interface
 	integer function findNumDefectFine(CascadeCurrent, defectType, cell)
-	use mod_srscd_constants
+	use mod_constants
 	integer cell, defectType(numSpecies)
 	type(cascade), pointer :: CascadeCurrent
 	end function
@@ -3460,7 +3460,7 @@ end function
 !! version of Fick's law to find rates (using first derivative).
 
 double precision function findReactionRateDiff(defectType, cell1, proc1, cell2, proc2, dir, reactionParameter)
-use mod_srscd_constants
+use mod_constants
 use DerivedType
 implicit none
 
@@ -3703,7 +3703,7 @@ end function
 !! distance according to the formula in Dunn et al. (Computational Materials Science 2015)
 
 double precision function findReactionRateCoarseToFine(defectType, cell, proc, numDefectsFine, reactionParameter)
-use mod_srscd_constants
+use mod_constants
 use DerivedType
 implicit none
 
@@ -3795,7 +3795,7 @@ end function
 !! from fine mesh to coarse mesh.
 
 double precision function findReactionRateDiffFine(CascadeCurrent, defectType, cell1, proc1, cell2, proc2, dir, reactionParameter)
-use mod_srscd_constants
+use mod_constants
 use DerivedType
 implicit none
 
@@ -3809,7 +3809,7 @@ double precision findDiffusivity
 
 interface
 	integer function findNumDefectFine(CascadeCurrent, defectType, cell)
-	use mod_srscd_constants
+	use mod_constants
 	type(cascade), pointer :: CascadeCurrent
 	integer cell, defectType(numSpecies)
 	end function
@@ -3941,7 +3941,7 @@ end function
 !***************************************************************************************************
 
 subroutine findReactionInList(reactionCurrent, reactionPrev, cell, reactants, products, numReactants, numProducts)
-use mod_srscd_constants
+use mod_constants
 use DerivedType
 implicit none
 
@@ -4006,7 +4006,7 @@ end subroutine
 !!Outputs: reactionCurrent, reactionPrev (pointers)
 
 subroutine findReactionInListDiff(reactionCurrent, reactionPrev, reactants, cell1, cell2, proc1, proc2)
-use mod_srscd_constants
+use mod_constants
 use DerivedType
 implicit none
 
@@ -4068,7 +4068,7 @@ end subroutine
 !!Outputs: reactionCurrent, reactionPrev (pointers)
 
 subroutine findReactionInListMultiple(reactionCurrent, reactionPrev, cell, reactants, products, numReactants, numProducts)
-use mod_srscd_constants
+use mod_constants
 use DerivedType
 implicit none
 
@@ -4177,7 +4177,7 @@ end subroutine
 
 subroutine defectCombinationRules(products, product2, defectTemp, isCombined)
 use derivedType
-use mod_srscd_constants
+use mod_constants
 implicit none
 
 integer products(numSpecies), product2(numSpecies)
@@ -4288,7 +4288,7 @@ end subroutine
 !***************************************************************************************************
 
 subroutine checkReactionLegality(numProducts, products, isLegal)
-use mod_srscd_constants
+use mod_constants
 use DerivedType
 implicit none
 
@@ -4350,7 +4350,7 @@ end subroutine
 
 double precision function findDPARateLocal(zCoord)
 use DerivedType
-use mod_srscd_constants
+use mod_constants
 implicit none
 
 double precision zCoord, xi
@@ -4415,7 +4415,7 @@ end function
 
 double precision function findHeImplantRateLocal(zCoord)
 use DerivedType
-use mod_srscd_constants
+use mod_constants
 implicit none
 
 double precision zCoord, xi

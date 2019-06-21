@@ -10,7 +10,7 @@
 subroutine chooseCascade(CascadeTemp)
 use DerivedType
 use randdp
-use mod_srscd_constants
+use mod_constants
 implicit none
 
 type(cascadeEvent), pointer :: cascadeTemp
@@ -40,7 +40,7 @@ end subroutine
 !***************************************************************************************************
 
 integer function CascadeCount()
-use mod_srscd_constants
+use mod_constants
 use DerivedType
 implicit none
 
@@ -74,7 +74,7 @@ end function
 
 subroutine addCascadeExplicit(reactionCurrent)
 use DerivedType
-use mod_srscd_constants
+use mod_constants
 use randdp
 implicit none
 
@@ -130,7 +130,7 @@ end subroutine
 !***************************************************************************************************
 
 logical function cascadeMixingCheck()
-use mod_srscd_constants
+use mod_constants
 use randdp
 implicit none
 
@@ -182,7 +182,7 @@ end function
 
 subroutine cascadeUpdateStep(cascadeCell)
 use DerivedType
-use mod_srscd_constants
+use mod_constants
 use ReactionRates
 implicit none
 include 'mpif.h'
@@ -202,7 +202,7 @@ integer localGrainID, neighborGrainID
 
 interface
 	subroutine findDefectInList(defectCurrent, defectPrev, defectType)
-	use mod_srscd_constants
+	use mod_constants
 	type(defect), pointer :: defectCurrent, defectPrev
 	integer defectType(numSpecies)
 	end subroutine
@@ -604,7 +604,7 @@ end subroutine
 !***************************************************************************************************
 
 subroutine createCascadeConnectivity()
-use mod_srscd_constants
+use mod_constants
 
 implicit none
 

@@ -7,7 +7,7 @@
 !***************************************************************************************************
 
 subroutine outputDefects(elapsedTime,step)
-use mod_srscd_constants
+use mod_constants
 use DerivedType
 implicit none
 include 'mpif.h'
@@ -152,7 +152,7 @@ end subroutine
 
 subroutine outputDefectsTotal(elapsedTime, step, outputCounter)
 use DerivedType
-use mod_srscd_constants
+use mod_constants
 implicit none
 
 include 'mpif.h'
@@ -194,7 +194,7 @@ double precision VRetained, VAnnihilated
 
 interface
 	subroutine findDefectInList(defectCurrent, defectPrev, products)
-	use mod_srscd_constants
+	use mod_constants
 	type(defect), pointer :: defectCurrent, defectPrev
 	integer products(numSpecies)
 	end subroutine
@@ -253,7 +253,7 @@ if(myProc%taskid==MASTER) then
 						if(defectCurrent%defectType(1)==1 .AND. defectCurrent%defectType(2)==0 .AND. &
 								defectCurrent%defectType(3)==0 .AND. defectCurrent%defectType(4)==0) then
 							CuNum = CuNum + defectCurrent%num
-							defectCurrentList%num = -100
+							defectCurrentList%num = 0
 						else
 							defectCurrentList%num=defectCurrentList%num+defectCurrent%num
 						end if
@@ -271,9 +271,9 @@ if(myProc%taskid==MASTER) then
 						if(defectCurrent%defectType(1)==1 .AND. defectCurrent%defectType(2)==0 .AND. &
 								defectCurrent%defectType(3)==0 .AND. defectCurrent%defectType(4)==0) then
 							CuNum = defectCurrent%num
-							defectCurrentList%num = -100
+							defectCurrentList%num = 0
 						else
-							defectCurrentList%num=defectCurrentList%num
+							defectCurrentList%num=defectCurrent%num
 						end if
 						
 						do j=1,numSpecies
@@ -297,9 +297,9 @@ if(myProc%taskid==MASTER) then
 					if(defectCurrent%defectType(1)==1 .AND. defectCurrent%defectType(2)==0 .AND. &
 							defectCurrent%defectType(3)==0 .AND. defectCurrent%defectType(4)==0) then
 						CuNum = defectCurrent%num
-						defectCurrentList%num = -100
+						defectCurrentList%num = 0
 					else
-						defectCurrentList%num=defectCurrentList%num
+						defectCurrentList%num=defectCurrent%num
 					end if
 					
 					do j=1,numSpecies
@@ -358,7 +358,7 @@ if(myProc%taskid==MASTER) then
 					if(products(1)==1 .AND. products(2)==0 .AND. &
 							products(3)==0 .AND. products(4)==0) then
 						CuNum = CuNum + defectsRecv(numSpecies+1,j)
-						defectCurrentList%num = -100
+						defectCurrentList%num = 0
 					else
 						defectCurrentList%num=defectCurrentList%num+defectsRecv(numSpecies+1,j)
 					end if
@@ -376,7 +376,7 @@ if(myProc%taskid==MASTER) then
 					if(products(1)==1 .AND. products(2)==0 .AND. &
 							products(3)==0 .AND. products(4)==0) then
 						CuNum = defectsRecv(numSpecies+1,j)
-						defectCurrentList%num = -100
+						defectCurrentList%num = 0
 					else
 						defectCurrentList%num=defectsRecv(numSpecies+1,j)
 					end if
@@ -402,7 +402,7 @@ if(myProc%taskid==MASTER) then
 				if(products(1)==1 .AND. products(2)==0 .AND. &
 						products(3)==0 .AND. products(4)==0) then
 					CuNum = defectsRecv(numSpecies+1,j)
-					defectCurrentList%num = -100
+					defectCurrentList%num = 0
 				else
 					defectCurrentList%num=defectsRecv(numSpecies+1,j)
 				end if
@@ -734,7 +734,7 @@ end subroutine
 
 subroutine outputDefectsBoundary(elapsedTime, step)
 use DerivedType
-use mod_srscd_constants
+use mod_constants
 implicit none
 
 include 'mpif.h'
@@ -765,7 +765,7 @@ integer totalVoid, totalLoop, VoidNum
 
 interface
 	subroutine findDefectInList(defectCurrent, defectPrev, products)
-	use mod_srscd_constants
+	use mod_constants
 	type(defect), pointer :: defectCurrent, defectPrev
 	integer products(numSpecies)
 	end subroutine
@@ -1246,7 +1246,7 @@ end subroutine
 
 subroutine outputDefectsProfile(sim)
 use DerivedType
-use mod_srscd_constants
+use mod_constants
 implicit none
 
 include 'mpif.h'
@@ -1270,7 +1270,7 @@ integer, allocatable :: buffer(:,:)
 
 interface
 	subroutine findDefectInList(defectCurrent, defectPrev, products)
-	use mod_srscd_constants
+	use mod_constants
 	type(defect), pointer :: defectCurrent, defectPrev
 	integer products(numSpecies)
 	end subroutine
@@ -1625,7 +1625,7 @@ end subroutine
 !***********************************************************************
 
 subroutine outputDefectsXYZ(elapsedTime,step)
-use mod_srscd_constants
+use mod_constants
 use DerivedType
 implicit none
 include 'mpif.h'
@@ -1763,7 +1763,7 @@ end subroutine
 !***********************************************************************
 
 subroutine outputDefectsVTK(fileNumber)	!fileNumber = outputCounter
-use mod_srscd_constants
+use mod_constants
 use DerivedType
 implicit none
 include 'mpif.h'
@@ -2019,7 +2019,7 @@ end subroutine
 !****************************************************************************************************
 
 subroutine outputRates(elapsedTime, step)
-use mod_srscd_constants
+use mod_constants
 use DerivedType
 implicit none
 
@@ -2067,7 +2067,7 @@ end subroutine
 !****************************************************************************************************
 
 subroutine outputDebugRestart(fileNumber, elapsedTime)	!fileNumber = outputCounter
-use mod_srscd_constants
+use mod_constants
 use DerivedType
 implicit none
 include 'mpif.h'
@@ -2264,7 +2264,7 @@ end subroutine
 
 double precision function computeVConc()
 use DerivedType
-use mod_srscd_constants
+use mod_constants
 implicit none
 
 include 'mpif.h'
@@ -2294,7 +2294,7 @@ integer totalVoid, totalLoop, VoidNum
 
 interface
 	subroutine findDefectInList(defectCurrent, defectPrev, products)
-	use mod_srscd_constants
+	use mod_constants
 	type(defect), pointer :: defectCurrent, defectPrev
 	integer products(numSpecies)
 	end subroutine
@@ -2717,7 +2717,7 @@ end function
 
 double precision function computeIConc()
 use DerivedType
-use mod_srscd_constants
+use mod_constants
 implicit none
 
 include 'mpif.h'
@@ -2747,7 +2747,7 @@ integer totalVoid, totalLoop, VoidNum
 
 interface
 	subroutine findDefectInList(defectCurrent, defectPrev, products)
-	use mod_srscd_constants
+	use mod_constants
 	type(defect), pointer :: defectCurrent, defectPrev
 	integer products(numSpecies)
 	end subroutine

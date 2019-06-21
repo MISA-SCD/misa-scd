@@ -17,14 +17,14 @@ SYSLIB =
 TARGET = misascd
 
 # 
-$(TARGET): mod_derivedtypes.o mod_srscd_constants.o  dprand.o Debug_subroutines.o Defect_attributes.o MeshReader.o ReactionRates.o Initialization_subroutines.o Read_inputs.o Cascade_implantation.o MISASCD_par.o kMC_subroutines.o Deallocate_Lists.o FineMesh_subroutines.o CoarseMesh_subroutines.o Misc_functions.o StrainSubroutines.o Postprocessing_srscd.o PointDefect_concentration.o
+$(TARGET): mod_derivedtypes.o mod_constants.o  dprand.o Debug_subroutines.o Defect_attributes.o MeshReader.o ReactionRates.o Initialization_subroutines.o Read_inputs.o Cascade_implantation.o MISASCD_par.o kMC_subroutines.o Deallocate_Lists.o FineMesh_subroutines.o CoarseMesh_subroutines.o Misc_functions.o StrainSubroutines.o Postprocessing_srscd.o PointDefect_concentration.o
 		$(LINK) -o $(TARGET) *.o
 
 #
 mod_derivedtypes.o: mod_derivedtypes.f90
 		$(FF) -c mod_derivedtypes.f90
-mod_srscd_constants.o: mod_srscd_constants.f90
-	$(FF) -c mod_srscd_constants.f90
+mod_constants.o: mod_constants.f90
+	$(FF) -c mod_constants.f90
 #
 dprand.o: dprand.f90
 	$(FF) -c dprand.f90

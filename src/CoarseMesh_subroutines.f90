@@ -11,7 +11,7 @@
 
 subroutine findDefectInList(defectCurrent, defectPrev, products)
 use DerivedType
-use mod_srscd_constants
+use mod_constants
 implicit none
 
 type(defect), pointer :: defectCurrent, defectPrev
@@ -59,7 +59,7 @@ end subroutine
 
 integer function findNumDefect(defectType, cellNumber)
 use DerivedType
-use mod_srscd_constants
+use mod_constants
 implicit none
 
 type(defect), pointer :: defectCurrent
@@ -98,7 +98,7 @@ end function
 
 integer function findNumDefectBoundary(defectType, cellNumber, dir)
 use DerivedType
-use mod_srscd_constants
+use mod_constants
 implicit none
 
 type(defect), pointer :: defectCurrent
@@ -146,7 +146,7 @@ end function
 subroutine countReactionsCoarse(reactionsCoarse)
 
 use DerivedType
-use mod_srscd_constants
+use mod_constants
 
 implicit none
 
@@ -196,7 +196,7 @@ end subroutine
 subroutine updateImplantRateSingleCell(cell)
 use ReactionRates
 use DerivedType
-use mod_srscd_constants
+use mod_constants
 implicit none
 
 integer cell, reac
@@ -277,7 +277,7 @@ end subroutine
 !***************************************************************************************************
 
 subroutine resetReactionListSingleCell(cell)
-use mod_srscd_constants
+use mod_constants
 use DerivedType
 use ReactionRates
 implicit none
@@ -438,7 +438,7 @@ end subroutine
 
 subroutine clearReactionListSingleCell(cellNumber)
 use DerivedType
-use mod_srscd_constants
+use mod_constants
 implicit none
 
 integer cellNumber

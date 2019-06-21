@@ -20,7 +20,7 @@
 !**************************************************************************************************
 
 module MeshReader
-use mod_srscd_constants
+use mod_constants
 use DerivedType
 implicit none
 
@@ -43,7 +43,7 @@ contains
 !***************************************************************************************************
 
 subroutine readMeshUniform(filename)
-use mod_srscd_constants
+use mod_constants
 use DerivedType
 
 implicit none
@@ -531,7 +531,7 @@ end subroutine
 !***************************************************************************************************
 
 subroutine initialMeshUniform(filename)
-use mod_srscd_constants
+use mod_constants
 use DerivedType
 
 implicit none
@@ -1029,7 +1029,7 @@ end subroutine
 
 subroutine createConnectLocalPeriodicUniform(length)
 use DerivedType
-use mod_srscd_constants
+use mod_constants
 
 implicit none
 include 'mpif.h'
@@ -1649,7 +1649,7 @@ end subroutine
 
 integer function findgNeighborPeriodic(globalID, dir)
 use DerivedType
-use mod_srscd_constants
+use mod_constants
 implicit none
 
 integer globalID, dir, neighborID
@@ -1709,7 +1709,7 @@ end function
 
 integer function findgNeighborFreeSurf(globalID, dir)
 use DerivedType
-use mod_srscd_constants
+use mod_constants
 implicit none
 
 integer globalID, dir, neighborID
@@ -1781,7 +1781,7 @@ end function
 
 !main subroutine that creates mesh (non-uniform cubic)
 subroutine readMeshNonUniform(filename)
-use mod_srscd_constants
+use mod_constants
 use DerivedType
 
 implicit none
@@ -2471,7 +2471,7 @@ end subroutine
 
 subroutine createConnectLocalNonUniform(globalMeshConnect, globalMeshCoord, localElem, procCoordList)
 use DerivedType
-use mod_srscd_constants
+use mod_constants
 implicit none
 
 include 'mpif.h'
@@ -2591,7 +2591,7 @@ end function
 
 integer function findLocalCell(coord)
 use DerivedType
-use mod_srscd_constants
+use mod_constants
 implicit none
 
 double precision coord(3)
@@ -2624,7 +2624,7 @@ end function
 
 subroutine createProcCoordList(procCoordList, procDivision)
 use DerivedType
-use mod_srscd_constants
+use mod_constants
 implicit none
 
 integer procDivision(3), i
@@ -2666,7 +2666,7 @@ end subroutine
 
 integer function findNeighborProc(globalMeshCoord,procCoordList,elem)
 use DerivedType
-use mod_srscd_constants
+use mod_constants
 implicit none
 
 double precision, allocatable :: globalMeshCoord(:,:)

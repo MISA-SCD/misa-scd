@@ -10,7 +10,7 @@
 
 subroutine readDipoleTensors(filename)
 use DerivedType
-use mod_srscd_constants
+use mod_constants
 implicit none
 
 character*20 char
@@ -105,7 +105,7 @@ end subroutine
 
 double precision function calculateDeltaEm(cellNumber, defectType)
 use DerivedType
-use mod_srscd_constants
+use mod_constants
 implicit none
 
 double precision deltaE_equilib, deltaE_saddle
@@ -178,7 +178,7 @@ end function
 
 double precision function findDiffusivityStrain(matNum, DefectType, cellNumber)
 use DerivedType
-use mod_srscd_constants
+use mod_constants
 implicit none
 
 integer defectType(numSpecies)
@@ -265,7 +265,7 @@ end function
 !*****************************************************************************************
 
 double precision function DiffusivityComputeStrain(DefectType, functionType, numParameters, parameters, cellNumber)
-use mod_srscd_constants
+use mod_constants
 implicit none
 
 integer DefectType(numSpecies)
