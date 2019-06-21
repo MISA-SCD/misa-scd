@@ -6,4 +6,4 @@ cmake-build-debug/
 
 ## .o
 src/*o
-src/srscd
+src/misascd

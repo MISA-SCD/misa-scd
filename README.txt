@@ -1,8 +1,7 @@
-# $Header: /home/CVS//srscd/src/README.txt,v 1.2 2015/02/17 23:15:38 rdingre Exp $
-README file for Parallel Spatially Resolved Stochastic Cluster Dynamics (SRSCD_par)
+README file for Parallel Spatially Resolved Stochastic Cluster Dynamics (MISA-SCD)
 
-Aaron Dunn
-email: aydunn@sandia.gov, adunn32@me.gatech.edu
+Chendandan
+email: chendandan@xs.ustb.edu.cn
 
 ******************************************************************************************
 Compiling instructions
@@ -14,10 +13,10 @@ cd src
 make clean
 make
 
-To run, such as Bulk_Implantation_Cascade, use the following commands:
+To run, such as Bulk_CuPrecipitate_Cascade, use the following commands:
 
-cd ../tests/Bulk_Implantation_Cascade
-mpirun -n 8 ../../src/srscd parameters.txt
+cd ../tests/Bulk_CuPrecipitate_Cascade
+mpirun -n 8 ../../src/misascd parameters.txt
 
 ******************************************************************************************
 Description of parameters.txt
@@ -91,6 +90,10 @@ use in simulating ion-irradiated thin foils.
 This option toggles the ability of grain boundaries that are not explicitly modeled to remove
 migrating defects from the simulation.
 
+9) pointDefect ('yes' or 'no')
+
+This option toggles the mobility of defect clusters.
+
 All other parameters are explained in the comments of the parameters.txt file
 
 !*****************************************************************************************
@@ -99,7 +102,7 @@ All other parameters are explained in the comments of the parameters.txt file
 
 The simulation outputs using a logarithmic timescale: output is generated at:
 
-time=totalTime/200*2^n, with n between 0 and 7, as well as when time=totalTime, for a total
+time=totalTime/200*2^n, as well as when time=totalTime, for a total
 of 8 output points per simulation.
 
 A new output file is created for each repetition of the simulation. SRSCD has an option
@@ -113,13 +116,13 @@ totdat_x.out
 (here, 'x' refers to the simulation number)
 
 postpr_x.out contains user-defined post-processing information on the number and type 
-of defects or reactions in the system (hard-coded into SRSCD)
+of defects or reactions in the system
 
 rawdat_x.out contains a list of all volume elements in the system as well as all defects
 present in each volume element. The current method for identifying defect types is as 
 follows:
 
-NumHe NumV NumSIA NumSIA_immobile NumDefects
+NumCu NumV NumSIA NumSIA_immobile NumDefects
 
 For example, the output:
 

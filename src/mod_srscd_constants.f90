@@ -146,16 +146,22 @@ character*20 meshingType				!<(adaptive or nonAdaptive), used to determine wheth
 character*20 implantScheme				!<(MonteCarlo or explicit), used to determine if cascades are implanted through Monte Carlo algorithm or explicitly
 character*20 implantDist				!<(Uniform or NonUniform), used to determine if defects are implanted uniformly or if DPA rate / He implant rate are given for each volume element
 character*20 polycrystal				!<(yes or no), used to identify whether or not we have multiple grains in our crystal
-character*20 vtkToggle					!<(yes or no), used to toggle whether we want vtk output at each time increment (log scale)
-character*20 outputDebug				!<(yes or no), used to toggle whether we want to output a debug restart file at each time increment
 character*20 singleElemKMC				!<(yes or no), used to toggle whether we are making one kMC choice per volume element or one kMC choice for the whole processors
 character*20 sinkEffSearch				!<(yes or no), used to toggle search for effective sink efficiency
 character*20 strainField				!<(yes or no), used to toggle whether we are simulating diffusion in a strain field	
+
+!Output  parameters
 character*20 postprToggle				!<(yes or no), used to toggle whether we output the postpr.out data file
 character*20 totdatToggle				!<(yes or no), used to toggle whether we output the totdat.out data file
 character*20 rawdatToggle				!<(yes or no), used to toggle whether we output the rawdat.out data file
-character*20 xyzToggle					!<(yes or no), used to toggle whether we output an .xyz data file (for visualization)	
-character*20 profileToggle				!<(yes or no), used to toggle whether we output a DefectProfile.out data file		
+character*20 vtkToggle					!<(yes or no), used to toggle whether we want vtk output at each time increment (log scale)
+character*20 xyzToggle					!<(yes or no), used to toggle whether we output an .xyz data file (for visualization)
+character*20 outputDebug				!<(yes or no), used to toggle whether we want to output a debug restart file at each time increment
+character*20 profileToggle				!<(yes or no), used to toggle whether we output a DefectProfile.out data file
+integer minCuCluster                    !<Only n>minVoid nCu clusters are used for calculating the average cluster radius and number density
+integer minVoid                         !<Only n>minLoop nV clusters are used for calculating the average cluster radius and number density
+integer minLoop                         !<Only n>minLoop nSIA clusters are used for calculating the average cluster radius and number density
+integer minCuV                          !<Only (n+m)>minLoop nCumV clusters are used for calculating the average cluster radius and number density
 
 !(hard-coded) constants used for clustering rates
 double precision omega					!<Geometric constant for 3D spherical clustering (see Dunn et al. JNM 2013)

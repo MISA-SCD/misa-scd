@@ -150,7 +150,7 @@ end subroutine
 !
 !***********************************************************************
 
-subroutine outputDefectsTotal(elapsedTime, step)
+subroutine outputDefectsTotal(elapsedTime, step, outputCounter)
 use DerivedType
 use mod_srscd_constants
 implicit none
@@ -166,7 +166,7 @@ double precision, allocatable :: defectsRecv(:,:)
 double precision, allocatable :: defectsSend(:,:)
 !Simulation variables passed by main program
 double precision elapsedTime
-integer step
+integer step, outputCounter
 
 !variables for computation statistics
 integer reactionsCoarse, reactionsFine
@@ -175,10 +175,22 @@ integer reactionsCoarse, reactionsFine
 integer numAnnihilateTotal
 
 !Variables for defect counting and concentration
-!integer VNum, SIANum, LoopSize(3), totalVac, totalSIA, HeNum, totalHe
-integer VClusterNum, SIAClusterNum, LoopSize(3), totalVac, totalSIA, CuClusterNum, totalCu
-double precision VMeanRadius, VoidMeanRadius, SIAMeanRadius, LoopMeanRadius, CuMeanRadius, CuVoidMeanRadius
-integer totalVoid, totalLoop, VoidNum, CuVoidNum, totalCuVoid
+!number of point defects
+integer VNum, SIANum
+double precision CuNum
+!number of vacancies and SIAs in the system
+integer totalVac, totalSIA
+!Average radius of clusters
+double precision CuAverRadius,VoidAverRadius, LoopAverRadius, CuVAverRadius
+!Average size of clusters
+double precision CuAverSize, VoidAverSize, LoopAverSize, CuVAverSize
+!number of clusters
+integer CuClusterNum, VoidNum, LoopNum, CuVNum
+!number of point defects in clusters
+integer totalCuCluster, totalVoid, totalLoop, totalCuV
+
+double precision CuCon, VoidCon, LoopCon, CuVCon
+double precision VRetained, VAnnihilated
 
 interface
 	subroutine findDefectInList(defectCurrent, defectPrev, products)
@@ -203,10 +215,9 @@ outputDefectList%num=0
 call MPI_ALLREDUCE(numAnnihilate,numAnnihilateTotal,1,MPI_INTEGER,MPI_SUM,MPI_COMM_WORLD,ierr)
 
 if(myProc%taskid==MASTER) then
-	!first calculate DPA using MPI_ALLREDUCE
-    write(83,*) 'elapsedTime', elapsedTime, '  step', step, 'dpa', DPA
-    write(84,*) 'elapsedTime', elapsedTime, '  step', step, 'dpa', DPA
-	
+
+	CuNum = 0d0
+
 	!Create list of defects in processor 0
 	do i=1,numCells
 		
@@ -239,9 +250,14 @@ if(myProc%taskid==MASTER) then
 					if(same==numSpecies) then	
 					
 						!if the defect is already present in the list
-					
-						defectCurrentList%num=defectCurrentList%num+defectCurrent%num
-					
+						if(defectCurrent%defectType(1)==1 .AND. defectCurrent%defectType(2)==0 .AND. &
+								defectCurrent%defectType(3)==0 .AND. defectCurrent%defectType(4)==0) then
+							CuNum = CuNum + defectCurrent%num
+							defectCurrentList%num = -100
+						else
+							defectCurrentList%num=defectCurrentList%num+defectCurrent%num
+						end if
+
 					else		
 						
 						!if the defect is to be inserted in the list
@@ -252,7 +268,13 @@ if(myProc%taskid==MASTER) then
 						defectPrevList=>defectPrevList%next
 						allocate(defectPrevList%defectType(numSpecies))
 						defectPrevList%cellNumber=0	!no need for cell numbers in outputDefectList
-						defectPrevList%num=defectCurrent%num
+						if(defectCurrent%defectType(1)==1 .AND. defectCurrent%defectType(2)==0 .AND. &
+								defectCurrent%defectType(3)==0 .AND. defectCurrent%defectType(4)==0) then
+							CuNum = defectCurrent%num
+							defectCurrentList%num = -100
+						else
+							defectCurrentList%num=defectCurrentList%num
+						end if
 						
 						do j=1,numSpecies
 							defectPrevList%defectType(j)=defectCurrent%defectType(j)
@@ -272,7 +294,13 @@ if(myProc%taskid==MASTER) then
 					defectPrevList=>defectPrevList%next
 					allocate(defectPrevList%defectType(numSpecies))
 					defectPrevList%cellNumber=0 !no need for cell numbers in outputDefectList
-					defectPrevList%num=defectCurrent%num
+					if(defectCurrent%defectType(1)==1 .AND. defectCurrent%defectType(2)==0 .AND. &
+							defectCurrent%defectType(3)==0 .AND. defectCurrent%defectType(4)==0) then
+						CuNum = defectCurrent%num
+						defectCurrentList%num = -100
+					else
+						defectCurrentList%num=defectCurrentList%num
+					end if
 					
 					do j=1,numSpecies
 						defectPrevList%defectType(j)=defectCurrent%defectType(j)
@@ -298,16 +326,12 @@ if(myProc%taskid==MASTER) then
 	do i=1,myProc%numtasks-1
 	
 		call MPI_RECV(numDefectsRecv,1,MPI_INTEGER,i,399,MPI_COMM_WORLD,status,ierr)
-		
-!		write(*,*) 'recieving ', numDefectsRecv, 'defects'
-        !2019.05.14 add
+
 		allocate(defectsRecv(numSpecies+1,numDefectsRecv))
         call MPI_RECV(defectsRecv,(numSpecies+1)*numDefectsRecv,MPI_DOUBLE_PRECISION,i,400,MPI_COMM_WORLD,status,ierr)
 
 		do j=1,numDefectsRecv
-			!call MPI_RECV(defectsRecv,numSpecies+1,MPI_DOUBLE_PRECISION,i,400,MPI_COMM_WORLD,status,ierr)
-!			write(*,*) 'recieved defect ', j
-			
+
 			do k=1,numSpecies
 				products(k)=defectsRecv(k,j)
 			end do
@@ -331,9 +355,14 @@ if(myProc%taskid==MASTER) then
 				if(same==numSpecies) then	
 				
 					!if the defect is already present in the list
-				
-					defectCurrentList%num=defectCurrentList%num+defectsRecv(numSpecies+1,j)
-				
+					if(products(1)==1 .AND. products(2)==0 .AND. &
+							products(3)==0 .AND. products(4)==0) then
+						CuNum = CuNum + defectsRecv(numSpecies+1,j)
+						defectCurrentList%num = -100
+					else
+						defectCurrentList%num=defectCurrentList%num+defectsRecv(numSpecies+1,j)
+					end if
+
 				else		
 					
 					!if the defect is to be inserted in the list
@@ -344,7 +373,13 @@ if(myProc%taskid==MASTER) then
 					defectPrevList=>defectPrevList%next
 					allocate(defectPrevList%defectType(numSpecies))
 					defectPrevList%cellNumber=0	!no need for cell numbers in outputDefectList
-					defectPrevList%num=defectsRecv(numSpecies+1,j)
+					if(products(1)==1 .AND. products(2)==0 .AND. &
+							products(3)==0 .AND. products(4)==0) then
+						CuNum = defectsRecv(numSpecies+1,j)
+						defectCurrentList%num = -100
+					else
+						defectCurrentList%num=defectsRecv(numSpecies+1,j)
+					end if
 					
 					do k=1,numSpecies
 						defectPrevList%defectType(k)=products(k)
@@ -364,7 +399,13 @@ if(myProc%taskid==MASTER) then
 				defectPrevList=>defectPrevList%next
 				allocate(defectPrevList%defectType(numSpecies))
 				defectPrevList%cellNumber=0 !no need for cell numbers in outputDefectList
-				defectPrevList%num=defectsRecv(numSpecies+1,j)
+				if(products(1)==1 .AND. products(2)==0 .AND. &
+						products(3)==0 .AND. products(4)==0) then
+					CuNum = defectsRecv(numSpecies+1,j)
+					defectCurrentList%num = -100
+				else
+					defectCurrentList%num=defectsRecv(numSpecies+1,j)
+				end if
 				
 				do k=1,numSpecies
 					defectPrevList%defectType(k)=products(k)
@@ -382,164 +423,158 @@ if(myProc%taskid==MASTER) then
 		deallocate(defectsRecv)
 		
 	end do
-	
-	!Output defect list
-!	write(*,*) 'Defects ', 'num'
+
     !Output totdat.out
 	write(83,*) 'Cu  ','V  ','SIA_m  ','SIA_im  ','num'
 	defectCurrentList=>outputDefectList
 	
 	!Initialize Defect counters
-    CuClusterNum=0
-    VClusterNum=0
-    SIAClusterNum=0
-    totalCu=0
-	totalVac=0
+    VNum=0
+	SIANum=0
+
+    totalVac=0
 	totalSIA=0
+
+	CuAverSize=0d0
+	VoidAverSize=0d0
+	LoopAverSize=0d0
+	CuVAverSize=0d0
+
+	CuClusterNum=0
+	VoidNum=0
+	LoopNum=0
+	CuVNum=0
+
+	totalCuCluster=0
 	totalVoid=0
 	totalLoop=0
-	totalCuVoid=0
+	totalCuV=0
 
-    !2019.05.14 Add
-    VMeanRadius=0d0
-    VoidMeanRadius=0d0
-    SIAMeanRadius=0d0
-    LoopMeanRadius=0d0
-    CuMeanRadius=0d0
-	
-	do i=1,3
-		LoopSize(i)=0
-	end do
-	VoidNum=0
-	CuVoidNum=0
-	
+    CuAverRadius=0d0
+	VoidAverRadius=0d0
+    LoopAverRadius=0d0
+	CuVAverRadius=0d0
+
+	CuCon=0d0
+	VoidCon=0d0
+	LoopCon=0d0
+	CuVCon=0d0
+
+	VRetained=0d0
+	VAnnihilated=0d0
+
+
 	do while(associated(defectCurrentList))
 		
 		!Compile statistics for vacancy and SIA concentrations
 		if(defectCurrentList%defectType(1) /= 0) then
 
-            CuClusterNum = CuClusterNum + defectCurrentList%num
-
-            totalCu = totalCu + defectCurrentList%defectType(1) * defectCurrentList%num
-			if(defectCurrentList%defectType(1) > 10) then
-				CuVoidNum = CuVoidNum + defectCurrentList%num
-				totalCuVoid = totalCuVoid + defectCurrentList%defectType(1) * defectCurrentList%num
+			if(defectCurrentList%defectType(2) /= 0 .AND. &
+					(defectCurrentList%defectType(1)+defectCurrentList%defectType(2)) > minCuV) then
+				CuVNum = CuVNum + defectCurrentList%num
+				totalCuV = totalCuV + defectCurrentList%defectType(1) * defectCurrentList%num + &
+						defectCurrentList%defectType(2) * defectCurrentList%num
 			end if
-		
-		endif
+
+			if(defectCurrentList%defectType(1) > minCuCluster) then
+				CuClusterNum = CuClusterNum + defectCurrentList%num
+				totalCuCluster = totalCuCluster + defectCurrentList%defectType(1) * defectCurrentList%num
+			end if
+
+		end if
 		
 		if(defectCurrentList%defectType(2) /= 0) then
-		
-			VClusterNum = VClusterNum + defectCurrentList%num
-			
+
 			totalVac = totalVac + defectCurrentList%defectType(2) * defectCurrentList%num
-			
-!			if(defectCurrentList%defectType(2) >= 45) then
-			if(defectCurrentList%defectType(2) > 10) then
-				VoidNum = VoidNum + defectCurrentList%num
-				totalVoid = totalVoid + defectCurrentList%defectType(2) * defectCurrentList%num
-			endif
-		endif
+
+			if(defectCurrentList%defectType(1) == 0) then	!Purely vacant clusters
+
+				if(defectCurrentList%defectType(2) ==1) then	!count the number of point defects
+					VNum = VNum + defectCurrentList%num
+				end if
+
+				if(defectCurrentList%defectType(2) > minVoid) then
+					VoidNum = VoidNum + defectCurrentList%num
+					totalVoid = totalVoid + defectCurrentList%defectType(2) * defectCurrentList%num
+				end if
+
+			end if
+
+
+		end if
 		
 		if(defectCurrentList%defectType(4) /= 0 .OR. defectCurrentList%defectType(3) /= 0) then
 
-            SIAClusterNum = SIAClusterNum + defectCurrentList%num
-			
-			totalSIA = totalSIA + defectCurrentList%defectType(4) * defectCurrentList%num + &
-					defectCurrentList%defectType(3) * defectCurrentList%num
-		
-!			if(defectCurrentList%defectType(4) >= 16) then
-			if(defectCurrentList%defectType(4) > 10 .OR. defectCurrentList%defectType(3) > 10) then
-				LoopSize(1)=LoopSize(1)+defectCurrentList%num
+			if(defectCurrentList%defectType(3) ==1) then	!count the number of point defects
+				totalSIA = totalSIA + defectCurrentList%num
+			end if
+
+			if(defectCurrentList%defectType(4) > minLoop .OR. defectCurrentList%defectType(3) > minLoop) then
+				LoopNum = LoopNum + defectCurrentList%num
 				totalLoop = totalLoop + defectCurrentList%defectType(4)*defectCurrentList%num + &
 						defectCurrentList%defectType(3)*defectCurrentList%num
+			end if
 
-			endif
-			
-!			if(defectCurrentList%defectType(4) >= 20) then
-!				LoopSize(2)=LoopSize(2)+defectCurrentList%num
-				!totalLoop = totalLoop + defectCurrentList%defectType(4)*defectCurrentList%num
-!			endif
-			
-!			if(defectCurrentList%defectType(4) >= 24) then
-!				LoopSize(3)=LoopSize(3)+defectCurrentList%num
-!			endif
-		endif
+		end if
 
-		write(83,*) defectCurrentList%defectType, defectCurrentList%num
+		!Output defects
+		if(defectCurrentList%defectType(1)==1 .AND. defectCurrentList%defectType(2)==0 .AND. &
+				defectCurrentList%defectType(1)==0 .AND. defectCurrentList%defectType(1)==0)  then
+			write(83,*) defectCurrentList%defectType, CuNum
+		else
+			write(83,*) defectCurrentList%defectType, defectCurrentList%num
+		end if
+
 		defectCurrentList=>defectCurrentList%next
 	end do
 
-    CuMeanRadius = (3*(dble(totalCu)/dble(CuClusterNum))*atomSize/(4*pi))**(1d0/3d0)
-    VMeanRadius = (3*(dble(totalVac)/dble(VClusterNum))*atomSize/(4*pi))**(1d0/3d0)
-    VoidMeanRadius = (3*(dble(totalVoid)/dble(VoidNum))*atomSize/(4*pi))**(1d0/3d0)
-    LoopMeanRadius = ((dble(totalLoop)/dble(LoopSize(1)))*atomSize/(pi*burgers))**(1d0/2d0)
-	CuVoidMeanRadius = (3*(dble(totalCuVoid)/dble(CuVoidNum))*atomSize/(4*pi))**(1d0/3d0)
+	CuCon = dble(CuClusterNum)/systemVol
+	VoidCon = dble(VoidNum)/systemVol
+	LoopCon = dble(LoopNum)/systemVol
+	CuVCon = dble(CuVNum)/systemVol
+
+	CuAverRadius = (3*(dble(totalCuCluster)/dble(CuClusterNum))*atomSize/(4*pi))**(1d0/3d0)
+	VoidAverRadius = (3*(dble(totalVoid)/dble(VoidNum))*atomSize/(4*pi))**(1d0/3d0)
+    LoopAverRadius = ((dble(totalLoop)/dble(LoopNum))*atomSize/(pi*burgers))**(1d0/2d0)
+	CuVAverRadius = (3*(dble(totalCuV)/dble(CuVNum))*atomSize/(4*pi))**(1d0/3d0)
+
+	CuAverSize = dble(totalCuCluster)/dble(CuClusterNum)
+	VoidAverSize = dble(totalVoid)/dble(VoidNum)
+	LoopAverSize = dble(totalLoop)/dble(LoopNum)
+	CuVAverSize = dble(totalCuV)/dble(CuVNum)
+
+	VRetained = dble(totalVac)/(dble(numDisplacedAtoms)*dble(totalImplantEvents))
+	VAnnihilated = dble(numAnnihilateTotal)/(dble(numDisplacedAtoms)*dble(totalImplantEvents))
 	
 !This is now calculated in MeshReader.f90
 !	systemVol=(myProc%globalCoord(2)-myProc%globalCoord(1))*&
 !			  (myProc%globalCoord(4)-myProc%globalCoord(3))*&
 !			  (myProc%globalCoord(6)-myProc%globalCoord(5))*1d-27
-	
-	
-	write(83,*) 'CuClusterNum', CuClusterNum, 'number density (nm-3)', dble(CuClusterNum)/(systemVol), &
-			'MeanRadius (nm)', CuMeanRadius
-	write(83,*)	'CuVoids', CuVoidNum, 'number density (nm-3)', dble(CuVoidNum)/(systemVol), &
-			'VoidMeanRadius (nm)', CuVoidMeanRadius
-	write(83,*) 'VClusterNum', VClusterNum, 'number density (nm-3)', dble(VClusterNum)/(systemVol), &
-			'VMeanRadius (nm)', VMeanRadius
-	write(83,*)	'Voids', VoidNum, 'number density (nm-3)', dble(VoidNum)/(systemVol), &
-			'VoidMeanRadius (nm)', VoidMeanRadius
-	write(83,*) 'SIAClusterNum', SIAClusterNum, 'number density (nm-3)', dble(SIAClusterNum)/(systemVol)
-	write(83,*) 'SIA_small (SIANum>10)',LoopSize(1), 'number density (nm-3)', dble(LoopSize(1))/(systemVol)
-!	write(83,*) 'Loops (SIANum>=20)', LoopSize(2), 'number density (nm-3)', dble(LoopSize(2))/(systemVol), &
-!			'LoopMeanRadius (nm)', LoopMeanRadius
-!	write(83,*) 'SIA_large (SIANum>=24)', LoopSize(3), 'number density (nm-3)', dble(LoopSize(3))/(systemVol)
-    write(83,*)
 
 	!Output postpr.out
-	write(84,*) 'CuClusterNum', CuClusterNum, 'number density (nm-3)', dble(CuClusterNum)/(systemVol), &
-            'At.%', dble(CuClusterNum)*atomSize/systemVol
-	write(84,*) 'VClusterNum', VClusterNum, 'number density (nm-3)', dble(VClusterNum)/(systemVol), &
-            'At.%', dble(VClusterNum)*atomSize/systemVol
-	write(84,*)	'Voids', VoidNum, 'number density (nm-3)', dble(VoidNum)/(systemVol), &
-            'At.%', dble(VoidNum)*atomSize/systemVol
-	write(84,*) 'SIAClusterNum', SIAClusterNum, 'number density (nm-3)', dble(SIAClusterNum)/(systemVol), &
-            'At.%', dble(SIAClusterNum)*atomSize/systemVol
-	write(84,*) 'SIA_small (SIANum>10)',LoopSize(1), 'number density (nm-3)', dble(LoopSize(1))/(systemVol), &
-            'At.%', dble(LoopSize(1))*atomSize/systemVol
-!	write(84,*) 'Loops (SIANum>=20)', LoopSize(2), 'number density (nm-3)', dble(LoopSize(2))/(systemVol), &
-!            'At.%', dble(LoopSize(2))*atomSize/systemVol
-!	write(84,*) 'SIA_large (SIANum>=24)', LoopSize(3), 'number density (nm-3)', dble(LoopSize(3))/(systemVol), &
-!           'At.%', dble(LoopSize(3))*atomSize/systemVol
-!    write(84,*)
-	
-	!*******************************************************************
-	!Post processing: calculate relevant information (hard coded) to 
-	!output into postprocessing.txt
-	!*******************************************************************
-	
-	!Average vacancy size, average SIA size
-	write(84,*) 'AverageCuSize', dble(totalCu)/dble(CuClusterNum)
-	write(84,*) 'AverageVSize', dble(totalVac)/dble(VClusterNum)
-	write(84,*) 'AverageSIASize', dble(totalSIA)/dble(SIAClusterNum)
-	write(84,*) 'AverageVoidSize', dble(totalVoid)/dble(VoidNum)
-	write(84,*) 'AverageLoopSize', dble(totalLoop)/dble(LoopSize(2))
-    write(84,*)
-	
-	!Percent vacancies retained/annihilated
-	!write(84,*) 'PercentHeRetained', dble(totalHe)/dble(numHeImplantTotal)
-	write(84,*) 'PercentVRetained', dble(totalVac)/(dble(numDisplacedAtoms)*dble(totalImplantEvents))
-	write(84,*) 'PercentVAnnihilated', dble(numAnnihilateTotal)/(dble(numDisplacedAtoms)*dble(totalImplantEvents))
-    write(84,*)
+	if(outputCounter==0) then
+		write(84,*) 'step	','time		','dpa		' &
+				,'CuClusterNum	', 'CuCon(m-3)	', 'At.%'	, 'CuAverRadius(nm)	','CuAverSize	' &
+				,'VoidNum	', 'VoidCon(m-3)	', 'At.%	','VoidAverRadius	','VoidAverSize	' &
+				,'LoopNum	', 'LoopCon(m-3)	', 'At.%	','LoopAverRadius	','LoopAverSize	' &
+				,'CuVNum	', 'CuVCon(m-3)	', 'At.%	','VoidAverRadius	', 'CuVAverSize	' &
+				,'PercentVRetained	', 'PercentVAnnihilated'
+	end if
+
+	write(84,*) step, elapsedTime, DPA &
+			,CuClusterNum, CuCon*1d27, CuCon*atomSize, CuAverRadius, CuAverSize &
+			,VoidNum, VoidCon*1d27, VoidCon*atomSize, VoidAverRadius,VoidAverSize &
+			,LoopNum, LoopCon*1d27,LoopCon*atomSize, LoopAverRadius,LoopAverSize &
+			,VRetained, VAnnihilated
 
 	!Computation statistics: number of reactions in coarse/fine mesh, average timestep
 	call countReactionsCoarse(reactionsCoarse)
 	call countReactionsFine(reactionsFine)
-	write(84,*) 'NumReactionsCoarse', reactionsCoarse
-	write(84,*) 'NumReactionsFine', reactionsFine
-	write(84,*) 'AverageTimestep', elapsedTime/dble(step)
-	write(84,*)
+	write(83,*) 'NumReactionsCoarse', reactionsCoarse
+	write(83,*) 'NumReactionsFine', reactionsFine
+	write(83,*) 'AverageTimestep', elapsedTime/dble(step)
+	write(83,*)
+	write(83,*)
 
 else	!other processors
 	numDefectsSend=0
@@ -658,37 +693,9 @@ else	!other processors
 
 	deallocate(defectsSend)
 
-    !This just pauses the sending until the master has recieved all of the above information
-!    call MPI_RECV(buffer,1,MPI_INTEGER,MASTER,405,MPI_COMM_WORLD,status,ierr)
-    !**************************************************
-
-!	do while(associated(defectCurrentList))
-!		i=i+1
-	
-!		do j=1,numSpecies
-!			defectsSend(j)=defectCurrentList%defectType(j)
-!		end do
-		
-!		defectsSend(numSpecies+1)=defectCurrentList%num
-		
-!		call MPI_SEND(defectsSend, numSpecies+1, MPI_DOUBLE_PRECISION, MASTER, 400, MPI_COMM_WORLD, ierr)
-		
-		!This just pauses the sending until the master has recieved all of the above information
-!		call MPI_RECV(buffer,1,MPI_INTEGER,MASTER,405,MPI_COMM_WORLD,status,ierr)
-		
-!		defectCurrentList=>defectCurrentList%next
-		
-!		if(i==numDefectsSend .AND. associated(defectCurrentList)) then
-!			write(*,*) 'error outputDefectList size does not match numDefectsSend'
-!		endif
-		
-!		write(*,*) 'sent defect', i
-!	end do
-
-
-	
 	call countReactionsCoarse(reactionsCoarse)
 	call countReactionsFine(reactionsFine)
+
 end if
 
 !Deallocate memory

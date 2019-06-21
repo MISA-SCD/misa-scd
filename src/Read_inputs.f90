@@ -974,7 +974,7 @@ numGrains			=1
 cascadeReactionLimit=100d0
 
 !Toggles for various output types
-postprToggle		='no'
+postprToggle		='yes'
 totdatToggle		='yes'
 rawdatToggle		='no'
 vtkToggle			='no'
@@ -982,8 +982,12 @@ xyzToggle			='no'
 outputDebug			='no'
 profileToggle		='no'
 
-!Read variables in from file
+minCuCluster = 5
+minVoid = 5
+minLoop = 5
+minCuV = 5
 
+!Read variables in from file
 flag=.FALSE.
 
 do while(flag .eqv. .FALSE.)
@@ -1061,9 +1065,6 @@ do while(flag .eqv. .FALSE.)
 		else if(char=='cascRxnLimit') then
 			flag2=.TRUE.
 			read(81,*) cascadeReactionLimit
-!		else if(char=='CuSIAToggle') then
-!			flag2=.TRUE.
-!			read(81,*) CuSIAToggle
 !		else if(char=='SIAPinToggle') then
 !			flag2=.TRUE.
 !			read(81,*) SIAPinToggle
@@ -1079,27 +1080,27 @@ do while(flag .eqv. .FALSE.)
 		else if(char=='numGrains') then
 			flag2=.TRUE.
 			read(81,*) numGrains
-		else if(char=='vtkToggle') then
-			flag2=.TRUE.
-			read(81,*) vtkToggle
-		else if(char=='xyzToggle') then
-			flag2=.TRUE.
-			read(81,*) xyzToggle
-		else if(char=='restartToggle') then
-			flag2=.TRUE.
-			read(81,*) outputDebug
-		else if(char=='postprToggle') then
-			flag2=.TRUE.
-			read(81,*) postprToggle
-		else if(char=='totdatToggle') then
-			flag2=.TRUE.
-			read(81,*) totdatToggle
-		else if(char=='rawdatToggle') then
-			flag2=.TRUE.
-			read(81,*) rawdatToggle
-		else if(char=='profileToggle') then
-			flag2=.TRUE.
-			read(81,*) profileToggle
+!		else if(char=='vtkToggle') then
+!			flag2=.TRUE.
+!			read(81,*) vtkToggle
+!		else if(char=='xyzToggle') then
+!			flag2=.TRUE.
+!			read(81,*) xyzToggle
+!		else if(char=='restartToggle') then
+!			flag2=.TRUE.
+!			read(81,*) outputDebug
+!		else if(char=='postprToggle') then
+!			flag2=.TRUE.
+!			read(81,*) postprToggle
+!		else if(char=='totdatToggle') then
+!			flag2=.TRUE.
+!			read(81,*) totdatToggle
+!		else if(char=='rawdatToggle') then
+!			flag2=.TRUE.
+!			read(81,*) rawdatToggle
+!		else if(char=='profileToggle') then
+!			flag2=.TRUE.
+!			read(81,*) profileToggle
 		else if(char=='singleElemKMC') then
 			flag2=.TRUE.
 			read(81,*) singleElemKMC
@@ -1125,6 +1126,66 @@ do while(flag .eqv. .FALSE.)
 	flag2=.FALSE.
 end do
 flag=.FALSE.
+
+!***********************************************************************
+!Output parameters
+!***********************************************************************
+do while(flag .eqv. .FALSE.)
+	read(81,*) char
+	if(char=='OutputStart') then
+		flag=.TRUE.
+	end if
+end do
+flag=.FALSE.
+
+do while(flag .eqv. .FALSE.)
+	flag2=.FALSE.
+	do while(flag2 .eqv. .FALSE.)
+		read(81,*) char
+		if(char=='end') then
+			flag2=.TRUE.
+			flag=.TRUE.
+		else if(char=='vtkToggle') then
+			flag2=.TRUE.
+			read(81,*) vtkToggle
+		else if(char=='xyzToggle') then
+			flag2=.TRUE.
+			read(81,*) xyzToggle
+		else if(char=='restartToggle') then
+			flag2=.TRUE.
+			read(81,*) outputDebug
+		else if(char=='postprToggle') then
+			flag2=.TRUE.
+			read(81,*) postprToggle
+		else if(char=='totdatToggle') then
+			flag2=.TRUE.
+			read(81,*) totdatToggle
+		else if(char=='rawdatToggle') then
+			flag2=.TRUE.
+			read(81,*) rawdatToggle
+		else if(char=='profileToggle') then
+			flag2=.TRUE.
+			read(81,*) profileToggle
+		else if(char=='minCuCluster') then
+			flag2=.TRUE.
+			read(81,*) minCuCluster
+		else if(char=='minVoid') then
+			flag2=.TRUE.
+			read(81,*) minVoid
+		else if(char=='minLoop') then
+			flag2=.TRUE.
+			read(81,*) minLoop
+		else if(char=='minCuV') then
+			flag2=.TRUE.
+			read(81,*) minCuV
+		else
+			write(*,*) 'error readParameters() unrecognized parameter: '
+		end if
+	end do
+	flag2=.FALSE.
+end do
+flag=.FALSE.
+
 
 !***********************************************************************
 !if we are using adaptive meshing, read in the adaptive meshing parameters

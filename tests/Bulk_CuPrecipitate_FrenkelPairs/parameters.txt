@@ -118,6 +118,46 @@ numSims
 end				!Tag for the end of the parameters file
 
 !***************************************************************************************************
+!Output parameters
+!***************************************************************************************************
+OutputStart
+
+postprToggle    !‘yes’ or ‘no’: toggles output of postpr.txt file
+yes             !If you want to output postpr.txt file, both postprToggle and totdatToggle should be set 'yes'
+
+totdatToggle    !‘yes’ or ‘no’: toggles output of totdat.txt file
+yes             !If you want to output totdat.txt file, both postprToggle and totdatToggle should be set 'yes'
+
+rawdatToggle    !‘yes’ or ‘no’: toggles output of raw data files
+no              !Default 'no'
+
+vtkToggle       !‘yes’ or ‘no’: toggles .vtk file output
+no              !Default 'no'
+
+xyzToggle       !‘yes’ or ‘no’: toggles .xyz file output
+no              !Default 'no'
+
+restartToggle   !‘yes’ or ‘no’: toggles output of a restart file that can be used to restart simulation
+no              !The Debug function is not available yet, and  this toggle should be set to ’no’
+
+profileToggle   !‘yes’ or ‘no’: toggles output of damage profile as a function of depth
+no              !Default 'no'
+
+minCuCluster    !Only n>minCuCluster nCu clusters are used for calculating the average cluster radius and number density
+5
+
+minVoid         !Only n>minVoidn nV clusters are used for calculating the average cluster radius and number density
+5
+
+minLoop         !Only n>minLoop nSIA clusters are used for calculating the average cluster radius and number density
+5
+
+minCuV          !Only (n+m)>minLoop nCumV clusters are used for calculating the average cluster radius and number density
+5
+
+end            !Tag for the end of the Output parameters file
+
+!***************************************************************************************************
 !Adaptive meshing parameters
 !***************************************************************************************************
 
