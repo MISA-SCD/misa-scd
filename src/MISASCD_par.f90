@@ -778,8 +778,14 @@ if(myProc%taskid==MASTER) then
 end if
 
 !Final output
-call outputDefects(elapsedTime,step)	!write(82,*): rawdat.out
-call outputDefectsTotal(elapsedTime, step)	!write(83,*): totdat.out, write(84,*): postpr.out
+if(rawdatToggle=='yes') call outputDefects(elapsedTime,step)
+if(postprToggle=='yes') then
+	if(totdatToggle=='yes') then
+		call outputDefectsTotal(elapsedTime,step, outputCounter)
+	else
+		write(*,*) 'Error outputing postpr.out but not totdat.out'
+	end if
+end if
 !call outputDefectsProfile(sim)	!write(99,*): DepthProfile.out
 if(vtkToggle=='yes') call outputDefectsVTK(outputCounter)
 if(outputDebug=='yes') call outputDebugRestart(outputCounter ,elapsedTime)
