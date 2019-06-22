@@ -754,20 +754,23 @@ if(myProc%taskid==MASTER) then
 	call cpu_time(time2)
 	write(*,*)
 	write(*,*) 'Final  step'
-	write(*,*) 'time', elapsedTime, 'dpa', dpa, 'steps', step
-	write(*,*) 'Cascades/Frenkel pairs', totalImplantEvents, 'computation time', time2-time1
+	write(*,*) 'time', elapsedTime, 'dpa', DPA, 'steps', step, 'Average time step', elapsedTime/dble(step)
+	write(83,*) '*********************************************************************************************'
+	write(83,*) 'elapsedTime', elapsedTime, '  step', step, 'dpa', DPA, 'Average time step', elapsedTime/dble(step)
 
-	write(84,*) 'Final  step'
-	write(84,*) 'time', elapsedTime, 'dpa', dpa, 'steps', step
-	write(84,*) 'Cascades/Frenkel pairs', totalImplantEvents, 'computation time', time2-time1
-	
-	!Optional: output average number of cascades present per step in local processor
-	write(84,*) 'Processor ', myProc%taskid, 'Avg. cascades present', dble(TotalCascades)/dble(step)
-	
-	!Optional: output fraction of steps that are null events
-	write(84,*) 'Fraction null steps', dble(nullSteps)/dble(step)
-	
-	write(84,*)
+	if(implantType=='FrenkelPair') then
+		write(*,*) 'Frenkel pairs', totalImplantEvents, 'computation time', time2-time1
+		write(83,*) 'Frenkel pairs', totalImplantEvents, 'computation time', time2-time1
+
+	else if(implantType=='Cascade')	then
+		write(*,*) 'Cascades', totalImplantEvents, 'computation time', time2-time1
+		write(83,*) 'Cascades', totalImplantEvents, 'computation time', time2-time1
+
+	else
+		write(*,*) 'No implantation', totalImplantEvents, 'computation time', time2-time1
+		write(83,*) 'No implantation', totalImplantEvents, 'computation time', time2-time1
+
+	end if
 	write(*,*)
 
 	write(82,*) 'Final  step'

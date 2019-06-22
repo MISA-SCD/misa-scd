@@ -61,14 +61,14 @@ numFunction
 single			!Indicates that we are about to read in single defect parameters
 1	0	0	0			!Cu
 D0	6.3d13	Em 	2.29d0
-0	1	0	0			!V
-D0	1.0d14	Em	1.3d0
+0	1	0	0			!V  !V1~4 from (Fu, C. C., Dalla Torre, J., Willaime, F., Bocquet, J. L., & Barbu, A. (2005))
+D0	1.0d14	Em	0.67d0
 0	2	0	0			!2V
-D0	2.98d11	Em	0.63d0
+D0	2.98d11	Em	0.62d0
 0	3	0	0			!3V
-D0	1.11d11	Em	0.46d0
+D0	1.11d11	Em	0.35d0
 0	4	0	0			!4V
-D0	2.7d11	Em	0.71d0
+D0	2.7d11	Em	0.48d0
 0   5   0   0           !5V
 D0  4.55d11 Em  0.88
 0   6   0   0           !6V

@@ -271,9 +271,9 @@ if(myProc%taskid==MASTER) then
 						if(defectCurrent%defectType(1)==1 .AND. defectCurrent%defectType(2)==0 .AND. &
 								defectCurrent%defectType(3)==0 .AND. defectCurrent%defectType(4)==0) then
 							CuNum = defectCurrent%num
-							defectCurrentList%num = 0
+							defectPrevList%num = 0
 						else
-							defectCurrentList%num=defectCurrent%num
+							defectPrevList%num=defectCurrent%num
 						end if
 						
 						do j=1,numSpecies
@@ -297,9 +297,9 @@ if(myProc%taskid==MASTER) then
 					if(defectCurrent%defectType(1)==1 .AND. defectCurrent%defectType(2)==0 .AND. &
 							defectCurrent%defectType(3)==0 .AND. defectCurrent%defectType(4)==0) then
 						CuNum = defectCurrent%num
-						defectCurrentList%num = 0
+						defectPrevList%num = 0
 					else
-						defectCurrentList%num=defectCurrent%num
+						defectPrevList%num=defectCurrent%num
 					end if
 					
 					do j=1,numSpecies
@@ -376,9 +376,9 @@ if(myProc%taskid==MASTER) then
 					if(products(1)==1 .AND. products(2)==0 .AND. &
 							products(3)==0 .AND. products(4)==0) then
 						CuNum = defectsRecv(numSpecies+1,j)
-						defectCurrentList%num = 0
+						defectPrevList%num = 0
 					else
-						defectCurrentList%num=defectsRecv(numSpecies+1,j)
+						defectPrevList%num=defectsRecv(numSpecies+1,j)
 					end if
 					
 					do k=1,numSpecies
@@ -402,9 +402,9 @@ if(myProc%taskid==MASTER) then
 				if(products(1)==1 .AND. products(2)==0 .AND. &
 						products(3)==0 .AND. products(4)==0) then
 					CuNum = defectsRecv(numSpecies+1,j)
-					defectCurrentList%num = 0
+					defectPrevList%num = 0
 				else
-					defectCurrentList%num=defectsRecv(numSpecies+1,j)
+					defectPrevList%num=defectsRecv(numSpecies+1,j)
 				end if
 				
 				do k=1,numSpecies
@@ -553,19 +553,22 @@ if(myProc%taskid==MASTER) then
 
 	!Output postpr.out
 	if(outputCounter==0) then
-		write(84,*) 'step	','time		','dpa		' &
-				,'CuClusterNum	', 'CuCon(m-3)	', 'At.%'	, 'CuAverRadius(nm)	','CuAverSize	' &
-				,'VoidNum	', 'VoidCon(m-3)	', 'At.%	','VoidAverRadius	','VoidAverSize	' &
-				,'LoopNum	', 'LoopCon(m-3)	', 'At.%	','LoopAverRadius	','LoopAverSize	' &
-				,'CuVNum	', 'CuVCon(m-3)	', 'At.%	','VoidAverRadius	', 'CuVAverSize	' &
-				,'PercentVRetained	', 'PercentVAnnihilated'
+		write(84,*) 'First line:	step	time	dpa'
+		write(84,*)	'Second line:	CuClusterNum	CuCon(m-3)	At.%	CuAverRadius(nm)	CuAverSize'
+		write(84,*)	 'Third line:	VoidNum	VoidCon(m-3)	At.%	VoidAverRadius	VoidAverSize'
+		write(84,*)	 'Fourth line:	LoopNum	LoopCon(m-3)	At.%	LoopAverRadius	LoopAverSize'
+		write(84,*)	 'Fifth line:	CuVNum	CuVCon(m-3)	At.%	VoidAverRadius	CuVAverSize'
+		write(84,*)	 'Sixth line:	PercentVRetained	PercentVAnnihilated'
+		write(84,*)
 	end if
 
-	write(84,*) step, elapsedTime, DPA &
-			,CuClusterNum, CuCon*1d27, CuCon*atomSize, CuAverRadius, CuAverSize &
-			,VoidNum, VoidCon*1d27, VoidCon*atomSize, VoidAverRadius,VoidAverSize &
-			,LoopNum, LoopCon*1d27,LoopCon*atomSize, LoopAverRadius,LoopAverSize &
-			,VRetained, VAnnihilated
+	write(84,*) step, elapsedTime, DPA
+	write(84,*)	CuClusterNum, CuCon*1d27, CuCon*atomSize, CuAverRadius, CuAverSize
+	write(84,*) VoidNum, VoidCon*1d27, VoidCon*atomSize, VoidAverRadius,VoidAverSize
+	write(84,*)	LoopNum, LoopCon*1d27,LoopCon*atomSize, LoopAverRadius,LoopAverSize
+	write(84,*)	VRetained, VAnnihilated
+	write(84,*)
+	write(84,*)
 
 	!Computation statistics: number of reactions in coarse/fine mesh, average timestep
 	call countReactionsCoarse(reactionsCoarse)
