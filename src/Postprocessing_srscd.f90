@@ -519,7 +519,7 @@ if(myProc%taskid==MASTER) then
 
 		!Output defects
 		if(defectCurrentList%defectType(1)==1 .AND. defectCurrentList%defectType(2)==0 .AND. &
-				defectCurrentList%defectType(1)==0 .AND. defectCurrentList%defectType(1)==0)  then
+				defectCurrentList%defectType(3)==0 .AND. defectCurrentList%defectType(4)==0)  then
 			write(83,*) defectCurrentList%defectType, CuNum
 		else
 			write(83,*) defectCurrentList%defectType, defectCurrentList%num

@@ -243,7 +243,6 @@ allocate(totalRateVol(numCells))	!Create array of total rates in each volume ele
 call initializeVIdefect()			!2019.05.30 Add
 call initializeDefectList()			!initialize defects within myMesh
 call initializeBoundaryDefectList()	!initialize defects on boundary of myMesh (in other procs)
-call computeVconcent()
 call initializeReactionList()		!initialize reactions within myMesh
 call initializeTotalRate()			!initialize totalRate and maxRate using reactionList(:)
 call initializeDebugRestart()		!input defects into coarse mesh from restart file (for debugging)
@@ -255,7 +254,7 @@ if(myProc%taskid==MASTER) then
 	write(*,*) 'initialCeqi', initialCeqi
 end if
 
-call DEBUGPrintReactionList(0)		!prints all reaction lists at a given Monte Carlo step
+!call DEBUGPrintReactionList(0)		!prints all reaction lists at a given Monte Carlo step
 !call DEBUGPrintDefectList(0)
 !******************************************************************
 !Initialize Counters
@@ -327,8 +326,6 @@ annealIdentify=.FALSE.		!(.TRUE. if in annealing phase, .FALSE. otherwise) used 
 !**																													**
 !*********************************************************************************************************************
 !*********************************************************************************************************************
-
-Vconcent = initialCeqv
 
 do while(elapsedTime < totalTime)
 	
@@ -647,7 +644,7 @@ do while(elapsedTime < totalTime)
 	! Output according to outputCounter
 	!********************************************************************************
 
-	call computeVconcent()
+!	call computeVconcent()
 
 !	if(elapsedTime >= 1d-4*(10d0)**(outputCounter)) then
 	if(elapsedTime >= totalTime/200d0*(2d0)**(outputCounter)) then

@@ -99,6 +99,8 @@ integer initialTotalI           !Total number of initial Initial self-interstiti
 integer, allocatable :: VgCellList(:)   !List the globalID of the mesh where initial vacancies are located.
 integer, allocatable :: IgCellList(:)   !List the globalID of the mesh where initial self-interstitial atoms are located.
 
+double precision firr           !firr = Vconcent / initialCeqv. Radiation enhanced factor
+
 !simulation parameters, to be read during readParameters() in main program
 double precision temperature			!<Temperature (K)
 double precision tempStore				!<Temperature read in (K) - used when temp. changes several times during a simulation

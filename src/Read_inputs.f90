@@ -944,6 +944,7 @@ integer procVol, volume
 tempStore		=273d0
 CuContent		=0.5d-2
 dpaRate			=1d-4
+firr			=0d0
 atomsize		=1.182d-2
 burgers			=0.287d0
 totalDPA		=1d-1
@@ -1014,6 +1015,9 @@ do while(flag .eqv. .FALSE.)
 		else if(char=='dpaRate') then
 			flag2=.TRUE.
 			read(81,*) DPARate
+		else if(char=='firr') then
+			flag2=.TRUE.
+			read(81,*) firr
 		else if(char=='atomSize') then
 			flag2=.TRUE.
 			read(81,*) atomsize

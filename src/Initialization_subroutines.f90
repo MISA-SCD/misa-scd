@@ -33,6 +33,9 @@ end do
 initialTotalV = nint(initialCeqv * totalAtoms)
 initialTotalI = nint(initialCeqi * totalAtoms)
 
+Vconcent = initialCeqv
+SIAconcent = initialCeqi
+
 allocate(VgCellList(initialTotalV))
 allocate(IgCellList(initialTotalI))
 

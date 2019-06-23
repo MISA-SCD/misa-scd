@@ -39,8 +39,10 @@ outer: do i=1,numSingleDiff(matNum)
 		if(matNum==2) then
 			if(DefectType(1)==1 .AND. DefectType(2)==0 .AND. DefectType(3)==0 .AND. DefectType(4)==0 &
 					.AND. totalDPA > 0d0 .AND. DPARate > 0d0) then
-				Diff=DiffSingle(matNum,i)%D*dexp(-(DiffSingle(matNum,i)%Em-Param)/(kboltzmann*temperature)) * &
-							(Vconcent / initialCeqv)
+!				Diff=DiffSingle(matNum,i)%D*dexp(-(DiffSingle(matNum,i)%Em-Param)/(kboltzmann*temperature)) * &
+!							(Vconcent / initialCeqv)
+				Diff=DiffSingle(matNum,i)%D*dexp(-(DiffSingle(matNum,i)%Em-Param)/(kboltzmann*temperature)) * firr
+
 				exit outer
 			else
 				Diff=DiffSingle(matNum,i)%D*dexp(-(DiffSingle(matNum,i)%Em-Param)/(kboltzmann*temperature))
@@ -50,8 +52,9 @@ outer: do i=1,numSingleDiff(matNum)
 		else
 			if(DefectType(1)==1 .AND. DefectType(2)==0 .AND. DefectType(3)==0 .AND. DefectType(4)==0 &
 					.AND. totalDPA > 0d0 .AND. DPARate > 0d0) then
-				Diff=DiffSingle(matNum,i)%D*dexp(-DiffSingle(matNum,i)%Em/(kboltzmann*temperature)) * &
-					(Vconcent / initialCeqv)
+!				Diff=DiffSingle(matNum,i)%D*dexp(-DiffSingle(matNum,i)%Em/(kboltzmann*temperature)) * &
+!					(Vconcent / initialCeqv)
+				Diff=DiffSingle(matNum,i)%D*dexp(-DiffSingle(matNum,i)%Em/(kboltzmann*temperature)) * firr
 				exit  outer
 			else
 				Diff=DiffSingle(matNum,i)%D*dexp(-DiffSingle(matNum,i)%Em/(kboltzmann*temperature))
