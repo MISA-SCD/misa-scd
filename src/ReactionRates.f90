@@ -116,7 +116,7 @@ do i=1, numDissocReac(matNum)
 		!**********************************************************
 		!Mobilize SIA clusters that decrease in size below max3Dint
 		!**********************************************************
-		
+
 		!sessile cluster becomes mobile when it shrinks below max3DInt
 		if(products(1,4) /= 0 .AND. products(1,4) <= max3DInt) then
 			products(1,3)=products(1,4)

@@ -141,11 +141,11 @@ end do
 !Step 2: divide processors over gobal volume
 !************************************************
 
-procDivision(1)=0	!number of processors in x
-procDivision(2)=0	!number of processors in y
-procDivision(3)=0	!number of processors in z
+procDivision(1)=dims(1)	!number of processors in x
+procDivision(2)=dims(2)	!number of processors in y
+procDivision(3)=dims(3)	!number of processors in z
 
-call MPI_DIMS_CREATE(myProc%numtasks,3,procDivision, ierr)
+!call MPI_DIMS_CREATE(myProc%numtasks,3,procDivision, ierr)
 
 if(myProc%taskid==MASTER) then
 	write(*,*) 'proc division', procDivision
@@ -405,7 +405,7 @@ numCells=numxLocal*numyLocal*numzLocal	!total cells of this processor
 !If any processors don't have volume elements in them (too many procs), we create an error message
 if(numCells==0) then
 	write(*,*) 'error processors with no volume elements'
-	call MPI_ABORT(MPI_COMM_WORLD,ierr)
+	call MPI_ABORT(comm,ierr)
 	stop
 end if
 
@@ -917,7 +917,7 @@ numCells=numxLocal*numyLocal*numzLocal	!total cells of this processor
 !If any processors don't have volume elements in them (too many procs), we create an error message
 if(numCells==0) then
 	write(*,*) 'error processors with no volume elements'
-	call MPI_ABORT(MPI_COMM_WORLD,ierr)
+	call MPI_ABORT(comm,ierr)
 	stop
 end if
 
@@ -1184,32 +1184,32 @@ end do
 !*******************************************************
 !Send
 if(myProc%procNeighbor(1)/=myProc%taskid) then	!right
-	call MPI_SEND(sendRight, 2*numyLocal*numzLocal, MPI_INTEGER, myProc%procNeighbor(1), 1, MPI_COMM_WORLD, ierr)
+	call MPI_SEND(sendRight, 2*numyLocal*numzLocal, MPI_INTEGER, myProc%procNeighbor(1), 1, comm, ierr)
 
 end if
 
 if(myProc%procNeighbor(2)/=myProc%taskid) then	!left
-	call MPI_SEND(sendLeft, 2*numyLocal*numzLocal, MPI_INTEGER, myProc%procNeighbor(2), 2, MPI_COMM_WORLD, ierr)
+	call MPI_SEND(sendLeft, 2*numyLocal*numzLocal, MPI_INTEGER, myProc%procNeighbor(2), 2, comm, ierr)
 
 end if
 
 if(myProc%procNeighbor(3)/=myProc%taskid) then	!front
-	call MPI_SEND(sendFront, 2*numxLocal*numzLocal, MPI_INTEGER, myProc%procNeighbor(3), 3, MPI_COMM_WORLD, ierr)
+	call MPI_SEND(sendFront, 2*numxLocal*numzLocal, MPI_INTEGER, myProc%procNeighbor(3), 3, comm, ierr)
 
 end if
 
 if(myProc%procNeighbor(4)/=myProc%taskid) then	!back
-	call MPI_SEND(sendBack, 2*numxLocal*numzLocal, MPI_INTEGER, myProc%procNeighbor(4), 4, MPI_COMM_WORLD, ierr)
+	call MPI_SEND(sendBack, 2*numxLocal*numzLocal, MPI_INTEGER, myProc%procNeighbor(4), 4, comm, ierr)
 
 end if
 
 if(myProc%procNeighbor(5)/=myProc%taskid) then	!up
-	call MPI_SEND(sendUp, 2*numxLocal*numyLocal, MPI_INTEGER, myProc%procNeighbor(5), 5, MPI_COMM_WORLD, ierr)
+	call MPI_SEND(sendUp, 2*numxLocal*numyLocal, MPI_INTEGER, myProc%procNeighbor(5), 5, comm, ierr)
 
 end if
 
 if(myProc%procNeighbor(6)/=myProc%taskid) then	!down
-	call MPI_SEND(sendDown, 2*numxLocal*numyLocal, MPI_INTEGER, myProc%procNeighbor(6), 6, MPI_COMM_WORLD, ierr)
+	call MPI_SEND(sendDown, 2*numxLocal*numyLocal, MPI_INTEGER, myProc%procNeighbor(6), 6, comm, ierr)
 
 end if
 
@@ -1217,7 +1217,7 @@ end if
 !Recv
 if(myProc%procNeighbor(1)/=myProc%taskid) then	!right
 
-	call MPI_RECV(recvRight, 2*numyLocal*numzLocal, MPI_INTEGER, myProc%procNeighbor(1), 2, MPI_COMM_WORLD, status, ierr)
+	call MPI_RECV(recvRight, 2*numyLocal*numzLocal, MPI_INTEGER, myProc%procNeighbor(1), 2, comm, status, ierr)
 
 	do i=1, numyLocal*numzLocal
 		cell=sendRight(1,i)
@@ -1229,7 +1229,7 @@ end if
 
 if(myProc%procNeighbor(2)/=myProc%taskid) then	!left
 
-	call MPI_RECV(recvLeft, 2*numyLocal*numzLocal, MPI_INTEGER, myProc%procNeighbor(2), 1, MPI_COMM_WORLD, status, ierr)
+	call MPI_RECV(recvLeft, 2*numyLocal*numzLocal, MPI_INTEGER, myProc%procNeighbor(2), 1, comm, status, ierr)
 
 	do i=1, numyLocal*numzLocal
 		cell=sendLeft(1,i)
@@ -1240,7 +1240,7 @@ end if
 
 if(myProc%procNeighbor(3)/=myProc%taskid) then	!front
 
-	call MPI_RECV(recvFront, 2*numxLocal*numzLocal, MPI_INTEGER, myProc%procNeighbor(3), 4, MPI_COMM_WORLD, status, ierr)
+	call MPI_RECV(recvFront, 2*numxLocal*numzLocal, MPI_INTEGER, myProc%procNeighbor(3), 4, comm, status, ierr)
 
 	do i=1, numxLocal*numzLocal
 		cell=sendFront(1,i)
@@ -1251,7 +1251,7 @@ end if
 
 if(myProc%procNeighbor(4)/=myProc%taskid) then	!back
 
-	call MPI_RECV(recvBack, 2*numxLocal*numzLocal, MPI_INTEGER, myProc%procNeighbor(4), 3, MPI_COMM_WORLD, status, ierr)
+	call MPI_RECV(recvBack, 2*numxLocal*numzLocal, MPI_INTEGER, myProc%procNeighbor(4), 3, comm, status, ierr)
 
 	do i=1, numxLocal*numzLocal
 		cell=sendBack(1,i)
@@ -1262,7 +1262,7 @@ end if
 
 if(myProc%procNeighbor(5)/=myProc%taskid) then	!up
 
-	call MPI_RECV(recvUp, 2*numxLocal*numyLocal, MPI_INTEGER, myProc%procNeighbor(5), 6, MPI_COMM_WORLD, status, ierr)
+	call MPI_RECV(recvUp, 2*numxLocal*numyLocal, MPI_INTEGER, myProc%procNeighbor(5), 6, comm, status, ierr)
 
 	do i=1, numxLocal*numyLocal
 		cell=sendUp(1,i)
@@ -1273,7 +1273,7 @@ end if
 
 if(myProc%procNeighbor(6)/=myProc%taskid) then	!down
 
-	call MPI_RECV(recvDown, 2*numxLocal*numyLocal, MPI_INTEGER, myProc%procNeighbor(6), 5, MPI_COMM_WORLD, status, ierr)
+	call MPI_RECV(recvDown, 2*numxLocal*numyLocal, MPI_INTEGER, myProc%procNeighbor(6), 5, comm, status, ierr)
 
 	do i=1, numxLocal*numyLocal
 		cell=sendDown(1,i)
@@ -1494,34 +1494,34 @@ end do
 !***************************************************************
 !Send
 if(myProc%procNeighbor(1)/=myProc%taskid) then	!right
-	call MPI_SEND(sendRight, 2*numyLocal*numzLocal, MPI_INTEGER, myProc%procNeighbor(1), 1, MPI_COMM_WORLD, ierr)
+	call MPI_SEND(sendRight, 2*numyLocal*numzLocal, MPI_INTEGER, myProc%procNeighbor(1), 1, comm, ierr)
 end if
 
 if(myProc%procNeighbor(2)/=myProc%taskid) then	!left
-	call MPI_SEND(sendLeft, 2*numyLocal*numzLocal, MPI_INTEGER, myProc%procNeighbor(2), 2, MPI_COMM_WORLD, ierr)
+	call MPI_SEND(sendLeft, 2*numyLocal*numzLocal, MPI_INTEGER, myProc%procNeighbor(2), 2, comm, ierr)
 end if
 
 if(myProc%procNeighbor(3)/=myProc%taskid) then	!front
-	call MPI_SEND(sendFront, 2*numxLocal*numzLocal, MPI_INTEGER, myProc%procNeighbor(3), 3, MPI_COMM_WORLD, ierr)
+	call MPI_SEND(sendFront, 2*numxLocal*numzLocal, MPI_INTEGER, myProc%procNeighbor(3), 3, comm, ierr)
 end if
 
 if(myProc%procNeighbor(4)/=myProc%taskid) then	!back
-	call MPI_SEND(sendBack, 2*numxLocal*numzLocal, MPI_INTEGER, myProc%procNeighbor(4), 4, MPI_COMM_WORLD, ierr)
+	call MPI_SEND(sendBack, 2*numxLocal*numzLocal, MPI_INTEGER, myProc%procNeighbor(4), 4, comm, ierr)
 end if
 
 if(myProc%procNeighbor(5)/=myProc%taskid) then	!up
-	call MPI_SEND(sendUp, 2*numxLocal*numyLocal, MPI_INTEGER, myProc%procNeighbor(5), 5, MPI_COMM_WORLD, ierr)
+	call MPI_SEND(sendUp, 2*numxLocal*numyLocal, MPI_INTEGER, myProc%procNeighbor(5), 5, comm, ierr)
 end if
 
 if(myProc%procNeighbor(6)/=myProc%taskid) then	!down
-	call MPI_SEND(sendDown, 2*numxLocal*numyLocal, MPI_INTEGER, myProc%procNeighbor(6), 6, MPI_COMM_WORLD, ierr)
+	call MPI_SEND(sendDown, 2*numxLocal*numyLocal, MPI_INTEGER, myProc%procNeighbor(6), 6, comm, ierr)
 end if
 
 !************************************************************
 !Recv
 if(myProc%procNeighbor(1)/=myProc%taskid) then	!right
 
-	call MPI_RECV(recvRight, 2*numyLocal*numzLocal, MPI_INTEGER, myProc%procNeighbor(1), 2, MPI_COMM_WORLD, status, ierr)
+	call MPI_RECV(recvRight, 2*numyLocal*numzLocal, MPI_INTEGER, myProc%procNeighbor(1), 2, comm, status, ierr)
 
 	do i=1, numyLocal*numzLocal
 		cell=sendRight(1,i)
@@ -1533,7 +1533,7 @@ end if
 
 if(myProc%procNeighbor(2)/=myProc%taskid) then	!left
 
-	call MPI_RECV(recvLeft, 2*numyLocal*numzLocal, MPI_INTEGER, myProc%procNeighbor(2), 1, MPI_COMM_WORLD, status, ierr)
+	call MPI_RECV(recvLeft, 2*numyLocal*numzLocal, MPI_INTEGER, myProc%procNeighbor(2), 1, comm, status, ierr)
 
 	do i=1, numyLocal*numzLocal
 		cell=sendLeft(1,i)
@@ -1544,7 +1544,7 @@ end if
 
 if(myProc%procNeighbor(3)/=myProc%taskid) then	!front
 
-	call MPI_RECV(recvFront, 2*numxLocal*numzLocal, MPI_INTEGER, myProc%procNeighbor(3), 4, MPI_COMM_WORLD, status, ierr)
+	call MPI_RECV(recvFront, 2*numxLocal*numzLocal, MPI_INTEGER, myProc%procNeighbor(3), 4, comm, status, ierr)
 
 	do i=1, numxLocal*numzLocal
 		cell=sendFront(1,i)
@@ -1555,7 +1555,7 @@ end if
 
 if(myProc%procNeighbor(4)/=myProc%taskid) then	!back
 
-	call MPI_RECV(recvBack, 2*numxLocal*numzLocal, MPI_INTEGER, myProc%procNeighbor(4), 3, MPI_COMM_WORLD, status, ierr)
+	call MPI_RECV(recvBack, 2*numxLocal*numzLocal, MPI_INTEGER, myProc%procNeighbor(4), 3, comm, status, ierr)
 
 	do i=1, numxLocal*numzLocal
 		cell=sendBack(1,i)
@@ -1566,7 +1566,7 @@ end if
 
 if(myProc%procNeighbor(5)/=myProc%taskid) then	!up
 
-	call MPI_RECV(recvUp, 2*numxLocal*numyLocal, MPI_INTEGER, myProc%procNeighbor(5), 6, MPI_COMM_WORLD, status, ierr)
+	call MPI_RECV(recvUp, 2*numxLocal*numyLocal, MPI_INTEGER, myProc%procNeighbor(5), 6, comm, status, ierr)
 
 	do i=1, numxLocal*numyLocal
 		cell=sendUp(1,i)
@@ -1577,7 +1577,7 @@ end if
 
 if(myProc%procNeighbor(6)/=myProc%taskid) then	!down
 
-	call MPI_RECV(recvDown, 2*numxLocal*numyLocal, MPI_INTEGER, myProc%procNeighbor(6), 5, MPI_COMM_WORLD, status, ierr)
+	call MPI_RECV(recvDown, 2*numxLocal*numyLocal, MPI_INTEGER, myProc%procNeighbor(6), 5, comm, status, ierr)
 
 	do i=1, numxLocal*numyLocal
 		cell=sendDown(1,i)
@@ -2008,7 +2008,7 @@ end do
 !If there are processors with no local volume elements (too many procs), error.
 if(localElem==0) then
 	write(*,*) 'error processors with no volume elements'
-	call MPI_ABORT(MPI_COMM_WORLD,ierr)
+	call MPI_ABORT(comm,ierr)
 	stop
 end if
 
@@ -2536,7 +2536,7 @@ do i=1,numSendRecv
 	dir=sendList(i,2)
 	globalCell=sendList(i,3)
 	neighbor=sendList(i,5)
-	call MPI_SEND(elem, 1, MPI_INTEGER, myMesh(elem)%neighborProcs(dir,neighbor), globalCell, MPI_COMM_WORLD, ierr)
+	call MPI_SEND(elem, 1, MPI_INTEGER, myMesh(elem)%neighborProcs(dir,neighbor), globalCell, comm, ierr)
 end do
 
 do i=1,numSendRecv
@@ -2545,7 +2545,7 @@ do i=1,numSendRecv
 	globalNeighbor=sendList(i,4)
 	neighbor=sendList(i,5)
 	call MPI_RECV(myMesh(elem)%neighbors(dir,neighbor), 1, MPI_INTEGER, myMesh(elem)%neighborProcs(dir,neighbor), &
-				globalNeighbor, MPI_COMM_WORLD, status, ierr)
+				globalNeighbor, comm, status, ierr)
 end do
 
 end subroutine

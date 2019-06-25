@@ -759,7 +759,7 @@ if(associated(reactionCurrent)) then	!if we have not chosen a null event
 				if(count > 2) then
 					write(*,*) 'Error adding unadmissible defect to cascade'
 					write(*,*) defectStore%defectType
-					call MPI_ABORT(MPI_COMM_WORLD,ierr)
+					call MPI_ABORT(comm,ierr)
 				end if
 			
 				defectCurrent=>CascadeCurrent%localDefects(defectStore%cellNumber)
@@ -1237,7 +1237,7 @@ if(associated(reactionCurrent)) then	!if we have not chosen a null event
 				write(*,*) 'cascade number', cascadeCurrent%cascadeID
 				
 				call DEBUGPrintDefects(step)
-				call MPI_ABORT(MPI_COMM_WORLD,ierr)
+				call MPI_ABORT(comm,ierr)
 			
 			!if there is one defect of this type and it is in the middle of the list, remove it from the list
 			else if(defectCurrent%num==1 .AND. associated(defectCurrent%next) .AND. associated(defectPrev)) then
@@ -1269,7 +1269,7 @@ if(associated(reactionCurrent)) then	!if we have not chosen a null event
 			!if the defect is in the list but none present, we have chosen a reaction that shouldn't exist
 			else if(defectCurrent%num==0) then
 				write(*,*) 'trying to remove a defect that isnt there'
-				call MPI_ABORT(MPI_COMM_WORLD,ierr)
+				call MPI_ABORT(comm,ierr)
 			else
 				!decrease the number of defects by 1 if the number of defects is greater than 1
 				defectCurrent%num=defectCurrent%num-1 !remove the defect from the system instead of the entire entry in the list
@@ -1553,7 +1553,7 @@ if(associated(reactionCurrent)) then	!if we have not chosen a null event
 				write(*,*) 'products', reactionCurrent%products
 				write(*,*) 'cells', reactionCurrent%CellNumber
 				write(*,*) 'rate', reactionCurrent%reactionRate
-				call MPI_ABORT(MPI_COMM_WORLD,ierr)
+				call MPI_ABORT(comm,ierr)
 			
 			!if there is one defect of this type and it is in the middle of the list, remove it from the list
 			else if(defectCurrent%num==1 .AND. associated(defectCurrent%next) .AND. associated(defectPrev)) then
@@ -1587,7 +1587,7 @@ if(associated(reactionCurrent)) then	!if we have not chosen a null event
 			!if the defect is in the list but none present, we have chosen a reaction that shouldn't exist
 			else if(defectCurrent%num==0) then
 				write(*,*) 'trying to remove a defect that isnt there'
-				call MPI_ABORT(MPI_COMM_WORLD,ierr)
+				call MPI_ABORT(comm,ierr)
 			else
 				!decrease the number of defects by 1 if the number of defects is greater than 1
 				!write(86,*) 'decreasing defect num by 1', defectCurrent%num, 'type', defectCurrent%defectType, &
@@ -2037,8 +2037,8 @@ do i=1,6
 
 	if(myProc%procNeighbor(i) /= myProc%taskid) then
 
-		call MPI_SEND(numUpdateLocal(i),1,MPI_INTEGER,myProc%procNeighbor(i),200+i,MPI_COMM_WORLD, ierr)	!number of local defects that have changed on boundary of processor i
-		call MPI_SEND(numUpdateBndry(i),1,MPI_INTEGER,myProc%procNeighbor(i),i+6,MPI_COMM_WORLD, ierr)		!number of defects in the mesh of processor i that have changed (diffusion only)
+		call MPI_SEND(numUpdateLocal(i),1,MPI_INTEGER,myProc%procNeighbor(i),200+i,comm, ierr)	!number of local defects that have changed on boundary of processor i
+		call MPI_SEND(numUpdateBndry(i),1,MPI_INTEGER,myProc%procNeighbor(i),i+6,comm, ierr)		!number of defects in the mesh of processor i that have changed (diffusion only)
 		
 		!EDIT: need to only send the first numUpdateLocal(i) elements of localBuffer(i,:,:)
 		
@@ -2053,7 +2053,7 @@ do i=1,6
 			end do
 
 			call MPI_SEND(localBufferSend,numUpdateLocal(i)*(numSpecies+3), MPI_INTEGER, &
-				myProc%procNeighbor(i),i+12,MPI_COMM_WORLD,ierr)
+				myProc%procNeighbor(i),i+12,comm,ierr)
 !			if(myProc%taskid==4) then
 !				write(*,*) 'dir', i, 'proc sent', myProc%procNeighbor(i), 'numUpdateLocal', numUpdateLocal(i)
 !			endif
@@ -2073,7 +2073,7 @@ do i=1,6
 			end do
 
 			call MPI_SEND(bndryBufferSend,numUpdateBndry(i)*(numSpecies+2), MPI_INTEGER, &
-				myProc%procNeighbor(i),i+18,MPI_COMM_WORLD,ierr)
+				myProc%procNeighbor(i),i+18,comm,ierr)
 			deallocate(bndryBufferSend)
 
 		end if
@@ -2101,8 +2101,8 @@ do i=1,6
 	
 	if(myProc%procNeighbor(i) /= myProc%taskid) then
 
-		call MPI_RECV(numUpdateBndryRecv(i),1,MPI_INTEGER,myProc%procNeighbor(i),200+tag,MPI_COMM_WORLD,status,ierr)	!number of bndry defects that have changed (local to processor i, boundary here)
-		call MPI_RECV(numUpdateLocalRecv(i),1,MPI_INTEGER,myProc%procNeighbor(i),tag+6,MPI_COMM_WORLD,status,ierr)	!number of local defects that have changed (bndry to processor i, local here)
+		call MPI_RECV(numUpdateBndryRecv(i),1,MPI_INTEGER,myProc%procNeighbor(i),200+tag,comm,status,ierr)	!number of bndry defects that have changed (local to processor i, boundary here)
+		call MPI_RECV(numUpdateLocalRecv(i),1,MPI_INTEGER,myProc%procNeighbor(i),tag+6,comm,status,ierr)	!number of local defects that have changed (bndry to processor i, local here)
 		totalLocalRecv=totalLocalRecv+numUpdateLocalRecv(i)
 	endif
 end do
@@ -2126,7 +2126,7 @@ do i=1,6
 			!Read in defects to update in boundary
 			allocate(bndryBufferRecv(numUpdateBndryRecv(i),numSpecies+3))
 			call MPI_RECV(bndryBufferRecv,numUpdateBndryRecv(i)*(numSpecies+3),MPI_INTEGER,&
-				myProc%procNeighbor(i),tag+12,MPI_COMM_WORLD,status,ierr)
+				myProc%procNeighbor(i),tag+12,comm,status,ierr)
 !			if(myProc%taskid==MASTER) then
 !				write(*,*) 'dir', i, 'proc recvd', myProc%procNeighbor(i), 'numUpdateBndryRecv', numUpdateBndryRecv(i)
 !			endif
@@ -2161,7 +2161,7 @@ do i=1,6
 				if(.NOT. associated(defectCurrent)) then
 					write(*,*) 'error myBoundary not allocated correctly'
 					write(*,*) 'dir', i, 'cell', bndryBufferRecv(j,numSpecies+1)
-					call MPI_ABORT(MPI_COMM_WORLD,ierr)
+					call MPI_ABORT(comm,ierr)
 				endif
 				
 				nullify(defectPrev)
@@ -2217,7 +2217,7 @@ do i=1,6
 							write(*,*) 'proc', myProc%taskid, 'dir', i, 'neighbor proc', myProc%procNeighbor(i)
 							write(*,*) (bndryBufferRecv(j,k),k=1,numSpecies+2)
 							
-							!call MPI_ABORT(MPI_COMM_WORLD,ierr)
+							!call MPI_ABORT(comm,ierr)
 							
 						else
 							nullify(defectPrev%next)
@@ -2242,7 +2242,7 @@ do i=1,6
 						write(*,*) 'error in defectUpdate negative defect numbers'
 						write(*,*) 'proc', myProc%taskid, 'dir', i, 'neighbor proc', myProc%procNeighbor(i)
 						write(*,*) (bndryBufferRecv(j,k),k=1,numSpecies+2)
-						!call MPI_ABORT(MPI_COMM_WORLD,ierr)
+						!call MPI_ABORT(comm,ierr)
 					else
 					
 						nullify(defectPrev%next)
@@ -2268,7 +2268,7 @@ do i=1,6
 			!Read in defects to update in local mesh
 			allocate(localBufferRecv(numUpdateLocalRecv(i),numSpecies+2))
 			call MPI_RECV(localBufferRecv,numUpdateLocalRecv(i)*(numSpecies+2),MPI_INTEGER,&
-				myProc%procNeighbor(i),tag+18,MPI_COMM_WORLD,status,ierr)
+				myProc%procNeighbor(i),tag+18,comm,status,ierr)
 
 			!Add defects in localBufferRecv to defectList()
 			do j=1,numUpdateLocalRecv(i)
@@ -2345,7 +2345,7 @@ do i=1,6
 				!		write(*,*) 'error in defectUpdate negative defect numbers'
 				!		write(*,*) 'proc', myProc%taskid, 'dir', i, 'neighbor proc', myProc%procNeighbor(i)
 				!		write(*,*) (localBufferRecv(j,k),k=1,numSpecies+2)
-						!call MPI_ABORT(MPI_COMM_WORLD,ierr)
+						!call MPI_ABORT(comm,ierr)
 				!	else
 
 						nullify(defectPrev%next)
@@ -2385,7 +2385,7 @@ do i=1,6
 							
 							if(localBufferRecv(j,numSpecies+2)==-1) then
 								write(*,*) 'error: cell in boundary of multiple procs removing defect'
-								call MPI_ABORT(MPI_COMM_WORLD,ierr)
+								call MPI_ABORT(comm,ierr)
 							end if
 !							if(myProc%taskid==4) then
 !								if(k==5) then
@@ -2414,7 +2414,7 @@ end do
 
 do i=1,6
 	if(myProc%procNeighbor(i) /= myProc%taskid) then
-		call MPI_SEND(numUpdateFinal(i), 1, MPI_INTEGER, myProc%procNeighbor(i), i+24, MPI_COMM_WORLD, ierr)	!number of local defects that have changed on boundary of processor i
+		call MPI_SEND(numUpdateFinal(i), 1, MPI_INTEGER, myProc%procNeighbor(i), i+24, comm, ierr)	!number of local defects that have changed on boundary of processor i
 		
 		if(numUpdateFinal(i) /= 0) then
 			allocate(finalBufferSend(numUpdateFinal(i),numSpecies+3))
@@ -2426,7 +2426,7 @@ do i=1,6
 			end do
 			
 			call MPI_SEND(finalBufferSend,numUpdateFinal(i)*(numSpecies+3), MPI_INTEGER, &
-				myProc%procNeighbor(i),i+30,MPI_COMM_WORLD,ierr)
+				myProc%procNeighbor(i),i+30,comm,ierr)
 			deallocate(finalBufferSend)
 		end if
 	end if
@@ -2449,14 +2449,14 @@ do i=1,6
 		
 		
 		!number of bndry defects that have changed (local to processor i, boundary here)
-		call MPI_RECV(numUpdateFinalRecv(i),1,MPI_INTEGER,myProc%procNeighbor(i),tag+24,MPI_COMM_WORLD,status,ierr)	
+		call MPI_RECV(numUpdateFinalRecv(i),1,MPI_INTEGER,myProc%procNeighbor(i),tag+24,comm,status,ierr)
 		
 		if(numUpdateFinalRecv(i) /= 0) then
 			
 			!Read in defects to update in boundary
 			allocate(finalBufferRecv(numUpdateFinalRecv(i),numSpecies+3))
 			call MPI_RECV(finalBufferRecv,numUpdateFinalRecv(i)*(numSpecies+3),MPI_INTEGER,&
-				myProc%procNeighbor(i),tag+30,MPI_COMM_WORLD,status,ierr)
+				myProc%procNeighbor(i),tag+30,comm,status,ierr)
 
 			!Add defects in finalBufferRecv to myBoundary()
 			do j=1,numUpdateFinalRecv(i)
@@ -2471,7 +2471,7 @@ do i=1,6
 				
 				if(finalBufferRecv(j,numSpecies+2)==-1) then
 					write(*,*) 'error deleting defects in finalBufferRecv'
-					!call MPI_ABORT(MPI_COMM_WORLD,ierr)
+					!call MPI_ABORT(comm,ierr)
 				else
 					
 					!create a new element in defectUpdate and assign all variables except for num (will do later)
@@ -2784,7 +2784,7 @@ do while(associated(reactionCurrent))	!loop through all non-null reactions chose
 				write(*,*) 'products', reactionCurrent%products
 				write(*,*) 'cells', reactionCurrent%CellNumber
 				write(*,*) 'rate', reactionCurrent%reactionRate
-				call MPI_ABORT(MPI_COMM_WORLD,ierr)
+				call MPI_ABORT(comm,ierr)
 			
 			!if there is one defect of this type and it is in the middle of the list, remove it from the list
 			else if(defectCurrent%num==1 .AND. associated(defectCurrent%next) .AND. associated(defectPrev)) then
@@ -2818,7 +2818,7 @@ do while(associated(reactionCurrent))	!loop through all non-null reactions chose
 			!if the defect is in the list but none present, we have chosen a reaction that shouldn't exist
 			else if(defectCurrent%num==0) then
 				write(*,*) 'trying to remove a defect that isnt there'
-				call MPI_ABORT(MPI_COMM_WORLD,ierr)
+				call MPI_ABORT(comm,ierr)
 			else
 				!decrease the number of defects by 1 if the number of defects is greater than 1
 				!write(86,*) 'decreasing defect num by 1', defectCurrent%num, 'type', defectCurrent%defectType, &
@@ -3261,8 +3261,8 @@ do i=1,6
 
 	if(myProc%procNeighbor(i) /= myProc%taskid) then
 
-		call MPI_SEND(numUpdateLocal(i),1,MPI_INTEGER,myProc%procNeighbor(i),200+i,MPI_COMM_WORLD, ierr)	!number of local defects that have changed on boundary of processor i
-		call MPI_SEND(numUpdateBndry(i),1,MPI_INTEGER,myProc%procNeighbor(i),i+6,MPI_COMM_WORLD, ierr)		!number of defects in the mesh of processor i that have changed (diffusion only)
+		call MPI_SEND(numUpdateLocal(i),1,MPI_INTEGER,myProc%procNeighbor(i),200+i,comm, ierr)	!number of local defects that have changed on boundary of processor i
+		call MPI_SEND(numUpdateBndry(i),1,MPI_INTEGER,myProc%procNeighbor(i),i+6,comm, ierr)		!number of defects in the mesh of processor i that have changed (diffusion only)
 		
 		!EDIT: need to only send the first numUpdateLocal(i) elements of localBuffer(i,:,:)
 		
@@ -3277,7 +3277,7 @@ do i=1,6
 			end do
 
 			call MPI_SEND(localBufferSend,numUpdateLocal(i)*(numSpecies+3), MPI_INTEGER, &
-				myProc%procNeighbor(i),i+12,MPI_COMM_WORLD,ierr)
+				myProc%procNeighbor(i),i+12,comm,ierr)
 !			if(myProc%taskid==4) then
 !				write(*,*) 'dir', i, 'proc sent', myProc%procNeighbor(i), 'numUpdateLocal', numUpdateLocal(i)
 !			endif
@@ -3297,7 +3297,7 @@ do i=1,6
 			end do
 
 			call MPI_SEND(bndryBufferSend,numUpdateBndry(i)*(numSpecies+2), MPI_INTEGER, &
-				myProc%procNeighbor(i),i+18,MPI_COMM_WORLD,ierr)
+				myProc%procNeighbor(i),i+18,comm,ierr)
 			deallocate(bndryBufferSend)
 
 		end if
@@ -3325,8 +3325,8 @@ do i=1,6
 	
 	if(myProc%procNeighbor(i) /= myProc%taskid) then
 
-		call MPI_RECV(numUpdateBndryRecv(i),1,MPI_INTEGER,myProc%procNeighbor(i),200+tag,MPI_COMM_WORLD,status,ierr)	!number of bndry defects that have changed (local to processor i, boundary here)
-		call MPI_RECV(numUpdateLocalRecv(i),1,MPI_INTEGER,myProc%procNeighbor(i),tag+6,MPI_COMM_WORLD,status,ierr)	!number of local defects that have changed (bndry to processor i, local here)
+		call MPI_RECV(numUpdateBndryRecv(i),1,MPI_INTEGER,myProc%procNeighbor(i),200+tag,comm,status,ierr)	!number of bndry defects that have changed (local to processor i, boundary here)
+		call MPI_RECV(numUpdateLocalRecv(i),1,MPI_INTEGER,myProc%procNeighbor(i),tag+6,comm,status,ierr)	!number of local defects that have changed (bndry to processor i, local here)
 		totalLocalRecv=totalLocalRecv+numUpdateLocalRecv(i)
 	endif
 end do
@@ -3349,7 +3349,7 @@ do i=1,6
 			!Read in defects to update in boundary
 			allocate(bndryBufferRecv(numUpdateBndryRecv(i),numSpecies+3))
 			call MPI_RECV(bndryBufferRecv,numUpdateBndryRecv(i)*(numSpecies+3),MPI_INTEGER,&
-				myProc%procNeighbor(i),tag+12,MPI_COMM_WORLD,status,ierr)
+				myProc%procNeighbor(i),tag+12,comm,status,ierr)
 !			if(myProc%taskid==MASTER) then
 !				write(*,*) 'dir', i, 'proc recvd', myProc%procNeighbor(i), 'numUpdateBndryRecv', numUpdateBndryRecv(i)
 !			endif
@@ -3384,7 +3384,7 @@ do i=1,6
 				if(.NOT. associated(defectCurrent)) then
 					write(*,*) 'error myBoundary not allocated correctly'
 					write(*,*) 'dir', i, 'cell', bndryBufferRecv(j,numSpecies+1)
-					call MPI_ABORT(MPI_COMM_WORLD,ierr)
+					call MPI_ABORT(comm,ierr)
 				endif
 				
 				nullify(defectPrev)
@@ -3432,7 +3432,7 @@ do i=1,6
 							write(*,*) 'proc', myProc%taskid, 'dir', i, 'neighbor proc', myProc%procNeighbor(i)
 							write(*,*) (bndryBufferRecv(j,k),k=1,numSpecies+2)
 							
-							call MPI_ABORT(MPI_COMM_WORLD,ierr)
+							call MPI_ABORT(comm,ierr)
 							
 						else
 							nullify(defectPrev%next)
@@ -3457,7 +3457,7 @@ do i=1,6
 						write(*,*) 'error in defectUpdate negative defect numbers'
 						write(*,*) 'proc', myProc%taskid, 'dir', i, 'neighbor proc', myProc%procNeighbor(i)
 						write(*,*) (bndryBufferRecv(j,k),k=1,numSpecies+2)
-						call MPI_ABORT(MPI_COMM_WORLD,ierr)
+						call MPI_ABORT(comm,ierr)
 					else
 					
 						nullify(defectPrev%next)
@@ -3483,7 +3483,7 @@ do i=1,6
 			!Read in defects to update in local mesh
 			allocate(localBufferRecv(numUpdateLocalRecv(i),numSpecies+2))
 			call MPI_RECV(localBufferRecv,numUpdateLocalRecv(i)*(numSpecies+2),MPI_INTEGER,&
-				myProc%procNeighbor(i),tag+18,MPI_COMM_WORLD,status,ierr)
+				myProc%procNeighbor(i),tag+18,comm,status,ierr)
 
 			!Add defects in localBufferRecv to defectList()
 			do j=1,numUpdateLocalRecv(i)
@@ -3577,7 +3577,7 @@ do i=1,6
 							
 							if(localBufferRecv(j,numSpecies+2)==-1) then
 								write(*,*) 'error: cell in boundary of multiple procs removing defect'
-								call MPI_ABORT(MPI_COMM_WORLD,ierr)
+								call MPI_ABORT(comm,ierr)
 							endif
 !							if(myProc%taskid==4) then
 !								if(k==5) then
@@ -3606,7 +3606,7 @@ end do
 
 do i=1,6
 	if(myProc%procNeighbor(i) /= myProc%taskid) then
-		call MPI_SEND(numUpdateFinal(i), 1, MPI_INTEGER, myProc%procNeighbor(i), i+24, MPI_COMM_WORLD, ierr)	!number of local defects that have changed on boundary of processor i
+		call MPI_SEND(numUpdateFinal(i), 1, MPI_INTEGER, myProc%procNeighbor(i), i+24, comm, ierr)	!number of local defects that have changed on boundary of processor i
 		
 		if(numUpdateFinal(i) /= 0) then
 			allocate(finalBufferSend(numUpdateFinal(i),numSpecies+3))
@@ -3618,7 +3618,7 @@ do i=1,6
 			end do
 			
 			call MPI_SEND(finalBufferSend,numUpdateFinal(i)*(numSpecies+3), MPI_INTEGER, &
-				myProc%procNeighbor(i),i+30,MPI_COMM_WORLD,ierr)
+				myProc%procNeighbor(i),i+30,comm,ierr)
 			deallocate(finalBufferSend)
 		end if
 	end if
@@ -3641,14 +3641,14 @@ do i=1,6
 		
 		
 		!number of bndry defects that have changed (local to processor i, boundary here)
-		call MPI_RECV(numUpdateFinalRecv(i),1,MPI_INTEGER,myProc%procNeighbor(i),tag+24,MPI_COMM_WORLD,status,ierr)	
+		call MPI_RECV(numUpdateFinalRecv(i),1,MPI_INTEGER,myProc%procNeighbor(i),tag+24,comm,status,ierr)
 		
 		if(numUpdateFinalRecv(i) /= 0) then
 			
 			!Read in defects to update in boundary
 			allocate(finalBufferRecv(numUpdateFinalRecv(i),numSpecies+3))
 			call MPI_RECV(finalBufferRecv,numUpdateFinalRecv(i)*(numSpecies+3),MPI_INTEGER,&
-				myProc%procNeighbor(i),tag+30,MPI_COMM_WORLD,status,ierr)
+				myProc%procNeighbor(i),tag+30,comm,status,ierr)
 
 			!Add defects in finalBufferRecv to myBoundary()
 			do j=1,numUpdateFinalRecv(i)
@@ -3663,7 +3663,7 @@ do i=1,6
 				
 				if(finalBufferRecv(j,numSpecies+2)==-1) then
 					write(*,*) 'error deleting defects in finalBufferRecv'
-					!call MPI_ABORT(MPI_COMM_WORLD,ierr)
+					!call MPI_ABORT(comm,ierr)
 				else
 					
 					!create a new element in defectUpdate and assign all variables except for num (will do later)
@@ -4079,7 +4079,7 @@ do while(associated(defectUpdateCurrent))
 		
 		if(defectUpdateCurrent%neighbor==-1) then
 			write(*,*) 'error neighbor not assigned for diffusion reactions into boundary'
-			call MPI_ABORT(MPI_COMM_WORLD,ierr)
+			call MPI_ABORT(comm,ierr)
 		endif
 		
 		if(polycrystal=='yes') then

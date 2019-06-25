@@ -46,26 +46,26 @@ if(myProc%taskid==MASTER) then
 	!be output in the same format for the master and slave processors.
 	do i=1,myProc%numtasks-1
 		write(82,*) 'processor', i
-		call MPI_RECV(numCellsRecv,1,MPI_INTEGER,i,99,MPI_COMM_WORLD,status,ierr)
+		call MPI_RECV(numCellsRecv,1,MPI_INTEGER,i,99,comm,status,ierr)
 		
 		do j=1,numCellsRecv
 
-            call MPI_RECV(numDefectsRecv,1,MPI_INTEGER,i,100+2*j,MPI_COMM_WORLD,status,ierr)
+            call MPI_RECV(numDefectsRecv,1,MPI_INTEGER,i,100+2*j,comm,status,ierr)
             allocate(cellDefectRecv(numSpecies+1,numDefectsRecv+1))
 
             call MPI_RECV(cellDefectRecv,(numSpecies+1)*(numDefectsRecv+1),MPI_DOUBLE_PRECISION,i,&
-                    101+2*j,MPI_COMM_WORLD,status,ierr)
+                    101+2*j,comm,status,ierr)
 
-            !!call MPI_RECV(coordinatesRecv,3,MPI_DOUBLE_PRECISION,i,100,MPI_COMM_WORLD,status,ierr)
+            !!call MPI_RECV(coordinatesRecv,3,MPI_DOUBLE_PRECISION,i,100,comm,status,ierr)
             write(82,*) 'coordinates',(cellDefectRecv(l,1),l=1,3) , 'cell', j
             write(82,*) 'Cu  ', 'V  ', 'SIA_m  ', 'SIA_im  ', 'num'
 
-            !!call MPI_RECV(cellDefectRecv,numDefectsRecv*(numSpecies+2),MPI_DOUBLE_PRECISION,i,102,MPI_COMM_WORLD,status,ierr)
+            !!call MPI_RECV(cellDefectRecv,numDefectsRecv*(numSpecies+2),MPI_DOUBLE_PRECISION,i,102,comm,status,ierr)
 
 			do k=2,numDefectsRecv+1
-				!!call MPI_RECV(defectTypeRecv,numSpecies,MPI_INTEGER,i,102,MPI_COMM_WORLD,status,ierr)
-				!!call MPI_RECV(cellNumberRecv,1,MPI_INTEGER,i,103,MPI_COMM_WORLD,status,ierr)
-				!!call MPI_RECV(numRecv,1,MPI_INTEGER,i,104,MPI_COMM_WORLD,status,ierr)
+				!!call MPI_RECV(defectTypeRecv,numSpecies,MPI_INTEGER,i,102,comm,status,ierr)
+				!!call MPI_RECV(cellNumberRecv,1,MPI_INTEGER,i,103,comm,status,ierr)
+				!!call MPI_RECV(numRecv,1,MPI_INTEGER,i,104,comm,status,ierr)
 				do l=1, numSpecies+1
 					recvTemp(l) = cellDefectRecv(l,k)
 				end do
@@ -75,17 +75,17 @@ if(myProc%taskid==MASTER) then
 			deallocate(cellDefectRecv)
 			
 			!send a signal telling the other processor to go on to the next cell
-			!call MPI_SEND(tag,1,MPI_INTEGER,i,105,MPI_COMM_WORLD,ierr)
+			!call MPI_SEND(tag,1,MPI_INTEGER,i,105,comm,ierr)
 		end do
 	end do
     write(82,*)
 
 else
 		
-	call MPI_SEND(numCells, 1, MPI_INTEGER, MASTER, 99, MPI_COMM_WORLD, ierr)
+	call MPI_SEND(numCells, 1, MPI_INTEGER, MASTER, 99, comm, ierr)
 	
 	do i=1,numCells
-		!!call MPI_SEND(myMesh(i)%coordinates, 3, MPI_DOUBLE_PRECISION, MASTER, 100, MPI_COMM_WORLD, ierr)
+		!!call MPI_SEND(myMesh(i)%coordinates, 3, MPI_DOUBLE_PRECISION, MASTER, 100, comm, ierr)
 		
 		!calculate the number of defect types in cell i and send to MASTER.
 		defectCount=0
@@ -96,7 +96,7 @@ else
 		end do
 
 		!send number of defects
-		call MPI_SEND(defectCount,1,MPI_INTEGER,MASTER,100+2*i,MPI_COMM_WORLD, ierr)
+		call MPI_SEND(defectCount,1,MPI_INTEGER,MASTER,100+2*i,comm, ierr)
 		
 		!send actual defect data (loop through defects a second time)
         allocate(cellDefectSend(numSpecies+1,defectCount+1))
@@ -107,9 +107,9 @@ else
         j=1
 		defectCurrent=>defectList(i)%next
 		do while(associated(defectCurrent))
-			!!call MPI_SEND(defectCurrent%defectType,numSpecies,MPI_INTEGER,MASTER,102,MPI_COMM_WORLD,ierr)
-			!!call MPI_SEND(defectCurrent%cellNumber,1,MPI_INTEGER,MASTER,103,MPI_COMM_WORLD,ierr)
-			!!call MPI_SEND(defectCurrent%num,1,MPI_INTEGER,MASTER,104,MPI_COMM_WORLD,ierr)
+			!!call MPI_SEND(defectCurrent%defectType,numSpecies,MPI_INTEGER,MASTER,102,comm,ierr)
+			!!call MPI_SEND(defectCurrent%cellNumber,1,MPI_INTEGER,MASTER,103,comm,ierr)
+			!!call MPI_SEND(defectCurrent%num,1,MPI_INTEGER,MASTER,104,comm,ierr)
             j=j+1
 
             do k=1, numSpecies
@@ -122,10 +122,10 @@ else
 		end do
 
         call MPI_SEND(cellDefectSend, (numSpecies+1)*(defectCount+1), MPI_DOUBLE_PRECISION, MASTER, &
-                101+2*i, MPI_COMM_WORLD, ierr)
+                101+2*i, comm, ierr)
 		
 		!This just pauses the sending until the master has recieved all of the above information
-		!call MPI_RECV(buffer,1,MPI_INTEGER,MASTER,105,MPI_COMM_WORLD,status,ierr)
+		!call MPI_RECV(buffer,1,MPI_INTEGER,MASTER,105,comm,status,ierr)
 
 		deallocate(cellDefectSend)
 	end do
@@ -212,7 +212,7 @@ end do
 outputDefectList%cellNumber=0
 outputDefectList%num=0
 
-call MPI_ALLREDUCE(numAnnihilate,numAnnihilateTotal,1,MPI_INTEGER,MPI_SUM,MPI_COMM_WORLD,ierr)
+call MPI_ALLREDUCE(numAnnihilate,numAnnihilateTotal,1,MPI_INTEGER,MPI_SUM,comm,ierr)
 
 if(myProc%taskid==MASTER) then
 
@@ -325,10 +325,10 @@ if(myProc%taskid==MASTER) then
 	
 	do i=1,myProc%numtasks-1
 	
-		call MPI_RECV(numDefectsRecv,1,MPI_INTEGER,i,399,MPI_COMM_WORLD,status,ierr)
+		call MPI_RECV(numDefectsRecv,1,MPI_INTEGER,i,399,comm,status,ierr)
 
 		allocate(defectsRecv(numSpecies+1,numDefectsRecv))
-        call MPI_RECV(defectsRecv,(numSpecies+1)*numDefectsRecv,MPI_DOUBLE_PRECISION,i,400,MPI_COMM_WORLD,status,ierr)
+        call MPI_RECV(defectsRecv,(numSpecies+1)*numDefectsRecv,MPI_DOUBLE_PRECISION,i,400,comm,status,ierr)
 
 		do j=1,numDefectsRecv
 
@@ -419,7 +419,7 @@ if(myProc%taskid==MASTER) then
 
 		end do
         !Signal to other processor to send the next defect
-!        call MPI_SEND(tag,1,MPI_INTEGER, i, 405,MPI_COMM_WORLD, ierr)
+!        call MPI_SEND(tag,1,MPI_INTEGER, i, 405,comm, ierr)
 		deallocate(defectsRecv)
 		
 	end do
@@ -668,7 +668,7 @@ else	!other processors
 		
 	end do
 		
-	call MPI_SEND(numDefectsSend, 1, MPI_INTEGER, MASTER, 399, MPI_COMM_WORLD, ierr)
+	call MPI_SEND(numDefectsSend, 1, MPI_INTEGER, MASTER, 399, comm, ierr)
 
 	defectCurrentList=>outputDefectList%next
 	i=0
@@ -692,7 +692,7 @@ else	!other processors
         endif
     end do
 
-    call MPI_SEND(defectsSend, (numSpecies+1)*numDefectsSend, MPI_DOUBLE_PRECISION, MASTER, 400, MPI_COMM_WORLD, ierr)
+    call MPI_SEND(defectsSend, (numSpecies+1)*numDefectsSend, MPI_DOUBLE_PRECISION, MASTER, 400, comm, ierr)
 
 	deallocate(defectsSend)
 
@@ -786,7 +786,7 @@ end do
 outputDefectList%cellNumber=0
 outputDefectList%num=0
 
-call MPI_ALLREDUCE(numAnnihilate,numAnnihilateTotal,1,MPI_INTEGER,MPI_SUM,MPI_COMM_WORLD,ierr)
+call MPI_ALLREDUCE(numAnnihilate,numAnnihilateTotal,1,MPI_INTEGER,MPI_SUM,comm,ierr)
 
 if(myProc%taskid==MASTER) then
 	!first calculate DPA using MPI_ALLREDUCE
@@ -883,14 +883,14 @@ if(myProc%taskid==MASTER) then
 	
 	do i=1,myProc%numtasks-1
 	
-		call MPI_RECV(numDefectsRecv,1,MPI_INTEGER,i,399,MPI_COMM_WORLD,status,ierr)
+		call MPI_RECV(numDefectsRecv,1,MPI_INTEGER,i,399,comm,status,ierr)
 		
 !		write(*,*) 'recieving ', numDefectsRecv, 'defects'
 		allocate(defectsRecv(numSpecies+1,numDefectsRecv))
-		call MPI_RECV(defectsRecv,(numSpecies+1)*numDefectsRecv,MPI_DOUBLE_PRECISION,i,400,MPI_COMM_WORLD,status,ierr)
+		call MPI_RECV(defectsRecv,(numSpecies+1)*numDefectsRecv,MPI_DOUBLE_PRECISION,i,400,comm,status,ierr)
 		
 		do j=1,numDefectsRecv
-			!call MPI_RECV(defectsRecv,numSpecies+1,MPI_DOUBLE_PRECISION,i,400,MPI_COMM_WORLD,status,ierr)
+			!call MPI_RECV(defectsRecv,numSpecies+1,MPI_DOUBLE_PRECISION,i,400,comm,status,ierr)
 !			write(*,*) 'recieved defect ', j
 			
 			do k=1,numSpecies
@@ -962,7 +962,7 @@ if(myProc%taskid==MASTER) then
 			endif
 			
 			!Signal to other processor to send the next defect
-			!call MPI_SEND(tag,1,MPI_INTEGER, i, 405,MPI_COMM_WORLD, ierr)
+			!call MPI_SEND(tag,1,MPI_INTEGER, i, 405,comm, ierr)
 		end do
 		deallocate(defectsRecv)
 		
@@ -1180,7 +1180,7 @@ else
 		
 	end do
 		
-	call MPI_SEND(numDefectsSend, 1, MPI_INTEGER, MASTER, 399, MPI_COMM_WORLD, ierr)
+	call MPI_SEND(numDefectsSend, 1, MPI_INTEGER, MASTER, 399, comm, ierr)
 	allocate(defectsSend(numSpecies+1,numDefectsSend))
 	
 	defectCurrentList=>outputDefectList%next
@@ -1195,10 +1195,10 @@ else
 		
 		defectsSend(numSpecies+1,i)=defectCurrentList%num
 		
-		!call MPI_SEND(defectsSend, numSpecies+1, MPI_DOUBLE_PRECISION, MASTER, 400, MPI_COMM_WORLD, ierr)
+		!call MPI_SEND(defectsSend, numSpecies+1, MPI_DOUBLE_PRECISION, MASTER, 400, comm, ierr)
 		
 		!This just pauses the sending until the master has recieved all of the above information
-		!call MPI_RECV(buffer,1,MPI_INTEGER,MASTER,405,MPI_COMM_WORLD,status,ierr)
+		!call MPI_RECV(buffer,1,MPI_INTEGER,MASTER,405,comm,status,ierr)
 		
 		defectCurrentList=>defectCurrentList%next
 		
@@ -1208,7 +1208,7 @@ else
 		
 !		write(*,*) 'sent defect', i
 	end do
-	call MPI_SEND(defectsSend, (numSpecies+1)*numDefectsSend, MPI_DOUBLE_PRECISION, MASTER, 400, MPI_COMM_WORLD, ierr)
+	call MPI_SEND(defectsSend, (numSpecies+1)*numDefectsSend, MPI_DOUBLE_PRECISION, MASTER, 400, comm, ierr)
 	deallocate(defectsSend)
 	
 	call countReactionsCoarse(reactionsCoarse)
@@ -1406,32 +1406,32 @@ if(myProc%taskid==MASTER) then
 
 	do procID=1,myProc%numTasks-1
 
-		call MPI_RECV(tempProfileArray,numz*numSpecies,MPI_INTEGER, procID, 700, MPI_COMM_WORLD, status, ierr)
-		call MPI_RECV(tempNumArray,numz*numSpecies,MPI_INTEGER, procID, 600,MPI_COMM_WORLD, status, ierr)
+		call MPI_RECV(tempProfileArray,numz*numSpecies,MPI_INTEGER, procID, 700, comm, status, ierr)
+		call MPI_RECV(tempNumArray,numz*numSpecies,MPI_INTEGER, procID, 600,comm, status, ierr)
 		
 		do i=1,numz
 
-			!call MPI_RECV(tempArray,numSpecies,MPI_INTEGER, procID, i*700, MPI_COMM_WORLD, status, ierr)
+			!call MPI_RECV(tempArray,numSpecies,MPI_INTEGER, procID, i*700, comm, status, ierr)
 			
 			!Add defects of neighboring procs to master processor defect array
 			do j=1,numSpecies
 				defectProfileArray(i,j)=defectProfileArray(i,j)+tempProfileArray(i,j)
 			end do
 			
-			!call MPI_RECV(tempArray,numSpecies,MPI_INTEGER, procID, i*600,MPI_COMM_WORLD, status, ierr)
+			!call MPI_RECV(tempArray,numSpecies,MPI_INTEGER, procID, i*600,comm, status, ierr)
 			
 			do j=1,numSpecies
 				defectNumArray(i,j)=defectNumArray(i,j)+tempNumArray(i,j)
 			end do
 			
-			call MPI_RECV(numDefectsRecv, 1, MPI_INTEGER, procID, i*800, MPI_COMM_WORLD, status, ierr)
+			call MPI_RECV(numDefectsRecv, 1, MPI_INTEGER, procID, i*800, comm, status, ierr)
 
 			allocate(buffer(numDefectsRecv,numSpecies+1))
-			call MPI_RECV(buffer, numDefectsRecv*(numSpecies+1), MPI_INTEGER, procID, i*900, MPI_COMM_WORLD, status, ierr)
+			call MPI_RECV(buffer, numDefectsRecv*(numSpecies+1), MPI_INTEGER, procID, i*900, comm, status, ierr)
 			
 			do j=1,numDefectsRecv
 			
-				!call MPI_RECV(buffer, numSpecies+1, MPI_INTEGER, procID, i*900+j, MPI_COMM_WORLD, status, ierr)
+				!call MPI_RECV(buffer, numSpecies+1, MPI_INTEGER, procID, i*900+j, comm, status, ierr)
 				
 				do k=1,numSpecies
 					defectTypeStore(k)=buffer(j,k)
@@ -1547,13 +1547,13 @@ if(myProc%taskid==MASTER) then
 else
 	
 	!Send local array to be added to master processor array
-	call MPI_SEND(defectProfileArray,numz*numSpecies,MPI_INTEGER, MASTER, 700, MPI_COMM_WORLD, ierr)
-	call MPI_SEND(defectNumArray, numz*numSpecies, MPI_INTEGER, MASTER, 600, MPI_COMM_WORLD, ierr)
+	call MPI_SEND(defectProfileArray,numz*numSpecies,MPI_INTEGER, MASTER, 700, comm, ierr)
+	call MPI_SEND(defectNumArray, numz*numSpecies, MPI_INTEGER, MASTER, 600, comm, ierr)
 
 	do i=1,numz
-		!call MPI_SEND(defectProfileArray(i,:),numSpecies,MPI_INTEGER, MASTER, i*700, MPI_COMM_WORLD, ierr)
+		!call MPI_SEND(defectProfileArray(i,:),numSpecies,MPI_INTEGER, MASTER, i*700, comm, ierr)
 		
-		!call MPI_SEND(defectNumArray(i,:), numSpecies, MPI_INTEGER, MASTER, i*600, MPI_COMM_WORLD, ierr)
+		!call MPI_SEND(defectNumArray(i,:), numSpecies, MPI_INTEGER, MASTER, i*600, comm, ierr)
 		
 		!Compute how many defect types are in this list
 		numDefectsSend=0
@@ -1564,7 +1564,7 @@ else
 		end do
 		
 		!Send how many defect types are going to be sent
-		call MPI_SEND(numDefectsSend,1,MPI_INTEGER, MASTER, i*800, MPI_COMM_WORLD, ierr)
+		call MPI_SEND(numDefectsSend,1,MPI_INTEGER, MASTER, i*800, comm, ierr)
 		
 		!Send each defect
 		defectCurrent=>defectProfile(i)%next
@@ -1582,11 +1582,11 @@ else
 			buffer(numSend,numSpecies+1)=defectCurrent%num
 			
 			!Send information on this defect type
-			!call MPI_SEND(buffer, numSpecies+1, MPI_INTEGER, MASTER, i*900+numSend, MPI_COMM_WORLD, ierr)
+			!call MPI_SEND(buffer, numSpecies+1, MPI_INTEGER, MASTER, i*900+numSend, comm, ierr)
 			
 			defectCurrent=>defectCurrent%next
 		end do
-		call MPI_SEND(buffer, numDefectsSend*(numSpecies+1), MPI_INTEGER, MASTER, i*900, MPI_COMM_WORLD, ierr)
+		call MPI_SEND(buffer, numDefectsSend*(numSpecies+1), MPI_INTEGER, MASTER, i*900, comm, ierr)
 		deallocate(buffer)
 		
 	end do
@@ -1646,8 +1646,8 @@ type(defect), pointer :: defectCurrent
 double precision elapsedTime
 integer step
 
-call MPI_ALLREDUCE(numCells, numPoints, 1, MPI_INTEGER, MPI_SUM, MPI_COMM_WORLD, ierr)
-call MPI_GATHER(numCells,1,MPI_INTEGER,points,1,MPI_INTEGER,MASTER,MPI_COMM_WORLD, ierr)
+call MPI_ALLREDUCE(numCells, numPoints, 1, MPI_INTEGER, MPI_SUM, comm, ierr)
+call MPI_GATHER(numCells,1,MPI_INTEGER,points,1,MPI_INTEGER,MASTER,comm, ierr)
 
 if(myProc%taskid==MASTER) then
 
@@ -1693,7 +1693,7 @@ if(myProc%taskid==MASTER) then
 
 		allocate(xyzRecv(9,points(i+1)))
 
-		call MPI_RECV(xyzRecv, 9*points(i+1), MPI_DOUBLE_PRECISION, i, 571, MPI_COMM_WORLD, status, ierr)
+		call MPI_RECV(xyzRecv, 9*points(i+1), MPI_DOUBLE_PRECISION, i, 571, comm, status, ierr)
 
 		do j=1,points(i+1)
 
@@ -1718,7 +1718,7 @@ else
 
 	do i=1,numCells
 
-		!call MPI_SEND(myMesh(i)%coordinates, 3, MPI_DOUBLE_PRECISION, MASTER, 571, MPI_COMM_WORLD, ierr)
+		!call MPI_SEND(myMesh(i)%coordinates, 3, MPI_DOUBLE_PRECISION, MASTER, 571, comm, ierr)
 
 		!CuCount=0
 		!VCount=0
@@ -1749,7 +1749,7 @@ else
 		xyzSend(9,i)=xyzSend(6,i)/(meshLength**3d0)
 
 	end do
-	call MPI_SEND(xyzSend, 9*numCells, MPI_DOUBLE_PRECISION, MASTER, 571, MPI_COMM_WORLD, ierr)
+	call MPI_SEND(xyzSend, 9*numCells, MPI_DOUBLE_PRECISION, MASTER, 571, comm, ierr)
 
 	deallocate(xyzSend)
 
@@ -1851,17 +1851,17 @@ if(myProc%taskid==MASTER) then
 	!Step 3.4: recieve data from other processors and fill into DefectListVTK
 	do i=1,myProc%numTasks-1
 	
-		call MPI_RECV(numCellsNeighbor, 1, MPI_INTEGER, i, 567, MPI_COMM_WORLD, status, ierr)
+		call MPI_RECV(numCellsNeighbor, 1, MPI_INTEGER, i, 567, comm, status, ierr)
 		allocate(defectRecv(7,numCellsNeighbor))
-		call MPI_RECV(defectRecv, 7*numCellsNeighbor, MPI_INTEGER, i, 571, MPI_COMM_WORLD, status, ierr)
+		call MPI_RECV(defectRecv, 7*numCellsNeighbor, MPI_INTEGER, i, 571, comm, status, ierr)
 
 		do j=1,numCellsNeighbor
 	
-			!call MPI_RECV(cellIndex, 3, MPI_INTEGER, i, 571, MPI_COMM_WORLD, status, ierr)
-			!call MPI_RECV(numHe, 1, MPI_INTEGER, i, 568, MPI_COMM_WORLD, status, ierr)
-			!call MPI_RECV(numV, 1, MPI_INTEGER, i, 569, MPI_COMM_WORLD, status, ierr)
-			!call MPI_RECV(numSIA, 1, MPI_INTEGER, i, 570, MPI_COMM_WORLD, status, ierr)
-			!call MPI_RECV(GrainID, 1, MPI_INTEGER, i, 571, MPI_COMM_WORLD, status, ierr)
+			!call MPI_RECV(cellIndex, 3, MPI_INTEGER, i, 571, comm, status, ierr)
+			!call MPI_RECV(numHe, 1, MPI_INTEGER, i, 568, comm, status, ierr)
+			!call MPI_RECV(numV, 1, MPI_INTEGER, i, 569, comm, status, ierr)
+			!call MPI_RECV(numSIA, 1, MPI_INTEGER, i, 570, comm, status, ierr)
+			!call MPI_RECV(GrainID, 1, MPI_INTEGER, i, 571, comm, status, ierr)
 		
 			DefectListGIDVTK(defectRecv(1,j),defectRecv(2,j),defectRecv(3,j),1)=defectRecv(4,j)
 			DefectListGIDVTK(defectRecv(1,j),defectRecv(2,j),defectRecv(3,j),2)=defectRecv(5,j)
@@ -1953,7 +1953,7 @@ if(myProc%taskid==MASTER) then
 else
 
 	!Send defect information to master
-	call MPI_SEND(numCells, 1, MPI_INTEGER, MASTER, 567, MPI_COMM_WORLD, ierr)
+	call MPI_SEND(numCells, 1, MPI_INTEGER, MASTER, 567, comm, ierr)
 
 	allocate(defectSend(7,numCells))
 
@@ -1994,14 +1994,14 @@ else
 		end do
 	
 		!Step 5.3: Send information to master
-		!call MPI_SEND(cellIndex, 3, MPI_INTEGER, MASTER, 571, MPI_COMM_WORLD, ierr)
-		!call MPI_SEND(numHe, 1, MPI_INTEGER, MASTER, 568, MPI_COMM_WORLD, ierr)
-		!call MPI_SEND(numV, 1, MPI_INTEGER, MASTER, 569, MPI_COMM_WORLD, ierr)
-		!call MPI_SEND(numSIA, 1, MPI_INTEGER, MASTER, 570, MPI_COMM_WORLD, ierr)
-		!call MPI_SEND(GrainID, 1, MPI_INTEGER, MASTER, 571, MPI_COMM_WORLD, ierr)
+		!call MPI_SEND(cellIndex, 3, MPI_INTEGER, MASTER, 571, comm, ierr)
+		!call MPI_SEND(numHe, 1, MPI_INTEGER, MASTER, 568, comm, ierr)
+		!call MPI_SEND(numV, 1, MPI_INTEGER, MASTER, 569, comm, ierr)
+		!call MPI_SEND(numSIA, 1, MPI_INTEGER, MASTER, 570, comm, ierr)
+		!call MPI_SEND(GrainID, 1, MPI_INTEGER, MASTER, 571, comm, ierr)
 	
 	end do
-	call MPI_SEND(defectSend, 7*numCells, MPI_INTEGER, MASTER, 571, MPI_COMM_WORLD, ierr)
+	call MPI_SEND(defectSend, 7*numCells, MPI_INTEGER, MASTER, 571, comm, ierr)
 
 	deallocate(defectSend)
 
@@ -2041,7 +2041,7 @@ if(myProc%taskid==MASTER) then
 		!Recieve data from other procs
 		!record data from other procs in rate()
 		
-		call MPI_RECV(rateTemp,1,MPI_DOUBLE_PRECISION,i,step,MPI_COMM_WORLD,status,ierr)
+		call MPI_RECV(rateTemp,1,MPI_DOUBLE_PRECISION,i,step,comm,status,ierr)
 		rate(i+1)=rateTemp
 		
 	end do
@@ -2053,7 +2053,7 @@ if(myProc%taskid==MASTER) then
 else
 
 	!send reaction rate to master proc
-	call MPI_SEND(totalRate, 1, MPI_DOUBLE_PRECISION, MASTER, step, MPI_COMM_WORLD, ierr)
+	call MPI_SEND(totalRate, 1, MPI_DOUBLE_PRECISION, MASTER, step, comm, ierr)
 	
 endif
 
@@ -2091,8 +2091,8 @@ double precision elapsedTime
 type(defect), pointer :: defectCurrent
 character(12) :: fileName
 
-call MPI_ALLREDUCE(numImplantEvents,totalImplantEvents, 1, MPI_INTEGER, MPI_SUM, MPI_COMM_WORLD, ierr)
-!call MPI_ALLREDUCE(numHeImplantEvents,numHeImplantTotal,1,MPI_INTEGER, MPI_SUM, MPI_COMM_WORLD, ierr)
+call MPI_ALLREDUCE(numImplantEvents,totalImplantEvents, 1, MPI_INTEGER, MPI_SUM, comm, ierr)
+!call MPI_ALLREDUCE(numHeImplantEvents,numHeImplantTotal,1,MPI_INTEGER, MPI_SUM, comm, ierr)
 
 if(myProc%taskid==MASTER) then
 	
@@ -2163,12 +2163,12 @@ if(myProc%taskid==MASTER) then
 		write(88,*) proc
 		write(88,*) 
 		
-		call MPI_RECV(numCellsNeighbor, 1, MPI_INTEGER, proc, 567, MPI_COMM_WORLD, status, ierr)
+		call MPI_RECV(numCellsNeighbor, 1, MPI_INTEGER, proc, 567, comm, status, ierr)
 		
 		do cell=1,numCellsNeighbor
 		
-			!call MPI_RECV(coordsNeighbor,3,MPI_DOUBLE_PRECISION,proc,2000+cell,MPI_COMM_WORLD,status,ierr)
-			call MPI_RECV(coordsAndNumTypesRecv,4,MPI_DOUBLE_PRECISION,proc,1000+cell,MPI_COMM_WORLD,status,ierr)
+			!call MPI_RECV(coordsNeighbor,3,MPI_DOUBLE_PRECISION,proc,2000+cell,comm,status,ierr)
+			call MPI_RECV(coordsAndNumTypesRecv,4,MPI_DOUBLE_PRECISION,proc,1000+cell,comm,status,ierr)
 			write(88,*) 'coordinates'
 			write(88,*) (coordsAndNumTypesRecv(i),i=1,3)
 			write(88,*)
@@ -2178,10 +2178,10 @@ if(myProc%taskid==MASTER) then
 			write(88,*) numDefectTypes
 
 			allocate(defectDataRecv(numSpecies+1,numDefectTypes))
-			call MPI_RECV(defectDataRecv,(numSpecies+1)*numDefectTypes,MPI_DOUBLE_PRECISION,proc,3000*cell,MPI_COMM_WORLD,status,ierr)
+			call MPI_RECV(defectDataRecv,(numSpecies+1)*numDefectTypes,MPI_DOUBLE_PRECISION,proc,3000*cell,comm,status,ierr)
 			
 			do i=1,numDefectTypes
-				!call MPI_RECV(defectData,numSpecies+1,MPI_INTEGER,proc,3000*cell+i,MPI_COMM_WORLD,status,ierr)
+				!call MPI_RECV(defectData,numSpecies+1,MPI_INTEGER,proc,3000*cell+i,comm,status,ierr)
 				do k=1, numSpecies
 					defectData(k) = defectDataRecv(k,i)
 					write(88,*) defectData(k)
@@ -2206,7 +2206,7 @@ else
 	!Send data to master
 	
 	!Send number of cells to master
-	call MPI_SEND(numCells,1,MPI_INTEGER,MASTER,567,MPI_COMM_WORLD,ierr)
+	call MPI_SEND(numCells,1,MPI_INTEGER,MASTER,567,comm,ierr)
 	
 	do cell=1,numCells
 	
@@ -2215,7 +2215,7 @@ else
 		coordsAndNumTypesSend(2) = myMesh(cell)%coordinates(2)
 		coordsAndNumTypesSend(3) = myMesh(cell)%coordinates(3)
 
-		!call MPI_SEND(myMesh(cell)%coordinates,3,MPI_DOUBLE_PRECISION,MASTER,2000+cell,MPI_COMM_WORLD,ierr)
+		!call MPI_SEND(myMesh(cell)%coordinates,3,MPI_DOUBLE_PRECISION,MASTER,2000+cell,comm,ierr)
 	
 		!Count how many defect types are in the cell
 		defectCurrent=>defectList(cell)
@@ -2231,7 +2231,7 @@ else
 		end do
 
 		!send number of defect types to master
-		call MPI_SEND(coordsAndNumTypesSend,4,MPI_DOUBLE_PRECISION,MASTER,1000+cell,MPI_COMM_WORLD,ierr)
+		call MPI_SEND(coordsAndNumTypesSend,4,MPI_DOUBLE_PRECISION,MASTER,1000+cell,comm,ierr)
 
 		numDefectTypes = coordsAndNumTypesSend(4)
 		allocate(defectDataSend(numSpecies+1,numDefectTypes))
@@ -2246,12 +2246,12 @@ else
 				end do
 				defectDataSend(numSpecies+1,i)=defectCurrent%num
 				
-				!call MPI_SEND(defectData,numSpecies+1,MPI_INTEGER,MASTER,3000*cell+i,MPI_COMM_WORLD,ierr)
+				!call MPI_SEND(defectData,numSpecies+1,MPI_INTEGER,MASTER,3000*cell+i,comm,ierr)
 				i=i+1
 			endif
 			defectCurrent=>defectCurrent%next
 		end do
-		call MPI_SEND(defectDataSend,(numSpecies+1)*numDefectTypes,MPI_DOUBLE_PRECISION,MASTER,3000*cell,MPI_COMM_WORLD,ierr)
+		call MPI_SEND(defectDataSend,(numSpecies+1)*numDefectTypes,MPI_DOUBLE_PRECISION,MASTER,3000*cell,comm,ierr)
 
 		deallocate(defectDataSend)
 	
@@ -2315,7 +2315,7 @@ end do
 outputDefectList%cellNumber=0
 outputDefectList%num=0
 
-call MPI_ALLREDUCE(numAnnihilate,numAnnihilateTotal,1,MPI_INTEGER,MPI_SUM,MPI_COMM_WORLD,ierr)
+call MPI_ALLREDUCE(numAnnihilate,numAnnihilateTotal,1,MPI_INTEGER,MPI_SUM,comm,ierr)
 
 if(myProc%taskid==MASTER) then
 	
@@ -2409,14 +2409,14 @@ if(myProc%taskid==MASTER) then
 	
 	do i=1,myProc%numtasks-1
 	
-		call MPI_RECV(numDefectsRecv,1,MPI_INTEGER,i,1399,MPI_COMM_WORLD,status,ierr)
+		call MPI_RECV(numDefectsRecv,1,MPI_INTEGER,i,1399,comm,status,ierr)
 		
 !		write(*,*) 'recieving ', numDefectsRecv, 'defects'
 		allocate(defectsRecv(numSpecies+1,numDefectsRecv))
-		call MPI_RECV(defectsRecv,(numSpecies+1)*numDefectsRecv,MPI_DOUBLE_PRECISION,i,1400,MPI_COMM_WORLD,status,ierr)
+		call MPI_RECV(defectsRecv,(numSpecies+1)*numDefectsRecv,MPI_DOUBLE_PRECISION,i,1400,comm,status,ierr)
 
 		do j=1,numDefectsRecv
-			!call MPI_RECV(defectsRecv,numSpecies+1,MPI_DOUBLE_PRECISION,i,1400,MPI_COMM_WORLD,status,ierr)
+			!call MPI_RECV(defectsRecv,numSpecies+1,MPI_DOUBLE_PRECISION,i,1400,comm,status,ierr)
 !			write(*,*) 'recieved defect ', j
 			
 			do k=1,numSpecies
@@ -2488,7 +2488,7 @@ if(myProc%taskid==MASTER) then
 			end if
 			
 			!Signal to other processor to send the next defect
-			!call MPI_SEND(tag,1,MPI_INTEGER, i, 1405,MPI_COMM_WORLD, ierr)
+			!call MPI_SEND(tag,1,MPI_INTEGER, i, 1405,comm, ierr)
 		end do
 
 		deallocate(defectsRecv)
@@ -2561,7 +2561,7 @@ if(myProc%taskid==MASTER) then
 	
 	computeVConc=dble(Vnum)*atomSize/systemVol
 	!do i=1,myProc%numtasks-1
-	!	call MPI_SEND(dble(Vnum)*atomsize/systemVol,1,MPI_DOUBLE_PRECISION, i, 1406,MPI_COMM_WORLD, ierr)
+	!	call MPI_SEND(dble(Vnum)*atomsize/systemVol,1,MPI_DOUBLE_PRECISION, i, 1406,comm, ierr)
 	!end do
 
 else
@@ -2653,7 +2653,7 @@ else
 		
 	end do
 		
-	call MPI_SEND(numDefectsSend, 1, MPI_INTEGER, MASTER, 1399, MPI_COMM_WORLD, ierr)
+	call MPI_SEND(numDefectsSend, 1, MPI_INTEGER, MASTER, 1399, comm, ierr)
 
 	allocate(defectsSend(numSpecies+1,numDefectsSend))
 	
@@ -2669,10 +2669,10 @@ else
 		
 		defectsSend(numSpecies+1,i)=defectCurrentList%num
 		
-		!call MPI_SEND(defectsSend, numSpecies+1, MPI_DOUBLE_PRECISION, MASTER, 1400, MPI_COMM_WORLD, ierr)
+		!call MPI_SEND(defectsSend, numSpecies+1, MPI_DOUBLE_PRECISION, MASTER, 1400, comm, ierr)
 		
 		!This just pauses the sending until the master has recieved all of the above information
-		!call MPI_RECV(buffer,1,MPI_INTEGER,MASTER,1405,MPI_COMM_WORLD,status,ierr)
+		!call MPI_RECV(buffer,1,MPI_INTEGER,MASTER,1405,comm,status,ierr)
 		
 		defectCurrentList=>defectCurrentList%next
 		
@@ -2683,17 +2683,17 @@ else
 !		write(*,*) 'sent defect', i
 	end do
 
-	call MPI_SEND(defectsSend, (numSpecies+1)*numDefectsSend, MPI_DOUBLE_PRECISION, MASTER, 1400, MPI_COMM_WORLD, ierr)
+	call MPI_SEND(defectsSend, (numSpecies+1)*numDefectsSend, MPI_DOUBLE_PRECISION, MASTER, 1400, comm, ierr)
 
 	deallocate(defectsSend)
 	
 	call countReactionsCoarse(reactionsCoarse)
 	call countReactionsFine(reactionsFine)
 
-	!call MPI_RECV(computeVConc,1,MPI_DOUBLE_PRECISION,MASTER,1406,MPI_COMM_WORLD,status,ierr)
+	!call MPI_RECV(computeVConc,1,MPI_DOUBLE_PRECISION,MASTER,1406,comm,status,ierr)
 end if
 
-call MPI_BCAST(computeVConc, 1, MPI_DOUBLE_PRECISION, MASTER, MPI_COMM_WORLD,ierr)
+call MPI_BCAST(computeVConc, 1, MPI_DOUBLE_PRECISION, MASTER, comm,ierr)
 
 !Deallocate memory
 
@@ -2768,7 +2768,7 @@ end do
 outputDefectList%cellNumber=0
 outputDefectList%num=0
 
-call MPI_ALLREDUCE(numAnnihilate,numAnnihilateTotal,1,MPI_INTEGER,MPI_SUM,MPI_COMM_WORLD,ierr)
+call MPI_ALLREDUCE(numAnnihilate,numAnnihilateTotal,1,MPI_INTEGER,MPI_SUM,comm,ierr)
 
 if(myProc%taskid==MASTER) then
 	
@@ -2862,15 +2862,15 @@ if(myProc%taskid==MASTER) then
 	
 	do i=1,myProc%numtasks-1
 	
-		call MPI_RECV(numDefectsRecv,1,MPI_INTEGER,i,2399,MPI_COMM_WORLD,status,ierr)
+		call MPI_RECV(numDefectsRecv,1,MPI_INTEGER,i,2399,comm,status,ierr)
 		
 !		write(*,*) 'recieving ', numDefectsRecv, 'defects'
 		allocate(defectsRecv(numSpecies+1,numDefectsRecv))
 
-		call MPI_RECV(defectsRecv,(numSpecies+1)*numDefectsRecv,MPI_DOUBLE_PRECISION,i,2400,MPI_COMM_WORLD,status,ierr)
+		call MPI_RECV(defectsRecv,(numSpecies+1)*numDefectsRecv,MPI_DOUBLE_PRECISION,i,2400,comm,status,ierr)
 		
 		do j=1,numDefectsRecv
-			!call MPI_RECV(defectsRecv,numSpecies+1,MPI_DOUBLE_PRECISION,i,2400,MPI_COMM_WORLD,status,ierr)
+			!call MPI_RECV(defectsRecv,numSpecies+1,MPI_DOUBLE_PRECISION,i,2400,comm,status,ierr)
 !			write(*,*) 'recieved defect ', j
 			
 			do k=1,numSpecies
@@ -2942,7 +2942,7 @@ if(myProc%taskid==MASTER) then
 			endif
 			
 			!Signal to other processor to send the next defect
-			!call MPI_SEND(tag,1,MPI_INTEGER, i, 2405,MPI_COMM_WORLD, ierr)
+			!call MPI_SEND(tag,1,MPI_INTEGER, i, 2405,comm, ierr)
 		end do
 		
 	end do
@@ -3013,7 +3013,7 @@ if(myProc%taskid==MASTER) then
 	
 	computeIConc=dble(SIAnum)*atomSize/systemVol
 	!do i=1,myProc%numtasks-1
-		!call MPI_SEND(dble(SIAnum)*atomsize/systemVol,1,MPI_DOUBLE_PRECISION, i, 2406,MPI_COMM_WORLD, ierr)
+		!call MPI_SEND(dble(SIAnum)*atomsize/systemVol,1,MPI_DOUBLE_PRECISION, i, 2406,comm, ierr)
 	!end do
 
 else
@@ -3105,7 +3105,7 @@ else
 		
 	end do
 		
-	call MPI_SEND(numDefectsSend, 1, MPI_INTEGER, MASTER, 2399, MPI_COMM_WORLD, ierr)
+	call MPI_SEND(numDefectsSend, 1, MPI_INTEGER, MASTER, 2399, comm, ierr)
 
 	allocate(defectsSend(numSpecies+1,numDefectsSend))
 	
@@ -3121,10 +3121,10 @@ else
 		
 		defectsSend(numSpecies+1,i)=defectCurrentList%num
 		
-		!call MPI_SEND(defectsSend, numSpecies+1, MPI_DOUBLE_PRECISION, MASTER, 2400, MPI_COMM_WORLD, ierr)
+		!call MPI_SEND(defectsSend, numSpecies+1, MPI_DOUBLE_PRECISION, MASTER, 2400, comm, ierr)
 		
 		!This just pauses the sending until the master has recieved all of the above information
-		!call MPI_RECV(buffer,1,MPI_INTEGER,MASTER,2405,MPI_COMM_WORLD,status,ierr)
+		!call MPI_RECV(buffer,1,MPI_INTEGER,MASTER,2405,comm,status,ierr)
 		
 		defectCurrentList=>defectCurrentList%next
 		
@@ -3135,15 +3135,15 @@ else
 !		write(*,*) 'sent defect', i
 	end do
 
-	call MPI_SEND(defectsSend, (numSpecies+1)*numDefectsSend, MPI_DOUBLE_PRECISION, MASTER, 2400, MPI_COMM_WORLD, ierr)
+	call MPI_SEND(defectsSend, (numSpecies+1)*numDefectsSend, MPI_DOUBLE_PRECISION, MASTER, 2400, comm, ierr)
 	
 	call countReactionsCoarse(reactionsCoarse)
 	call countReactionsFine(reactionsFine)
 	
-	!call MPI_RECV(computeIConc,1,MPI_DOUBLE_PRECISION,MASTER,2406,MPI_COMM_WORLD,status,ierr)
+	!call MPI_RECV(computeIConc,1,MPI_DOUBLE_PRECISION,MASTER,2406,comm,status,ierr)
 endif
 
-call MPI_BCAST(computeIConc, 1, MPI_DOUBLE_PRECISION, MASTER, MPI_COMM_WORLD,ierr)
+call MPI_BCAST(computeIConc, 1, MPI_DOUBLE_PRECISION, MASTER, comm,ierr)
 !Deallocate memory
 
 defectCurrentList=>outputDefectList

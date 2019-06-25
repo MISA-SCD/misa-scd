@@ -67,7 +67,7 @@ if(myProc%taskid==MASTER) then
 	end do outer1
 end if
 
-call MPI_BCAST(VgCellList, initialTotalV, MPI_INTEGER, MASTER, MPI_COMM_WORLD,ierr)
+call MPI_BCAST(VgCellList, initialTotalV, MPI_INTEGER, MASTER, comm,ierr)
 
 !SIA
 rtemp = 0d0
@@ -89,7 +89,7 @@ if(myProc%taskid==MASTER) then
 	end do outer2
 end if
 
-call MPI_BCAST(IgCellList, initialTotalI, MPI_INTEGER, MASTER, MPI_COMM_WORLD,ierr)
+call MPI_BCAST(IgCellList, initialTotalI, MPI_INTEGER, MASTER, comm,ierr)
 
 
 end subroutine
@@ -202,10 +202,10 @@ if(myProc%taskid == MASTER) then
 	write(*,*) 'random number seed', randseed, 'processor', myProc%taskid
 	do i=1,myProc%numtasks-1
 		randseed=irand(randseed)
-		call mpi_send(randseed, 1, MPI_INTEGER, i, 1000,MPI_COMM_WORLD, ierr)
+		call mpi_send(randseed, 1, MPI_INTEGER, i, 1000,comm, ierr)
 	end do
 else
-	call mpi_recv(randseed, 1, MPI_INTEGER, MASTER, 1000, MPI_COMM_WORLD, status, ierr)
+	call mpi_recv(randseed, 1, MPI_INTEGER, MASTER, 1000, comm, status, ierr)
 	call sdprnd(randseed)
 	!write(*,*)
 	write(*,*) 'random number seed', randseed, 'processor', myProc%taskid

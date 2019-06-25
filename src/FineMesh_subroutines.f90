@@ -538,6 +538,6 @@ end do
 
 !Get info from other procs
 
-call MPI_ALLREDUCE(reactionCounter,reactionsFine, 1, MPI_INTEGER, MPI_SUM, MPI_COMM_WORLD, ierr)
+call MPI_ALLREDUCE(reactionCounter,reactionsFine, 1, MPI_INTEGER, MPI_SUM, comm, ierr)
 	
 end subroutine

@@ -224,7 +224,7 @@ if(cascadeCell==0) then
 		
 		!Only send/recv if the neighboring proc is different from this one
 		if(myProc%procNeighbor(j) .NE. -1 .AND. myProc%procNeighbor(j) .NE. myProc%taskid) then
-			call MPI_SEND(cellInfoBuffer(j,:), 5, MPI_INTEGER,myProc%procNeighbor(j),251+j,MPI_COMM_WORLD,ierr)
+			call MPI_SEND(cellInfoBuffer(j,:), 5, MPI_INTEGER,myProc%procNeighbor(j),251+j,comm,ierr)
 		endif
 		
 	22 continue
@@ -283,7 +283,7 @@ else
 !				endif
 					
 				call MPI_SEND(cellInfoBuffer(j,:), 5, MPI_INTEGER,myMesh(cascadeCell)%neighborProcs(j,k),&
-					251+j,MPI_COMM_WORLD,ierr)
+					251+j,comm,ierr)
 				
 				defectCurrent=>defectList(cascadeCell)%next
 				
@@ -320,7 +320,7 @@ else
 					!write(86,*) 'Info sent, sending buffer. Size', cellInfoBuffer(j,2)*(numSpecies+1)
 					
 					call MPI_ISEND(defectBuffer, numSend*(numSpecies+1), MPI_INTEGER, &
-						myMesh(cascadeCell)%neighborProcs(j,k), 351*j+bufferCount, MPI_COMM_WORLD,request, ierr)
+						myMesh(cascadeCell)%neighborProcs(j,k), 351*j+bufferCount, comm,request, ierr)
 						
 					!write(86,*) 'Buffer sent'
 	
@@ -342,7 +342,7 @@ else
 				!	myProc%procNeighbor(j)
 				
 				call MPI_SEND(cellInfoBuffer(j,:), 5, MPI_INTEGER,myProc%procNeighbor(j),&
-					251+j,MPI_COMM_WORLD,ierr)
+					251+j,comm,ierr)
 				
 			else if(myMesh(cascadeCell)%neighborProcs(j,k) == -1) then
 				
@@ -359,7 +359,7 @@ else
 				!	myProc%procNeighbor(j)
 				
 				call MPI_SEND(cellInfoBuffer(j,:), 5, MPI_INTEGER,myProc%procNeighbor(j),&
-					251+j,MPI_COMM_WORLD,ierr)
+					251+j,comm,ierr)
 				
 				!Do nothing, free surface
 				
@@ -397,7 +397,7 @@ do 15 i=1,6
 		
 		!if(myProc%taskid==MASTER) write(*,*) i, 'receiving', 101+tag
 		call MPI_RECV(recvInfoBuffer,5,MPI_INTEGER,myProc%procNeighbor(i),&
-			251+tag,MPI_COMM_WORLD,status,ierr)
+			251+tag,comm,status,ierr)
 		
 		!write(86,*) 'Info Recvd'
 	
@@ -456,7 +456,7 @@ do 15 i=1,6
 				allocate(recvDefectBuffer(numRecv,numSpecies+1))
 				
 				call MPI_IRECV(recvDefectBuffer,numRecv*(numSpecies+1),MPI_INTEGER,myProc%procNeighbor(i),&
-					351*tag+bufferCount,MPI_COMM_WORLD,request,ierr)
+					351*tag+bufferCount,comm,request,ierr)
 					
 				call MPI_WAIT(request, status, ierr)
 				

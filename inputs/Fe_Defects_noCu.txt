@@ -88,7 +88,7 @@ single
 0	2	0	0		0	1	0	0	!2V->V+V
 Eb	0.2d0
 
-0	0	2	0		0	0	1	0	!2SIA_m->SIA_m+SIA_m
+0	0	0	2		0	0	1	0	!2SIA_m->SIA_m+SIA_m
 Eb	0.8d0
 
 function
@@ -165,21 +165,14 @@ nmin	0	nmax	0
 3							!reactionRate form 3
 
 impurityTrapping			!These reactions involve changing mobile SIA loops to sessile SIA loops via trapping by impurities
-1							!Only one defect type can be affected by this
-
-0	0	1	0		0	0	0	1
-nmin	0	nmax	0
-nmin	0	nmax	0
-nmin	0	nmax	0
-nmin	0	nmax	0
-4							!reactionRate form 4 (essentially clustering between SIA loop and point defect)
+0							!Only one defect type can be affected by this
 
 multipleDefect				!the following is a list of multiple-defect reactions and their rates (clustering)
 
 clustering
 5							!number of different reactions allowed
 
-0	1	0	0		0	1	0	0		!V-V
+0	1	0	0		0	1	0	0		!V-V (3D-3D)
 nmin	0	nmax	0
 nmin	1	nmax	-1
 nmin	0	nmax	0
@@ -191,7 +184,7 @@ nmin	0	nmax	0
 nmin	0	nmax	0
 6							!reactionRate form 6 - for spherical clusters
 
-0	1	0	0		0	0	1	0		!V-SIA_mobile (annihilation)
+0	1	0	0		0	0	1	0		!V-SIA_mobile (annihilation) (3D-3D)
 nmin	0	nmax	0
 nmin	1	nmax	-1
 nmin	0	nmax	0
@@ -203,7 +196,7 @@ mmin	1	mmax	1
 nmin	0	nmax	0
 6							!reactionRate form 6 - for spherical clusters
 
-0	1	0	0		0	0	0	1		!V-SIA_sessile (annihilation) (loop)
+0	1	0	0		0	0	0	1		!V-SIA_sessile (annihilation) (loop) (3D-1D)
 nmin	0	nmax	0
 nmin	1	nmax	-1
 nmin	0	nmax	0
@@ -215,7 +208,7 @@ nmin	0	nmax	0
 mmin	2	mmax	-1
 8							!reactionRate form 8 - for 1D circular - 3D spherical interactions
 
-0	0	1	0		0	0	1	0		!small SIA_mobile clusters
+0	0	1	0		0	0	1	0		!small SIA_mobile clusters (3D-3D)
 nmin	0	nmax	0
 nmin	0	nmax	0
 nmin	1	nmax	1

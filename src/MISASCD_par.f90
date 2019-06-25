@@ -130,7 +130,11 @@ open(81, file='parameters.txt',action='read', status='old')
 !Initialize MPI interface
 call MPI_INIT(ierr)
 call MPI_COMM_SIZE(MPI_COMM_WORLD, myProc%numtasks, ierr)		!read number of processors
-call MPI_COMM_RANK(MPI_COMM_WORLD, myProc%taskid, ierr)			!read processor ID of this processor
+!call MPI_COMM_RANK(MPI_COMM_WORLD, myProc%taskid, ierr)			!read processor ID of this processor
+call MPI_DIMS_CREATE(myProc%numtasks,3,dims, ierr)
+call MPI_CART_CREATE(MPI_COMM_WORLD,3,dims,periods,.false.,comm,ierr)
+call MPI_CART_GET(comm,3,dims,periods,myProc%coords,ierr)
+call MPI_CART_RANK(comm,myProc%coords,myProc%taskid,ierr)
 
 !Initialize input parameters
 call initializeMesh()			!open Mesh_xx.txt file and carry out parallel mesh initialization routine
@@ -351,7 +355,7 @@ do while(elapsedTime < totalTime)
 		totalRate=rateSingle	!find the maximum totalRate in the local peocessor
 	end if
 	
-	call MPI_ALLREDUCE(totalRate,maxRate,1,MPI_DOUBLE_PRECISION,MPI_MAX,MPI_COMM_WORLD,ierr)
+	call MPI_ALLREDUCE(totalRate,maxRate,1,MPI_DOUBLE_PRECISION,MPI_MAX,comm,ierr)
 
 !*************************************************************************
 !	if(mod(step,10)==0) then
@@ -574,7 +578,7 @@ do while(elapsedTime < totalTime)
 		elapsedTime=elapsedTime+tau
 	end if
 
-	call MPI_BCAST(elapsedTime, 1, MPI_DOUBLE_PRECISION, MASTER, MPI_COMM_WORLD,ierr)
+	call MPI_BCAST(elapsedTime, 1, MPI_DOUBLE_PRECISION, MASTER, comm,ierr)
 
 !*********************************************************
 	call updateReactionList(defectUpdate)
@@ -649,8 +653,8 @@ do while(elapsedTime < totalTime)
 !	if(elapsedTime >= 1d-4*(10d0)**(outputCounter)) then
 	if(elapsedTime >= totalTime/200d0*(2d0)**(outputCounter)) then
 	! or if(mod(step,100000)==0) then
-		call MPI_ALLREDUCE(numImplantEvents,totalImplantEvents, 1, MPI_INTEGER, MPI_SUM, MPI_COMM_WORLD, ierr)
-		!call MPI_ALLREDUCE(numHeImplantEvents,numHeImplantTotal,1,MPI_INTEGER, MPI_SUM, MPI_COMM_WORLD, ierr)
+		call MPI_ALLREDUCE(numImplantEvents,totalImplantEvents, 1, MPI_INTEGER, MPI_SUM, comm, ierr)
+		!call MPI_ALLREDUCE(numHeImplantEvents,numHeImplantTotal,1,MPI_INTEGER, MPI_SUM, comm, ierr)
 		
 		DPA=dble(totalImplantEvents)/(((myProc%globalCoord(2)-myProc%globalCoord(1))*(myProc%globalCoord(4)-myProc%globalCoord(3))*&
 			(myProc%globalCoord(6)-myProc%globalCoord(5)))/(numDisplacedAtoms*atomsize))
@@ -741,8 +745,8 @@ end do
 !Output defects at the end of the implantation loop
 !***********************************************************************
 
-call MPI_ALLREDUCE(numImplantEvents,totalImplantEvents, 1, MPI_INTEGER, MPI_SUM, MPI_COMM_WORLD, ierr)
-!call MPI_ALLREDUCE(numHeImplantEvents,numHeImplantTotal,1,MPI_INTEGER, MPI_SUM, MPI_COMM_WORLD, ierr)
+call MPI_ALLREDUCE(numImplantEvents,totalImplantEvents, 1, MPI_INTEGER, MPI_SUM, comm, ierr)
+!call MPI_ALLREDUCE(numHeImplantEvents,numHeImplantTotal,1,MPI_INTEGER, MPI_SUM, comm, ierr)
 
 DPA=dble(totalImplantEvents)/(((myProc%globalCoord(2)-myProc%globalCoord(1))*(myProc%globalCoord(4)-myProc%globalCoord(3))*&
 	(myProc%globalCoord(6)-myProc%globalCoord(5)))/(numDisplacedAtoms*atomsize))
@@ -872,7 +876,7 @@ do annealIter=1,annealSteps	!default value: annealSteps = 1
 			totalRate=rateSingle
 		end if
 	
-		call MPI_ALLREDUCE(totalRate,maxRate,1,MPI_DOUBLE_PRECISION,MPI_MAX,MPI_COMM_WORLD,ierr)
+		call MPI_ALLREDUCE(totalRate,maxRate,1,MPI_DOUBLE_PRECISION,MPI_MAX,comm,ierr)
 
 !*************************************************************************
 !	if(mod(step,10)==0) then
@@ -988,7 +992,7 @@ do annealIter=1,annealSteps	!default value: annealSteps = 1
 			elapsedTime=elapsedTime+tau
 		end if
 
-		call MPI_BCAST(elapsedTime, 1, MPI_DOUBLE_PRECISION, MASTER, MPI_COMM_WORLD,ierr)
+		call MPI_BCAST(elapsedTime, 1, MPI_DOUBLE_PRECISION, MASTER, comm,ierr)
 		!***********************************************************************************
 		!call DEBUGPrintDefectUpdate(defectUpdate)
 
@@ -1043,8 +1047,8 @@ do annealIter=1,annealSteps	!default value: annealSteps = 1
 	
 		if((elapsedTime-totalTime) >= annealTime/dble(annealSteps)*outputCounter) then
 		
-			call MPI_ALLREDUCE(numImplantEvents,totalImplantEvents, 1, MPI_INTEGER, MPI_SUM, MPI_COMM_WORLD, ierr)
-			!call MPI_ALLREDUCE(numHeImplantEvents,numHeImplantTotal,1,MPI_INTEGER, MPI_SUM, MPI_COMM_WORLD, ierr)
+			call MPI_ALLREDUCE(numImplantEvents,totalImplantEvents, 1, MPI_INTEGER, MPI_SUM, comm, ierr)
+			!call MPI_ALLREDUCE(numHeImplantEvents,numHeImplantTotal,1,MPI_INTEGER, MPI_SUM, comm, ierr)
 		
 			DPA=dble(totalImplantEvents)/(((myProc%globalCoord(2)-myProc%globalCoord(1))*(myProc%globalCoord(4)-myProc%globalCoord(3))*&
 				(myProc%globalCoord(6)-myProc%globalCoord(5)))/(numDisplacedAtoms*atomsize))
@@ -1101,7 +1105,7 @@ end do
 !***********************************************************************
 if(annealTime > 0d0) then
 
-	call MPI_ALLREDUCE(numImplantEvents,totalImplantEvents, 1, MPI_INTEGER, MPI_SUM, MPI_COMM_WORLD, ierr)
+	call MPI_ALLREDUCE(numImplantEvents,totalImplantEvents, 1, MPI_INTEGER, MPI_SUM, comm, ierr)
 
 	DPA=dble(totalImplantEvents)/(((myProc%globalCoord(2)-myProc%globalCoord(1))*(myProc%globalCoord(4)-&
 			myProc%globalCoord(3))*(myProc%globalCoord(6)-myProc%globalCoord(5)))/(numDisplacedAtoms*atomsize))

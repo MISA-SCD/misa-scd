@@ -1,6 +1,6 @@
 !************************************************
 !2019.05.29 Add
-!This function is used to compute the vacancy concentration at this time
+!This function is used to compute vacancy concentration。
 !************************************************
 
 subroutine computeVconcent()
@@ -67,7 +67,7 @@ subroutine computeVconcent()
 
     end do outer
 
-    call MPI_ALLREDUCE(numVacancy,totalVacancy,1,MPI_INTEGER,MPI_SUM,MPI_COMM_WORLD,ierr)
+    call MPI_ALLREDUCE(numVacancy,totalVacancy,1,MPI_INTEGER,MPI_SUM,comm,ierr)
 
     if(totalVacancy > 0) then
         Vconcent = totalVacancy/((myProc%globalCoord(2)-myProc%globalCoord(1))/lattice * &
@@ -150,7 +150,7 @@ subroutine computeSIAconcent()
 
     end do outer
 
-    call MPI_ALLREDUCE(numSIA,totalSIA,1,MPI_INTEGER,MPI_SUM,MPI_COMM_WORLD,ierr)
+    call MPI_ALLREDUCE(numSIA,totalSIA,1,MPI_INTEGER,MPI_SUM,comm,ierr)
 
     if(totalSIA > 0) then
         SIAconcent = totalSIA/((myProc%globalCoord(2)-myProc%globalCoord(1))/lattice * &
@@ -159,7 +159,5 @@ subroutine computeSIAconcent()
     else
         SIAconcent = initialCeqi
     end if
-
-
 
 end subroutine

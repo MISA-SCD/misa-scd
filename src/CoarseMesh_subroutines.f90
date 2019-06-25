@@ -177,7 +177,7 @@ do cell=1,numCells
 
 end do
 
-call MPI_ALLREDUCE(reactionCounter,reactionsCoarse, 1, MPI_INTEGER, MPI_SUM, MPI_COMM_WORLD, ierr)
+call MPI_ALLREDUCE(reactionCounter,reactionsCoarse, 1, MPI_INTEGER, MPI_SUM, comm, ierr)
 	
 end subroutine
 

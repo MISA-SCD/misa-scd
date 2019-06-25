@@ -92,6 +92,7 @@ module DerivedType
 	type processorData
 		integer taskid					!<ID number of this processor (0=master)
 		integer numtasks				!<Number of processors in this simulation
+		integer coords(3)
 		double precision globalCoord(6)	!<Global boundaries of system (xmin, xmax, ymin, ymax, zmin, zmax)
 		double precision localCoord(6)	!<Local boundaries of this processor (xmin, xmax, ymin, ymax, zmin, zmax)
 		integer procNeighbor(6)			!<ID numbers of procesors neighboring this one (right, left, front, back, up, down). Accounts for periodic boundary conditions, if applicable
