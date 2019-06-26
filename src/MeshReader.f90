@@ -137,90 +137,29 @@ do i=1,5,2
 	myProc%globalCoord(i+1)=myProc%globalCoord(i+1)+length/2d0
 end do
 
-!************************************************
-!Step 2: divide processors over gobal volume
-!************************************************
-
-procDivision(1)=dims(1)	!number of processors in x
-procDivision(2)=dims(2)	!number of processors in y
-procDivision(3)=dims(3)	!number of processors in z
-
-!call MPI_DIMS_CREATE(myProc%numtasks,3,procDivision, ierr)
-
-if(myProc%taskid==MASTER) then
-	write(*,*) 'proc division', procDivision
-end if
-
 !step 3: divide volume among processors according to the factorization above
 !This step locates the boundaries of the local processor within the global volume.
 !**********
-myProc%localCoord(1)=myProc%globalCoord(1)+&
-	mod(myProc%taskid,procDivision(1))*(myProc%globalCoord(2)-myProc%globalCoord(1))/&
-	dble(procDivision(1))
+myProc%localCoord(1)=myProc%globalCoord(1)+myProc%coords(1)*&
+		(myProc%globalCoord(2)-myProc%globalCoord(1))/dble(dims(1))	!xmin
 
 myProc%localCoord(2)=myProc%localCoord(1)+&
-	(myProc%globalCoord(2)-myProc%globalCoord(1))/dble(procDivision(1))
+	(myProc%globalCoord(2)-myProc%globalCoord(1))/dble(dims(1))	!xmax
 
-myProc%localCoord(3)=myProc%globalCoord(3)+&
-	mod(myProc%taskid/ProcDivision(1),procDivision(2))*&
-	(myProc%globalCoord(4)-myProc%globalCoord(3))/dble(procDivision(2))
+myProc%localCoord(3)=myProc%globalCoord(3)+myProc%coords(2)*&
+	(myProc%globalCoord(4)-myProc%globalCoord(3))/dble(dims(2))	!ymin
 
 myProc%localCoord(4)=myProc%localCoord(3)+&
-	(myProc%globalCoord(4)-myProc%globalCoord(3))/dble(procDivision(2))
+	(myProc%globalCoord(4)-myProc%globalCoord(3))/dble(dims(2))	!ymax
 
-myProc%localCoord(5)=myProc%GlobalCoord(5)+&
-	mod(myProc%taskid/(ProcDivision(1)*ProcDivision(2)),procDivision(3))*&
-	(myProc%globalCoord(6)-myProc%globalCoord(5))/dble(procDivision(3))
+myProc%localCoord(5)=myProc%globalCoord(5)+myProc%coords(3)*&
+	(myProc%globalCoord(6)-myProc%globalCoord(5))/dble(dims(3))	!zmin
 
 myProc%localCoord(6)=myProc%localCoord(5)+&
-	(myProc%globalCoord(6)-myProc%globalCoord(5))/dble(procDivision(3))
+	(myProc%globalCoord(6)-myProc%globalCoord(5))/dble(dims(3))	!zmax
 	
 totalVolume=(myProc%localCoord(2)-myProc%localCoord(1))*(myProc%localCoord(4)-myProc%localCoord(3))*&
 	(myProc%localCoord(6)-myProc%localCoord(5))
-
-!point processor myProc%procNeighbor(x) to neighboring processors
-!********
-!This is creating a 'processor mesh' (not the actual mesh) and a connectivity between processors
-!based on how the total volume was divided in the previous steps. The connectivity
-!in this step is crated by iterating x, then y, then z
-!
-!This mesh is periodic and does not account for the possibility of free surfaces.
-!********
-if (myProc%localCoord(1)==myProc%globalCoord(1)) then	!coordinate is at xmin
-	myProc%procNeighbor(2)=myProc%taskid+procDivision(1)-1	!left
-else
-	myProc%procNeighbor(2)=myProc%taskid-1	!left
-end if
-
-if (myProc%localCoord(2)==myProc%globalCoord(2)) then	!coordinate is at xmax
-	myProc%procNeighbor(1)=myProc%taskid-procDivision(1)+1	!right
-else
-	myProc%procNeighbor(1)=myProc%taskid+1	!right
-end if
-
-if (myProc%localCoord(3)==myProc%globalCoord(3)) then	!coordinate is at ymin
-	myProc%procNeighbor(4)=myProc%taskid+procDivision(1)*(procDivision(2)-1)	!back
-else
-	myProc%procNeighbor(4)=myProc%taskid-procDivision(1)	!back
-end if
-
-if (myProc%localCoord(4)==myProc%globalCoord(4)) then	!coordinate is at ymax
-	myProc%procNeighbor(3)=myProc%taskid-procDivision(1)*(procDivision(2)-1)	!front
-else
-	myProc%procNeighbor(3)=myProc%taskid+procDivision(1)	!front
-end if
-
-if (myProc%localCoord(5)==myProc%globalCoord(5)) then	!coordinate is at zmin
-	myProc%procNeighbor(6)=myProc%taskid+procDivision(1)*procDivision(2)*(procDivision(3)-1)	!down
-else
-	myProc%procNeighbor(6)=myProc%taskid-procDivision(1)*procDivision(2)	!down
-end if
-
-if (myProc%localCoord(6)==myProc%globalCoord(6)) then	!coordinate is at zmax
-	myProc%procNeighbor(5)=myProc%taskid-procDivision(1)*procDivision(2)*(procDivision(3)-1)	!up
-else
-	myProc%procNeighbor(5)=myProc%taskid+procDivision(1)*procDivision(2)	!up
-end if
 
 !Step 4: create mesh in each processor of elements only within that processor's local coordinates
 !NOTE: this is an actual mesh of volume elements, not the 'processor mesh' created above.

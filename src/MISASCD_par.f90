@@ -127,14 +127,25 @@ call cpu_time(time1)
 
 open(81, file='parameters.txt',action='read', status='old')
 
+periods(1) = .true.
+periods(2) = .true.
+periods(3) = .true.
+
 !Initialize MPI interface
 call MPI_INIT(ierr)
 call MPI_COMM_SIZE(MPI_COMM_WORLD, myProc%numtasks, ierr)		!read number of processors
-!call MPI_COMM_RANK(MPI_COMM_WORLD, myProc%taskid, ierr)			!read processor ID of this processor
 call MPI_DIMS_CREATE(myProc%numtasks,3,dims, ierr)
-call MPI_CART_CREATE(MPI_COMM_WORLD,3,dims,periods,.false.,comm,ierr)
+call MPI_CART_CREATE(MPI_COMM_WORLD,3,dims,periods,.true.,comm,ierr)
 call MPI_CART_GET(comm,3,dims,periods,myProc%coords,ierr)
 call MPI_CART_RANK(comm,myProc%coords,myProc%taskid,ierr)
+
+call MPI_CART_SHIFT(comm,0,1,myProc%procNeighbor(2),myProc%procNeighbor(1),ierr) !x
+call MPI_CART_SHIFT(comm,1,1,myProc%procNeighbor(4),myProc%procNeighbor(3),ierr) !y
+call MPI_CART_SHIFT(comm,2,1,myProc%procNeighbor(6),myProc%procNeighbor(5),ierr) !z
+
+if(myProc%taskid==MASTER) then
+    write(*,*) 'proc division', dims
+end if
 
 !Initialize input parameters
 call initializeMesh()			!open Mesh_xx.txt file and carry out parallel mesh initialization routine

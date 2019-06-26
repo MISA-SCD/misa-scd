@@ -177,7 +177,7 @@ double precision recombinationCoeff		!<Geometric constant for Frenkel pair recom
 !used for MPI commands
 integer comm                            !<communication domain of cartesian topology
 integer dims(3)
-logical, parameter :: periods(3) = (/.true.,.true.,.true./)
+logical periods(3)
 integer ierr							!<used for initializing and finalizing MPI
 integer, parameter :: MASTER=0			!<Define the master node as ID=0
 integer, parameter :: maxBufferSize=50	!<Used to define the max size of a send/recieve buffer
