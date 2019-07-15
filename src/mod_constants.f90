@@ -183,11 +183,11 @@ integer, parameter :: MASTER=0			!<Define the master node as ID=0
 integer, parameter :: maxBufferSize=50	!<Used to define the max size of a send/recieve buffer
 
 !counters
-integer numImplantEvents			!<Postprocessing: number of Frenkel pairs / cascades (local)
-!integer numHeImplantEvents			!<Postprocessing: number of He implantation events (local)
-integer totalImplantEvents			!<Postprocessing: number of implant events across all processors 
-!integer numHeImplantTotal			!<Postprocessing: number of He implant events across all processors
-integer numAnnihilate				!<Postprocessing: number of annihilation reactions carried out
+integer numImpAnn(2)                !<Postprocessing: numImpAnn(1) is the num of Frenkel pairs / cascades (local), numImpAnn(2) is the number of annihilation reactions carried out (local)
+integer totalImpAnn(2)              !<Postprocessing: numImpAnn(1) is the number of implant events across all processors, numImpAnn(2) is the number of annihilation reactions across all processors
+!integer numImplantEvents			!<Postprocessing: number of Frenkel pairs / cascades (local)
+!integer totalImplantEvents			!<Postprocessing: number of implant events across all processors
+!integer numAnnihilate				!<Postprocessing: number of annihilation reactions carried out
 
 !counters for sink efficiency
 integer numTrapV					!<Postprocessing: number of vacancies trapped on grain boundary
@@ -197,7 +197,7 @@ integer numEmitSIA					!<Postprocessing: number of SIAs emitted from grain bound
 
 !DEBUG reset parameters
 integer numImplantEventsReset		!<For creating restart file (debugging tool, see example): number of cascades/Frenkel pairs
-integer numHeImplantEventsReset		!<For creating restart file (debugging tool, see example): number of helium implantaion events
+!integer numHeImplantEventsReset		!<For creating restart file (debugging tool, see example): number of helium implantaion events
 double precision elapsedTimeReset	!<For creating restart file (debugging tool, see example): elapsed time
 character*20 debugToggle			!<('yes' or 'no') input parameter indicating whether we are restarting from a file
 character*50 restartFileName		!<Name of restart file

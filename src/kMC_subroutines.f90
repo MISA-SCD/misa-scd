@@ -141,16 +141,14 @@ else
 	if(implantType=='FrenkelPair') then
 		if(reactionCurrent%numProducts==2 .AND. reactionCurrent%numReactants==0) then
 			!Frenkel pair implantation
-			numImplantEvents=numImplantEvents+1		!LOCAL number of implantation events. Total DPA calculated out using MPI_ALLREDUCE
-		!else if(reactionCurrent%numReactants==0 .AND. reactionCurrent%numProducts==1) then	!He implantation
-			!numHeImplantEvents=numHeImplantEvents+1
+!			numImplantEvents=numImplantEvents+1		!LOCAL number of implantation events. Total DPA calculated out using MPI_ALLREDUCE
+            numImpAnn(1)=numImpAnn(1)+1
 		end if
 	else if(implantType=='Cascade') then
 		if(reactionCurrent%numReactants==0 .OR. reactionCurrent%numReactants==-10) then
 			if(reactionCurrent%numReactants==-10 .AND. reactionCurrent%numProducts==0) then !Cascade implantation
-				numImplantEvents=numImplantEvents+1
-			!else if(reactionCurrent%numReactants==0 .AND. reactionCurrent%numProducts .NE. 0) then !He implantation
-				!numHeImplantEvents=numHeImplantEvents+1
+!				numImplantEvents=numImplantEvents+1
+                numImpAnn(1)=numImpAnn(1)+1
 			else
 				write(*,*) 'Error reaction not allowed ', 'reactants', reactionCurrent%numReactants, &
 					'products', reactionCurrent%numProducts, 'rate', reactionCurrent%reactionRate
@@ -167,19 +165,23 @@ else
 	if(reactionCurrent%numReactants==2) then	!clustering reaction
 		if(reactionCurrent%reactants(1,2) /= 0 .AND. reactionCurrent%reactants(2,3) /= 0) then	!V+SIA_mobile
 			
-			numAnnihilate=numAnnihilate+min(reactionCurrent%reactants(1,2),reactionCurrent%reactants(2,3))
+!			numAnnihilate=numAnnihilate+min(reactionCurrent%reactants(1,2),reactionCurrent%reactants(2,3))
+            numImpAnn(2)=numImpAnn(2)+min(reactionCurrent%reactants(1,2),reactionCurrent%reactants(2,3))
 		
 		else if(reactionCurrent%reactants(1,2) /= 0 .AND. reactionCurrent%reactants(2,4) /= 0) then	!V+SIA_sessile
 		
-			numAnnihilate=numAnnihilate+min(reactionCurrent%reactants(1,2),reactionCurrent%reactants(2,4))
+!			numAnnihilate=numAnnihilate+min(reactionCurrent%reactants(1,2),reactionCurrent%reactants(2,4))
+            numImpAnn(2)=numImpAnn(2)+min(reactionCurrent%reactants(1,2),reactionCurrent%reactants(2,4))
 		
 		else if(reactionCurrent%reactants(1,3) /= 0 .AND. reactionCurrent%reactants(2,2) /= 0) then	!SIA_mobile+V
 		
-			numAnnihilate=numAnnihilate+min(reactionCurrent%reactants(1,3),reactionCurrent%reactants(2,2))
+!			numAnnihilate=numAnnihilate+min(reactionCurrent%reactants(1,3),reactionCurrent%reactants(2,2))
+            numImpAnn(2)=numImpAnn(2)+min(reactionCurrent%reactants(1,3),reactionCurrent%reactants(2,2))
 		
 		else if(reactionCurrent%reactants(1,4) /= 0 .AND. reactionCurrent%reactants(2,2) /= 0) then !SIA_sessile+V
 		
-			numAnnihilate=numAnnihilate+min(reactionCurrent%reactants(1,4),reactionCurrent%reactants(2,2))
+!			numAnnihilate=numAnnihilate+min(reactionCurrent%reactants(1,4),reactionCurrent%reactants(2,2))
+            numImpAnn(2)=numImpAnn(2)+min(reactionCurrent%reactants(1,4),reactionCurrent%reactants(2,2))
 		
 		endif
 	endif
@@ -283,16 +285,14 @@ else
 	if(implantType=='FrenkelPair') then
 		if(reactionCurrent%numProducts==2 .AND. reactionCurrent%numReactants==0) then
 			!Frenkel pair implantation
-			numImplantEvents=numImplantEvents+1		!LOCAL number of implantation events. Total DPA calculated out using MPI_ALLREDUCE
-		!else if(reactionCurrent%numReactants==0 .AND. reactionCurrent%numProducts==1) then	!He implantation
-			!numHeImplantEvents=numHeImplantEvents+1
+!			numImplantEvents=numImplantEvents+1		!LOCAL number of implantation events. Total DPA calculated out using MPI_ALLREDUCE
+            numImpAnn(1)=numImpAnn(1)+1
 		end if
 	else if(implantType=='Cascade') then
 		if(reactionCurrent%numReactants==0 .OR. reactionCurrent%numReactants==-10) then
 			if(reactionCurrent%numReactants==-10 .AND. reactionCurrent%numProducts==0) then !Cascade implantation
-				numImplantEvents=numImplantEvents+1
-			!else if(reactionCurrent%numReactants==0 .AND. reactionCurrent%numProducts .NE. 0) then !He implantation
-				!numHeImplantEvents=numHeImplantEvents+1
+!				numImplantEvents=numImplantEvents+1
+                numImpAnn(1)=numImpAnn(1)+1
 			else
 				write(*,*) 'Error reaction not allowed ', 'reactants', reactionCurrent%numReactants, &
 					'products', reactionCurrent%numProducts, 'rate', reactionCurrent%reactionRate
@@ -309,19 +309,23 @@ else
 	if(reactionCurrent%numReactants==2) then	!clustering reaction
 		if(reactionCurrent%reactants(1,2) /= 0 .AND. reactionCurrent%reactants(2,3) /= 0) then	!V+SIA_mobile
 			
-			numAnnihilate=numAnnihilate+min(reactionCurrent%reactants(1,2),reactionCurrent%reactants(2,3))
+!			numAnnihilate=numAnnihilate+min(reactionCurrent%reactants(1,2),reactionCurrent%reactants(2,3))
+            numImpAnn(2)=numImpAnn(2)+min(reactionCurrent%reactants(1,2),reactionCurrent%reactants(2,3))
 		
 		else if(reactionCurrent%reactants(1,2) /= 0 .AND. reactionCurrent%reactants(2,4) /= 0) then	!V+SIA_sessile
 		
-			numAnnihilate=numAnnihilate+min(reactionCurrent%reactants(1,2),reactionCurrent%reactants(2,4))
+!			numAnnihilate=numAnnihilate+min(reactionCurrent%reactants(1,2),reactionCurrent%reactants(2,4))
+            numImpAnn(2)=numImpAnn(2)+min(reactionCurrent%reactants(1,2),reactionCurrent%reactants(2,4))
 		
 		else if(reactionCurrent%reactants(1,3) /= 0 .AND. reactionCurrent%reactants(2,2) /= 0) then	!SIA_mobile+V
 		
-			numAnnihilate=numAnnihilate+min(reactionCurrent%reactants(1,3),reactionCurrent%reactants(2,2))
+!			numAnnihilate=numAnnihilate+min(reactionCurrent%reactants(1,3),reactionCurrent%reactants(2,2))
+            numImpAnn(2)=numImpAnn(2)+min(reactionCurrent%reactants(1,3),reactionCurrent%reactants(2,2))
 		
 		else if(reactionCurrent%reactants(1,4) /= 0 .AND. reactionCurrent%reactants(2,2) /= 0) then !SIA_sessile+V
 		
-			numAnnihilate=numAnnihilate+min(reactionCurrent%reactants(1,4),reactionCurrent%reactants(2,2))
+!			numAnnihilate=numAnnihilate+min(reactionCurrent%reactants(1,4),reactionCurrent%reactants(2,2))
+            numImpAnn(2)=numImpAnn(2)+min(reactionCurrent%reactants(1,4),reactionCurrent%reactants(2,2))
 		
 		endif
 	endif
@@ -408,6 +412,10 @@ integer, allocatable :: localBufferSend(:,:), localBufferRecv(:,:)	!temporary bu
 integer, allocatable :: bndryBufferSend(:,:), bndryBufferRecv(:,:)
 integer, allocatable :: finalBufferSend(:,:), finalBufferRecv(:,:)
 
+!integer numTypes, numCascadeLocal(6),numCascadeBndryRecv(6)
+!integer, allocatable :: localCascade(:,:,:)
+!integer, allocatable :: localCascadeSend(:,:), bndryCascadeRecv(:,:)
+
 integer status(MPI_STATUS_SIZE)
 
 interface
@@ -433,6 +441,7 @@ end interface
 do i=1,6
 	numUpdateLocal(i)=0
 	numUpdateBndry(i)=0
+!    numCascadeLocal(i)=0
 end do
 
 mixingEvents=0
@@ -442,8 +451,7 @@ if(associated(reactionCurrent)) then	!if we have not chosen a null event
 	!***********************************************************************************************
 	!Cascade chosen
 	!
-	!Initialization of fine mesh, population wtih defects from coarse mesh, and addition of 
-	!cascade defects into fine mesh.
+	!Initialization of fine mesh: randomly select defects from the coarse mesh into the fine mesh.
 	!***********************************************************************************************
 
 	if(reactionCurrent%numReactants==-10) then 
@@ -451,11 +459,12 @@ if(associated(reactionCurrent)) then	!if we have not chosen a null event
 		if(meshingType=='adaptive') then
 			
 			!**************************************************
-			!create fine mesh
-			!populate with defects from coarse mesh element
-			!update defectUpdate
-			!update localBuffer if needed
-			!populate with defects from cascade
+            !> choose a cascade
+			!> create fine mesh
+			!> populate with defects from coarse mesh element
+			!> update defectUpdate
+			!> update localBuffer if needed
+			!> populate with defects from cascade
 			!**************************************************
 
 			call chooseCascade(CascadeTemp)	!choose one of the cascades from the list randomly
@@ -477,7 +486,8 @@ if(associated(reactionCurrent)) then	!if we have not chosen a null event
 					ActiveCascades%totalRate(j)=0d0							!reaction rate of all reactions within fine mesh
 				end do
 				CascadeCurrent=>ActiveCascades
-				CascadeCurrent%cascadeID=numImplantEvents
+!				CascadeCurrent%cascadeID=numImplantEvents
+                CascadeCurrent%cascadeID=numImpAnn(1)
 				!write(*,*) 'initialized ActiveCascades'
 			else	!cascade fine meshe are already in the system
 				j=1
@@ -498,7 +508,8 @@ if(associated(reactionCurrent)) then	!if we have not chosen a null event
 				do j=1,numCellsCascade
 					CascadeCurrent%totalRate(j)=0d0
 				end do
-				CascadeCurrent%cascadeID=numImplantEvents
+!				CascadeCurrent%cascadeID=numImplantEvents
+                CascadeCurrent%cascadeID=numImpAnn(1)
 			end if
 			
 			!*******************************************************************
@@ -528,14 +539,14 @@ if(associated(reactionCurrent)) then	!if we have not chosen a null event
 			
 			!output initial mesh populations
 !			if(myProc%taskid==MASTER) then
-!				do 670 i=1,numCellsCascade
+!				do i=1,numCellsCascade
 !					write(*,*) 'cascade cell', i
 !					defectCurrent=>CascadeCurrent%localDefects(i)
-!					do 671 while(associated(defectCurrent))
+!					do while(associated(defectCurrent))
 !						write(*,*) (defectCurrent%defectType(j),j=1,numSpecies), 'num', defectCurrent%num
 !						defectCurrent=>defectCurrent%next
-!					671 continue
-!				670 continue
+!					end do
+!				ebd do
 !			endif
 			
 			!***************************************************************************************
@@ -642,8 +653,7 @@ if(associated(reactionCurrent)) then	!if we have not chosen a null event
 					
 					!Step 3:
 					do k=1,mixingTemp
-						mixingEvents=mixingEvents+1
-						
+
 						!Choose which defect will be combined wtih defectTemp
 						nullify(defectStorePrev)
 						defectStore=>defectStoreList%next
@@ -665,6 +675,7 @@ if(associated(reactionCurrent)) then	!if we have not chosen a null event
 						if( .NOT. associated(defectStore)) then
 							write(*,*) 'Error DefectStore not associated in cascade mixing'
 						else
+
 						!***********************************************************************
 						!Hard coded: use defect combination rules to combine defectStore and defecTemp
 						!These rules have been transported to a separate subroutine
@@ -706,36 +717,65 @@ if(associated(reactionCurrent)) then	!if we have not chosen a null event
 							end if
 						end if
 
-						!NEXT: remove DefectTemp from fine mesh
-						if(isCombined .eqv. .TRUE.	) then
-							if(defectTemp%num==0) then	!error
-								write(*,*) 'error defect num zero combining with cascade defect'
-							else if(defectTemp%num==1) then	!remove that defect from the defect list
-						
-								if(associated(defectPrev)) then !we are not at the beginning of the list
-									if(associated(defectTemp%next)) then	!we are not at the end of the list
-										defectPrev%next=>defectTemp%next
-										deallocate(defectTemp%defectType)
-										deallocate(defectTemp)
-										defectTemp=>defectPrev
-									else
-										nullify(defectPrev%next)
-										deallocate(defectTemp%defectType)
-										deallocate(defectTemp)
-										defectTemp=>defectPrev
-									endif
-								else
-									defectTemp%num=0 !beginning of the list is never deleted
-								endif
-							else
-								defectTemp%num=defectTemp%num-1
-							endif
+                        if(isCombined .eqv. .TRUE.	) then
+                            mixingEvents=mixingEvents+1
+                        end if
 
-						end if
+						!NEXT: remove DefectTemp from fine mesh
+!						if(isCombined .eqv. .TRUE.	) then
+!							if(defectTemp%num==0) then	!error
+!								write(*,*) 'error defect num zero combining with cascade defect'
+!							else if(defectTemp%num==1) then	!remove that defect from the defect list
+						
+!								if(associated(defectPrev)) then !we are not at the beginning of the list
+!									if(associated(defectTemp%next)) then	!we are not at the end of the list
+!										defectPrev%next=>defectTemp%next
+!										deallocate(defectTemp%defectType)
+!										deallocate(defectTemp)
+!										defectTemp=>defectPrev
+!									else
+!										nullify(defectPrev%next)
+!										deallocate(defectTemp%defectType)
+!										deallocate(defectTemp)
+!										defectTemp=>defectPrev
+!									endif
+!								else
+!									defectTemp%num=0 !beginning of the list is never deleted
+!								endif
+!							else
+!								defectTemp%num=defectTemp%num-1
+!							endif
+
+!						end if
 						end if
 	
 					end do
-					
+
+                    !NEXT: remove DefectTemp from the fine mesh.
+                    !The number of defectTemp removed from the fine mesh is mixingEvents
+                    if(mixingEvents < efectTemp%num) then
+                        defectTemp%num=defectTemp%num-mixingEvents
+                    else    !mixingEvents == efectTemp%num
+                        if(defectTemp%num==0) then	!error
+                            write(*,*) 'error defect num zero combining with cascade defect'
+                        !if defectTemp is in the middle of the list
+                        else if(associated(defectPrev) .AND. associated(defectTemp%next)) then
+                            defectPrev%next=>defectTemp%next
+                            deallocate(defectTemp%defectType)
+                            deallocate(defectTemp)
+                            defectTemp=>defectPrev
+                         !if defectTemp is at the end of the list
+                        else if(associated(defectPrev)) then
+                            deallocate(defectTemp%defectType)
+                            deallocate(defectTemp)
+                            defectTemp=>defectPrev
+                            nullify(defectPrev%next)
+                        !if defectTemp is at the beginning of the list
+                        else if(associated(defectTemp%next)) then
+                            defectTemp%num=0
+                         end if
+                    end if
+
 					defectPrev=>defectTemp
 					defectTemp=>defectTemp%next
 					
@@ -743,7 +783,6 @@ if(associated(reactionCurrent)) then	!if we have not chosen a null event
 			end do
 
 			defectStore=>defectStoreList%next
-
 			!add all cascade mixing products and normal cascade products to the system
 			do while(associated(defectStore))
 			
@@ -855,7 +894,41 @@ if(associated(reactionCurrent)) then	!if we have not chosen a null event
 				end do
 				
 			end do
-			
+
+            !**********************************************************
+            !Update local buffer if need
+            !**********************************************************
+!            numTypes=0
+!            nullify(defectCurrent)
+!            defectCurrent => defectList(CascadeCurrent%cellNumber)%next
+!            do while(associated(defectCurrent))
+!                numTypes=numTypes+1
+!            end do
+
+!            allocate(localCascade(6,numTypes,numSpecies+3))
+
+!            defectCurrent => defectList(CascadeCurrent%cellNumber)%next
+!            do while(associated(defectCurrent))
+!                do j=1,6
+!                    do k=1,myMesh(CascadeCurrent%cellNumber)%numNeighbors(j)
+!                        if(myMesh(CascadeCurrent%cellNumber)%neighborProcs(j,k) /= myProc%taskid .AND. &
+!                                myMesh(CascadeCurrent%cellNumber)%neighborProcs(j,k) /= -1) then
+
+!                            numCascadeLocal(j)=numCascadeLocal(j)+1
+!                            do l=1, numSpecies
+!                                localCascade(j,numCascadeLocal(j),l)= defectCurrent%defectType(l)
+!                            end do
+!                            localCascade(j,numCascadeLocal(j), numSpecies+1) = CascadeCurrent%cellNumber
+!                            localCascade(j,numCascadeLocal(j), numSpecies+2) = defectCurrent%num
+!                            localCascade(j,numCascadeLocal(j), numSpecies+3) = &
+!                                    myMesh(CascadeCurrent%cellNumber)%neighbors(j,k)
+
+!                        end if
+!                    end do
+!                end do
+!                defectCurrent => defectCurrent%next
+!            end do
+
 			!*******************************************************************
 			!memory erase: defectStore, defectStoreList, defectCurrent, defectPrev, defectTemp
 			!*******************************************************************
@@ -876,14 +949,14 @@ if(associated(reactionCurrent)) then	!if we have not chosen a null event
 		
 !			output final defect populations after cascade implantation
 !			if(myProc%taskid==MASTER) then
-!				do 594 i=1,numCellsCascade
+!				do i=1,numCellsCascade
 !					write(*,*) 'cascade cell', i
 !					defectCurrent=>CascadeCurrent%localDefects(i)
-!					do 591 while(associated(defectCurrent))
+!					do while(associated(defectCurrent))
 !						write(*,*) (defectCurrent%defectType(j),j=1,numSpecies), 'num', defectCurrent%num
 !						defectCurrent=>defectCurrent%next
-!					591 continue
-!				594 continue
+!					end do
+!				end do
 !				read(*,*)
 !			endif
 		else if(meshingType=='nonAdaptive') then
@@ -2033,6 +2106,29 @@ end if	!if associated(reactionCurrent)
 !Step 2: send/recieve data about local and boundary defects that have changed
 !*************
 
+!do i=1,6
+!    if(myProc%procNeighbor(i) /= myProc%taskid) then
+!        call MPI_SEND(numCascadeLocal(i),1,MPI_INTEGER,myProc%procNeighbor(i),300+i,comm, ierr)
+
+!        if(numCascadeLocal(i) /= 0) then
+!            allocate(localCascadeSend(numCascadeLocal(i),numSpecies+3))
+
+!            do j=1,numCascadeLocal(i)
+!                do k=1,numSpecies+3
+!                    localCascadeSend(j,k)=localCascade(i,j,k)
+!                end do
+!            end do
+
+!            call MPI_SEND(localCascadeSend,numCascadeLocal(i)*(numSpecies+3), MPI_INTEGER, &
+!                    myProc%procNeighbor(i),i+24,comm,ierr)
+
+!            deallocate(localCascadeSend)
+
+!        end if
+!    end if
+!end do
+
+
 do i=1,6
 
 	if(myProc%procNeighbor(i) /= myProc%taskid) then
@@ -2084,6 +2180,31 @@ end do
 !**************
 !Step 3: Recieve data about local/bdry defects that have changed and update defectList and myBoundary accordingly
 !**************
+!do i=1,6
+
+!    if(i==1 .OR. i==3 .OR. i==5) then
+!        tag=i+1
+!    else
+!        tag=i-1
+!    endif
+
+!    if(myProc%procNeighbor(i) /= myProc%taskid) then
+!        call MPI_RECV(numCascadeBndryRecv(i),1,MPI_INTEGER,myProc%procNeighbor(i),300+tag,comm,status,ierr)
+!    end if
+
+!    if(numCascadeBndryRecv(i) /= 0) then
+!        allocate(bndryCascadeRecv(numCascadeBndryRecv(i),numSpecies+3))
+!        call MPI_RECV(bndryCascadeRecv,numCascadeBndryRecv(i)*(numSpecies+3),MPI_INTEGER,&
+!                myProc%procNeighbor(i),tag+24,comm,status,ierr)
+
+!        defectCurrent=>myBoundary(i,bndryCascadeRecv(j,numSpecies+1))%defectList
+
+!    end if
+
+!end do
+
+
+
 
 do i=1,6
 	numUpdateFinal(i)=0

@@ -105,9 +105,8 @@ end do outer
 if(implantType=='Cascade') then
 	if(reactionCurrent%numReactants==0 .OR. reactionCurrent%numReactants==-10) then
 		if(reactionCurrent%numReactants==-10 .AND. reactionCurrent%numProducts==0) then !Cascade implantation
-			numImplantEvents=numImplantEvents+1
-		else if(reactionCurrent%numReactants==0 .AND. reactionCurrent%numProducts /= 0) then !He implantation
-			write(*,*) 'Error helium implantation in explicit procedure'
+!			numImplantEvents=numImplantEvents+1
+			numImpAnn(1)=numImpAnn(1)+1
 		else
 			write(*,*) 'Error reaction not allowed ', 'reactants', reactionCurrent%numReactants, &
 				'products', reactionCurrent%numProducts, 'rate', reactionCurrent%reactionRate

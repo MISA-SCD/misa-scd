@@ -198,8 +198,8 @@ integer status(MPI_STATUS_SIZE)
 if(myProc%taskid == MASTER) then
 	call system_clock(Count=randseed)	!return randseed (integer, unit:ms)
 	call sdprnd(randseed)
-	write(*,*)
-	write(*,*) 'random number seed', randseed, 'processor', myProc%taskid
+!	write(*,*)
+!	write(*,*) 'random number seed', randseed, 'processor', myProc%taskid
 	do i=1,myProc%numtasks-1
 		randseed=irand(randseed)
 		call mpi_send(randseed, 1, MPI_INTEGER, i, 1000,comm, ierr)
@@ -208,7 +208,7 @@ else
 	call mpi_recv(randseed, 1, MPI_INTEGER, MASTER, 1000, comm, status, ierr)
 	call sdprnd(randseed)
 	!write(*,*)
-	write(*,*) 'random number seed', randseed, 'processor', myProc%taskid
+!	write(*,*) 'random number seed', randseed, 'processor', myProc%taskid
 endif
 
 end subroutine
@@ -958,16 +958,7 @@ if(debugToggle == 'yes') then
 		end if
 	end do
 	flag=.FALSE.
-	
-	do while(flag .eqv. .FALSE.)
-		read(87,*) char
-		if(char=='numHeImplantEvents') then
-			read(87,*) numHeImplantEventsReset
-			flag=.TRUE.
-		end if
-	end do
-	flag=.FALSE.
-	
+
 	do while(flag .eqv. .FALSE.)
 		read(87,*) char
 		if(char=='elapsedTime') then
@@ -1405,47 +1396,6 @@ do while(associated(defectCurrentCoarse))
 						defectPrevFine%defectType(j)=products(j)
 					end do
 				end if
-			
-				!***************************************************************
-				!Remove the defect from the coarse mesh
-				!***************************************************************
-!				if(.NOT. associated(defectCurrentCoarse)) then
-!					write(*,*) 'Tried to delete defect that wasnt there fine mesh initialization'
-			
-				!if defectCurrentCoarse is in the middle of the list and there is 1 of them
-!				else if(defectCurrentCoarse%num==1 .AND. associated(defectCurrentCoarse%next) .AND. associated(defectPrevCoarse)) then
-				
-!					defectPrevCoarse%next=>defectCurrentCoarse%next !remove that defect type from the system
-!					deallocate(defectCurrentCoarse%defectType)
-!					deallocate(defectCurrentCoarse)
-!					defectCurrentCoarse=>defectPrevCoarse
-			
-				!if defectCurrentCoarse is at the end of the list and there is one of them
-!				else if(defectCurrentCoarse%num==1 .AND. associated(defectPrevCoarse)) then
-!					deallocate(defectCurrentCoarse%defectType)
-!					deallocate(defectCurrentCoarse)
-!					defectCurrentCoarse=>defectPrevCoarse	!remove the last defect from the system
-!					nullify(defectPrevCoarse%next)
-			
-				!if defectCurrentCoarse is at the beginning of the list and there is one of them
-!				else if(defectCurrentCoarse%num==1 .AND. associated(defectCurrentCoarse%next)) then !removing first defect from cell i
-!					defectCurrentCoarse%num=0 !first defect in system never deallocates, it is single helium. set number equal to zero.
-			
-				!if there is only one element in the list and there is one of them
-!				else if(defectCurrentCoarse%num==1) then 	!removing only defect from cell i (single helium) - this is redundant but will keep for now
-!					defectCurrentCoarse%num=0
-			
-				!if we are trying to remove more defects than are actually present (the calculator in prev. step chose k incorrectly)
-!				else if(defectCurrentCoarse%num==0) then
-!					write(*,*) 'trying to remove a defect that isnt there (fine mesh)'
-!					write(*,*) 'k', k, 'num', num, 'num defects coarse', n
-!				else
-			
-				!If there is more than 1 defect of this type, we don't have to to do anything with the pointers
-				!and just subtract 1 from the number of defects in the system.
-!					defectCurrentCoarse%num=defectCurrentCoarse%num-1 !remove the defect from the system instead of the entire entry in the list
-!				endif
-			
 			end do
 
 			!***************************************************************

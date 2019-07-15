@@ -172,7 +172,7 @@ integer step, outputCounter
 integer reactionsCoarse, reactionsFine
 
 !total number of annihilation reactions
-integer numAnnihilateTotal
+!integer numAnnihilateTotal
 
 !Variables for defect counting and concentration
 !number of point defects
@@ -212,7 +212,7 @@ end do
 outputDefectList%cellNumber=0
 outputDefectList%num=0
 
-call MPI_ALLREDUCE(numAnnihilate,numAnnihilateTotal,1,MPI_INTEGER,MPI_SUM,comm,ierr)
+!call MPI_ALLREDUCE(numAnnihilate,numAnnihilateTotal,1,MPI_INTEGER,MPI_SUM,comm,ierr)
 
 if(myProc%taskid==MASTER) then
 
@@ -543,8 +543,10 @@ if(myProc%taskid==MASTER) then
 	LoopAverSize = dble(totalLoop)/dble(LoopNum)
 	CuVAverSize = dble(totalCuV)/dble(CuVNum)
 
-	VRetained = dble(totalVac)/(dble(numDisplacedAtoms)*dble(totalImplantEvents))
-	VAnnihilated = dble(numAnnihilateTotal)/(dble(numDisplacedAtoms)*dble(totalImplantEvents))
+!	VRetained = dble(totalVac)/(dble(numDisplacedAtoms)*dble(totalImplantEvents))
+!	VAnnihilated = dble(numAnnihilateTotal)/(dble(numDisplacedAtoms)*dble(totalImplantEvents))
+	VRetained = dble(totalVac)/(dble(numDisplacedAtoms)*dble(totalImpAnn(1)))
+	VAnnihilated = dble(totalImpAnn(2))/(dble(numDisplacedAtoms)*dble(totalImpAnn(1)))
 	
 !This is now calculated in MeshReader.f90
 !	systemVol=(myProc%globalCoord(2)-myProc%globalCoord(1))*&
@@ -760,7 +762,7 @@ integer step
 integer reactionsCoarse, reactionsFine
 
 !total number of annihilation reactions
-integer numAnnihilateTotal
+!integer numAnnihilateTotal
 
 !Variables for defect counting and concentration
 integer VNum, SIANum, LoopSize(3), totalVac, totalSIA, CuNum, totalCu
@@ -786,7 +788,7 @@ end do
 outputDefectList%cellNumber=0
 outputDefectList%num=0
 
-call MPI_ALLREDUCE(numAnnihilate,numAnnihilateTotal,1,MPI_INTEGER,MPI_SUM,comm,ierr)
+!call MPI_ALLREDUCE(numAnnihilate,numAnnihilateTotal,1,MPI_INTEGER,MPI_SUM,comm,ierr)
 
 if(myProc%taskid==MASTER) then
 	!first calculate DPA using MPI_ALLREDUCE
@@ -1076,9 +1078,8 @@ if(myProc%taskid==MASTER) then
 	write(84,*) 'AverageLoopSize', dble(totalLoop)/dble(LoopSize(2))
 	
 	!Percent vacancies retained/annihilated
-!	write(84,*) 'PercentHeRetained', dble(totalHe)/dble(numHeImplantTotal)
-	write(84,*) 'PercentVRetained', dble(totalVac)/(dble(numDisplacedAtoms)*dble(totalImplantEvents))
-	write(84,*) 'PercentVAnnihilated', dble(numAnnihilateTotal)/(dble(numDisplacedAtoms)*dble(totalImplantEvents))
+	write(84,*) 'PercentVRetained', dble(totalVac)/(dble(numDisplacedAtoms)*dble(totalImpAnn(1)))
+	write(84,*) 'PercentVAnnihilated', dble(totalImpAnn(2))/(dble(numDisplacedAtoms)*dble(totalImpAnn(1)))
 	
 	!Computation statistics: number of reactions in coarse/fine mesh, average timestep
 	call countReactionsCoarse(reactionsCoarse)
@@ -2091,12 +2092,11 @@ double precision elapsedTime
 type(defect), pointer :: defectCurrent
 character(12) :: fileName
 
-call MPI_ALLREDUCE(numImplantEvents,totalImplantEvents, 1, MPI_INTEGER, MPI_SUM, comm, ierr)
-!call MPI_ALLREDUCE(numHeImplantEvents,numHeImplantTotal,1,MPI_INTEGER, MPI_SUM, comm, ierr)
+!call MPI_ALLREDUCE(numImplantEvents,totalImplantEvents, 1, MPI_INTEGER, MPI_SUM, comm, ierr)
 
 if(myProc%taskid==MASTER) then
 	
-	fileName(1:7)='Restart'
+	fileName(1:7)='restart'
 	write(unit=fileName(8:9), fmt='(I2)') fileNumber
 	fileName(10:12)='.in'
 	
@@ -2105,11 +2105,8 @@ if(myProc%taskid==MASTER) then
 	write(88,*) myProc%numTasks
 	write(88,*)
 	write(88,*) 'numImplantEvents'
-	write(88,*) totalImplantEvents
+	write(88,*) totalImpAnn(1)
 	write(88,*)
-	!write(88,*) 'numHeImplantEvents'
-	!write(88,*) numHeImplantTotal
-	!write(88,*)
 	write(88,*) 'elapsedTime'
 	write(88,*) elapsedTime
 	write(88,*)
@@ -2289,7 +2286,7 @@ integer step
 integer reactionsCoarse, reactionsFine
 
 !total number of annihilation reactions
-integer numAnnihilateTotal
+!integer numAnnihilateTotal
 
 !Variables for defect counting and concentration
 integer VNum, SIANum, LoopSize(3), totalVac, totalSIA, CuNum, totalCu
@@ -2315,7 +2312,8 @@ end do
 outputDefectList%cellNumber=0
 outputDefectList%num=0
 
-call MPI_ALLREDUCE(numAnnihilate,numAnnihilateTotal,1,MPI_INTEGER,MPI_SUM,comm,ierr)
+!call MPI_ALLREDUCE(numAnnihilate,numAnnihilateTotal,1,MPI_INTEGER,MPI_SUM,comm,ierr)
+call MPI_ALLREDUCE(numImpAnn,totalImpAnn,2,MPI_INTEGER,MPI_SUM,comm,ierr)
 
 if(myProc%taskid==MASTER) then
 	
@@ -2742,7 +2740,7 @@ integer step
 integer reactionsCoarse, reactionsFine
 
 !total number of annihilation reactions
-integer numAnnihilateTotal
+!integer numAnnihilateTotal
 
 !Variables for defect counting and concentration
 integer VNum, SIANum, LoopSize(3), totalVac, totalSIA, CuNum, totalCu
@@ -2768,7 +2766,8 @@ end do
 outputDefectList%cellNumber=0
 outputDefectList%num=0
 
-call MPI_ALLREDUCE(numAnnihilate,numAnnihilateTotal,1,MPI_INTEGER,MPI_SUM,comm,ierr)
+!call MPI_ALLREDUCE(numAnnihilate,numAnnihilateTotal,1,MPI_INTEGER,MPI_SUM,comm,ierr)
+call MPI_ALLREDUCE(numImpAnn,totalImpAnn,2,MPI_INTEGER,MPI_SUM,comm,ierr)
 
 if(myProc%taskid==MASTER) then
 	
