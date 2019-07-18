@@ -1596,17 +1596,7 @@ do cell=1,numCells
 	!Change reaction rate to 0 for cascades and He implantation
 	
 	reactionCurrent%reactionRate=0d0
-	
-!	if(HeDPARatio .GT. 0d0) then
-!		reactionCurrent=>reactionCurrent%next
-		
-		!remove this reaction rate from totalRate
-!		totalRate=totalRate-reactionCurrent%reactionRate
-!		totalRateVol(cell)=totalRateVol(cell)-reactionCurrent%reactionRate
-		
-!		reactionCurrent%reactionRate=0d0
-!	endif
-	
+
 end do
 
 !Fine mesh

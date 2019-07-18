@@ -207,14 +207,13 @@ interface
 	end subroutine
 end interface
 
-! Step 1: Check to see if cascade was created/destroyed in element that is in the boundary of another
-! 	processor.
+! Step 1: Check to see if cascade was created/destroyed in element that is in the boundary of another processor.
 
 if(cascadeCell==0) then
 
 	!do nothing, no cascade
 	!write(86,*) 'No Cascade'
-	do 22 j=1,6
+	do j=1,6
 		cellInfoBuffer(j,1)=0
 		cellInfoBuffer(j,2)=0
 		cellInfoBuffer(j,3)=0
@@ -222,20 +221,20 @@ if(cascadeCell==0) then
 		cellInfoBuffer(j,5)=0
 		
 		!Only send/recv if the neighboring proc is different from this one
-		if(myProc%procNeighbor(j) .NE. -1 .AND. myProc%procNeighbor(j) .NE. myProc%taskid) then
+		if(myProc%procNeighbor(j) /= -1 .AND. myProc%procNeighbor(j) /= myProc%taskid) then
 			call MPI_SEND(cellInfoBuffer(j,:), 5, MPI_INTEGER,myProc%procNeighbor(j),251+j,comm,ierr)
 		endif
 		
-	22 continue
+	end do
 
 else
 	!write(86,*) 'Cascade Update Step 1: creating and sending buffers'
-	do 11 j=1,6
+	do j=1,6
 		
-		do 12 k=1,myMesh(cascadeCell)%numNeighbors(j)
+		do k=1,myMesh(cascadeCell)%numNeighbors(j)
 			
-			if(myMesh(cascadeCell)%neighborProcs(j,k) .NE. myProc%taskid .AND. &
-				myMesh(cascadeCell)%neighborProcs(j,k) .NE. -1) then
+			if(myMesh(cascadeCell)%neighborProcs(j,k) /= myProc%taskid .AND. &
+				myMesh(cascadeCell)%neighborProcs(j,k) /= -1) then
 				
 				!this element has a neighbor that is on a different processor
 				
@@ -248,18 +247,26 @@ else
 				!Find out how many defects are in this volume element
 				defectCurrent=>defectList(cascadeCell)%next
 				count=0
-				sendBufferCount=0
+				sendBufferCount=0	!Buffer counter
 				
-				do 10 while(associated(defectCurrent))
-					if(mod(count,maxBufferSize)==0) then	!we have filled up one buffer
-						sendBufferCount=sendBufferCount+1
-						count=0
-					endif
+				do while(associated(defectCurrent))
+!					if(mod(count,maxBufferSize)==0) then	!we have filled up one buffer
+!						sendBufferCount=sendBufferCount+1
+!						count=0
+!					end if
 					
 					count=count+1
 					
 					defectCurrent=>defectCurrent%next
-				10 continue
+				end do
+
+				if(mod(count,maxBufferSize)==0) then
+					sendBufferCount = count/maxBufferSize
+					count = maxBufferSize
+				else
+					sendBufferCount = count/maxBufferSize + 1
+					count = mod(count,maxBufferSize)
+				end if
 				
 				cellInfoBuffer(j,2)=count
 				cellInfoBuffer(j,5)=sendBufferCount
@@ -286,7 +293,7 @@ else
 				
 				defectCurrent=>defectList(cascadeCell)%next
 				
-				do 25 bufferCount=1,sendBufferCount
+				do bufferCount=1,sendBufferCount
 				
 					!All defect buffers have maxBufferSize defects except for the last
 					if(bufferCount==sendBufferCount) then
@@ -301,20 +308,20 @@ else
 					!Re-loop through defects and add each type to the defect buffer
 					sendCount=0
 					
-					do 13 while(associated(defectCurrent))
+					do while(associated(defectCurrent))
 						sendCount=sendCount+1
 						
-						if(sendCount .GT. maxBufferSize) then
+						if(sendCount > maxBufferSize) then
 							exit
 						endif
 						
-						do 14 i=1,numSpecies
+						do i=1,numSpecies
 							defectBuffer(sendCount,i)=defectCurrent%defectType(i)
-						14 continue
+						end do
 							
 						defectBuffer(sendCount, numSpecies+1)=defectCurrent%num
 						defectCurrent=>defectCurrent%next	
-					13 continue
+					end do
 					
 					!write(86,*) 'Info sent, sending buffer. Size', cellInfoBuffer(j,2)*(numSpecies+1)
 					
@@ -325,10 +332,10 @@ else
 	
 					deallocate(defectBuffer)
 					
-				25 continue
+				end do
 			
-			else if(myMesh(cascadeCell)%neighborProcs(j,k) .NE. -1 .AND. &
-				myProc%procNeighbor(j) .NE. myProc%taskid) then
+			else if(myMesh(cascadeCell)%neighborProcs(j,k) /= -1 .AND. &
+				myProc%procNeighbor(j) /= myProc%taskid) then
 				
 				!Tag shows that neighboring cell is not in another processor
 				cellInfoBuffer(j,1)=0
@@ -372,15 +379,15 @@ else
 				
 				write(*,*) 'error sending in cascadeUpdateStep'
 				
-			endif
+			end if
 			
-		12 continue
-	11 continue
-endif
+		end do
+	end do
+end if
 
 !Recieve cellInfoBuffer and boundary element defects, if any
 !write(86,*) 'Cascade Update Step 2: Recieving Info'
-do 15 i=1,6
+do i=1,6
 	
 	!We have to switch the tags on MPI_RECV in order for the correct send/recieve pair to be exchanged
 	if(i==1 .OR. i==3 .OR. i==5) then
@@ -390,7 +397,7 @@ do 15 i=1,6
 	endif
 	
 	!if the neighboring proc is not a free surface (no proc)
-	if(myProc%procNeighbor(i) .NE. -1 .AND. myProc%procNeighbor(i) .NE. myProc%taskid) then
+	if(myProc%procNeighbor(i) /= -1 .AND. myProc%procNeighbor(i) /= myProc%taskid) then
 		
 		!write(86,*) 'Recieving info proc', myProc%taskid, 'from', myProc%procNeighbor(i), 'tag', 251+tag
 		
@@ -406,14 +413,10 @@ do 15 i=1,6
 		cellVol=recvInfoBuffer(3)
 		bndryCellNumber=recvInfoBuffer(4)
 		numBuffersRecv=recvInfoBuffer(5)
-		
-!		if(numDefects .GE. 202) then
-!			write(*,*) 'Proc', myProc%taskid, 'recieving defects GT 202 from', myProc%procNeighbor(i)
-!		endif
-		
+
 		!if(myProc%taskid==MASTER) write(*,*) 'local cell number', cellNumber
 		
-		if(cellNumber .NE. 0) then
+		if(cellNumber /= 0) then
 			
 			!Dividing up buffers in order to not surpass the maximum amount
 			!of data that can be sent using MPI_ISEND. All buffers except for
@@ -428,20 +431,21 @@ do 15 i=1,6
 			
 			!remove defects from myBoundary (except for first defect, this is all 0's and is just a placeholder)
 			defectCurrent=>myBoundary(i,bndryCellNumber)%defectList%next
-			
-			do 21 while(associated(defectCurrent))
+
+			nullify(defectPrev)
+			do while(associated(defectCurrent))
 				defectPrev=>defectCurrent
 				defectCurrent=>defectCurrent%next
 				deallocate(defectPrev%defectType)
 				deallocate(defectPrev)
-			21 continue
+			end do
 			
 			!nullify the %next pointer in the first element of the defect list
 			defectCurrent=>myBoundary(i,bndryCellNumber)%defectList
 			
-			nullify(defectCurrent%next)
+!			nullify(defectCurrent%next)
 			
-			do 24 bufferCount=1,numBuffersRecv
+			do bufferCount=1,numBuffersRecv
 				
 				!All buffers other than the final one are full (maxBufferSize defects)
 				if(bufferCount==numBuffersRecv) then
@@ -462,18 +466,29 @@ do 15 i=1,6
 				!write(86,*) 'Buffer recieved'
 			
 				!add defects in recvDefectBuffer to boundary element
-				do 16 j=1,numRecv
+				do j=1,numRecv
 					
-					defectCurrent=>myBoundary(i,bndryCellNumber)%defectList
+!					defectCurrent=>myBoundary(i,bndryCellNumber)%defectList
+
+					nullify(defectCurrent%next)
+					allocate(defectCurrent%next)
+					nullify(defectCurrent%next%next)
+					defectCurrent=>defectCurrent%next
+					allocate(defectCurrent%defectType(numSpecies))
+					defectCurrent%cellNumber=bndryCellNumber
+					defectCurrent%num=recvDefectBuffer(j,numSpecies+1)
+					do k=1, numSpecies
+						defectCurrent%defectType(k)=recvDefectBuffer(j,k)
+					end do
 					
-					do 17 k=1,numSpecies
-						defectType(k)=recvDefectBuffer(j,k)
-					17 continue
+!					do k=1,numSpecies
+!						defectType(k)=recvDefectBuffer(j,k)
+!					end do
 					
 					!if(myProc%taskid==MASTER) write(*,*) 'defect type', defectType, 'num', recvDefectBuffer(j,numSpecies+1)
-					
-					nullify(defectPrev)
-					call findDefectInList(defectCurrent, defectPrev, defectType)
+
+!					nullify(defectPrev)
+!					call findDefectInList(defectCurrent, defectPrev, defectType)
 					
 					!*********************************************************************************
 					!NOTE: the next step should be unnecessary since there should only be one defect of
@@ -481,54 +496,52 @@ do 15 i=1,6
 					!it anyway for the sake of safety
 					!*********************************************************************************
 					
-					if(associated(defectCurrent)) then !if we aren't at the end of the list
+!					if(associated(defectCurrent)) then !if we aren't at the end of the list
 						
-						count=0
-						do 18 k=1,numSpecies
-							if(defectCurrent%defectType(k)==defectType(k)) then
-								count=count+1
-							endif
-						18 continue
-						if(count==numSpecies) then
+!						count=0
+!						do k=1,numSpecies
+!							if(defectCurrent%defectType(k)==defectType(k)) then
+!								count=count+1
+!							endif
+!						end do
+!						if(count==numSpecies) then
 						!	write(*,*) 'error defect already present in list, cascadeUpdateStep proc', myProc%taskid
 						!	write(*,*) 'defectType', defectType
 						!	if(myProc%taskid==MASTER) read(*,*)
-						else		!if the defect is to be inserted in the list
-							nullify(defectPrev%next)
-							allocate(defectPrev%next)
-							nullify(defectPrev%next%next)
-							defectPrev=>defectPrev%next
-							allocate(defectPrev%defectType(numSpecies))
-							defectPrev%cellNumber=cellNumber
-							defectPrev%num=recvDefectBuffer(j,numSpecies+1)
-							do 19 k=1,numSpecies
-								defectPrev%defectType(k)=defectType(k)
-							19 continue
-							defectPrev%next=>defectCurrent !if inserted defect is in the middle of the list, point it to the next item in the list
-						endif
-					else 			!add a defect to the end of the list
-						
-						nullify(defectPrev%next)
-						allocate(defectPrev%next)
-						nullify(defectPrev%next%next)
-						defectPrev=>defectPrev%next
-						allocate(defectPrev%defectType(numSpecies))
-						defectPrev%cellNumber=cellNumber
-						defectPrev%num=recvDefectBuffer(j,numSpecies+1)
-						do 20 k=1,numSpecies
-							defectPrev%defectType(k)=defectType(k)
-						20 continue
-					endif
+!						else		!if the defect is to be inserted in the list
+!							nullify(defectPrev%next)
+!							allocate(defectPrev%next)
+!							nullify(defectPrev%next%next)
+!							defectPrev=>defectPrev%next
+!							allocate(defectPrev%defectType(numSpecies))
+!							defectPrev%cellNumber=cellNumber
+!							defectPrev%num=recvDefectBuffer(j,numSpecies+1)
+!							do k=1,numSpecies
+!								defectPrev%defectType(k)=defectType(k)
+!							end do
+!							defectPrev%next=>defectCurrent !if inserted defect is in the middle of the list, point it to the next item in the list
+!						endif
+!					else 			!add a defect to the end of the list
+!
+!						nullify(defectPrev%next)
+!						allocate(defectPrev%next)
+!						nullify(defectPrev%next%next)
+!						defectPrev=>defectPrev%next
+!						allocate(defectPrev%defectType(numSpecies))
+!						defectPrev%cellNumber=cellNumber
+!						defectPrev%num=recvDefectBuffer(j,numSpecies+1)
+!						do k=1,numSpecies
+!							defectPrev%defectType(k)=defectType(k)
+!						end do
+!					endif
 					
-				16 continue
+				end do
 					
-				!memory clear
-			
 				deallocate(recvDefectBuffer)
 				
-			24 continue
+			end do
 				
-			!Update diffusion rates from LOCAL element into recvInfoBuffer(1) in boundary
+			!Update diffusion rates from LOCAL element into recvInfoBuffer(4) in boundary
 			
 			!*******************
 			!Add Diffusion reactions
@@ -537,10 +550,10 @@ do 15 i=1,6
 			!point defectCurrent at defect list in local cell
 			defectCurrent=>defectList(cellNumber)
 			
-			do 23 while(associated(defectCurrent))
+			do while(associated(defectCurrent))
 				if (myMesh(cellNumber)%numNeighbors(i)==0) then
 					write(*,*) 'error myMesh does not have neighbors in this direction'
-				endif
+				end if
 				
 				if(polycrystal=='yes') then
 				
@@ -552,44 +565,38 @@ do 15 i=1,6
 					!we are only adding diffusion reactions due to defects that
 					!have changed on the boundary of this processor (in another
 					!processor, not a free surface)
-					if(myProc%procNeighbor(i) .NE. myProc%taskid .AND. &
-						myProc%procNeighbor(i) .NE. -1) then
+					if(myProc%procNeighbor(i) /= myProc%taskid .AND. &
+						myProc%procNeighbor(i) /= -1) then
 						neighborGrainID=myBoundary(i,myMesh(cellNumber)%neighbors(i,1))%material		
 					else
 						neighborGrainID=myMesh(myMesh(cellNumber)%neighbors(i,1))%material
 					endif
 					
 					if(localGrainID==neighborGrainID) then
-				
 						!Allow diffusion between elements in the same grain
 						call addDiffusionReactions(cellNumber, bndryCellNumber,&
 							myProc%taskid, myProc%procNeighbor(i),i,defectCurrent%defectType)
-					
 					else
-					
 						!Assume perfect sinks at grain boundaries - treat grain boundaries like free surfaces for now
 						call addDiffusionReactions(cellNumber, 0, myProc%taskid, -1, i, defectCurrent%defectType)
-					
-					endif
+					end if
 				
 				else	
 					!Add diffusion reactions from this cell to neighboring cells
 					call addDiffusionReactions(cellNumber, bndryCellNumber,&
 						myProc%taskid, myProc%procNeighbor(i),i,defectCurrent%defectType)
-				endif
+				end if
 				
 				defectCurrent=>defectCurrent%next
-			23 continue
+			end do
 		
 		endif
 		
 	else
-	
 		!Do nothing, free surface
+	end if
 	
-	endif
-	
-15 continue
+end do
 
 end subroutine
 

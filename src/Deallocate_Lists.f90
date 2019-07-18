@@ -1,5 +1,4 @@
 !***********************************************************************
-!
 !> Subroutine deallocateBoundaryDefectList() - deallocates boundary defect lists
 !!
 !! This subroutine deallocates all the defects in the boundary mesh at the
@@ -19,13 +18,13 @@ implicit none
 integer cell, dir, k, i
 type(defect), pointer :: defectCurrent, defectPrev
 
-do 10 cell=1,numCells
-	do 11 dir=1,6
-		do 12 k=1,myMesh(cell)%numNeighbors(dir)
-			if(myMesh(cell)%neighborProcs(dir,k) .NE. myProc%taskid .AND. &
-				myMesh(cell)%neighborProcs(dir,k) .NE. -1) then !neighbor cell is in different proc, not free surface (taskid=-1)
+do cell=1,numCells
+	do dir=1,6
+		do k=1,myMesh(cell)%numNeighbors(dir)
+			if(myMesh(cell)%neighborProcs(dir,k) /= myProc%taskid .AND. &
+				myMesh(cell)%neighborProcs(dir,k) /= -1) then !neighbor cell is in different proc, not free surface (taskid=-1)
 				
-				if(myMesh(cell)%neighborProcs(dir,k) .NE. myProc%procNeighbor(dir)) then
+				if(myMesh(cell)%neighborProcs(dir,k) /= myProc%procNeighbor(dir)) then
 					write(*,*) 'error neighbor not correct during boundary mesh initialization'
 				else
 					!deallocate this boundary element:
@@ -34,20 +33,20 @@ do 10 cell=1,numCells
 					
 					defectCurrent=>myBoundary(dir,myMesh(cell)%neighbors(dir,k))%defectList%next
 					
-					do 13 while(associated(defectCurrent))
+					do while(associated(defectCurrent))
 						defectPrev=>defectCurrent
 						defectCurrent=>defectCurrent%next
 						if(allocated(defectPrev%defectType)) then
 							deallocate(DefectPrev%defectType)
 						endif
 						deallocate(defectPrev)
-					13 continue
+					end do
 
-				endif
-			endif
-		12 continue
-	11 continue
-10 continue
+				end if
+			end if
+		end do
+	end do
+end do
 
 end subroutine
 
@@ -76,11 +75,11 @@ type(cascadeDefect), pointer :: DefectTemp, DefectPrev
 
 CascadeTemp=>CascadeList
 
-do 10 while(associated(CascadeTemp))
+do while(associated(CascadeTemp))
 
 	DefectTemp=>CascadeTemp%listOfDefects
 	
-	do 11 while(associated(DefectTemp))
+	do while(associated(DefectTemp))
 		
 		DefectPrev=>DefectTemp
 		DefectTemp=>DefectTemp%next
@@ -91,14 +90,14 @@ do 10 while(associated(CascadeTemp))
 		
 		deallocate(defectPrev)
 	
-	11 continue
+	end do
 	
 	CascadePrev=>CascadeTemp
 	CascadeTemp=>CascadeTemp%nextCascade
 	
 	deallocate(CascadePrev)
 
-10 continue
+end do
 
 end subroutine
 
@@ -132,76 +131,81 @@ implicit none
 integer matNum
 integer i
 
-do 20 matNum=1,numMaterials
+do matNum=1,numMaterials
 
-do 10 i=1,numFuncDiff(matNum)
-	deallocate(DiffFunc(matNum,i)%defectType)
-	deallocate(DiffFunc(matNum,i)%min)
-	deallocate(DiffFunc(matNum,i)%max)
-	deallocate(DiffFunc(matNum,i)%parameters)
-10 continue
+	do i=1, numSingleForm(matNum)
+		deallocate(FormSingle(matNum,i)%defectType)
+	end do
 
-do 11 i=1,numSingleDiff(matNum)
-	deallocate(DiffSingle(matNum,i)%defectType)
-11 continue
+	do i=1,numFuncDiff(matNum)
+		deallocate(DiffFunc(matNum,i)%defectType)
+		deallocate(DiffFunc(matNum,i)%min)
+		deallocate(DiffFunc(matNum,i)%max)
+		deallocate(DiffFunc(matNum,i)%parameters)
+	end do
 
-do 12 i=1,numFuncBind(matNum)
-	deallocate(BindFunc(matNum,i)%defectType)
-	deallocate(BindFunc(matNum,i)%product)
-	deallocate(BindFunc(matNum,i)%min)
-	deallocate(BindFunc(matNum,i)%max)
-	deallocate(BindFunc(matNum,i)%parameters)
-12 continue
+	do i=1,numSingleDiff(matNum)
+		deallocate(DiffSingle(matNum,i)%defectType)
+	end do
 
-do 13 i=1,numSingleBind(matNum)
-	deallocate(BindSingle(matNum,i)%defectType)
-	deallocate(BindSingle(matNum,i)%product)
-13 continue
+	do i=1,numFuncBind(matNum)
+		deallocate(BindFunc(matNum,i)%defectType)
+		deallocate(BindFunc(matNum,i)%product)
+		deallocate(BindFunc(matNum,i)%min)
+		deallocate(BindFunc(matNum,i)%max)
+		deallocate(BindFunc(matNum,i)%parameters)
+	end do
 
-do 14 i=1,numDissocReac(matNum)
-	deallocate(DissocReactions(matNum,i)%reactants)
-	deallocate(DissocReactions(matNum,i)%products)
-	deallocate(DissocReactions(matNum,i)%min)
-	deallocate(DissocReactions(matNum,i)%max)
-14 continue
+	do i=1,numSingleBind(matNum)
+		deallocate(BindSingle(matNum,i)%defectType)
+		deallocate(BindSingle(matNum,i)%product)
+	end do
 
-do 15 i=1,numDiffReac(matNum)
-	deallocate(DiffReactions(matNum,i)%reactants)
-	deallocate(DiffReactions(matNum,i)%products)
-	deallocate(DiffReactions(matNum,i)%min)
-	deallocate(DiffReactions(matNum,i)%max)
-15 continue
+	do i=1,numDissocReac(matNum)
+		deallocate(DissocReactions(matNum,i)%reactants)
+		deallocate(DissocReactions(matNum,i)%products)
+		deallocate(DissocReactions(matNum,i)%min)
+		deallocate(DissocReactions(matNum,i)%max)
+	end do
 
-do 16 i=1,numSinkReac(matNum)
-	deallocate(SinkReactions(matNum,i)%reactants)
-	!deallocate(SinkReactions(matNum,i)%products)
-	deallocate(SinkReactions(matNum,i)%min)
-	deallocate(SinkReactions(matNum,i)%max)
-16 continue
+	do i=1,numDiffReac(matNum)
+		deallocate(DiffReactions(matNum,i)%reactants)
+		deallocate(DiffReactions(matNum,i)%products)
+		deallocate(DiffReactions(matNum,i)%min)
+		deallocate(DiffReactions(matNum,i)%max)
+	end do
 
-do 17 i=1,numImpurityReac(matNum)
-	deallocate(ImpurityReactions(matNum,i)%reactants)
-	deallocate(ImpurityReactions(matNum,i)%products)
-	deallocate(ImpurityReactions(matNum,i)%min)
-	deallocate(ImpurityReactions(matNum,i)%max)
-17 continue
+	do i=1,numSinkReac(matNum)
+		deallocate(SinkReactions(matNum,i)%reactants)
+		!deallocate(SinkReactions(matNum,i)%products)
+		deallocate(SinkReactions(matNum,i)%min)
+		deallocate(SinkReactions(matNum,i)%max)
+	end do
 
-do 18 i=1,numClusterReac(matNum)
-	deallocate(ClusterReactions(matNum,i)%reactants)
-	deallocate(ClusterReactions(matNum,i)%products)
-	deallocate(ClusterReactions(matNum,i)%min)
-	deallocate(ClusterReactions(matNum,i)%max)
-18 continue
+	do i=1,numImpurityReac(matNum)
+		deallocate(ImpurityReactions(matNum,i)%reactants)
+		deallocate(ImpurityReactions(matNum,i)%products)
+		deallocate(ImpurityReactions(matNum,i)%min)
+		deallocate(ImpurityReactions(matNum,i)%max)
+	end do
 
-do 19 i=1,numImplantReac(matNum)
-!	deallocate(ImplantReactions(matNum,i)%reactants)
-!	deallocate(ImplantReactions(matNum,i)%products)
-!	deallocate(ImplantReactions(matNum,i)%min)
-!	deallocate(ImplantReactions(matNum,i)%max)
-19 continue
+	do i=1,numClusterReac(matNum)
+		deallocate(ClusterReactions(matNum,i)%reactants)
+		deallocate(ClusterReactions(matNum,i)%products)
+		deallocate(ClusterReactions(matNum,i)%min)
+		deallocate(ClusterReactions(matNum,i)%max)
+	end do
 
-20 continue
+	do i=1,numImplantReac(matNum)
+		deallocate(ImplantReactions(matNum,i)%reactants)
+		deallocate(ImplantReactions(matNum,i)%products)
+		deallocate(ImplantReactions(matNum,i)%min)
+		deallocate(ImplantReactions(matNum,i)%max)
+	end do
 
+end do
+
+if(allocated(FormSingle)) deallocate(FormSingle)
 if(allocated(DiffFunc)) deallocate(DiffFunc)
 if(allocated(DiffSingle)) deallocate(DiffSingle)
 if(allocated(BindFunc)) deallocate(BindFunc)
@@ -255,13 +259,13 @@ do cell=1,numCells
 
 end do
 
-do 12 cell=1,numCells
+do cell=1,numCells
 	defectCurrent=>defectList(cell)
 	
 	if(allocated(defectCurrent%defectType)) then
 		deallocate(defectCurrent%defectType)
 	endif
-12 continue
+end do
 
 deallocate(defectList)
 
@@ -289,10 +293,10 @@ implicit none
 type(reaction), pointer :: reactionCurrent, reactionPrev
 integer cell, i, j
 
-do 10 cell=1,numCells
+do cell=1,numCells
 	reactionCurrent=>reactionList(cell)%next
 	
-	do 11 while(associated(reactionCurrent))
+	do while(associated(reactionCurrent))
 	
 		reactionPrev=>reactionCurrent
 		reactionCurrent=>reactionCurrent%next
@@ -315,11 +319,11 @@ do 10 cell=1,numCells
 		
 		deallocate(reactionPrev)
 	
-	11 continue
+	end do
 
-10 continue
+end do
 
-do 12 cell=1,numCells
+do cell=1,numCells
 
 	reactionCurrent=>reactionList(cell)
 	
@@ -339,7 +343,7 @@ do 12 cell=1,numCells
 		deallocate(reactionCurrent%taskid)
 	endif
 	
-12 continue
+end do
 
 deallocate(reactionList)
 

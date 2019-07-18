@@ -6,7 +6,7 @@
 
 !Tell computer location of mesh input file
 meshFile
-'../../meshes/Mesh_Bulk.txt'
+'../../meshes/MeshGenInputs/MeshGenInput_Bulk.txt'
 
 !Tell computer if this is a uniform or non-uniform mesh file
 meshType
@@ -30,7 +30,7 @@ numMaterials
 
 !Tell computer the location of the material input file(s)
 materialFile
-'../../inputs/FeCu_Defects.txt'
+'../../inputs/Fe_Defects_noCu.txt'
 
 !Type of implantation ('Cascade' for cascades, 'FrenkelPair' for Frenkel pairs)
 implantType
@@ -47,7 +47,7 @@ cascadeFile
 
 !Tell computer whether we are using adaptive meshing protocol or not (adaptive for yes, nonAdaptive for no)
 meshingType
-nonAdaptive
+adaptive
 
 !Tell computer whether we are implanting defects uniformly or if we have implantation listed separately
 !at each material point (for non-uniform implantation) - (Uniform or NonUniform)
@@ -56,7 +56,7 @@ Uniform
 
 !Tell computer the name of the data file containing non-uniform implantation profile
 implantFile
-'../../inputs/ImplantProfile.txt'
+'../../inputs/ImplantProfile_noHe.txt'
 
 !***************************************************************************************************
 !Simulation Parameters
@@ -68,31 +68,31 @@ implantFile
 start			!begin parameters
 
 temperature		!Temperature, in K
-573d0
+454d0
 
 CuContent       !Initial content of Cu in iron
-0.5d-2
+0d0
 
 annealTemp
-563d0			!Annealing temperature, in K
+454d0			!Annealing temperature, in K
 				
 dpaRate			! NOTE: if the implant profile is non-uniform, this should be the AVERAGE DPA rate.
-1.4d-7
+1.5d-4
 
 atomSize
-1.182d-2 		!(Fe) 			8.79d-3 		!(Cu)		! atomsize (nm^3)
+2.3d-2 		!(Fe) 			8.79d-3 		!(Cu)		! atomsize (nm^3)
 
 burgers
-.287d0 			!(Fe) 			.36d0 			!(Cu)		! dislocation loop burgers vector (lattice constant) (nm)
+0.204d0 		!(Fe) 			.36d0 			!(Cu)		! dislocation loop burgers vector (lattice constant) (nm)
 
 totalDPA
-2d-2			! total DPA in simulation 1
+1.5d-2			! total DPA in simulation 1
 
 annealTime
 0d0				! total anneal time (s)
 
 grainBoundaries	!Toggle whether we are going to include the effect of grain boundaries (Removing defects that travel too far)
-yes
+no
 
 pointDefect     !Toggle whether point defects are allowed to move only
 yes
@@ -101,13 +101,13 @@ grainSize
 300d0			! Mean free path for interstitial clusters to travel before removal (nm)
 
 dislocDensity
-5.0d-5			! dislocation density (nm^-2)
+1d-6			! dislocation density (nm^-2)
 
 impurityConc
 30d-6			! carbon impurity concentration (atomic fraction)
 
 max3DInt
-4				!maximum size for SIA defect to diffuse in 3D
+1				!maximum size for SIA defect to diffuse in 3D
 
 cascadeVolume
 1000d0			!volume of cascade (nm^3) - used for cascade-defect interactions
@@ -116,6 +116,46 @@ numSims
 1				!number of times to repeat simulation
 
 end				!Tag for the end of the parameters file
+
+!***************************************************************************************************
+!Output parameters
+!***************************************************************************************************
+OutputStart
+
+postprToggle    !‘yes’ or ‘no’: toggles output of postpr.txt file
+yes             !If you want to output postpr.txt file, both postprToggle and totdatToggle should be set 'yes'
+
+totdatToggle    !‘yes’ or ‘no’: toggles output of totdat.txt file
+yes             !If you want to output totdat.txt file, both postprToggle and totdatToggle should be set 'yes'
+
+rawdatToggle    !‘yes’ or ‘no’: toggles output of raw data files
+no              !Default 'no'
+
+vtkToggle       !‘yes’ or ‘no’: toggles .vtk file output
+no              !Default 'no'
+
+xyzToggle       !‘yes’ or ‘no’: toggles .xyz file output
+no              !Default 'no'
+
+restartToggle   !‘yes’ or ‘no’: toggles output of a restart file that can be used to restart simulation
+no              !The Debug function is not available yet, and  this toggle should be set to ’no’
+
+profileToggle   !‘yes’ or ‘no’: toggles output of damage profile as a function of depth
+no              !Default 'no'
+
+minCuCluster    !Only n>minCuCluster nCu clusters are used for calculating the average cluster radius and number density
+5
+
+minVoid         !Only n>minVoidn nV clusters are used for calculating the average cluster radius and number density
+5
+
+minLoop         !Only n>minLoop nSIA clusters are used for calculating the average cluster radius and number density
+5
+
+minCuV          !Only (n+m)>minLoop nCumV clusters are used for calculating the average cluster radius and number density
+5
+
+end            !Tag for the end of the Output parameters file
 
 !***************************************************************************************************
 !Adaptive meshing parameters
