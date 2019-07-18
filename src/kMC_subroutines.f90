@@ -625,6 +625,13 @@ if(associated(reactionCurrent)) then	!if we have not chosen a null event
 				end do
 				defectStore%cellNumber=cellNumber
 				defectStore%num=1
+
+				if(pointDefectToggle=='yes') then
+					if(defectStore%defectType(3) > max3DInt) then
+						defectStore%defectType(4) = defectStore%defectType(3)
+						defectStore%defectType(3) = 0
+					end if
+				end if
 				
 				cascadeDefectTemp=>cascadeDefectTemp%next
 			end do
@@ -1108,6 +1115,13 @@ if(associated(reactionCurrent)) then	!if we have not chosen a null event
 				end do
 				defectStore%cellNumber=reactionCurrent%cellNumber(1)
 				defectStore%num=1
+
+				if(pointDefectToggle=='yes') then
+					if(defectStore%defectType(3) > max3DInt) then
+						defectStore%defectType(4) = defectStore%defectType(3)
+						defectStore%defectType(3) = 0
+					end if
+				end if
 				
 				cascadeDefectTemp=>cascadeDefectTemp%next
 			end do

@@ -476,24 +476,6 @@ do i=1,numImplantReac(matNum)
 			(ImplantReactions(matNum,i)%products(2,j),j=1,numSpecies)
 		read(80,*) ImplantReactions(matNum,i)%functionType
 
-	!else if(i==2) then	!read in He implantation parameters
-	
-	!	do 61 while(flag .eqv. .FALSE.)
-	!		read(80,*) char
-	!		if(char=='HeImplant') then
-	!			flag=.TRUE.
-	!		endif
-	!	61 continue
-	!	flag=.FALSE.
-		
-		!Reading He implantation reactions
-		
-	!	ImplantReactions(matNum,i)%numReactants=0
-	!	ImplantReactions(matNum,i)%numProducts=1
-	!	allocate(ImplantReactions(matNum,i)%products(ImplantReactions(matNum,i)%numProducts,numSpecies))
-	!	read(80,*) (ImplantReactions(matNum,i)%products(1,j),j=1,numSpecies)
-	!	read(80,*) ImplantReactions(matNum,i)%functionType
-	
 	else if(i==2) then !read in cascade reaction parameters
 
 		do while(flag .eqv. .FALSE.)

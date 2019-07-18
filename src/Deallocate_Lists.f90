@@ -177,7 +177,7 @@ do matNum=1,numMaterials
 
 	do i=1,numSinkReac(matNum)
 		deallocate(SinkReactions(matNum,i)%reactants)
-		!deallocate(SinkReactions(matNum,i)%products)
+		!deallocate(SinkReactions(matNum,i)%products)	!no products
 		deallocate(SinkReactions(matNum,i)%min)
 		deallocate(SinkReactions(matNum,i)%max)
 	end do
@@ -197,10 +197,10 @@ do matNum=1,numMaterials
 	end do
 
 	do i=1,numImplantReac(matNum)
-		deallocate(ImplantReactions(matNum,i)%reactants)
-		deallocate(ImplantReactions(matNum,i)%products)
-		deallocate(ImplantReactions(matNum,i)%min)
-		deallocate(ImplantReactions(matNum,i)%max)
+		if(allocated(ImplantReactions(matNum,i)%reactants)) deallocate(ImplantReactions(matNum,i)%reactants)
+		if(allocated(ImplantReactions(matNum,i)%products)) deallocate(ImplantReactions(matNum,i)%products)
+		if(allocated(ImplantReactions(matNum,i)%min)) deallocate(ImplantReactions(matNum,i)%min)
+		if(allocated(ImplantReactions(matNum,i)%max)) deallocate(ImplantReactions(matNum,i)%max)
 	end do
 
 end do

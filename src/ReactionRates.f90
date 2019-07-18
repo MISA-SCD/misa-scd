@@ -4198,14 +4198,6 @@ else if(defectTemp%defectType(1)/=0 .AND. defectTemp%defectType(2)==0 .AND. &
 
 else	!Combine
 
-	!only point defect is mobile
-	if(pointDefectToggle=='yes') then
-		if(products(3) > max3DInt) then
-			products(4)=products(3)
-			products(3)=0
-		end if
-	end if
-
 	!two 1D clusters coming together to make a sessile cluster
 	if(products(3) > max3DInt .AND. defectTemp%defectType(3) > max3DInt) then
 		products(4)=products(3)
