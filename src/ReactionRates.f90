@@ -110,8 +110,8 @@ do i=1, numDissocReac(matNum)
 			else    !dissociation of SIA_m from sessile SIA clusters
 				products(1,3)=0
 				products(1,4)=products(1,4)-products(2,3)
-			endif
-		endif
+			end if
+		end if
 		
 		!**********************************************************
 		!Mobilize SIA clusters that decrease in size below max3Dint
@@ -121,7 +121,7 @@ do i=1, numDissocReac(matNum)
 		if(products(1,4) /= 0 .AND. products(1,4) <= max3DInt) then
 			products(1,3)=products(1,4)
 			products(1,4)=0
-		endif
+		end if
 		
 		reactionCurrent=>reactionList(cell)
 		call findReactionInList(reactionCurrent, reactionPrev, cell, reactants, products, numReactants, numProducts)
@@ -1021,13 +1021,13 @@ do i=1, numClusterReac(matNum)
 					products(2,j)=defectType2(4)-defectType1(2)
 				else
 					products(2,j)=defectType2(j)
-				endif
+				end if
 			end do
 
-			if(products(2,4)<=max3DInt) then
-				products(2,3)=products(2,4)
-				products(2,4)=0
-			end if
+!			if(products(2,4)<=max3DInt) then
+!				products(2,3)=products(2,4)
+!				products(2,4)=0
+!			end if
 		else
 			numProducts=1
 			allocate(products(numProducts,numSpecies))
@@ -1310,10 +1310,10 @@ do i=1, numClusterReac(matNum)
 				end if
 			end do
 
-			if(products(2,4) <= max3DInt) then
-				products(2,3)=products(2,4)
-				products(2,4)=0
-			end if
+!			if(products(2,4) <= max3DInt) then
+!				products(2,3)=products(2,4)
+!				products(2,4)=0
+!			end if
 
 		else
 			numProducts=1
@@ -1391,7 +1391,6 @@ do i=1, numClusterReac(matNum)
             products(1,3)=products(1,4)
             products(1,4)=0
         end if
-
 		if(numProducts==2) then
 			if(products(2,4) /= 0 .AND. products(2,4) <= max3DInt) then
 				products(2,3)=products(2,4)
@@ -1668,10 +1667,10 @@ do i=1, numClusterReac(matNum)
 				endif
 			end do
 
-			if(products(2,4) <= max3DInt) then
-				products(2,3)=products(2,4)
-				products(2,4)=0
-			end if
+!			if(products(2,4) <= max3DInt) then
+!				products(2,3)=products(2,4)
+!				products(2,4)=0
+!			end if
 
 		else
 			numProducts=1
@@ -1694,19 +1693,19 @@ do i=1, numClusterReac(matNum)
 		if(products(1,2) >= products(1,3)) then
 			products(1,2)=products(1,2)-products(1,3)
 			products(1,3)=0
-		endif
+		end if
 		if(products(1,2) >= products(1,4)) then
 			products(1,2)=products(1,2)-products(1,4)
 			products(1,4)=0
-		endif
+		end if
 		if(products(1,2) < products(1,3)) then
 			products(1,3)=products(1,3)-products(1,2)
 			products(1,2)=0
-		endif
+		end if
 		if(products(1,2) < products(1,4)) then
 			products(1,4)=products(1,4)-products(1,2)
 			products(1,2)=0
-		endif
+		end if
 		
 		!SIA+SIA clustering
 		!two 1D clusters coming together to make a sessile cluster
@@ -1727,11 +1726,32 @@ do i=1, numClusterReac(matNum)
 !            products(1,2)=0
 !        end if
 
+		!onle point defect can move
+		if(pointDefectToggle=='yes') then
+			if(products(1,3) /= 0 .AND. products(1,3) > max3DInt) then
+				products(1,4)=products(1,3)
+				products(1,3)=0
+			end if
+			if(numProducts==2) then
+				if(products(2,3) /= 0 .AND. products(2,3) > max3DInt) then
+					products(2,4)=products(2,3)
+					products(2,3)=0
+				end if
+			end if
+
+		end if
+
         !sessile cluster becomes mobile when it shrinks below max3DInt
         if(products(1,4) /= 0 .AND. products(1,4) <= max3DInt) then
             products(1,3)=products(1,4)
             products(1,4)=0
-        endif
+        end if
+		if(numProducts==2) then
+			if(products(2,4) /= 0 .AND. products(2,4) <= max3DInt) then
+				products(2,3)=products(2,4)
+				products(2,4)=0
+			end if
+		end if
 
 		!Total Annihilation
 		count=0
@@ -1919,10 +1939,10 @@ do i=1, numClusterReac(matNum)
 				end if
 			end do
 
-			if(products(2,4) <= max3DInt) then
-				products(2,3)=products(2,4)
-				products(2,4)=0
-			end if
+!			if(products(2,4) <= max3DInt) then
+!				products(2,3)=products(2,4)
+!				products(2,4)=0
+!			end if
 
 		else
 			numProducts=1
@@ -1978,11 +1998,32 @@ do i=1, numClusterReac(matNum)
 !            products(1,2)=0
 !        end if
 
+		!onle point defect can move
+		if(pointDefectToggle=='yes') then
+			if(products(1,3) /= 0 .AND. products(1,3) > max3DInt) then
+				products(1,4)=products(1,3)
+				products(1,3)=0
+			end if
+			if(numProducts==2) then
+				if(products(2,3) /= 0 .AND. products(2,3) > max3DInt) then
+					products(2,4)=products(2,3)
+					products(2,3)=0
+				end if
+			end if
+
+		end if
+
         !sessile cluster becomes mobile when it shrinks below max3DInt
         if(products(1,4) /= 0 .AND. products(1,4) <= max3DInt) then
             products(1,3)=products(1,4)
             products(1,4)=0
         end if
+		if(numProducts==2) then
+			if(products(2,4) /= 0 .AND. products(2,4) <= max3DInt) then
+				products(2,3)=products(2,4)
+				products(2,4)=0
+			end if
+		end if
 
 		!Total Annihilation
 		count=0
@@ -2302,21 +2343,21 @@ numProducts=1
 allocate(reactants(numReactants,numSpecies))
 allocate(products(numProducts,numSpecies))
 
-do 10 i=1, numDiffReac(matNum)
+do i=1, numDiffReac(matNum)
 	count=0
 	
 	!Check if the defect type is accepted by this dissociation reaction
-	do 11 j=1,numSpecies
+	do j=1,numSpecies
 		if(defectType(j) == 0 .AND. DiffReactions(matNum,i)%reactants(1,j) == 0) then
 			count=count+1
-		else if(defectType(j) .NE. 0 .AND. DiffReactions(matNum,i)%reactants(1,j) .NE. 0) then
-			if(defectType(j) .GE. DiffReactions(matNum,i)%min(j)) then
-				if((defectType(j) .LE. DiffReactions(matNum,i)%max(j)) .OR. DiffReactions(matNum,i)%max(j)==-1) then
+		else if(defectType(j) /= 0 .AND. DiffReactions(matNum,i)%reactants(1,j) /= 0) then
+			if(defectType(j) >= DiffReactions(matNum,i)%min(j)) then
+				if((defectType(j) <= DiffReactions(matNum,i)%max(j)) .OR. DiffReactions(matNum,i)%max(j)==-1) then
 					count=count+1
-				endif
-			endif
-		endif
-	11 continue
+				end if
+			end if
+		end if
+	end do
 	
 	if(count==numSpecies) then	
 		!this defect type is accepted for this dissociation reaction
@@ -2326,10 +2367,10 @@ do 10 i=1, numDiffReac(matNum)
 		!to the end of the list)
 		
 		!Create temporary arrays with the defect types associated with this reaction (dissociation)
-		do 12 j=1,numSpecies
+		do j=1,numSpecies
 			reactants(1,j)=defectType(j)
 			products(1,j)=defectType(j)
-		12 continue
+		end do
 
 		reactionCurrent=>reactionList(cell)
 		nullify(reactionPrev)
@@ -2364,7 +2405,7 @@ do 10 i=1, numDiffReac(matNum)
 			
 		
 		!if reactionRate .NE. 0 and reaction doesn't exist, then create it. Add to totalRate
-		else if(.NOT. associated(reactionCurrent) .AND. reactionRate .NE. 0d0) then
+		else if(.NOT. associated(reactionCurrent) .AND. reactionRate /= 0d0) then
 			
 			!Update total rate (entire processor and this volume element)
 			totalRate=totalRate+reactionRate
@@ -2380,10 +2421,10 @@ do 10 i=1, numDiffReac(matNum)
 			allocate(reactionCurrent%taskid(reactionCurrent%numReactants+reactionCurrent%numProducts))
 			nullify(reactionCurrent%next)
 			reactionPrev%next=>reactionCurrent
-			do 13 l=1,numSpecies
+			do l=1,numSpecies
 				reactionCurrent%reactants(1,l)=reactants(1,l)
 				reactionCurrent%products(1,l)=products(1,l)
-			13 continue
+			end do
 			reactionCurrent%cellNumber(1)=cell
 			reactionCurrent%taskid(1)=proc
 			
@@ -2420,7 +2461,7 @@ do 10 i=1, numDiffReac(matNum)
 			write(*,*) 'error updating reaction list - diffusion'
 		endif
 	endif
-10 continue
+end do
 
 end subroutine
 
@@ -2465,14 +2506,14 @@ double precision reactionRate
 !subroutine
 CascadeCurrent=>ActiveCascades
 
-do 30 while(associated(CascadeCurrent))
+do while(associated(CascadeCurrent))
 
 	if(CascadeCurrent%cascadeID==cascadeID) then
 		exit
 	endif
 	
 	CascadeCurrent=>CascadeCurrent%next
-30 continue
+end do
 
 !In the case of polycrystal simulations, myMesh(cell)%material is the grain ID, not the material number. Therefore
 !we must set all values of matNum=1 in this case (only one material type in polycrystal simulations).
@@ -2487,21 +2528,21 @@ numProducts=1
 allocate(reactants(numReactants,numSpecies))
 allocate(products(numProducts,numSpecies))
 
-do 10 i=1, numDiffReac(matNum)
+do i=1, numDiffReac(matNum)
 	count=0
 	
 	!Check if the defect type is accepted by this dissociation reaction
-	do 11 j=1,numSpecies
+	do j=1,numSpecies
 		if(defectType(j) == 0 .AND. DiffReactions(matNum,i)%reactants(1,j) == 0) then
 			count=count+1
-		else if(defectType(j) .NE. 0 .AND. DiffReactions(matNum,i)%reactants(1,j) .NE. 0) then
-			if(defectType(j) .GE. DiffReactions(matNum,i)%min(j)) then
-				if((defectType(j) .LE. DiffReactions(matNum,i)%max(j)) .OR. DiffReactions(matNum,i)%max(j)==-1) then
+		else if(defectType(j) /= 0 .AND. DiffReactions(matNum,i)%reactants(1,j) /= 0) then
+			if(defectType(j) >= DiffReactions(matNum,i)%min(j)) then
+				if((defectType(j) <= DiffReactions(matNum,i)%max(j)) .OR. DiffReactions(matNum,i)%max(j)==-1) then
 					count=count+1
 				endif
 			endif
 		endif
-	11 continue
+	end do
 
 	if(count==numSpecies) then	!this defect type is accepted for this dissociation reaction
 		!point reactionCurrent at the reaction and reactionPrev at the reaction before it
@@ -2509,10 +2550,10 @@ do 10 i=1, numDiffReac(matNum)
 		!to the end of the list)
 		
 		!Create temporary arrays with the defect types associated with this reaction (diffusion)
-		do 12 j=1,numSpecies
+		do j=1,numSpecies
 			reactants(1,j)=defectType(j)
 			products(1,j)=defectType(j)
-		12 continue
+		end do
 
 		!find the reaction in the reaction list (INCLUDING DIFFUSION DIRECTIONS)
 		reactionCurrent=>CascadeCurrent%reactionList(cell1)
@@ -2521,11 +2562,7 @@ do 10 i=1, numDiffReac(matNum)
 		call findReactionInListDiff(reactionCurrent, reactionPrev, reactants, cell1, cell2, proc1, proc2)
 		
 		reactionRate=findReactionRateDiffFine(CascadeCurrent, defectType, cell1, proc1, cell2, proc2, dir, DiffReactions(matNum,i))
-		
-!		if(myProc%taskid==3) then
-!			write(*,*) 'cell1', cell1, 'cell2', cell2, 'proc1', proc1, 'proc2', proc2, 'dir', dir, 'rate', reactionRate
-!		endif
-		
+
 		!if reactionRate==0 and reaction already exists, then delete it. Subtract from totalRate.
 		if(associated(reactionCurrent) .AND. reactionRate==0d0) then
 			
@@ -2543,7 +2580,7 @@ do 10 i=1, numDiffReac(matNum)
 			
 		
 		!if reactionRate .NE. 0 and reaction doesn't exist, then create it. Add to totalRate
-		else if(.NOT. associated(reactionCurrent) .AND. reactionRate .NE. 0d0) then
+		else if(.NOT. associated(reactionCurrent) .AND. reactionRate /= 0d0) then
 			
 			totalRate=totalRate+reactionRate
 			CascadeCurrent%totalRate(cell1)=CascadeCurrent%totalRate(cell1)+reactionRate
@@ -2558,29 +2595,22 @@ do 10 i=1, numDiffReac(matNum)
 			allocate(reactionCurrent%taskid(reactionCurrent%numReactants+reactionCurrent%numProducts))
 			nullify(reactionCurrent%next)
 			reactionPrev%next=>reactionCurrent
-			do 13 l=1,numSpecies
+			do l=1,numSpecies
 				reactionCurrent%reactants(1,l)=reactants(1,l)
 				reactionCurrent%products(1,l)=products(1,l)
-			13 continue
+			end do
 			reactionCurrent%cellNumber(1)=cell1
 			reactionCurrent%taskid(1)=proc1
 			reactionCurrent%cellNumber(2)=cell2
 			reactionCurrent%taskid(2)=proc2
 			
 			reactionCurrent%reactionRate=reactionRate
-			
-!			if(myProc%taskid==MASTER) then
-!				write(*,*) reactionRate, cell1, cell2, proc1, proc2
-!				if(associated(reactionCurrent%next)) then
-!					write(*,*) 'reactionCurrent%next associated'
-!				endif
-!			endif
-			
+
 		!if reactionRate==0 and reaction doesn't exist, do nothing
 		else if(.NOT. associated(reactionCurrent) .AND. reactionRate==0d0) then
 			!do nothing
 		!if reactionRate .NE. 0 and reaction exists, update the reaction rate. Add/subtract to totalRate
-		else if(associated(reactionCurrent) .AND. reactionRate .NE. 0d0) then
+		else if(associated(reactionCurrent) .AND. reactionRate /= 0d0) then
 			
 			!update totalRate
 			totalRate=totalRate-reactionCurrent%reactionRate+reactionRate
@@ -2594,7 +2624,7 @@ do 10 i=1, numDiffReac(matNum)
 		endif
 
 	endif
-10 continue
+end do
 
 end subroutine
 
@@ -3738,8 +3768,7 @@ if(reactionParameter%functionType==2) then
 	!fine meshes.
 	!*************************************************************************************************
 
-	CoarseToFineLength=(length1-numxCascade*fineLength)&
-		/(dlog(length1**2d0/(numxCascade*fineLength)**2d0))
+	CoarseToFineLength=(length1-numxCascade*fineLength)/(dlog(length1**2d0/(numxCascade*fineLength)**2d0))
 	
 	!Diffusivity taken from MaterialInput
 	Diff=findDiffusivity(matNum,defectType)		
@@ -3763,7 +3792,7 @@ if(reactionParameter%functionType==2) then
 	
 	reactionRate=Diff*areaShared*(dble(num1)/Vol1-dble(num2)/Vol2)/(CoarseToFineLength)
 
-	if(reactionRate .GT. 0d0) then
+	if(reactionRate > 0d0) then
 		findReactionRateCoarseToFine=reactionRate
 	else
 		findReactionRateCoarseToFine=0d0
@@ -3841,7 +3870,7 @@ if(reactionParameter%functionType==2) then
 	
 		areaShared=area1
 		reactionRate=Diff*areaShared*(dble(num1)/Vol1)/length1
-		if(reactionRate .GT. 0d0) then
+		if(reactionRate > 0d0) then
 			findReactionRateDiffFine=reactionRate
 		else
 			findReactionRateDiffFine=0d0
@@ -3879,7 +3908,7 @@ if(reactionParameter%functionType==2) then
 		reactionRate=Diff*(fineLength**2d0)*&
 			(dble(num1)/Vol1-dble(num2)/coarseVolume)/(fineToCoarseLength)
 		
-		if(reactionRate .GT. 0d0) then
+		if(reactionRate > 0d0) then
 			findReactionRateDiffFine=reactionRate
 		else
 			findReactionRateDiffFine=0d0
@@ -3901,7 +3930,7 @@ if(reactionParameter%functionType==2) then
 		
 		!The area of the shared interface between the volume elements is the minimum of the two volume 
 		!elements' face areas (assuming cubic elements, nonuniform)
-		if(area1 .GT. area2) then
+		if(area1 > area2) then
 			areaShared=area2
 		else
 			areaShared=area1
@@ -3914,7 +3943,7 @@ if(reactionParameter%functionType==2) then
 		endif
 		
 		reactionRate=Diff*areaShared*(dble(num1)/Vol1-dble(num2)/Vol2)/(length1/2d0 + length2/2d0)
-		if(reactionRate .GT. 0d0) then
+		if(reactionRate > 0d0) then
 			findReactionRateDiffFine=reactionRate
 		else
 			findReactionRateDiffFine=0d0
@@ -4208,7 +4237,7 @@ else	!Combine
 		products(l)=products(l)+defectTemp%defectType(l)
 	end do
 
-	!SIA+CuV
+	!CuV+SIA
 	if(products(1)/=0 .AND. products(2)/=0 .AND. products(3) > products(2)) then
     	product2(3)=products(3)-products(2)
     	products(2)=0
@@ -4217,10 +4246,6 @@ else	!Combine
     	product2(4)=products(4)-products(2)
     	products(2)=0
     	products(4)=0
-    	if(product2(4)/=0 .AND. product2(4) <= max3DInt) then
-        	product2(3)=product2(4)
-			product2(4)=0
-    	end if
 	end if
 
 	!V+SIA recombination
@@ -4262,6 +4287,10 @@ else	!Combine
 	if(products(4) /= 0 .AND. products(4) <= max3DInt) then
 		products(3)=products(4)
 		products(4)=0
+	end if
+	if(product2(4)/=0 .AND. product2(4) <= max3DInt) then
+		product2(3)=product2(4)
+		product2(4)=0
 	end if
 
 end if

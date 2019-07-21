@@ -161,7 +161,7 @@ if(myProc%taskid==MASTER) then
 
 			write(*,*) '********************************'
 
-		endif
+		end if
 	end do
 	
 	!write(*,*) 'Cascades'

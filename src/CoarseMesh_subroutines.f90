@@ -252,11 +252,9 @@ else if(implantType=='Cascade') then
 
 	else
 		write(*,*) 'error implant scheme in reaction list update'
-	endif
+	end if
 
-	
 	nullify(reactionList(cell)%next)
-
 
 else
 
@@ -444,19 +442,8 @@ implicit none
 integer cellNumber
 type(reaction), pointer :: reactionCurrent, reactionPrev
 
-!if(HeDPARatio == 0d0) then
-
-	!leave the first reaction alone (cascade implantation reaction)
-	reactionCurrent=>reactionList(cellNumber)%next	
-
-!elseif(HeDPARatio > 0d0) then
-
-	!don't delete first or second reactions (cascade and He implantation)
-!	reactionCurrent=>reactionList(cellNumber)%next%next
-
-!else
-!	write(*,*) 'Error negative HeDPARatio'
-!end if
+!leave the first reaction alone (cascade implantation reaction)
+reactionCurrent=>reactionList(cellNumber)%next
 
 do while(associated(reactionCurrent))
 	reactionPrev=>reactionCurrent
@@ -475,12 +462,6 @@ do while(associated(reactionCurrent))
 	deallocate(reactionPrev)
 end do
 
-!if(HeDPARatio == 0d0) then
-	nullify(reactionList(cellnumber)%next)
-!else if(HeDPARatio > 0d0) then
-!	nullify(reactionList(cellnumber)%next%next)
-!else
-!	write(*,*) 'Error negative HeDPARatio'
-!end if
+nullify(reactionList(cellnumber)%next)
 
 end subroutine

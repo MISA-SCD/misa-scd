@@ -556,9 +556,6 @@ do while(elapsedTime < totalTime)
 
 		if(.NOT. associated(reactionCurrent)) then
 			nullSteps=nullSteps+1
-			!if(myProc%numtasks==1) then
-			!	write(*,*) 'Error null event in serial MISASCD'
-			!endif
 		end if
 
 		!Input: reactionCurrent
@@ -596,9 +593,13 @@ do while(elapsedTime < totalTime)
 	call MPI_BCAST(elapsedTime, 1, MPI_DOUBLE_PRECISION, MASTER, comm,ierr)
 
 !*********************************************************
-	call updateReactionList(defectUpdate)
-
-	!call DEBUGPrintReactionList(step)
+	if(singleElemKMC=='no' .AND. associated(reactionCurrent) .AND. &
+			reactionCurrent%numReactants==-10 .AND. meshingType=='nonAdaptive') then
+		!do nothing
+	else
+		call updateReactionList(defectUpdate)
+	end if
+!	call updateReactionList(defectUpdate)
 
 	if(totalRate < 0d0) then
 		write(*,*) 'error totalRate less than zero', step

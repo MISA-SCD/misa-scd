@@ -188,8 +188,9 @@ else
 	
 	!for post processing: counting trapping and emission reactions from the grain boundary
 	if(reactionCurrent%numReactants==1 .AND. reactionCurrent%numProducts==1) then	!diffusion/emission reaction
-  		if(atemp_cell == atemp_test) then	!2019.05.09 Add
-			!write(*,*) 'myProc', myProc%taskid, 'cellNumber(2)', reactionCurrent%cellNumber(2)
+  		if(atemp_cell == atemp_test .AND. reactionCurrent%cellNumber(2) > 0) then	!diffuse from coarse mesh to fine mesh
+			!write(*,*) 'myProc', myProc%taskid, 'cell(1)', reactionCurrent%cellNumber(1), &
+!			'cell(2)', reactionCurrent%cellNumber(2)
 			if(myMesh(reactionCurrent%cellNumber(1))%material == 1 .AND. &
 				myMesh(reactionCurrent%cellNumber(2))%material == 2) then	!trapping on grain boundary
 			
@@ -412,9 +413,9 @@ integer, allocatable :: localBufferSend(:,:), localBufferRecv(:,:)	!temporary bu
 integer, allocatable :: bndryBufferSend(:,:), bndryBufferRecv(:,:)
 integer, allocatable :: finalBufferSend(:,:), finalBufferRecv(:,:)
 
-integer numTypes, numTemp, infoLocalSend(3),infoBndryRecv(3)
-integer, allocatable :: defectLocalSend(:,:), defectBndryRecv(:,:)
-logical flagTemp
+!integer numTypes, numTemp, infoLocalSend(3),infoBndryRecv(3)
+!integer, allocatable :: defectLocalSend(:,:), defectBndryRecv(:,:)
+!logical flagTemp
 
 integer status(MPI_STATUS_SIZE)
 
@@ -692,7 +693,7 @@ if(associated(reactionCurrent)) then	!if we have not chosen a null event
 
 						    call defectCombinationRules(defectStore%defectType,product2, defectTemp, isCombined)
 
-						    if(product2(3)/=0 .OR. product2(4)/=0) then
+							if(product2(3)/=0 .OR. product2(4)/=0) then
 							    !defectStore is at the middle (or end) of defectStoreList
 							    if(associated(defectStorePrev)) then
 								    nullify(defectStorePrev%next)
@@ -1210,28 +1211,28 @@ if(associated(reactionCurrent)) then	!if we have not chosen a null event
 					end do
 
                     !NEXT: remove DefectTemp from coarse mesh
-                    if(mixingEvents < defectTemp%num) then
-                        defectTemp%num=defectTemp%num-mixingEvents
-                    else
-                        if(defectTemp%num==0) then	!error
-                            write(*,*) 'error defect num zero combining with cascade defect'
-                            !if defectTemp is in the middle of the list
-                        else if(associated(defectPrev) .AND. associated(defectTemp%next)) then
-                            defectPrev%next=>defectTemp%next
-                            deallocate(defectTemp%defectType)
-                            deallocate(defectTemp)
-                            defectTemp=>defectPrev
-                        !if defectTemp is at the end of the list
-                        else if(associated(defectPrev)) then
-                            deallocate(defectTemp%defectType)
-                            deallocate(defectTemp)
-                            defectTemp=>defectPrev
-                            nullify(defectPrev%next)
-                        !if defectTemp is at the beginning of the list
-                        else if(associated(defectTemp%next)) then
-                            defectTemp%num=0
-                        end if
-                    end if
+					if(defectTemp%num > 0) then
+						if(mixingEvents < defectTemp%num) then
+							defectTemp%num=defectTemp%num-mixingEvents
+						else
+							!if defectTemp is in the middle of the list
+							if(associated(defectPrev) .AND. associated(defectTemp%next)) then
+								defectPrev%next=>defectTemp%next
+								deallocate(defectTemp%defectType)
+								deallocate(defectTemp)
+								defectTemp=>defectPrev
+								!if defectTemp is at the end of the list
+							else if(associated(defectPrev)) then
+								deallocate(defectTemp%defectType)
+								deallocate(defectTemp)
+								defectTemp=>defectPrev
+								nullify(defectPrev%next)
+								!if defectTemp is at the beginning of the list
+							else if(associated(defectTemp%next)) then
+								defectTemp%num=0
+							end if
+						end if
+					end if
 
 					defectPrev=>defectTemp
 					defectTemp=>defectTemp%next
@@ -4243,19 +4244,19 @@ do while(associated(defectUpdateCurrent))
 					
 					if(myMesh(defectUpdateCurrent%cellNumber)%neighborProcs(j,k)==myProc%taskid) then	
 					!Don't need to do this for diffusion between different grains
-					if(polycrystal=='yes' .AND. myMesh(myMesh(defectUpdateCurrent%cellNumber)%neighbors(j,k))%material &
-						== myMesh(defectUpdateCurrent%cellNumber)%material) then
+						if(polycrystal=='yes' .AND. myMesh(myMesh(defectUpdateCurrent%cellNumber)%neighbors(j,k))%material &
+							== myMesh(defectUpdateCurrent%cellNumber)%material) then
 							
-						call addDiffusionReactions(myMesh(defectUpdateCurrent%cellNumber)%neighbors(j,k), defectUpdateCurrent%cellNumber, &
-							myProc%taskid, myProc%taskid, j, defectTemp)
+							call addDiffusionReactions(myMesh(defectUpdateCurrent%cellNumber)%neighbors(j,k), defectUpdateCurrent%cellNumber, &
+								myProc%taskid, myProc%taskid, j, defectTemp)
 						
-					else if(polycrystal=='no') then	!2015.05.20 Noticed that this wasn't here, probably was a bug. Fixed?
+						else if(polycrystal=='no') then	!2015.05.20 Noticed that this wasn't here, probably was a bug. Fixed?
 					
-						call addDiffusionReactions(myMesh(defectUpdateCurrent%cellNumber)%neighbors(j,k), defectUpdateCurrent%cellNumber, &
-							myProc%taskid, myProc%taskid, j, defectTemp)
+							call addDiffusionReactions(myMesh(defectUpdateCurrent%cellNumber)%neighbors(j,k), defectUpdateCurrent%cellNumber, &
+								myProc%taskid, myProc%taskid, j, defectTemp)
 							
-					endif				
-					endif
+						end if
+					end if
 
 				end do
 				
@@ -4282,12 +4283,7 @@ do while(associated(defectUpdateCurrent))
 			do while(associated(CascadeCurrent))
 			
 				if(CascadeCurrent%cellNumber==defectUpdateCurrent%cellNumber) then
-					
-!					if(myProc%taskid==MASTER) then
-!						write(*,*) 'adding coarse to fine diffusion'
-!						read(*,*)
-!					endif
-					
+
 					call addDiffusionCoarseToFine(defectUpdateCurrent%cellNumber, myProc%taskid, CascadeCurrent, defectTemp)
 				
 				endif
@@ -4372,7 +4368,7 @@ do while(associated(defectUpdateCurrent))
 				if(cascadeConnectivity(defectUpdateCurrent%cellNumber,j) /= 0) then
 					call addDiffusionReactionsFine(defectUpdateCurrent%cascadeNumber, cascadeConnectivity(defectUpdateCurrent%cellNumber,j), &
 						defectUpdateCurrent%cellNumber,myProc%taskid, myProc%taskid,j,defectTemp)
-				endif
+				end if
 
 			end do
 			
@@ -4423,9 +4419,9 @@ do while(associated(defectUpdateCurrent))
 			call addDiffusionReactions(defectUpdateCurrent%neighbor, defectUpdateCurrent%cellNumber, myProc%taskid, &
 				defectUpdateCurrent%proc, defectUpdateCurrent%dir, defectTemp)
 			
-		endif
+		end if
 		
-	endif
+	end if
 	defectUpdateCurrent=>defectUpdateCurrent%next
 
 end do

@@ -338,17 +338,17 @@ type(cascade), pointer :: CascadeCurrent
 numDefects=0
 defectCurrent=>CascadeCurrent%localDefects(cellNumber)
 
-do 10 while(associated(defectCurrent))
+do while(associated(defectCurrent))
 
 	count=0
 
-	do 11 i=1,numSpecies
+	do i=1,numSpecies
 		
 		if(defectType(i)==defectCurrent%defectType(i)) then
 			count=count+1
 		endif
 
-	11 continue
+	end do
 
 	if(count==numSpecies) then
 		numDefects=defectCurrent%num
@@ -357,7 +357,7 @@ do 10 while(associated(defectCurrent))
 		defectCurrent=>defectCurrent%next
 	endif
 
-10 continue
+end do
 
 findNumDefectFine=numDefects
 end function
@@ -391,11 +391,11 @@ end interface
 
 count=0
 
-do 10 cell=1,numCellsCascade
+do cell=1,numCellsCascade
 	
 	count=count+findNumDefectFine(CascadeCurrent, defectType, cell)
 
-10 continue
+end do
 
 findNumDefectTotalFine=count
 
