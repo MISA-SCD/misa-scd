@@ -4442,18 +4442,18 @@ implicit none
 double precision zCoord, xi
 integer i
 
-do 10 i=1,numImplantDataPoints
+do i=1,numImplantDataPoints
 	if(implantRateData(i,1)==zCoord) then
 		findHeImplantRateLocal=implantRateData(i,3)
 		exit
-	elseif(implantRateData(i,1) .GT. zCoord .AND. i .NE. 1) then
+	elseif(implantRateData(i,1) > zCoord .AND. i /= 1) then
 	
 		!xi is used in interpolaton between points if zCoord does not fall on a coordinate given in the data file
 		xi=(zCoord-implantRateData(i-1,1))/(implantRateData(i,1)-implantRateData(i-1,1))
 		
 		findHeImplantRateLocal=implantRateData(i,3)*xi+implantRateData(i-1,3)*(1d0-xi)	!interpolate between points in data file
 		exit
-	elseif(implantRateData(i,1) .GT. zCoord .AND. i == 1) then
+	elseif(implantRateData(i,1) > zCoord .AND. i == 1) then
 		
 		!The first point in the data file is greater than the first point in the mesh, meaning that
 		!we cannot use the data file. Return an error.
@@ -4461,7 +4461,7 @@ do 10 i=1,numImplantDataPoints
 		write(*,*) 'error He implant rate rate file starts after mesh in z-direction'
 		exit
 	endif
-10 continue
+end do
 
 if(i==numImplantDataPoints+1) then
 

@@ -1585,7 +1585,6 @@ temperature=annealTemp
 !types originally in the simulation
 
 !Coarse mesh
-
 do cell=1,numCells
 	reactionCurrent=>reactionList(cell)
 	
@@ -1594,38 +1593,8 @@ do cell=1,numCells
 	totalRateVol(cell)=totalRateVol(cell)-reactionCurrent%reactionRate
 	
 	!Change reaction rate to 0 for cascades and He implantation
-	
 	reactionCurrent%reactionRate=0d0
 
 end do
-
-!Fine mesh
-
-!Here, we only zero the first reaction rate if we have He implantation
-!(normally, no defects are implanted into the fine mesh except He)
-
-!if(HeDPARatio .GT. 0d0) then
-
-!	CascadeCurrent=>ActiveCascades
-	
-!	do 11 while(associated(CascadeCurrent))
-	
-!		do 12 cell=1,numCellsCascade
-			
-!			reactionCurrent=>CascadeCurrent%reactionList(cell)
-			
-			!remove this reaction rate from totalRate
-!			totalRate=totalRate-reactionCurrent%reactionRate
-!			CascadeCurrent%totalRate=CascadeCurrent%totalRate-reactionCurrent%reactionRate
-			
-!			reactionCurrent%reactionRate=0d0
-		
-!		12 continue
-		
-!		CascadeCurrent=>CascadeCurrent%next
-		
-!	11 continue
-	
-!endif
 
 end subroutine

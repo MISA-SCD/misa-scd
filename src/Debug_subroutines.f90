@@ -163,8 +163,7 @@ if(myProc%taskid==MASTER) then
 
 		end if
 	end do
-	
-	!write(*,*) 'Cascades'
+
 	write(*,*)
 	CascadeCurrent=>ActiveCascades
 	do while(associated(CascadeCurrent))
@@ -237,56 +236,55 @@ integer i, j, k, count, step
 type(defect), pointer :: defectCurrent
 type(Cascade), pointer :: CascadeCurrent
 
-!Output defects and boundary in Master (used as a check for code)
-!if(myProc%taskid==MASTER) then
-!	write(*,*) 'processor', myProc%taskid, 'defects after step', step
-!	do 12 i=1,numCells
-!		defectCurrent=>defectList(i)%next
-!		do 13 while(associated(defectCurrent))
-!			write(*,*) defectCurrent%defectType, defectCurrent%cellNumber, defectCurrent%num
-!			
-!			!Check for defects of type  0 0 0 0
-!			count=0
-!			do 99 j=1,numSpecies
-!				if(defectCurrent%defectType(j)==0) then
-!					count=count+1
-!				endif
-!			99 continue
-!			if(count==numSpecies) write(*,*) 'error: zero defect in coarse mesh'
-!			!if(count==numSpecies) read(*,*)
-!			
-!			defectCurrent=>defectCurrent%next
-!		13 continue
-!	12 continue
-!	!read(*,*)
-!	write(*,*)
-!endif
-	
-!if(myProc%taskid==MASTER) then
-!	write(*,*) 'processor', myProc%taskid, 'boundary after step', step
-!	do 14 i=1,numCells
-!		do 15 j=1,6
-!			do 16 k=1,myMesh(i)%numNeighbors(j)
-!				if(myMesh(i)%neighborProcs(j,k) .NE. myProc%taskid) then
-!					if(myMesh(i)%neighborProcs(j,k) .NE. -1) then
-!						defectCurrent=>myBoundary(j,myMesh(i)%neighbors(j,k))%defectList%next
-!						if(associated(defectCurrent)) then
-!							write(*,*) 'proc', myMesh(i)%neighborProcs(j,k),'dir',j, 'element', myMesh(i)%neighbors(j,k)
-!						endif
-!						do 17 while(associated(defectCurrent))
-!							write(*,*) defectCurrent%defectType, defectCurrent%cellNumber, defectCurrent%num
-!							defectCurrent=>defectCurrent%next
-!						17 continue
-!					endif
-!				endif
-!			16 continue
-!		15 continue
-!	14 continue
-!	write(*,*)
-!endif
+!Output defects in local mesh
+if(myProc%taskid==MASTER) then
+	write(*,*) 'processor', myProc%taskid, 'defects after step', step
+	do i=1,numCells
+		defectCurrent=>defectList(i)%next
+		do while(associated(defectCurrent))
+			write(*,*) defectCurrent%defectType, defectCurrent%cellNumber, defectCurrent%num
 
-!Output defects in cascdaes
-!if(myProc%taskid==MASTER) then
+			!Check for defects of type  0 0 0 0
+			count=0
+			do j=1,numSpecies
+				if(defectCurrent%defectType(j)==0) then
+					count=count+1
+				end if
+			end do
+			if(count==numSpecies) write(*,*) 'error: zero defect in coarse mesh'
+
+			defectCurrent=>defectCurrent%next
+		end do
+	end do
+	write(*,*)
+endif
+
+!Output defects in boundary mesh
+if(myProc%taskid==MASTER) then
+	write(*,*) 'processor', myProc%taskid, 'boundary after step', step
+	do i=1,numCells
+		do j=1,6
+			do k=1,myMesh(i)%numNeighbors(j)
+				if(myMesh(i)%neighborProcs(j,k) /= myProc%taskid) then
+					if(myMesh(i)%neighborProcs(j,k) /= -1) then
+						defectCurrent=>myBoundary(j,myMesh(i)%neighbors(j,k))%defectList%next
+						if(associated(defectCurrent)) then
+							write(*,*) 'proc', myMesh(i)%neighborProcs(j,k),'dir',j, 'element', myMesh(i)%neighbors(j,k)
+						end if
+						do while(associated(defectCurrent))
+							write(*,*) defectCurrent%defectType, defectCurrent%cellNumber, defectCurrent%num
+							defectCurrent=>defectCurrent%next
+						end do
+					end if
+				end if
+			end do
+		end do
+	end do
+	write(*,*)
+end if
+
+!Output defects in fine mesh
+if(myProc%taskid==MASTER) then
 	write(*,*) 'processor', myProc%taskid, 'cascade defects after step', step
 	CascadeCurrent=>ActiveCascades
 	do while(associated(CascadeCurrent))
@@ -309,7 +307,7 @@ type(Cascade), pointer :: CascadeCurrent
 		write(*,*)
 		CascadeCurrent=>CascadeCurrent%next
 	end do
-!endif
+end if
 
 end subroutine
 
@@ -330,32 +328,27 @@ integer step
 if(myProc%taskid==MASTER) then	
 	write(*,*) 'reaction chosen processor', myProc%taskid, 'step', step
 	if(associated(reactionCurrent)) then
-		!2019.05.09
-		write(*,*) '**************************************choosenReaction*****************************'
-		write(*,*) 'numReactants', reactionCurrent%numReactants,'reactants', reactionCurrent%reactants
-		write(*,*) 'numProducts	', reactionCurrent%numProducts, 'products', reactionCurrent%products
-		write(*,*) 'cellNumbers', reactionCurrent%cellNumber
-		write(*,*) 'taskid', reactionCurrent%taskid
-		write(*,*) 'reactionRate', reactionCurrent%reactionRate
 
-		!if(reactionCurrent%numReactants > 0) then
-		!	write(*,*) 'reactants', reactionCurrent%reactants
-		!end if
-		!if(reactionCurrent%numProducts > 0) then
-		!	write(*,*) 'products', reactionCurrent%products
-		!end if
-		!if(reactionCurrent%numReactants == -10) then
-		!	write(*,*) 'Cascade implantation chosen', numImplantEvents, 'cell', reactionCurrent%cellNumber
-			!read(*,*)
-		!end if
-		!write(*,*) 'cells', reactionCurrent%cellNumber, 'procs', reactionCurrent%taskid, 'rate', reactionCurrent%reactionRate
-		!write(*,*) 'totalRate', totalRate, 'totalRateCell', totalRateVol(reactionCurrent%cellNumber)
-		!write(*,*) 'totalRateCheck', totalRateCheck(), 'totalRateCellCheck', totalRateVol(reactionCurrent%cellNumber)
+		write(*,*) '**************************************choosenReaction*****************************'
+		write(*,*) 'numReactants', reactionCurrent%numReactants,'numProducts', reactionCurrent%numProducts
+
+		if(reactionCurrent%numReactants > 0) then
+			write(*,*) 'reactants', reactionCurrent%reactants
+		end if
+		if(reactionCurrent%numProducts > 0) then
+			write(*,*) 'products', reactionCurrent%products
+		end if
+		if(reactionCurrent%numReactants == -10) then
+			write(*,*) 'Cascade implantation chosen', numImplantEvents, 'cell', reactionCurrent%cellNumber
+		end if
+		write(*,*) 'cells', reactionCurrent%cellNumber, 'procs', reactionCurrent%taskid, 'rate', reactionCurrent%reactionRate
+		write(*,*) 'totalRate', totalRate, 'totalRateCell', totalRateVol(reactionCurrent%cellNumber)
+		write(*,*) 'totalRateCheck', totalRateCheck(), 'totalRateCellCheck', totalRateVol(reactionCurrent%cellNumber)
 	else
 		write(*,*) '**************************************choosenReaction*****************************'
 		write(*,*) 'null event chosen'
 	end if
-!		read(*,*) !pause once per step (for debugging only)
+
 end if
 write(*,*)
 
