@@ -338,9 +338,9 @@ if(myProc%taskid==MASTER) then
 		if(reactionCurrent%numProducts > 0) then
 			write(*,*) 'products', reactionCurrent%products
 		end if
-		if(reactionCurrent%numReactants == -10) then
-			write(*,*) 'Cascade implantation chosen', numImplantEvents, 'cell', reactionCurrent%cellNumber
-		end if
+		!if(reactionCurrent%numReactants == -10) then
+		!	write(*,*) 'Cascade implantation chosen', numImplantEvents, 'cell', reactionCurrent%cellNumber
+		!end if
 		write(*,*) 'cells', reactionCurrent%cellNumber, 'procs', reactionCurrent%taskid, 'rate', reactionCurrent%reactionRate
 		write(*,*) 'totalRate', totalRate, 'totalRateCell', totalRateVol(reactionCurrent%cellNumber)
 		write(*,*) 'totalRateCheck', totalRateCheck(), 'totalRateCellCheck', totalRateVol(reactionCurrent%cellNumber)
