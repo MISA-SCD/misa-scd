@@ -395,7 +395,7 @@ integer count, numDefectsRecv
 integer numUpdateBLRecv(6,2)	!number of defects being recieved from each proc neighbor
 !integer numUpdateLocalRecv(6), numUpdateBndryRecv(6)	!number of defects being recieved from each proc neighbor
 !integer numLocalRecv(3,2), numBndryRecv(3,2)
-integer tempRecv
+integer sendTempLocal, sendTempBndry, sendTempFinal, tempRecv
 
 !NOTE: this final step could be eliminated by keeping the global mesh in each local processor
 !(thus each element could be identified as being part of the local mesh of one proc and the boundary of 
@@ -453,6 +453,9 @@ do dir=1,6
 	numUpdateFinal(dir)=0
 	numUpdateFinalRecv(dir)=0
 end do
+sendTempLocal=0
+sendTempBndry=0
+sendTempFinal=0
 
 totalLocalRecv=0
 
@@ -1272,7 +1275,12 @@ if(associated(reactionCurrent)) then	!if we have not chosen a null event
 				if(numUpdateLB(dir,1) /= 0) then
 					call MPI_ISEND(localBuffer(dir,:,:),numUpdateLB(dir,1)*(numSpecies+3),MPI_INTEGER, &
 							myProc%procNeighbor(dir), myProc%taskid*6+dir,comm, sendLocalRequest(dir),ierr)
+				else
+					call MPI_ISEND(sendTempLocal,1,MPI_INTEGER, &
+							myProc%procNeighbor(dir), myProc%taskid*6+dir,comm, sendLocalRequest(dir),ierr)
 				end if
+				call MPI_ISEND(sendTempBndry,1,MPI_INTEGER, myProc%procNeighbor(dir), &
+						myProc%numtasks*6+myProc%taskid*6+dir,comm, sendBndryRequest(dir),ierr)
 			end if
 
 		end do
@@ -1550,9 +1558,8 @@ if(associated(reactionCurrent)) then	!if we have not chosen a null event
 
 		do dir=1,6
 			if(myProc%procNeighbor(dir) /= myProc%taskid) then
-				if(numUpdateLB(dir,1) /= 0) then
-					call MPI_WAIT(sendLocalRequest(dir),sendLocalStatus(dir),ierr)
-				end if
+				call MPI_WAIT(sendLocalRequest(dir),sendLocalStatus(dir),ierr)
+				call MPI_WAIT(sendBndryRequest(dir),sendBndryStatus(dir),ierr)
 			end if
 		end do
 		deallocate(localBuffer)
@@ -1700,11 +1707,17 @@ if(associated(reactionCurrent)) then	!if we have not chosen a null event
 				if(numUpdateLB(dir,1) /= 0) then
 					call MPI_ISEND(localBuffer(dir,:,:),numUpdateLB(dir,1)*(numSpecies+3),MPI_INTEGER, &
 							myProc%procNeighbor(dir),myProc%taskid*6+dir,comm, sendLocalRequest(dir),ierr)
+				else
+					call MPI_ISEND(sendTempLocal,1,MPI_INTEGER, myProc%procNeighbor(dir),&
+							myProc%taskid*6+dir,comm, sendLocalRequest(dir),ierr)
 				end if
 				if(numUpdateLB(dir,2) /= 0) then
 					call MPI_ISEND(bndryBuffer(dir,:,:),numUpdateLB(dir,2)*(numSpecies+2),MPI_INTEGER, &
 							myProc%procNeighbor(dir), myProc%numtasks*6+myProc%taskid*6+dir,comm, &
 							sendBndryRequest(dir),ierr)
+				else
+					call MPI_ISEND(sendTempBndry,1,MPI_INTEGER, myProc%procNeighbor(dir), &
+							myProc%numtasks*6+myProc%taskid*6+dir,comm, sendBndryRequest(dir),ierr)
 				end if
 			end if
 
@@ -2248,12 +2261,11 @@ if(associated(reactionCurrent)) then	!if we have not chosen a null event
 
 		do dir=1,6
 			if(myProc%procNeighbor(dir) /= myProc%taskid) then
-				if(numUpdateLB(dir,1) /= 0) then
-					call MPI_WAIT(sendLocalRequest(dir),sendLocalStatus(dir),ierr)
-				end if
-				if(numUpdateLB(dir,2) /= 0) then
-					call MPI_WAIT(sendBndryRequest(dir),sendBndryStatus(dir),ierr)
-				end if
+
+				call MPI_WAIT(sendLocalRequest(dir),sendLocalStatus(dir),ierr)
+
+				call MPI_WAIT(sendBndryRequest(dir),sendBndryStatus(dir),ierr)
+
 			end if
 
 		end do
@@ -2647,16 +2659,18 @@ do dir=1,6
 			
 			call MPI_ISEND(finalBuffer(dir,:,:),numUpdateFinal(dir)*(numSpecies+3), MPI_INTEGER, &
 				myProc%procNeighbor(dir), 2*myProc%numtasks*6+myProc%taskid*6+dir,comm,sendFinalRequest(dir),ierr)
-
+		else
+			call MPI_ISEND(sendTempFinal,1, MPI_INTEGER, myProc%procNeighbor(dir), &
+					2*myProc%numtasks*6+myProc%taskid*6+dir,comm,sendFinalRequest(dir),ierr)
 		end if
 	end if
 end do
 
 do dir=1,6
 	if(myProc%procNeighbor(dir) /= myProc%taskid) then
-		if(numUpdateFinal(dir) /= 0) then
-			call MPI_WAIT(sendFinalRequest(dir),sendFinalStatus(dir),ierr)
-		end if
+
+		call MPI_WAIT(sendFinalRequest(dir),sendFinalStatus(dir),ierr)
+
 	end if
 end do
 deallocate(finalBuffer)
