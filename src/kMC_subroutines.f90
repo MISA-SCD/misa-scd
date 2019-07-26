@@ -1227,7 +1227,11 @@ if(associated(reactionCurrent)) then	!if we have not chosen a null event
 		if(flag .eqv. .FALSE.) then
 
 			!create buffers: size greater than max size needed (at most numProducts to change)
-			allocate(localBuffer(6,reactionCurrent%numProducts,numSpecies+3))
+            if(reactionCurrent%numReactants==1 .AND. reactionCurrent%numProducts==1) then   !diffusion
+                if(reactionCurrent%cellNumber(2)==0) then
+                    allocate(localBuffer(6,reactionCurrent%numProducts,numSpecies+3))
+                end if
+            end if
 
 			do i=1, reactionCurrent%numProducts
 				if(reactionCurrent%taskid(i+reactionCurrent%numReactants) == -1) then
@@ -1574,8 +1578,17 @@ if(associated(reactionCurrent)) then	!if we have not chosen a null event
 	else	!Reactions in the coarse mesh
 
 		!create buffers: size greater than max size needed (at most numReactants and numProducts to change)
-		allocate(localBuffer(6,reactionCurrent%numReactants+reactionCurrent%numProducts,numSpecies+3))
-		allocate(bndryBuffer(6,reactionCurrent%numProducts,numSpecies+2))
+        if(reactionCurrent%numReactants==1 .AND. reactionCurrent%numProducts==1) then
+            if(reactionCurrent%taskid(2) == myProc%taskid .AND. &
+                    reactionCurrent%cellNumber(2) > 0) then
+                allocate(localBuffer(6,2,numSpecies+3))
+            else
+                allocate(localBuffer(6,1,numSpecies+3))
+            end if
+            allocate(bndryBuffer(6,reactionCurrent%numProducts,numSpecies+2))
+        else
+            allocate(localBuffer(6,reactionCurrent%numReactants+reactionCurrent%numProducts,numSpecies+3))
+        end if
 
 		do i=1, reactionCurrent%numReactants
 
@@ -1647,7 +1660,8 @@ if(associated(reactionCurrent)) then	!if we have not chosen a null event
 			do i=1, reactionCurrent%numProducts
 
 				!For reactions that have occurred within this processor in the coarse mesh
-				if(reactionCurrent%taskid(i+reactionCurrent%numReactants) == myProc%taskid) then
+				if(reactionCurrent%taskid(i+reactionCurrent%numReactants) == myProc%taskid .AND. &
+                        reactionCurrent%cellNumber(i+reactionCurrent%numReactants) > 0) then    !not coarse-to-fine
 					!First update local buffer if needed
 					do dir=1,6
 						do k=1,myMesh(reactionCurrent%cellNumber(i+reactionCurrent%numReactants))%numNeighbors(dir)
@@ -2330,28 +2344,30 @@ end if	!if associated(reactionCurrent)
 !Step 3: Recieve data about local/bdry defects that have changed and update defectList and myBoundary accordingly
 !**************
 
-do dir=1,6
+!do dir=1,6
 
-	if(mod(dir,2)==0) then
-		tag = dir-1
-	else
-		tag = dir+1
-	end if
+!	if(mod(dir,2)==0) then
+!		tag = dir-1
+!	else
+!		tag = dir+1
+!	end if
 	
-	if(myProc%procNeighbor(dir) /= myProc%taskid) then
+!	if(myProc%procNeighbor(tag) /= myProc%taskid) then
 
 		!numUpdateBLRecv(i,1): number of bndry defects that have changed (local to processor i, boundary here)
 		!numUpdateBLRecv(i,2): number of local defects that have changed (bndry to processor i, local here)
-!		call MPI_RECV(numUpdateBLRecv(i,:),2,MPI_INTEGER,myProc%procNeighbor(i),200+tag,comm,status,ierr)
-		tempRecv=0
-		call MPI_PROBE(myProc%procNeighbor(tag),myProc%numtasks*6+myProc%taskid*6+dir,comm,status,ierr)
-		call MPI_GET_COUNT(status,MPI_INTEGER,tempRecv,ierr)
-		numUpdateBLRecv(dir,2) = tempRecv/(numSpecies+2)
-		totalLocalRecv=totalLocalRecv+numUpdateBLRecv(dir,2)
-	endif
-end do
+		!call MPI_RECV(numUpdateBLRecv(i,:),2,MPI_INTEGER,myProc%procNeighbor(i),200+tag,comm,status,ierr)
+!		tempRecv=0
+!		call MPI_PROBE(myProc%procNeighbor(tag),myProc%numtasks*6+myProc%taskid*6+dir,comm,status,ierr)
+!		call MPI_GET_COUNT(status,MPI_INTEGER,tempRecv,ierr)
+!		numUpdateBLRecv(dir,2) = tempRecv/(numSpecies+2)
+!		totalLocalRecv=totalLocalRecv+numUpdateBLRecv(dir,2)
+!	endif
+!end do
 
-allocate(finalBuffer(6,totalLocalRecv,numSpecies+3))
+!allocate(finalBuffer(6,totalLocalRecv,numSpecies+3))
+allocate(finalBuffer(6,6,numSpecies+3))
+
 
 !Update defectList
 do dir=1,6
@@ -2363,7 +2379,12 @@ do dir=1,6
 		tag = dir+1
 	end if
 	
-	if(myProc%procNeighbor(dir) /= myProc%taskid) then
+	if(myProc%procNeighbor(tag) /= myProc%taskid) then
+
+        tempRecv=0
+        call MPI_PROBE(myProc%procNeighbor(tag),myProc%numtasks*6+myProc%taskid*6+dir,comm,status,ierr)
+        call MPI_GET_COUNT(status,MPI_INTEGER,tempRecv,ierr)
+        numUpdateBLRecv(dir,2) = tempRecv/(numSpecies+2)
 
 		if(numUpdateBLRecv(dir,2) /= 0) then
 
@@ -2649,16 +2670,18 @@ do dir=1,6
 		!call MPI_SEND(numUpdateFinal(i), 1, MPI_INTEGER, myProc%procNeighbor(i), i+24, comm, ierr)	!number of local defects that have changed on boundary of processor i
 		
 		if(numUpdateFinal(dir) /= 0) then
-			!allocate(finalBufferSend(numUpdateFinal(i),numSpecies+3))
+			allocate(finalBufferSend(numUpdateFinal(dir),numSpecies+3))
 			
-			!do j=1,numUpdateFinal(i)
-			!	do k=1,numSpecies+3
-			!		finalBufferSend(j,k)=finalBuffer(i,j,k)
-			!	end do
-			!end do
+			do j=1,numUpdateFinal(dir)
+				do k=1,numSpecies+3
+					finalBufferSend(j,k)=finalBuffer(dir,j,k)
+				end do
+			end do
 			
-			call MPI_ISEND(finalBuffer(dir,:,:),numUpdateFinal(dir)*(numSpecies+3), MPI_INTEGER, &
+			call MPI_ISEND(finalBufferSend,numUpdateFinal(dir)*(numSpecies+3), MPI_INTEGER, &
 				myProc%procNeighbor(dir), 2*myProc%numtasks*6+myProc%taskid*6+dir,comm,sendFinalRequest(dir),ierr)
+            call MPI_WAIT(sendFinalRequest(dir),recvFinalStatus(dir),ierr)
+            deallocate(finalBufferSend)
 		else
 			call MPI_ISEND(sendTempFinal,1, MPI_INTEGER, myProc%procNeighbor(dir), &
 					2*myProc%numtasks*6+myProc%taskid*6+dir,comm,sendFinalRequest(dir),ierr)
@@ -2668,8 +2691,9 @@ end do
 
 do dir=1,6
 	if(myProc%procNeighbor(dir) /= myProc%taskid) then
-
-		call MPI_WAIT(sendFinalRequest(dir),sendFinalStatus(dir),ierr)
+        if(numUpdateFinal(dir) == 0) then
+            call MPI_WAIT(sendFinalRequest(dir),sendFinalStatus(dir),ierr)
+        end if
 
 	end if
 end do
@@ -2687,7 +2711,7 @@ do dir=1,6
 		tag = dir+1
 	end if
 	
-	if(myProc%procNeighbor(dir) /= myProc%taskid) then
+	if(myProc%procNeighbor(tag) /= myProc%taskid) then
 
 		tempRecv=0
 		call MPI_PROBE(myProc%procNeighbor(tag),2*myProc%numtasks*6+myProc%taskid*6+dir,comm,status,ierr)
