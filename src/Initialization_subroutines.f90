@@ -66,8 +66,9 @@ if(myProc%taskid==MASTER) then
 		end do inter1
 	end do outer1
 end if
-
-call MPI_BCAST(VgCellList, initialTotalV, MPI_INTEGER, MASTER, comm,ierr)
+if(initialTotalV > 0) then
+	call MPI_BCAST(VgCellList, initialTotalV, MPI_INTEGER, MASTER, comm,ierr)
+end if
 
 !SIA
 rtemp = 0d0
@@ -89,8 +90,9 @@ if(myProc%taskid==MASTER) then
 	end do outer2
 end if
 
-call MPI_BCAST(IgCellList, initialTotalI, MPI_INTEGER, MASTER, comm,ierr)
-
+if(initialTotalI > 0) then
+	call MPI_BCAST(IgCellList, initialTotalI, MPI_INTEGER, MASTER, comm,ierr)
+end if
 
 end subroutine
 
@@ -106,7 +108,7 @@ use mod_constants
 implicit none
 
 integer cell, i
-type(defect), pointer :: defectCurrent
+type(defect), pointer :: defectCurrent, defectPrev
 
 nullify(defectCurrent)
 
@@ -122,56 +124,77 @@ do cell=1,numCells
 	defectCurrent=>defectList(cell)
 
 	!Cu_1
-	allocate(defectCurrent%next)
-	defectCurrent=>defectCurrent%next
-	allocate(defectCurrent%defectType(numSpecies))
-	do i=1, numSpecies
-		defectCurrent%defectType(i) = 0
-	end do
-	defectCurrent%defectType(1) = 1
-	defectCurrent%num=numCuCell
-	defectCurrent%cellNumber=cell
-
+	if(CuContent > 0d0) then
+		allocate(defectCurrent%next)
+		defectCurrent=>defectCurrent%next
+		allocate(defectCurrent%defectType(numSpecies))
+		do i=1, numSpecies
+			defectCurrent%defectType(i) = 0
+		end do
+		defectCurrent%defectType(1) = 1
+		defectCurrent%num=numCuCell
+		defectCurrent%cellNumber=cell
+		nullify(defectCurrent%next)
+	end if
 
 	!V_1
-	allocate(defectCurrent%next)
-	defectCurrent=>defectCurrent%next
-	allocate(defectCurrent%defectType(numSpecies))
-	do i=1, numSpecies
-		defectCurrent%defectType(i) = 0
-	end do
-	defectCurrent%defectType(2) = 1
-	defectCurrent%num=0
-	defectCurrent%cellNumber=cell
-
 	if(initialTotalV > 0) then
+		allocate(defectCurrent%next)
+		defectCurrent=>defectCurrent%next
+		allocate(defectCurrent%defectType(numSpecies))
+		do i=1, numSpecies
+			defectCurrent%defectType(i) = 0
+		end do
+		defectCurrent%defectType(2) = 1
+		defectCurrent%num=0
+		defectCurrent%cellNumber=cell
+
 		do i=1, initialTotalV
 			if(VgCellList(i)==myMesh(cell)%globalCell) then
 				defectCurrent%num = defectCurrent%num +1
 			end if
 		end do
+
+		if(defectCurrent%num > 0) then
+			nullify(defectCurrent%next)
+		else
+			deallocate(defectCurrent%defectType)
+			deallocate(defectCurrent)
+			nullify(defectCurrent)
+		end if
 	end if
 
-	!SIA_1
-	allocate(defectCurrent%next)
-	defectCurrent=>defectCurrent%next
-	allocate(defectCurrent%defectType(numSpecies))
-	do i=1, numSpecies
-		defectCurrent%defectType(i) = 0
+	defectCurrent=>defectList(cell)
+	do while(associated(defectCurrent%next))
+		defectCurrent=>defectCurrent%next
 	end do
-	defectCurrent%defectType(3) = 1
-	defectCurrent%num=0
-	defectCurrent%cellNumber=cell
 
+	!SIA_1
 	if(initialTotalI > 0) then
+		allocate(defectCurrent%next)
+		defectCurrent=>defectCurrent%next
+		allocate(defectCurrent%defectType(numSpecies))
+		do i=1, numSpecies
+			defectCurrent%defectType(i) = 0
+		end do
+		defectCurrent%defectType(3) = 1
+		defectCurrent%num=0
+		defectCurrent%cellNumber=cell
+
 		do i=1, initialTotalI
 			if(IgCellList(i)==myMesh(cell)%globalCell) then
 				defectCurrent%num = defectCurrent%num +1
 			end if
 		end do
-	end if
 
-	nullify(defectCurrent%next)
+		if(defectCurrent%num > 0) then
+			nullify(defectCurrent%next)
+		else
+			deallocate(defectCurrent%defectType)
+			deallocate(defectCurrent)
+			nullify(defectCurrent)
+		end if
+	end if
 
 end do
 
@@ -381,13 +404,14 @@ do cell=1,numCells
 	end if
 
 	reactionCurrent=>reactionList(cell)
+	defectCurrent=>defectList(cell)
 
+	!Initialize possible reactions of free Cu
 	if(CuContent > 0d0) then
-	!2019.05.04 Add: Initialize possible reactions of free Cu
-	!*******************************************************
-	!clustering: Cu+Cu->2Cu
-	!*******************************************************
 
+		!*******************************************************
+		!clustering: Cu+Cu->2Cu
+		!*******************************************************
 		allocate(reactionCurrent%next)
 		reactionCurrent=>reactionCurrent%next
 
@@ -424,6 +448,7 @@ do cell=1,numCells
 		!Find reaction rate for Cu clustering using ClusterReactions(reac), which is input from file.
 		reactionCurrent%reactionRate=findReactionRateMultiple(reactionCurrent%reactants(1,:), &
 				reactionCurrent%reactants(2,:), cell, ClusterReactions(matNum,reac))
+                !write(*,*) 'Cu ReactionRate', reactionCurrent%reactionRate
 		nullify(reactionCurrent%next)
 
 	end if
@@ -508,21 +533,21 @@ do cell=1,numCells
 
 	!**********************************************
 	!initialize reactions about V
-	defectCurrent=>defectList(cell)
+	!*********************************************
+	nullify(defectCurrentTempV)
 	do while(associated(defectCurrent))
 		if(defectCurrent%defectType(1)==0 &
 				.AND. defectCurrent%defectType(2)==1 &
 				.AND. defectCurrent%defectType(3)==0 &
 				.AND. defectCurrent%defectType(4)==0) then
+			defectCurrentTempV=>defectCurrent
 			exit
 		else
 			defectCurrent=>defectCurrent%next
 		end if
 	end do
-	defectCurrentTempV=>defectCurrent
 
 	if(associated(defectCurrent)) then
-	if(defectCurrent%num > 0) then
 
 		if(CuContent > 0d0) then
 			!*******************************************************
@@ -642,72 +667,70 @@ do cell=1,numCells
 		reactionCurrent%reactionRate=findReactionRateSink(reactionCurrent%reactants(1,:), cell, &
 					SinkReactions(matNum,reac))
 		nullify(reactionCurrent%next)
-	end if
 
-	if(defectCurrent%num > 1) then
-		!*******************************************************
-		!clustering: V+V->2V
-		!*******************************************************
 
-		allocate(reactionCurrent%next)
-		reactionCurrent=>reactionCurrent%next
+		if(defectCurrent%num > 1) then
+			!*******************************************************
+			!clustering: V+V->2V
+			!*******************************************************
 
-		reactionCurrent%numReactants=2
-		reactionCurrent%numProducts=1
-		allocate(reactionCurrent%reactants(reactionCurrent%numReactants, numSpecies))
-		allocate(reactionCurrent%products(reactionCurrent%numProducts, numSpecies))
-		allocate(reactionCurrent%cellNumber(reactionCurrent%numReactants + reactionCurrent%numProducts))
-		allocate(reactionCurrent%taskid(reactionCurrent%numReactants + reactionCurrent%numProducts))
+			allocate(reactionCurrent%next)
+			reactionCurrent=>reactionCurrent%next
 
-		!search ClusterList for V+V->2V
-		do reac=1,numClusterReac(matNum)
-			if(ClusterReactions(matNum,reac)%reactants(1,1)==0 .AND. &
-					ClusterReactions(matNum,reac)%reactants(2,1)==0 &
-					.AND. ClusterReactions(matNum,reac)%reactants(1,2)==1 .AND. &
-					ClusterReactions(matNum,reac)%reactants(2,2)==1 .AND. &
-					ClusterReactions(matNum,reac)%reactants(1,3)==0 .AND. &
-					ClusterReactions(matNum,reac)%reactants(2,3)==0 .AND. &
-					ClusterReactions(matNum,reac)%reactants(1,4)==0 .AND. &
-					ClusterReactions(matNum,reac)%reactants(2,4)==0) then
-				exit
-			end if
-		end do
+			reactionCurrent%numReactants=2
+			reactionCurrent%numProducts=1
+			allocate(reactionCurrent%reactants(reactionCurrent%numReactants, numSpecies))
+			allocate(reactionCurrent%products(reactionCurrent%numProducts, numSpecies))
+			allocate(reactionCurrent%cellNumber(reactionCurrent%numReactants + reactionCurrent%numProducts))
+			allocate(reactionCurrent%taskid(reactionCurrent%numReactants + reactionCurrent%numProducts))
 
-		do i=1,ClusterReactions(matNum,reac)%numReactants+ClusterReactions(matNum,reac)%numProducts
-			do j=1,numSpecies
-				reactionCurrent%reactants(1,j)=ClusterReactions(matNum,reac)%reactants(1,j)
-				reactionCurrent%reactants(2,j)=ClusterReactions(matNum,reac)%reactants(2,j)
-				reactionCurrent%products(1,j)=ClusterReactions(matNum,reac)%products(1,j)
+			!search ClusterList for V+V->2V
+			do reac=1,numClusterReac(matNum)
+				if(ClusterReactions(matNum,reac)%reactants(1,1)==0 .AND. &
+						ClusterReactions(matNum,reac)%reactants(2,1)==0 &
+						.AND. ClusterReactions(matNum,reac)%reactants(1,2)==1 .AND. &
+						ClusterReactions(matNum,reac)%reactants(2,2)==1 .AND. &
+						ClusterReactions(matNum,reac)%reactants(1,3)==0 .AND. &
+						ClusterReactions(matNum,reac)%reactants(2,3)==0 .AND. &
+						ClusterReactions(matNum,reac)%reactants(1,4)==0 .AND. &
+						ClusterReactions(matNum,reac)%reactants(2,4)==0) then
+					exit
+				end if
 			end do
-			reactionCurrent%cellNumber(i)=cell
-			reactionCurrent%taskid(i)=myMesh(cell)%proc
-		end do
-		!Find reaction rate for Cu clustering using ClusterReactions(reac), which is input from file.
-		reactionCurrent%reactionRate=findReactionRateMultiple(reactionCurrent%reactants(1,:), &
-				reactionCurrent%reactants(2,:), cell, ClusterReactions(matNum,reac))
-		nullify(reactionCurrent%next)
 
-	end if
+			do i=1,ClusterReactions(matNum,reac)%numReactants+ClusterReactions(matNum,reac)%numProducts
+				do j=1,numSpecies
+					reactionCurrent%reactants(1,j)=ClusterReactions(matNum,reac)%reactants(1,j)
+					reactionCurrent%reactants(2,j)=ClusterReactions(matNum,reac)%reactants(2,j)
+					reactionCurrent%products(1,j)=ClusterReactions(matNum,reac)%products(1,j)
+				end do
+				reactionCurrent%cellNumber(i)=cell
+				reactionCurrent%taskid(i)=myMesh(cell)%proc
+			end do
+			!Find reaction rate for Cu clustering using ClusterReactions(reac), which is input from file.
+			reactionCurrent%reactionRate=findReactionRateMultiple(reactionCurrent%reactants(1,:), &
+					reactionCurrent%reactants(2,:), cell, ClusterReactions(matNum,reac))
+			nullify(reactionCurrent%next)
+
+		end if
 
 	end if
 
 	!*******************************************************
 	!initialize reactions about SIA
-	defectCurrent=>defectList(cell)
 	do while(associated(defectCurrent))
 		if(defectCurrent%defectType(1)==0 &
 				.AND. defectCurrent%defectType(2)==0 &
 				.AND. defectCurrent%defectType(3)==1 &
 				.AND. defectCurrent%defectType(4)==0) then
+			defectCurrentTempI=>defectCurrent
 			exit
 		else
 			defectCurrent=>defectCurrent%next
 		end if
 	end do
-	defectCurrentTempI=>defectCurrent
 
 	if(associated(defectCurrent)) then
-	if(defectCurrent%num > 0) then
 
 		!*******************************************************************
 		!Diffusion: SIA->SIA
@@ -782,67 +805,69 @@ do cell=1,numCells
 		reactionCurrent%reactionRate=findReactionRateSink(reactionCurrent%reactants(1,:), cell, &
 				SinkReactions(matNum,reac))
 		nullify(reactionCurrent%next)
-	end if
 
-	if(defectCurrent%num > 1) then
-		!*******************************************************
-		!clustering: SIA+SIA->2SIA
-		!*******************************************************
 
-		allocate(reactionCurrent%next)
-		reactionCurrent=>reactionCurrent%next
+		if(defectCurrent%num > 1) then
+			!*******************************************************
+			!clustering: SIA+SIA->2SIA
+			!*******************************************************
 
-		reactionCurrent%numReactants=2
-		reactionCurrent%numProducts=1
-		allocate(reactionCurrent%reactants(reactionCurrent%numReactants, numSpecies))
-		allocate(reactionCurrent%products(reactionCurrent%numProducts, numSpecies))
-		allocate(reactionCurrent%cellNumber(reactionCurrent%numReactants + reactionCurrent%numProducts))
-		allocate(reactionCurrent%taskid(reactionCurrent%numReactants + reactionCurrent%numProducts))
+			allocate(reactionCurrent%next)
+			reactionCurrent=>reactionCurrent%next
 
-		!search ClusterList for V+V->2V
-		do reac=1,numClusterReac(matNum)
-			if(ClusterReactions(matNum,reac)%reactants(1,1)==0 .AND. &
-					ClusterReactions(matNum,reac)%reactants(2,1)==0 &
-					.AND. ClusterReactions(matNum,reac)%reactants(1,2)==0 .AND. &
-					ClusterReactions(matNum,reac)%reactants(2,2)==0 .AND. &
-					ClusterReactions(matNum,reac)%reactants(1,3)==1 .AND. &
-					ClusterReactions(matNum,reac)%reactants(2,3)==1 .AND. &
-					ClusterReactions(matNum,reac)%reactants(1,4)==0 .AND. &
-					ClusterReactions(matNum,reac)%reactants(2,4)==0) then
-				exit
+			reactionCurrent%numReactants=2
+			reactionCurrent%numProducts=1
+			allocate(reactionCurrent%reactants(reactionCurrent%numReactants, numSpecies))
+			allocate(reactionCurrent%products(reactionCurrent%numProducts, numSpecies))
+			allocate(reactionCurrent%cellNumber(reactionCurrent%numReactants + reactionCurrent%numProducts))
+			allocate(reactionCurrent%taskid(reactionCurrent%numReactants + reactionCurrent%numProducts))
+
+			!search ClusterList for V+V->2V
+			do reac=1,numClusterReac(matNum)
+				if(ClusterReactions(matNum,reac)%reactants(1,1)==0 .AND. &
+						ClusterReactions(matNum,reac)%reactants(2,1)==0 &
+						.AND. ClusterReactions(matNum,reac)%reactants(1,2)==0 .AND. &
+						ClusterReactions(matNum,reac)%reactants(2,2)==0 .AND. &
+						ClusterReactions(matNum,reac)%reactants(1,3)==1 .AND. &
+						ClusterReactions(matNum,reac)%reactants(2,3)==1 .AND. &
+						ClusterReactions(matNum,reac)%reactants(1,4)==0 .AND. &
+						ClusterReactions(matNum,reac)%reactants(2,4)==0) then
+					exit
+				end if
+			end do
+
+			do j=1,numSpecies
+				reactionCurrent%reactants(1,j)=ClusterReactions(matNum,reac)%reactants(1,j)
+				reactionCurrent%reactants(2,j)=ClusterReactions(matNum,reac)%reactants(2,j)
+				reactionCurrent%products(1,j)=ClusterReactions(matNum,reac)%products(1,j)
+			end do
+
+			if(pointDefectToggle=='yes') then
+				if(reactionCurrent%products(1,3) > max3DInt) then
+					reactionCurrent%products(1,4) = reactionCurrent%products(1,3)
+					reactionCurrent%products(1,3) = 0
+				end if
 			end if
-		end do
 
-		do j=1,numSpecies
-			reactionCurrent%reactants(1,j)=ClusterReactions(matNum,reac)%reactants(1,j)
-			reactionCurrent%reactants(2,j)=ClusterReactions(matNum,reac)%reactants(2,j)
-			reactionCurrent%products(1,j)=ClusterReactions(matNum,reac)%products(1,j)
-		end do
+			do i=1,ClusterReactions(matNum,reac)%numReactants+ClusterReactions(matNum,reac)%numProducts
+				reactionCurrent%cellNumber(i)=cell
+				reactionCurrent%taskid(i)=myMesh(cell)%proc
+			end do
+			!Find reaction rate for Cu clustering using ClusterReactions(reac), which is input from file.
+			reactionCurrent%reactionRate=findReactionRateMultiple(reactionCurrent%reactants(1,:), &
+					reactionCurrent%reactants(2,:), cell, ClusterReactions(matNum,reac))
+			nullify(reactionCurrent%next)
 
-		if(pointDefectToggle=='yes') then
-			if(reactionCurrent%products(1,3) > max3DInt) then
-				reactionCurrent%products(1,4) = reactionCurrent%products(1,3)
-				reactionCurrent%products(1,3) = 0
-			end if
 		end if
-
-		do i=1,ClusterReactions(matNum,reac)%numReactants+ClusterReactions(matNum,reac)%numProducts
-			reactionCurrent%cellNumber(i)=cell
-			reactionCurrent%taskid(i)=myMesh(cell)%proc
-		end do
-		!Find reaction rate for Cu clustering using ClusterReactions(reac), which is input from file.
-		reactionCurrent%reactionRate=findReactionRateMultiple(reactionCurrent%reactants(1,:), &
-				reactionCurrent%reactants(2,:), cell, ClusterReactions(matNum,reac))
-		nullify(reactionCurrent%next)
-
-	end if
 
 	end if
 
 	!***********************************
 	!V+SIA->0
+	!***********************************
+
 	if(associated(defectCurrentTempV) .AND. associated(defectCurrentTempI)) then
-	if(defectCurrentTempV%num > 0 .AND. defectCurrentTempI%num > 0) then
+
 		!*******************************************************
 		!clustering: V+SIA->0
 		!*******************************************************
@@ -881,7 +906,6 @@ do cell=1,numCells
 		reactionCurrent%reactionRate=findReactionRateMultiple(reactionCurrent%reactants(1,:), &
 				reactionCurrent%reactants(2,:), cell, ClusterReactions(matNum,reac))
 		nullify(reactionCurrent%next)
-	end if
 
 	end if
 
@@ -1074,46 +1098,41 @@ type(defect), pointer :: defectCurrent
 do cell=1,numCells
 	do dir=1,6
 		do k=1,myMesh(cell)%numNeighbors(dir)
+			!neighbor cell is in different proc, not free surface (taskid=-1)
 			if(myMesh(cell)%neighborProcs(dir,k) /= myProc%taskid .AND. &
-				myMesh(cell)%neighborProcs(dir,k) /= -1) then !neighbor cell is in different proc, not free surface (taskid=-1)
-				
-				if(myMesh(cell)%neighborProcs(dir,k) /= myProc%procNeighbor(dir)) then
-					write(*,*) 'error neighbor not correct during boundary mesh initialization'
-				else
-					!initialize this boundary element:
-					!1) Create defectList (allocate the pointer)
-					!2) Set first defect to all species 0, num=0, cellNumber=correct cell number in neighboring proc
-					
-!					if(myProc%taskid==MASTER) then
-!						write(*,*) 'proc', myProc%taskid, 'cell', cell, 'dir', dir,'neighbor cell', myMesh(cell)%neighbors(dir,k)
-!						write(*,*) 'neighbor proc', myBoundary(dir,myMesh(cell)%neighbors(dir,k))%proc
-!						!write(*,*) 'length', myBoundary(dir,myMesh(cell)%neighbors(dir,k))%length
-!						!write(*,*) 'material', myBoundary(dir,myMesh(cell)%neighbors(dir,k))%material
-!					endif
+					myMesh(cell)%neighborProcs(dir,k) == myProc%procNeighbor(dir) .AND. &
+					myMesh(cell)%neighborProcs(dir,k) /= -1) then
 
-					allocate(myBoundary(dir,myMesh(cell)%neighbors(dir,k))%defectList)
-					defectCurrent=>myBoundary(dir,myMesh(cell)%neighbors(dir,k))%defectList
-					allocate(defectCurrent%defectType(numSpecies))
-					do i=1, numSpecies
-						defectCurrent%defectType(i)=0
-					end do
-					defectCurrent%num=0
-					defectCurrent%cellNumber=myMesh(cell)%neighbors(dir,k)
+				!initialize this boundary element:
+				!1) Create defectList (allocate the pointer)
+				!2) Set first defect to all species 0, num=0, cellNumber=correct cell number in neighboring proc
 
+				allocate(myBoundary(dir,myMesh(cell)%neighbors(dir,k))%defectList)
+				defectCurrent=>myBoundary(dir,myMesh(cell)%neighbors(dir,k))%defectList
+				allocate(defectCurrent%defectType(numSpecies))
+				do i=1, numSpecies
+					defectCurrent%defectType(i)=0
+				end do
+				defectCurrent%num=0
+				defectCurrent%cellNumber=myMesh(cell)%neighbors(dir,k)
+				nullify(myBoundary(dir,myMesh(cell)%neighbors(dir,k))%defectList%next)
 
-					!Cu_1
+				!Cu_1
+				if(CuContent > 0d0) then
 					allocate(defectCurrent%next)
 					defectCurrent=>defectCurrent%next
 					allocate(defectCurrent%defectType(numSpecies))
-					defectCurrent%defectType(1)=1
-					do i=2,numSpecies
+					do i=1,numSpecies
 						defectCurrent%defectType(i)=0
 					end do
+					defectCurrent%defectType(1)=1
 					defectCurrent%num=numCuCell
 					defectCurrent%cellNumber=myMesh(cell)%neighbors(dir,k)
+					nullify(defectCurrent%next)
+				end if
 
-
-					!V_1
+				!V_1
+				if(initialTotalV > 0) then
 					allocate(defectCurrent%next)
 					defectCurrent=>defectCurrent%next
 					allocate(defectCurrent%defectType(numSpecies))
@@ -1124,18 +1143,25 @@ do cell=1,numCells
 					defectCurrent%num=0
 					defectCurrent%cellNumber=myMesh(cell)%neighbors(dir,k)
 
-					if(initialTotalV > 0) then
-						do i=1, initialTotalV
-							gCell=myMesh(cell)%globalCell
-							gNeighor=findgNeighborPeriodic(gCell, dir)
-							if(VgCellList(i)==gNeighor) then
-								defectCurrent%num = defectCurrent%num +1
-							end if
-						end do
+					do i=1, initialTotalV
+						gCell=myMesh(cell)%globalCell
+						gNeighor=findgNeighborPeriodic(gCell, dir)
+						if(VgCellList(i)==gNeighor) then
+							defectCurrent%num = defectCurrent%num +1
+						end if
+					end do
+
+					if(defectCurrent%num > 0) then
+						nullify(defectCurrent%next)
+					else
+						deallocate(defectCurrent%defectType)
+						deallocate(defectCurrent)
+						nullify(defectCurrent)
 					end if
+				end if
 
-
-					!SIA_1
+				!SIA_1
+				if(initialTotalI > 0) then
 					allocate(defectCurrent%next)
 					defectCurrent=>defectCurrent%next
 					allocate(defectCurrent%defectType(numSpecies))
@@ -1145,19 +1171,23 @@ do cell=1,numCells
 					defectCurrent%defectType(3) = 1
 					defectCurrent%num=0
 					defectCurrent%cellNumber=myMesh(cell)%neighbors(dir,k)
-					if(initialTotalI > 0) then
-						do i=1, initialTotalI
-							gCell=myMesh(cell)%globalCell
-							gNeighor=findgNeighborPeriodic(gCell, dir)
-							if(IgCellList(i)==gNeighor) then
-								defectCurrent%num = defectCurrent%num +1
-							end if
-						end do
+
+					do i=1, initialTotalI
+						gCell=myMesh(cell)%globalCell
+						gNeighor=findgNeighborPeriodic(gCell, dir)
+						if(IgCellList(i)==gNeighor) then
+							defectCurrent%num = defectCurrent%num +1
+						end if
+					end do
+
+					if(defectCurrent%num > 0) then
+						nullify(defectCurrent%next)
+					else
+						deallocate(defectCurrent%defectType)
+						deallocate(defectCurrent)
+						nullify(defectCurrent)
 					end if
-
-					nullify(defectCurrent%next)
-
-				end if  !myMesh(cell)%neighborProcs(dir,k) == myProc%procNeighbor(dir)
+				end if
 
 			end if  !myMesh(cell)%neighborProcs(dir,k) /= myProc%taskid
 		end do  !dir

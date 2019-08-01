@@ -476,7 +476,7 @@ use DerivedType
 implicit none
 include 'mpif.h'
 
-integer status(MPI_STATUS_SIZE), procDivision(3), i, j, k, l, dir, matNum
+integer status(MPI_STATUS_SIZE), i, j, k, l, dir, matNum
 character*20 readIn, meshType
 character*50 filename, filename2, filename3
 logical flag
@@ -564,7 +564,7 @@ flag=.FALSE.
 !end if
 
 !************************************************
-!Step 1a: modify global coordinates to include entire simulation volume (not just centers of elements)
+!Step 1: modify global coordinates to include entire simulation volume (not just centers of elements)
 !************************************************
 
 !The  boundary coordinates of the system (xmin,xmax,ymin,ymax,zmin,zmax)
@@ -575,90 +575,32 @@ myProc%globalCoord(2)=length*dble(numx)
 myProc%globalCoord(4)=length*dble(numy)
 myProc%globalCoord(6)=length*dble(numz)
 
-!************************************************
-!Step 2: divide processors over gobal volume
-!************************************************
-
-procDivision(1)=0	!number of processors in x
-procDivision(2)=0	!number of processors in y
-procDivision(3)=0	!number of processors in z
-
-call MPI_DIMS_CREATE(myProc%numtasks,3,procDivision, ierr)
-
-if(myProc%taskid==MASTER) then
-	write(*,*) 'proc division', procDivision
-end if
-
-!step 3: divide volume among processors according to the factorization above
+!step 2: divide volume among processors according to the factorization above
 !This step locates the boundaries of the local processor within the global volume.
 !**********
 myProc%localCoord(1)=myProc%globalCoord(1)+&
-		mod(myProc%taskid,procDivision(1))*(myProc%globalCoord(2)-myProc%globalCoord(1))/&
-				dble(procDivision(1))
+		mod(myProc%taskid,dims(1))*(myProc%globalCoord(2)-myProc%globalCoord(1))/&
+				dble(dims(1))
 
 myProc%localCoord(2)=myProc%localCoord(1)+&
-		(myProc%globalCoord(2)-myProc%globalCoord(1))/dble(procDivision(1))
+		(myProc%globalCoord(2)-myProc%globalCoord(1))/dble(dims(1))
 
 myProc%localCoord(3)=myProc%globalCoord(3)+&
-		mod(myProc%taskid/ProcDivision(1),procDivision(2))*&
-				(myProc%globalCoord(4)-myProc%globalCoord(3))/dble(procDivision(2))
+		mod(myProc%taskid/dims(1),dims(2))*&
+				(myProc%globalCoord(4)-myProc%globalCoord(3))/dble(dims(2))
 
 myProc%localCoord(4)=myProc%localCoord(3)+&
-		(myProc%globalCoord(4)-myProc%globalCoord(3))/dble(procDivision(2))
+		(myProc%globalCoord(4)-myProc%globalCoord(3))/dble(dims(2))
 
 myProc%localCoord(5)=myProc%GlobalCoord(5)+&
-		mod(myProc%taskid/(ProcDivision(1)*ProcDivision(2)),procDivision(3))*&
-				(myProc%globalCoord(6)-myProc%globalCoord(5))/dble(procDivision(3))
+		mod(myProc%taskid/(dims(1)*dims(2)),dims(3))*&
+				(myProc%globalCoord(6)-myProc%globalCoord(5))/dble(dims(3))
 
 myProc%localCoord(6)=myProc%localCoord(5)+&
-		(myProc%globalCoord(6)-myProc%globalCoord(5))/dble(procDivision(3))
+		(myProc%globalCoord(6)-myProc%globalCoord(5))/dble(dims(3))
 
 totalVolume=(myProc%localCoord(2)-myProc%localCoord(1))*(myProc%localCoord(4)-myProc%localCoord(3))*&
 		(myProc%localCoord(6)-myProc%localCoord(5))
-
-!point processor myProc%procNeighbor(x) to neighboring processors
-!********
-!This is creating a 'processor mesh' (not the actual mesh) and a connectivity between processors
-!based on how the total volume was divided in the previous steps. The connectivity
-!in this step is crated by iterating x, then y, then z
-!
-!This mesh is periodic and does not account for the possibility of free surfaces.
-!********
-if (myProc%localCoord(1)==myProc%globalCoord(1)) then	!coordinate is at xmin
-	myProc%procNeighbor(2)=myProc%taskid+procDivision(1)-1	!left
-else
-	myProc%procNeighbor(2)=myProc%taskid-1	!left
-end if
-
-if (myProc%localCoord(2)==myProc%globalCoord(2)) then	!coordinate is at xmax
-	myProc%procNeighbor(1)=myProc%taskid-procDivision(1)+1	!right
-else
-	myProc%procNeighbor(1)=myProc%taskid+1	!right
-end if
-
-if (myProc%localCoord(3)==myProc%globalCoord(3)) then	!coordinate is at ymin
-	myProc%procNeighbor(4)=myProc%taskid+procDivision(1)*(procDivision(2)-1)	!back
-else
-	myProc%procNeighbor(4)=myProc%taskid-procDivision(1)	!back
-end if
-
-if (myProc%localCoord(4)==myProc%globalCoord(4)) then	!coordinate is at ymax
-	myProc%procNeighbor(3)=myProc%taskid-procDivision(1)*(procDivision(2)-1)	!front
-else
-	myProc%procNeighbor(3)=myProc%taskid+procDivision(1)	!front
-end if
-
-if (myProc%localCoord(5)==myProc%globalCoord(5)) then	!coordinate is at zmin
-	myProc%procNeighbor(6)=myProc%taskid+procDivision(1)*procDivision(2)*(procDivision(3)-1)	!down
-else
-	myProc%procNeighbor(6)=myProc%taskid-procDivision(1)*procDivision(2)	!down
-end if
-
-if (myProc%localCoord(6)==myProc%globalCoord(6)) then	!coordinate is at zmax
-	myProc%procNeighbor(5)=myProc%taskid-procDivision(1)*procDivision(2)*(procDivision(3)-1)	!up
-else
-	myProc%procNeighbor(5)=myProc%taskid+procDivision(1)*procDivision(2)	!up
-end if
 
 !Step 4: create mesh in each processor of elements only within that processor's local coordinates
 !NOTE: this is an actual mesh of volume elements, not the 'processor mesh' created above.
@@ -972,35 +914,37 @@ use mod_constants
 
 implicit none
 include 'mpif.h'
-integer cell, maxElement
+integer cell, localCell, maxElement
 double precision length
 
+!buffer lists to send all information at the end
+integer i, dir, tag
+
+integer, allocatable :: sendBuffer(:,:,:), recvBuffer(:,:)
+integer materialBuff(numxLocal*numyLocal*numzLocal,6)
+integer numSend(6), numRecv(6)
+
+integer sendRequest(6), recvRequest(6)
+integer sendStatus(6), recvStatus(6)
 integer status(MPI_STATUS_SIZE)
 
-!buffer lists to send all information at the end
-integer numSendRecv(6), i,j, dir
+integer tempRecv
+logical flagProbe
 
-integer sendRight(2,numyLocal*numzLocal), recvRight(2,numyLocal*numzLocal)
-integer sendLeft(2,numyLocal*numzLocal), recvLeft(2,numyLocal*numzLocal)
-
-integer sendFront(2,numxLocal*numzLocal), recvFront(2,numxLocal*numzLocal)
-integer sendBack(2,numxLocal*numzLocal), recvBack(2,numxLocal*numzLocal)
-
-integer sendUp(2,numxLocal*numyLocal), recvUp(2,numxLocal*numyLocal)
-integer sendDown(2,numxLocal*numyLocal), recvDown(2,numxLocal*numyLocal)
-
-integer materialBuff(numxLocal*numyLocal*numzLocal)	!materialID of boundary meshes
-
-do i=1,6
-	numSendRecv(i)=0
+do dir=1,6
+	numSend(dir)=0
+	numRecv(dir)=0
 end do
-
 
 !allocate(materialStrain(7,numCells,6))
 !************************************************
 !periodic boundary condition version
 !************************************************
+allocate(sendBuffer(6,numxLocal*numyLocal*numzLocal,2))
+
 do cell=1,numCells
+
+	!Right (+x)
 	if(mod(cell,numxLocal)==0) then !identify cell to the right
 		
 		!If we are on the right edge of the local mesh, identify the neighboring processor
@@ -1010,16 +954,14 @@ do cell=1,numCells
 		if(myMesh(cell)%neighborProcs(1,1)==myProc%taskid) then	
 			myMesh(cell)%neighbors(1,1)=cell-numxLocal+1	!use periodic rules from uniform cubic mesh
 		else
-
 			!add these items to sendList, a buffer that is used at the end of this subroutine to communicate
 			!with other processors via MPI about which elements have neighbors in other cells
-			!(this cell sends information about itself, and the nieghboring cell will do the same in its
-			!processor)
-			numSendRecv(1)=numSendRecv(1)+1		!count the number of items in buffer
-			sendRight(1,numSendRecv(1))=cell	!localCellID in this processor
-			sendRight(2,numSendRecv(1))=myMesh(cell)%material	!Material ID number that this element is composed of
-
+			!(this cell sends information about itself, and the nieghboring cell will do the same in its processor)
+			numSend(1)=numSend(1)+1				!count the number of items in buffer
+			sendBuffer(1,numSend(1),1)=cell		!localCellID in this processor
+			sendBuffer(1,numSend(1),2)=myMesh(cell)%material	!Material ID number that this element is composed of
 		end if
+
 	else
 		!if we are still inside the local mesh, don't need to communicate with neighboring cells and 
 		!just use the uniform cubic connectivity rules (increase x, then y, then z)
@@ -1027,18 +969,19 @@ do cell=1,numCells
 		myMesh(cell)%neighborProcs(1,1)=myProc%taskid
 	end if
 	
-	!This is the same as above, except that we are pointed to the left instead of the right of the local mesh.
+	!Left (-x)
 	if(mod(cell+numxLocal-1,numxLocal)==0) then !identify cell to the left
 		
 		myMesh(cell)%neighborProcs(2,1)=myProc%procNeighbor(2)
+
 		if(myMesh(cell)%neighborProcs(2,1)==myProc%taskid) then
 			myMesh(cell)%neighbors(2,1)=cell+numxLocal-1
 		else
-			numSendRecv(2)=numSendRecv(2)+1
-			sendLeft(1,numSendRecv(2))=cell
-			sendLeft(2,numSendRecv(2))=myMesh(cell)%material	!Material ID number that this element is composed of
-
+			numSend(2)=numSend(2)+1
+			sendBuffer(2,numSend(2),1)=cell
+			sendBuffer(2,numSend(2),2)=myMesh(cell)%material
 		end if
+
 	else
 		myMesh(cell)%neighbors(2,1)=cell-1
 		myMesh(cell)%neighborProcs(2,1)=myProc%taskid
@@ -1048,15 +991,15 @@ do cell=1,numCells
 	if(mod(cell,numxLocal*numyLocal) > numxLocal*(numyLocal-1) .OR. mod(cell,numxLocal*numyLocal)==0) then
 		
 		myMesh(cell)%neighborProcs(3,1)=myProc%procNeighbor(3)
+
 		if(myMesh(cell)%neighborProcs(3,1)==myProc%taskid) then
 			myMesh(cell)%neighbors(3,1)=cell-(numxLocal*(numyLocal-1))
 		else
-
-			numSendRecv(3)=numSendRecv(3)+1
-			sendFront(1,numSendRecv(3))=cell
-			sendFront(2,numSendRecv(3))=myMesh(cell)%material	!Material ID number that this element is composed of
-
+			numSend(3)=numSend(3)+1
+			sendBuffer(3,numSend(3),1)=cell
+			sendBuffer(3,numSend(3),2)=myMesh(cell)%material
 		end if
+
 	else
 		myMesh(cell)%neighbors(3,1)=cell+numxLocal
 		myMesh(cell)%neighborProcs(3,1)=myProc%taskid
@@ -1064,16 +1007,17 @@ do cell=1,numCells
 	
 	!Back (-y)
 	if(mod(cell,numxLocal*numyLocal) <= numxLocal .AND. (mod(cell, numxLocal*numyLocal) /= 0 .OR. numyLocal==1)) then
+
 		myMesh(cell)%neighborProcs(4,1)=myProc%procNeighbor(4)
+
 		if(myMesh(cell)%neighborProcs(4,1)==myProc%taskid) then
 			myMesh(cell)%neighbors(4,1)=cell+(numxLocal*(numyLocal-1))
 		else
-
-			numSendRecv(4)=numSendRecv(4)+1
-			sendBack(1,numSendRecv(4))=cell
-			sendBack(2,numSendRecv(4))=myMesh(cell)%material	!Material ID number that this element is composed of
-
+			numSend(4)=numSend(4)+1
+			sendBuffer(4,numSend(4),1)=cell
+			sendBuffer(4,numSend(4),2)=myMesh(cell)%material
 		end if
+
 	else
 		myMesh(cell)%neighbors(4,1)=cell-numxLocal
 		myMesh(cell)%neighborProcs(4,1)=myProc%taskid
@@ -1082,16 +1026,17 @@ do cell=1,numCells
 	!Up (+z)
 	if(mod(cell,numxLocal*numyLocal*numzLocal) > numxLocal*numyLocal*(numzLocal-1) &
 			.OR. mod(cell, numxLocal*numyLocal*numzLocal)==0) then
+
 		myMesh(cell)%neighborProcs(5,1)=myProc%procNeighbor(5)
+
 		if(myMesh(cell)%neighborProcs(5,1)==myProc%taskid) then
 			myMesh(cell)%neighbors(5,1)=cell-(numxLocal*numyLocal*(numzLocal-1))
 		else
-
-			numSendRecv(5)=numSendRecv(5)+1
-			sendUp(1,numSendRecv(5))=cell
-			sendUp(2,numSendRecv(5))=myMesh(cell)%material	!Material ID number that this element is composed of
-
+			numSend(5)=numSend(5)+1
+			sendBuffer(5,numSend(5),1)=cell
+			sendBuffer(5,numSend(5),2)=myMesh(cell)%material
 		end if
+
 	else
 		myMesh(cell)%neighbors(5,1)=cell+numxLocal*numyLocal
 		myMesh(cell)%neighborProcs(5,1)=myProc%taskid
@@ -1100,126 +1045,74 @@ do cell=1,numCells
 	!Down (-z)
 	if(mod(cell,numxLocal*numyLocal*numzLocal) <= numxLocal*numyLocal &
 			.AND. (mod(cell,numxLocal*numyLocal*numzLocal) /= 0 .OR. numzLocal==1)) then
+
 		myMesh(cell)%neighborProcs(6,1)=myProc%procNeighbor(6)
+
 		if(myMesh(cell)%neighborProcs(6,1)==myProc%taskid) then
 			myMesh(cell)%neighbors(6,1)=cell+(numxLocal*numyLocal*(numzLocal-1))
 		else
-
-			numSendRecv(6)=numSendRecv(6)+1
-			sendDown(1,numSendRecv(6))=cell
-            sendDown(2,numSendRecv(6))=myMesh(cell)%material	!Material ID number that this element is composed of
-
+			numSend(6)=numSend(6)+1
+			sendBuffer(6,numSend(6),1)=cell
+			sendBuffer(6,numSend(6),2)=myMesh(cell)%material
 		end if
+
 	else
 		myMesh(cell)%neighbors(6,1)=cell-numxLocal*numyLocal
 		myMesh(cell)%neighborProcs(6,1)=myProc%taskid
 	end if
+
 end do
 
 !Now that we have created SendList, the buffer that contains information about which elements in myMesh
 !have neighbors on other processors, we send out the cell numbers of these cells to the neighboring procs.
 !We label each MPI_SEND with globalCell so that the receiving processor pairs cells correctly using globalNeighbor (see below)
+maxElement=0
 
 !*******************************************************
 !Send
-if(myProc%procNeighbor(1)/=myProc%taskid) then	!right
-	call MPI_SEND(sendRight, 2*numyLocal*numzLocal, MPI_INTEGER, myProc%procNeighbor(1), 1, comm, ierr)
 
-end if
+do dir=1,6
+	if(myProc%procNeighbor(dir)/=myProc%taskid) then
+		call MPI_ISEND(sendBuffer(dir,1:numSend(dir),:), numSend(dir)*2, MPI_INTEGER, myProc%procNeighbor(dir), &
+				200+dir, comm, sendRequest(dir),ierr)
+	end if
+end do
 
-if(myProc%procNeighbor(2)/=myProc%taskid) then	!left
-	call MPI_SEND(sendLeft, 2*numyLocal*numzLocal, MPI_INTEGER, myProc%procNeighbor(2), 2, comm, ierr)
-
-end if
-
-if(myProc%procNeighbor(3)/=myProc%taskid) then	!front
-	call MPI_SEND(sendFront, 2*numxLocal*numzLocal, MPI_INTEGER, myProc%procNeighbor(3), 3, comm, ierr)
-
-end if
-
-if(myProc%procNeighbor(4)/=myProc%taskid) then	!back
-	call MPI_SEND(sendBack, 2*numxLocal*numzLocal, MPI_INTEGER, myProc%procNeighbor(4), 4, comm, ierr)
-
-end if
-
-if(myProc%procNeighbor(5)/=myProc%taskid) then	!up
-	call MPI_SEND(sendUp, 2*numxLocal*numyLocal, MPI_INTEGER, myProc%procNeighbor(5), 5, comm, ierr)
-
-end if
-
-if(myProc%procNeighbor(6)/=myProc%taskid) then	!down
-	call MPI_SEND(sendDown, 2*numxLocal*numyLocal, MPI_INTEGER, myProc%procNeighbor(6), 6, comm, ierr)
-
-end if
-
-!******************************************************************
 !Recv
-if(myProc%procNeighbor(1)/=myProc%taskid) then	!right
+do dir=1,6
 
-	call MPI_RECV(recvRight, 2*numyLocal*numzLocal, MPI_INTEGER, myProc%procNeighbor(1), 2, comm, status, ierr)
+	if(mod(dir,2)==0) then
+		tag = dir-1
+	else
+		tag = dir+1
+	end if
 
-	do i=1, numyLocal*numzLocal
-		cell=sendRight(1,i)
-		myMesh(cell)%neighbors(1,1)=recvRight(1,i)
-		materialBuff(cell)=recvRight(2,i)
-	end do
+	if(myProc%procNeighbor(dir)/=myProc%taskid) then
+		numRecv(dir)=numSend(dir)
+		allocate(recvBuffer(numRecv(dir),2))
+		call MPI_IRECV(recvBuffer, numRecv(dir)*2, MPI_INTEGER, myProc%procNeighbor(dir), &
+				200+tag, comm, recvRequest(dir), ierr)
+		call MPI_WAIT(recvRequest(dir),recvStatus(dir),ierr)
 
-end if
+		do i=1, numRecv(dir)
+			localCell=sendBuffer(dir,i,1)
+			myMesh(localCell)%neighbors(dir,1)=recvBuffer(i,1)
+			materialBuff(localCell,dir)=recvBuffer(i,2)
 
-if(myProc%procNeighbor(2)/=myProc%taskid) then	!left
+		end do
+		deallocate(recvBuffer)
+	end if
+end do
 
-	call MPI_RECV(recvLeft, 2*numyLocal*numzLocal, MPI_INTEGER, myProc%procNeighbor(2), 1, comm, status, ierr)
+do dir=1,6
+	if(myProc%procNeighbor(dir)/=myProc%taskid) then
+		call MPI_WAIT(sendRequest(dir),sendStatus(dir),ierr)
+	end if
+end do
 
-	do i=1, numyLocal*numzLocal
-		cell=sendLeft(1,i)
-		myMesh(cell)%neighbors(2,1)=recvLeft(1,i)
-		materialBuff(cell)=recvLeft(2,i)
-	end do
-end if
+deallocate(sendBuffer)
 
-if(myProc%procNeighbor(3)/=myProc%taskid) then	!front
 
-	call MPI_RECV(recvFront, 2*numxLocal*numzLocal, MPI_INTEGER, myProc%procNeighbor(3), 4, comm, status, ierr)
-
-	do i=1, numxLocal*numzLocal
-		cell=sendFront(1,i)
-		myMesh(cell)%neighbors(3,1)=recvFront(1,i)
-		materialBuff(cell)=recvFront(2,i)
-	end do
-end if
-
-if(myProc%procNeighbor(4)/=myProc%taskid) then	!back
-
-	call MPI_RECV(recvBack, 2*numxLocal*numzLocal, MPI_INTEGER, myProc%procNeighbor(4), 3, comm, status, ierr)
-
-	do i=1, numxLocal*numzLocal
-		cell=sendBack(1,i)
-		myMesh(cell)%neighbors(4,1)=recvBack(1,i)	!cellID
-		materialBuff(cell)=recvBack(2,i)	!materialID
-	end do
-end if
-
-if(myProc%procNeighbor(5)/=myProc%taskid) then	!up
-
-	call MPI_RECV(recvUp, 2*numxLocal*numyLocal, MPI_INTEGER, myProc%procNeighbor(5), 6, comm, status, ierr)
-
-	do i=1, numxLocal*numyLocal
-		cell=sendUp(1,i)
-		myMesh(cell)%neighbors(5,1)=recvUp(1,i)	!cellID
-		materialBuff(cell)=recvUp(2,i)	!materialID
-	end do
-end if
-
-if(myProc%procNeighbor(6)/=myProc%taskid) then	!down
-
-	call MPI_RECV(recvDown, 2*numxLocal*numyLocal, MPI_INTEGER, myProc%procNeighbor(6), 5, comm, status, ierr)
-
-	do i=1, numxLocal*numyLocal
-		cell=sendDown(1,i)
-		myMesh(cell)%neighbors(6,1)=recvDown(1,i)	!cellID
-		materialBuff(cell)=recvDown(2,i)	!materialID
-	end do
-end if
 
 !***************************************************************************************************
 !Initializing myBoundary with elements that are in neighboring processors that bound this one
@@ -1228,10 +1121,10 @@ end if
 !Step 1: Find the max cell# of any boundary mesh element
 maxElement=0
 do i=1, numCells
-    do j=1, 6
-        if(myMesh(i)%neighborProcs(j,1) /= myProc%taskid) then	!we are pointing to a different proc
-            if(myMesh(i)%neighbors(j,1) > maxElement) then		!searching for the max element number in a neighbor
-                maxElement=myMesh(i)%neighbors(j,1)
+    do dir=1, 6
+        if(myMesh(i)%neighborProcs(dir,1) /= myProc%taskid) then	!we are pointing to a different proc
+            if(myMesh(i)%neighbors(dir,1) > maxElement) then		!searching for the max element number in a neighbor
+                maxElement=myMesh(i)%neighbors(dir,1)
             end if
         end if
     end do
@@ -1244,28 +1137,31 @@ end do
 allocate(myBoundary(6,maxElement))	!6 directions, maxElement elements in each direction (more than needed)
 
 !initialize myBoundary with 0 in localNeighbor - signal that myBoundary is not attached to anything
-do i=1,maxElement
-    do j=1,6
-        myBoundary(j,i)%localNeighbor=0	!default, says that this is not a real element of myBoundary.
-        myBoundary(j,i)%proc=-10		!default, says that this is not a real element of myBoundary.
-    end do
+do dir=1,6
+	do i=1,maxElement
+		myBoundary(dir,i)%localNeighbor=0	!default, says that this is not a real element of myBoundary.
+		myBoundary(dir,i)%proc=-10			!default, says that this is not a real element of myBoundary.
+        myBoundary(dir,i)%material=0
+        myBoundary(dir,i)%length=0d0
+        myBoundary(dir,i)%volume=0d0
+	end do
 end do
 
 do i=1,numCells
-    do j=1,6
-        if(myMesh(i)%neighborProcs(j,1) == -1) then										!this is a free surface
+    do dir=1,6
+        if(myMesh(i)%neighborProcs(dir,1) == -1) then										!this is a free surface
             !do nothing
-        else if(myMesh(i)%neighborProcs(j,1) /= myProc%taskid) then
-            myBoundary(j,myMesh(i)%neighbors(j,1))%proc=myMesh(i)%neighborProcs(j,1)	!set proc # of elements in myBoundary
-            myBoundary(j,myMesh(i)%neighbors(j,1))%length=length						!set length of elements in myBoundary
-            myBoundary(j,myMesh(i)%neighbors(j,1))%volume=length**3d0					!set volume of elements in myBoundary (changes with cascade addition)
-			myBoundary(j,myMesh(i)%neighbors(j,1))%material=materialBuff(i)
-            myBoundary(j,myMesh(i)%neighbors(j,1))%localNeighbor=i
+        else if(myMesh(i)%neighborProcs(dir,1) /= myProc%taskid) then
+            myBoundary(dir,myMesh(i)%neighbors(dir,1))%proc=myMesh(i)%neighborProcs(dir,1)	!set proc # of elements in myBoundary
+            myBoundary(dir,myMesh(i)%neighbors(dir,1))%length=length						!set length of elements in myBoundary
+            myBoundary(dir,myMesh(i)%neighbors(dir,1))%volume=length**3d0					!set volume of elements in myBoundary (changes with cascade addition)
+			myBoundary(dir,myMesh(i)%neighbors(dir,1))%material=materialBuff(i,dir)
+            myBoundary(dir,myMesh(i)%neighbors(dir,1))%localNeighbor=i
 
 !           if(strainField=='yes') then
 !                do l=1,6
-!                   myBoundary(j,myMesh(i)%neighbors(j,1))%strain(l)=globalStrain(globalNeighbor,l)
-!                    myBoundary(j,myMesh(i)%neighbors(j,1))%strain(l)=materialStrain(1+l,i,j)
+!                   myBoundary(dir,myMesh(i)%neighbors(dir,1))%strain(l)=globalStrain(globalNeighbor,l)
+!                    myBoundary(dir,myMesh(i)%neighbors(dir,1))%strain(l)=materialStrain(1+l,i,dir)
 !               end do
 !           end if
         end if

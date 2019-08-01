@@ -269,8 +269,8 @@ if(myProc%taskid==MASTER) then
 	write(*,*) 'initialCeqi', initialCeqi
 end if
 
-!call DEBUGPrintReactionList(0)		!prints all reaction lists at a given Monte Carlo step
-!call DEBUGPrintDefectList(0)
+call DEBUGPrintReactionList(0)		!prints all reaction lists at a given Monte Carlo step
+call DEBUGPrintDefectList(0)
 !******************************************************************
 !Initialize Counters
 !******************************************************************
@@ -347,10 +347,11 @@ annealIdentify=.FALSE.		!(.TRUE. if in annealing phase, .FALSE. otherwise) used 
 !*********************************************************************************************************************
 
 do while(elapsedTime < totalTime)
+!do while(step < 2)
 	
 	step=step+1
 !
-
+        
 	!Logical variable tells us whether cascade communication step needs to be carried out
 	!(0=no cascade, nonzero=number of volume element where cascade event has happened)
 	cascadeCell=0
@@ -593,12 +594,12 @@ do while(elapsedTime < totalTime)
 	call MPI_BCAST(elapsedTime, 1, MPI_DOUBLE_PRECISION, MASTER, comm,ierr)
 
 !*********************************************************
-	if(singleElemKMC=='no' .AND. associated(reactionCurrent) .AND. &
-			reactionCurrent%numReactants==-10 .AND. meshingType=='nonAdaptive') then
+!	if(singleElemKMC=='no' .AND. associated(reactionCurrent) .AND. &
+!			reactionCurrent%numReactants==-10 .AND. meshingType=='nonAdaptive') then
 		!do nothing
-	else
+!	else
 		call updateReactionList(defectUpdate)
-	end if
+!	end if
 !	call updateReactionList(defectUpdate)
 
 	if(totalRate < 0d0) then

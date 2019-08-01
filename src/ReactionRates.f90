@@ -3256,7 +3256,7 @@ if(reactionParameter%functionType==5) then
 
     reactionRate=Ztemp*(omegastar+omega*(dble(size1)**(1d0/3d0)+dble(size2)**(1d0/3d0)))*&
             (Diff1+Diff2)*dble(num1)*dble(num2)*atomsize/vol
-
+        
 else if(reactionParameter%functionType==6) then	!spherical clusters other than Cu-Cu clusters
 
 	reactionRate=Ztemp*(omegastar+omega*(dble(size1)**(1d0/3d0)+dble(size2)**(1d0/3d0)))*(Diff1+Diff2)*dble(num1)*dble(num2)&
