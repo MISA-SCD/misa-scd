@@ -1583,12 +1583,6 @@ integer, allocatable :: globalMeshConnect(:,:,:), globalMaterial(:), globalNumNe
 integer globalCell, globalNeighbor, maxElement
 
 interface
-
-	subroutine createProcCoordList(procCoordList)
-		implicit none
-		double precision, allocatable :: procCoordList(:,:)
-	end subroutine
-
 	subroutine createConnectLocal(globalMeshConnect, globalMeshCoord, localElem, procCoordList)
 		double precision, allocatable :: globalMeshCoord(:,:)
 		double precision, allocatable :: procCoordList(:,:)
@@ -1607,7 +1601,6 @@ interface
 		integer, allocatable :: Connect(:,:,:), NumNeighbors(:,:)
 		double precision bdryCoord(6)
 	end subroutine
-
 end interface
 
 open(80, file='TestInputNonUniform.txt',action='read', status='old')

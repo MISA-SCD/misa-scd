@@ -49,16 +49,6 @@ integer, allocatable :: reactants(:,:), products(:,:)
 double precision reactionRate, totalRateCheck
 logical isLegal
 
-interface
-	subroutine findReactionInList(reactionCurrent, reactionPrev, cell, reactants, products, numReactants, numProducts)
-		use DerivedType
-		implicit none
-		type(reaction), pointer :: reactionCurrent, reactionPrev
-		integer, allocatable :: reactants(:,:), products(:,:)
-		integer numReactants, numProducts, cell
-	end subroutine
-end interface
-
 !Dissociation reactions. NOTE: the number of reactants and number of products, as well as the form 
 !of the products given the reactants, is hard-coded into this section. This type of hard-coding is
 !carried out in each section in this module, and is seen here as unavoidable.
@@ -491,16 +481,6 @@ type(reaction), pointer :: reactionCurrent, reactionPrev
 integer, allocatable :: reactants(:,:), products(:,:)
 double precision reactionRate, totalRateCheck
 logical isLegal
-
-interface
-	subroutine findReactionInList(reactionCurrent, reactionPrev, cell, reactants, products, numReactants, numProducts)
-		use DerivedType
-		implicit none
-		type(reaction), pointer :: reactionCurrent, reactionPrev
-		integer, allocatable :: reactants(:,:), products(:,:)
-		integer numReactants, numProducts, cell
-	end subroutine
-end interface
 
 !CascadeCurrent pointer should be pointing at the cascade whose ID matches the ID number passed into this subroutine
 CascadeCurrent=>ActiveCascades
@@ -939,16 +919,6 @@ double precision reactionRate
 logical isLegal
 
 integer findNumDefect
-
-interface
-	subroutine findReactionInListMultiple(reactionCurrent, reactionPrev, cell, reactants, products, numReactants, numProducts)
-		use DerivedType
-		implicit none
-		type(reaction), pointer :: reactionCurrent, reactionPrev
-		integer, allocatable :: reactants(:,:), products(:,:)
-		integer numReactants, numProducts, cell
-	end subroutine
-end interface
 
 !Clustering reactions. NOTE: the number of reactants and number of products, as well as the form 
 !of the products given the reactants, is hard-coded into this section. This type of hard-coding is
@@ -1576,16 +1546,6 @@ integer, allocatable :: reactants(:,:), products(:,:)
 double precision reactionrate
 logical isLegal
 
-interface
-	subroutine findReactionInListMultiple(reactionCurrent, reactionPrev, cell, reactants, products, numReactants, numProducts)
-		use DerivedType
-		implicit none
-		type(reaction), pointer :: reactionCurrent, reactionPrev
-		integer, allocatable :: reactants(:,:), products(:,:)
-		integer numReactants, numProducts, cell
-	end subroutine
-end interface
-
 !CascadeCurrent pointer should be pointing at the cascade whose ID matches the ID number passed into this 
 !subroutine
 CascadeCurrent=>ActiveCascades
@@ -2204,16 +2164,6 @@ integer, allocatable :: reactants(:,:), products(:,:)
 type(reaction), pointer :: reactionCurrent, reactionPrev
 double precision reactionRate
 
-interface
-	subroutine findReactionInListDiff(reactionCurrent, reactionPrev, reactants, cell1, cell2, proc1, proc2)
-		use DerivedType
-		implicit none
-		type(reaction), pointer :: reactionCurrent, reactionPrev
-		integer, allocatable :: reactants(:,:)
-		integer cell1, cell2, proc1, proc2
-	end subroutine
-end interface
-
 !In the case of polycrystal simulations, myMesh(cell)%material is the grain ID, not the material number. Therefore
 !we must set all values of matNum=1 in this case (only one material type in polycrystal simulations).
 if(numMaterials==1) then
@@ -2371,14 +2321,6 @@ type(reaction), pointer :: reactionCurrent, reactionPrev
 double precision reactionRate
 
 interface
-	subroutine findReactionInListDiff(reactionCurrent, reactionPrev, reactants, cell1, cell2, proc1, proc2)
-		use DerivedType
-		implicit none
-		type(reaction), pointer :: reactionCurrent, reactionPrev
-		integer, allocatable :: reactants(:,:)
-		integer cell1, cell2, proc1, proc2
-	end subroutine
-
 	integer function findNumDefectTotalFine(defectType, CascadeCurrent)
 		use mod_constants
 		integer defectType(numSpecies)
@@ -2553,16 +2495,6 @@ integer numReactants, numProducts, i, j, k, l, count, neighbor, neighborProc
 integer, allocatable :: reactants(:,:), products(:,:)
 type(reaction), pointer :: reactionCurrent, reactionPrev
 double precision reactionRate
-
-interface
-	subroutine findReactionInListDiff(reactionCurrent, reactionPrev, reactants, cell1, cell2, proc1, proc2)
-		use DerivedType
-		implicit none
-		type(reaction), pointer :: reactionCurrent, reactionPrev
-		integer, allocatable :: reactants(:,:)
-		integer cell1, cell2, proc1, proc2
-	end subroutine
-end interface
 
 !CascadeCurrent pointer should be pointing at the cascade whose ID matches the ID number passed into this 
 !subroutine
