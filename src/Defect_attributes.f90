@@ -17,7 +17,7 @@ implicit none
 integer defectType(numSpecies)
 integer i, j, numSame, matNum
 double precision Diff
-double precision DiffusivityCompute
+double precision DiffusivityCompute, diffusivityCu
 
 !Temporary: used as a parameter to vary the diffusivity of all defects on GB
 double precision, parameter :: Param=0d0
@@ -28,67 +28,60 @@ double precision, parameter :: Param=0d0
 !If it is in neither, it outputs an error message (defect type should not exist)
 !***************************************************************************************************
 
-outer: do i=1,numSingleDiff(matNum)
+outer1: do i=1,numSingleDiff(matNum)
 	numSame=0
 	do j=1,numSpecies
-		if(DefectType(j)==DiffSingle(matNum,i)%defectType(j)) then
+		if(defectType(j)==DiffSingle(i,matNum)%defectType(j)) then
 			numSame=numSame+1
 		end if
 	end do
+
 	if (numSame==numSpecies) then
 		if(matNum==2) then
-			if(DefectType(1)==1 .AND. DefectType(2)==0 .AND. DefectType(3)==0 .AND. DefectType(4)==0 &
-					.AND. totalDPA > 0d0 .AND. DPARate > 0d0) then
-!				Diff=DiffSingle(matNum,i)%D*dexp(-(DiffSingle(matNum,i)%Em-Param)/(kboltzmann*temperature)) * &
-!							(Vconcent / initialCeqv)
-				Diff=DiffSingle(matNum,i)%D*dexp(-(DiffSingle(matNum,i)%Em-Param)/(kboltzmann*temperature)) * firr
-
-				exit outer
+			if(DefectType(1)==1 .AND. DefectType(2)==0 .AND. DefectType(3)==0 .AND. DefectType(4)==0) then
+				Diff=diffusivityCu(matNum)
+				exit outer1
 			else
-				Diff=DiffSingle(matNum,i)%D*dexp(-(DiffSingle(matNum,i)%Em-Param)/(kboltzmann*temperature))
-				exit outer
+				Diff=DiffSingle(i,matNum)%D*dexp(-(DiffSingle(i,matNum)%Em-Param)/(kboltzmann*temperature))
+				exit outer1
 			end if
 
 		else
-			if(DefectType(1)==1 .AND. DefectType(2)==0 .AND. DefectType(3)==0 .AND. DefectType(4)==0 &
-					.AND. totalDPA > 0d0 .AND. DPARate > 0d0) then
-!				Diff=DiffSingle(matNum,i)%D*dexp(-DiffSingle(matNum,i)%Em/(kboltzmann*temperature)) * &
-!					(Vconcent / initialCeqv)
-				Diff=DiffSingle(matNum,i)%D*dexp(-DiffSingle(matNum,i)%Em/(kboltzmann*temperature)) * firr
-				exit  outer
+			if(DefectType(1)==1 .AND. DefectType(2)==0 .AND. DefectType(3)==0 .AND. DefectType(4)==0) then
+
+				Diff=diffusivityCu(matNum)
+				exit  outer1
 			else
-				Diff=DiffSingle(matNum,i)%D*dexp(-DiffSingle(matNum,i)%Em/(kboltzmann*temperature))
-				exit outer
+				Diff=DiffSingle(i,matNum)%D*dexp(-DiffSingle(i,matNum)%Em/(kboltzmann*temperature))
+				exit outer1
 			end if
 		
 		end if
 	end if
-end do outer
+end do outer1
 
 if(i==numSingleDiff(matNum)+1) then	!did not find defect in single defect list
 	do i=1,numFuncDiff(matNum)
 		numSame=0
 		do j=1,numSpecies
-			if(DefectType(j)==0 .AND. DiffFunc(matNum,i)%defectType(j)==0) then
+			if(defectType(j)==0 .AND. DiffFunc(i,matNum)%defectType(j)==0) then
 				numSame=numSame+1
-			else if(DefectType(j) /= 0 .AND. DiffFunc(matNum,i)%defectType(j)==1) then
-				if(DefectType(j) >= DiffFunc(matNum,i)%min(j)) then
-				if(DefectType(j) <= DiffFunc(matNum,i)%max(j) .OR. DiffFunc(matNum,i)%max(j)==-1) then
+			else if(defectType(j) /= 0 .AND. DiffFunc(i,matNum)%defectType(j)==1) then
+				if(defectType(j) >= DiffFunc(i,matNum)%min(j) .AND. &
+						(defectType(j) <= DiffFunc(i,matNum)%max(j) .OR. DiffFunc(i,matNum)%max(j)==-1)) then
 					numSame=numSame+1
-				endif
-				endif
-			endif
+				end if
+			end if
 		end do
 		if(numSame==numSpecies) then
 		
-			Diff=DiffusivityCompute(DefectType, DiffFunc(matNum,i)%functionType, DiffFunc(matNum,i)%numParam,&
-				DiffFunc(matNum,i)%parameters, matNum)
+			Diff=DiffusivityCompute(defectType, DiffFunc(i,matNum)%functionType, DiffFunc(i,matNum)%numParam,&
+				DiffFunc(i,matNum)%parameters, matNum)
 				exit
 		endif
 	end do
 	if(i==numFuncDiff(matNum)+1) then
-		!write(*,*) 'error defect diffusion not allowed'
-		!write(*,*) DefectType
+
 		Diff=0d0
 	endif
 endif
@@ -111,10 +104,11 @@ use DerivedType
 implicit none
 
 integer DefectType(numSpecies)
-integer functionType, numParameters, matNum
+integer functionType, numParameters, matNum,i
 double precision parameters(numParameters)
 double precision Diff
 double precision D0, Em
+double precision diffusivityCu
 
 !***************************************************************************************************
 !This function computes diffusivity using functional form and parameters given in the input file
@@ -134,13 +128,8 @@ else if(functionType==3) then
 	Diff=D0*dexp(-Em/(kboltzmann*temperature))
 else if(functionType==5) then
 	!< Dcu(n) = Dcu(1)/n
-	if(totalDPA > 0d0 .AND. DPARate > 0d0) then
-		Diff=(DiffSingle(matNum,1)%D*dexp(-DiffSingle(1,1)%Em/(kboltzmann*temperature)))*(Vconcent / initialCeqv)/ &
-				dble(DefectType(1))
+	Diff=diffusivityCu(matNum)/dble(DefectType(1))
 
-	else
-		Diff=(DiffSingle(matNum,1)%D*dexp(-DiffSingle(1,1)%Em/(kboltzmann*temperature)))/dble(DefectType(1))
-	end if
 else
 	write(*,*) 'error incorrect diffusivity function chosen'
 endif
@@ -149,28 +138,37 @@ DiffusivityCompute=Diff
 
 end function
 
+!**********************************************************************************
+!This function is used to compute diffusivity of Cu atom
+!**********************************************************************************
 
-!**********************************************************************************
-!This function is used to compute the vacancy concentration at this time
-!This function will not be used
-!**********************************************************************************
-double precision function permanentCv(matNum)
+double precision function diffusivityCu(matNum)
 	use DerivedType
 	use mod_constants
 	implicit none
 
-	double precision Kiv, diffV, diffI
-	integer matNum
+	integer DefectType(numSpecies)
+	integer matNum,i
 
-	diffV = DiffSingle(matNum,2)%D*dexp(-DiffSingle(matNum,2)%Em/(kboltzmann*temperature))
-	diffI = DiffSingle(matNum,6)%D*dexp(-DiffSingle(matNum,6)%Em/(kboltzmann*temperature))
+	outer: do i=1,numSingleDiff(matNum)
+		if(DiffSingle(i,matNum)%defectType(1)==1 .AND. DiffSingle(i,matNum)%defectType(2)==0 .AND. &
+				DiffSingle(i,matNum)%defectType(3)==0 .AND. DiffSingle(i,matNum)%defectType(4)==0) then
 
-	Kiv = 4*pi/atomsize*reactionRadius*(diffV + diffI)
+			if(totalDPA > 0d0 .AND. DPARate > 0d0) then
+			!	diffusivityCu=(DiffSingle(i,matNum)%D*dexp(-DiffSingle(i,matNum)%Em/(kboltzmann*temperature)))* &
+			!			(Vconcent/initialCeqv)
+				diffusivityCu=(DiffSingle(i,matNum)%D*dexp(-DiffSingle(i,matNum)%Em/(kboltzmann*temperature)))* firr
+				exit outer
+			else
+				diffusivityCu=(DiffSingle(i,matNum)%D*dexp(-DiffSingle(i,matNum)%Em/(kboltzmann*temperature)))
+				exit outer
+			end if
 
-	permanentCv = -dislocationDensity*Zint*diffI/(2*Kiv)+&
-			((dislocationDensity*Zint*diffI/(2*Kiv))**(2d0)+DPARate*Zint*diffI/(Kiv*diffV))**(1d0/2d0)
+		end if
+	end do outer
 
 end function
+
 
 !***************************************************************************************************
 !This function returns the binding energy of defect DefectType() which releases defect product().
@@ -206,26 +204,24 @@ do i=1,numSingleBind(matNum)
 	numSame=0
 	numSameProduct=0
 	do j=1,numSpecies
-		if(DefectType(j)==BindSingle(matNum,i)%defectType(j)) then
+		if(DefectType(j)==BindSingle(i,matNum)%defectType(j)) then
 			numSame=numSame+1
-		endif
-		if(productType(j)==BindSingle(matNum,i)%product(j)) then
+		end if
+		if(productType(j)==BindSingle(i,matNum)%product(j)) then
 			numSameProduct=numSameProduct+1
-		endif
+		end if
 	end do
+
 	if (numSame==numSpecies .AND. numSameProduct==numSpecies) then
 		if(matNum==2) then
 			
-			Eb=BindSingle(matNum,i)%Eb-Param
+			Eb=BindSingle(i,matNum)%Eb-Param
 			exit
-			
 		else
-		
-			Eb=BindSingle(matNum,i)%Eb
+			Eb=BindSingle(i,matNum)%Eb
 			exit
-			
-		endif
-	endif
+		end if
+	end if
 end do
 
 if(i==numSingleBind(matNum)+1) then	!did not find defect in single defect list
@@ -233,35 +229,37 @@ if(i==numSingleBind(matNum)+1) then	!did not find defect in single defect list
 		numSame=0
 		numSameProduct=0
 		do j=1,numSpecies
-			if(DefectType(j)==0 .AND. BindFunc(matNum,i)%defectType(j)==0) then
+
+			if(DefectType(j)==0 .AND. BindFunc(i,matNum)%defectType(j)==0) then
 				numSame=numSame+1
-			else if(DefectType(j) /= 0 .AND. BindFunc(matNum,i)%defectType(j)==1) then
-				if(DefectType(j) >= BindFunc(matNum,i)%min(j)) then
-				if(DefectType(j) <= BindFunc(matNum,i)%max(j) .OR. BindFunc(matNum,i)%max(j)==-1) then
+			else if(DefectType(j) /= 0 .AND. BindFunc(i,matNum)%defectType(j)==1) then
+				if(DefectType(j) >= BindFunc(i,matNum)%min(j) .AND. &
+				(DefectType(j) <= BindFunc(i,matNum)%max(j) .OR. BindFunc(i,matNum)%max(j)==-1)) then
+
 					numSame=numSame+1
-				endif
-				endif
-			endif
-			if(productType(j)==0 .AND. BindFunc(matNum,i)%product(j)==0) then
+				end if
+			end if
+
+			if(productType(j)==0 .AND. BindFunc(i,matNum)%product(j)==0) then
 				numSameProduct=numSameProduct+1
-			else if(productType(j) == 1 .AND. BindFunc(matNum,i)%product(j)==1) then	!used to find dissociation binding energy
+			else if(productType(j) == 1 .AND. BindFunc(i,matNum)%product(j)==1) then	!used to find dissociation binding energy
 				numSameProduct=numSameProduct+1
-			else if(productType(j) /= 0 .AND. BindFunc(matNum,i)%product(j)==-1) then	!used to identify de-pinning binding energy
-				numSameProduct=numSameProduct+1
-			endif
+			end if
+
 		end do
+
 		if(numSame==numSpecies .AND. numSameProduct==numSpecies) then
 			
 			if(matNum==2) then	!Adjust binding energies on GB
 			
-				Eb=BindingCompute(DefectType, productType, BindFunc(matNum,i)%functionType, BindFunc(matNum,i)%numParam,&
-					BindFunc(matNum,i)%parameters)-Param
+				Eb=BindingCompute(DefectType, productType, BindFunc(i,matNum)%functionType, BindFunc(i,matNum)%numParam,&
+					BindFunc(i,matNum)%parameters)-Param
 				exit
 				
 			else
 			
-				Eb=BindingCompute(DefectType, productType, BindFunc(matNum,i)%functionType, BindFunc(matNum,i)%numParam,&
-					BindFunc(matNum,i)%parameters)
+				Eb=BindingCompute(DefectType, productType, BindFunc(i,matNum)%functionType, BindFunc(i,matNum)%numParam,&
+					BindFunc(i,matNum)%parameters)
 				exit
 				
 			endif
@@ -269,9 +267,6 @@ if(i==numSingleBind(matNum)+1) then	!did not find defect in single defect list
 		endif
 	end do
 	if(i==numFuncBind(matNum)+1) then
-		!write(*,*) 'error dissociation reaction not allowed'
-		!write(*,*) DefectType
-		!write(*,*) ProductType
 		Eb=0d0
 	end if
 end if
@@ -300,53 +295,43 @@ implicit none
 integer DefectType(numSpecies), product(numSpecies)
 integer functionType, numParameters, num, CuNum, VNum, SIANum, i
 double precision parameters(numParameters)
-double precision Eb, Eb_VOnly, Eb_HeV
+double precision Eb
 
 !***************************************************************************************************
 !This function computes diffusivity using functional form and parameters given in the input file
 !***************************************************************************************************
 
-if(functionType==2) then
-	!used for Cu cluster dislocation
+if(functionType==2) then	!used for Cu cluster dislocation
+
+	CuNum=DefectType(1)
 	Eb=parameters(1)*kboltzmann-parameters(2)*kboltzmann*tempStore- &
 			(36d0*pi)**(1d0/3d0)*atomsize**(2d0/3d0)*parameters(3)*(dble(CuNum)**(2d0/3d0)-dble(CuNum-1)**(2d0/3d0))
 
-else if(functionType==4) then
+else if(functionType==4) then	!V / SIA cluster dislocation
 	num=0
 	do i=1,numSpecies
 		if(DefectType(i) > num) then
 			num=DefectType(i)
-		endif
+			exit
+		end if
 	end do
 
 	Eb=parameters(1)+(parameters(2)-parameters(1))*(dble(num)**(2d0/3d0)-dble(num-1)**(2d0/3d0))/(2d0**(2d0/3d0)-1d0)
 
-else if(functionType==6) then
+else if(functionType==6) then	!nCumV->Cu+(n-1)CumV
+
 	CuNum=DefectType(1)
 	VNum=DefectType(2)
 	Eb=parameters(1)+parameters(2)*(dble(CuNum)**(0.85d0)-dble(CuNum+1)**(0.85d0))-&
 			parameters(3)*(dble(VNum)**(1d0/3d0)-dble(VNum)**(2d0/3d0))
 
-else if(functionType==7) then
+else if(functionType==7) then	!nCumV->V+nCu(m-1)V
+
 	CuNum=DefectType(1)
 	VNum=DefectType(2)
 	Eb=parameters(1)-parameters(2)*(dble(VNum)**(1d0/3d0)-dble(VNum+1)**(1d0/3d0))+&
 			parameters(3)*(dble(VNum)**(2d0/3d0)-dble(VNum+1)**(2d0/3d0))-parameters(3)*dble(CuNum)*&
 			(dble(VNum)**(1d0/3d0)-dble(VNum+1)**(1d0/3d0)+dble(VNum)**(2d0/3d0)-dble(VNum+1)**(2d0/3d0))
-
-!!else if(functionType==8) then
-	
-	!SIA sessile - glissile binding energy
-	!Using (made-up) empirical functional form
-!	SIANum=DefectType(4)
-	
-	!2/3 power law
-	!Eb=parameters(1)-parameters(2)*(dble(SIANum)**(2d0/3d0)-dble(SIANum-1)**(2d0/3d0))
-	
-	!linear binding energy dependence
-
-	! Reference:
-!!	Eb=parameters(1)*SIANum+parameters(2)
 
 else
 	write(*,*) 'error incorrect Eb function chosen'
@@ -486,9 +471,9 @@ if(i <= numDipole) then	!we have identified a dipole tensor
 
 	do j=1,6
 		if(j <= 3) then
-			strainE=strainE+myBoundary(dir,cell)%strain(j)*dipoleStore(i)%equilib(j)
+			strainE=strainE+myBoundary(cell,dir)%strain(j)*dipoleStore(i)%equilib(j)
 		else
-			strainE=strainE+2d0*myBoundary(dir,cell)%strain(j)*dipoleStore(i)%equilib(j)
+			strainE=strainE+2d0*myBoundary(cell,dir)%strain(j)*dipoleStore(i)%equilib(j)
 		endif
 	end do
 

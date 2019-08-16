@@ -74,8 +74,8 @@ module DerivedType
 	type reaction
 		integer numReactants					!<Number of reactants in this reaction
 		integer numProducts						!<Number of products in this reaction
-		integer, allocatable :: reactants(:,:) 	!<Reactants in this reaction - array size:(numReactants, numSpecies)
-		integer, allocatable :: products(:,:)	!<Products in this reaction - array size:(numReactants, numSpecies)
+		integer, allocatable :: reactants(:,:) 	!<Reactants in this reaction - array size:(numSpecies, numReactants)
+		integer, allocatable :: products(:,:)	!<Products in this reaction - array size:(numSpecies, numReactants)
 		integer, allocatable :: cellNumber(:) 	!<Cell numbers of defects involved in this reaction. Array size: (numReactants+numProducts). Important for diffusion reactions
 		integer, allocatable :: taskid(:) 		!<Processor number of defects involved in this reaction. Array size: (numReactants+numProducts). May not all be the same processor number in the case of diffusion across processor boundaries.
 		double precision reactionRate			!<Rate (s^-1) for this reaction to be carried out, based on the defects present in the volume
@@ -120,8 +120,8 @@ module DerivedType
 		integer numNeighbors(6)						!<Number of neighbors in each direction (left, right, etc). Could be not equal to 1 in the case of free surfaces or non-uniform mesh.
 		
 		!array sizes: neighbors(direction,num) and neighborProcs(direction,num)
-		integer, allocatable :: neighbors(:,:)		!<ID number of neighboring volume elements, regardless of if they are in this processor or not. Array size (6, numNeighbors)
-		integer, allocatable :: neighborProcs(:,:)	!<Processor ID numbers of neighboring volume element. Array size (6, numNeighbors)
+		integer, allocatable :: neighbors(:,:)		!<ID number of neighboring volume elements, regardless of if they are in this processor or not. Array size (numNeighbors,6)
+		integer, allocatable :: neighborProcs(:,:)	!<Processor ID numbers of neighboring volume element. Array size (numNeighbors,6)
 	end type mesh
 
 	!***********************************************************************************************
@@ -197,7 +197,7 @@ module DerivedType
 	!***********************************************************************************************
 	type bindingSingle
 		integer, allocatable :: defectType(:)	!<Type of defect that can dissociate
-		integer, allocatable :: product(:)		!<Type of defect dissociating away
+		integer, allocatable :: product(:)		!<Type of defect dissociating away (point defect)
 		double precision :: Eb					!<Binding energy (eV)
 	end type
 
@@ -229,8 +229,8 @@ module DerivedType
 	!a given allowed reaction. Functional forms for reaction rates are hard coded in ReactionRates.f90
 	!***********************************************************************************************
 	type reactionParameters
-		integer, allocatable :: reactants(:,:)	!<Defect types for reactants in this reaction
-		integer, allocatable :: products(:,:)	!<Defect types for products in this reaction
+		integer, allocatable :: reactants(:,:)	!<Defect types for reactants in this reaction--array size:(numSpecies, numReactants)
+		integer, allocatable :: products(:,:)	!<Defect types for products in this reaction--array size:(numSpecies, numProducts)
 		integer, allocatable :: min(:)			!<Smallest defect size for reactants (size numSpecies)
 		integer, allocatable :: max(:)			!<Largest defect size for reactants (size numSpecies, -1 indicates infinity)
 		integer numReactants					!<Number of reactants (0, 1, or 2 typically)

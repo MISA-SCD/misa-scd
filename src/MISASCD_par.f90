@@ -27,7 +27,6 @@ type(cascade), pointer :: CascadeCurrent								!used to find defects/reactions 
 double precision  elapsedTime, totalTime, tau, GenerateTimestep, TotalRateCheck, rateSingle
 integer status(MPI_STATUS_SIZE),  step, annealIter, sim, numDefectsRecv, tracker, outputCounter, nullSteps
 integer cascadeCell, i, j, k, cell
-integer, allocatable :: cellRecvTot(:), defectRecvTot(:,:)
 real time1, time2
 
 integer CascadeCount, TotalCascades !<Used to count the number of cascades present in the simulation
@@ -58,68 +57,79 @@ double precision Residual_square, Residual_sqrdev
 
 interface
 	subroutine chooseReaction(reactionCurrent, CascadeCurrent)
-	use DerivedType
-	type(reaction), pointer :: reactionCurrent
-	type(cascade), pointer :: CascadeCurrent
+		use DerivedType
+		implicit none
+		type(reaction), pointer :: reactionCurrent
+		type(cascade), pointer :: CascadeCurrent
 	end subroutine
 	
 	subroutine chooseReactionSingleCell(reactionCurrent, CascadeCurrent, cell)
-	use DerivedType
-	type(reaction), pointer :: reactionCurrent
-	type(cascade), pointer :: CascadeCurrent
-	integer cell
+		use DerivedType
+		implicit none
+		type(reaction), pointer :: reactionCurrent
+		type(cascade), pointer :: CascadeCurrent
+		integer cell
 	end subroutine
 	
 	subroutine addCascadeExplicit(reactionCurrent)
-	use DerivedType
-	type(reaction), pointer :: reactionCurrent
+		use DerivedType
+		implicit none
+		type(reaction), pointer :: reactionCurrent
 	end subroutine
 	
 	subroutine updateDefectList(reactionCurrent, defectUpdateCurrent, CascadeCurrent, step)
-	use DerivedType
-	type(reaction), pointer :: reactionCurrent
-	type(DefectUpdateTracker), pointer :: defectUpdateCurrent
-	type(cascade), pointer :: CascadeCurrent
-	integer step
+		use DerivedType
+		implicit none
+		type(reaction), pointer :: reactionCurrent
+		type(DefectUpdateTracker), pointer :: defectUpdateCurrent
+		type(cascade), pointer :: CascadeCurrent
+		integer step
 	end subroutine
 	
 	subroutine updateDefectListMultiple(reactionChoiceCurrent, defectUpdateCurrent, CascadeCurrent)
-	use DerivedType
-	type(reaction), pointer :: reactionChoiceCurrent
-	type(defectUpdateTracker), pointer :: defectUpdateCurrent
-	type(cascade), pointer :: CascadeCurrent	
+		use DerivedType
+		implicit none
+		type(reaction), pointer :: reactionChoiceCurrent
+		type(defectUpdateTracker), pointer :: defectUpdateCurrent
+		type(cascade), pointer :: CascadeCurrent
 	end subroutine
 	
 	subroutine updateReactionList(defectUpdate)
-	use DerivedType
-	type(DefectUpdateTracker), pointer :: defectUpdate
+		use DerivedType
+		implicit none
+		type(DefectUpdateTracker), pointer :: defectUpdate
 	end subroutine
 	
-	subroutine debugPrintReaction(reactionCurrent, step)
-	use DerivedType
-	type(reaction), pointer :: reactionCurrent
-	integer step
+	subroutine DEBUGPrintReaction(reactionCurrent, step)
+		use DerivedType
+		implicit none
+		type(reaction), pointer :: reactionCurrent
+		integer step
 	end subroutine
 	
-	subroutine debugPrintDefectUpdate(defectUpdate)
-	use DerivedType
-	type(defectUpdateTracker), pointer :: defectUpdate
+	subroutine DEBUGPrintDefectUpdate(defectUpdate)
+		use DerivedType
+		implicit none
+		type(defectUpdateTracker), pointer :: defectUpdate
 	end subroutine
-	
-	subroutine releaseFineMeshDefects(CascadeCurrent)
-	use DerivedType
-	type(cascade), pointer :: CascadeCurrent
-	end subroutine
-	
+
 	subroutine DEBUGcheckForUnadmissible(reactionCurrent, step)
-	use DerivedType
-	type(Reaction), pointer :: reactionCurrent
-	integer step
+		use DerivedType
+		implicit none
+		type(Reaction), pointer :: reactionCurrent
+		integer step
 	end subroutine
-	
+
+	subroutine releaseFineMeshDefects(CascadeCurrent)
+		use DerivedType
+		implicit none
+		type(cascade), pointer :: CascadeCurrent
+	end subroutine
+
 	double precision function totalRateCascade(CascadeCurrent)
-	use DerivedType
-	type(Cascade), pointer :: CascadeCurrent
+		use DerivedType
+		implicit none
+		type(Cascade), pointer :: CascadeCurrent
 	end function
 end interface
 
@@ -155,7 +165,7 @@ call readImplantData()			!input (1-dimensional) non-uniform defect implantation 
 call readParameters()			!read simulation parameters (DPA rate, temperature, etc)
 
 !Create fine mesh connectivity
-allocate(cascadeConnectivity(numCellsCascade, 6))	!< numCellsCascade=numxFine*numyFine*numzFine
+allocate(cascadeConnectivity(6, numCellsCascade))	!< numCellsCascade=numxFine*numyFine*numzFine
 call createCascadeConnectivity()
 
 !***********************************************************************
@@ -433,10 +443,10 @@ do while(elapsedTime < totalTime)
 					reactionChoiceCurrent=>reactionChoiceCurrent%next	!point to next
 					
 					reactionChoiceCurrent%numReactants=reactionCurrent%numReactants
-					allocate(reactionChoiceCurrent%reactants(reactionCurrent%numReactants, numSpecies))
+					allocate(reactionChoiceCurrent%reactants(numSpecies,reactionCurrent%numReactants))
 					
 					reactionChoiceCurrent%numProducts=reactionCurrent%numProducts
-					allocate(reactionChoiceCurrent%products(reactionCurrent%numProducts, numSpecies))
+					allocate(reactionChoiceCurrent%products(numSpecies,reactionCurrent%numProducts))
 					
 					allocate(reactionChoiceCurrent%cellNumber(reactionCurrent%numReactants+reactionCurrent%numProducts))
 					allocate(reactionChoiceCurrent%taskid(reactionCurrent%numReactants+reactionCurrent%numProducts))
@@ -446,7 +456,7 @@ do while(elapsedTime < totalTime)
 					do i=1,reactionCurrent%numReactants
 					
 						do j=1,numSpecies
-							reactionChoiceCurrent%reactants(i,j)=reactionCurrent%reactants(i,j)
+							reactionChoiceCurrent%reactants(j,i)=reactionCurrent%reactants(j,i)
 						end do
 					
 						reactionChoiceCurrent%cellNumber(i)=reactionCurrent%cellNumber(i)
@@ -456,7 +466,7 @@ do while(elapsedTime < totalTime)
 					
 					do i=1,reactionCurrent%numProducts
 						do j=1,numSpecies
-							reactionChoiceCurrent%products(i,j)=reactionCurrent%products(i,j)
+							reactionChoiceCurrent%products(j,i)=reactionCurrent%products(j,i)
 						end do
 						
 						reactionChoiceCurrent%cellNumber(i+reactionCurrent%numReactants) = &

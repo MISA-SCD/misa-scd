@@ -13,10 +13,8 @@ implicit none
 include 'mpif.h'
 
 integer buffer, tag, i, j, k,l, status(MPI_STATUS_SIZE), numCellsRecv, numDefectsRecv
-!integer defectTypeRecv(numSpecies), cellNumberRecv, numRecv, defectCount
 integer defectCount, recvTemp(numSpecies+1)
 type(defect), pointer :: defectCurrent
-!double precision coordinatesRecv(3)
 double precision, allocatable :: cellDefectSend(:,:)
 double precision, allocatable :: cellDefectRecv(:,:)
 
@@ -56,16 +54,11 @@ if(myProc%taskid==MASTER) then
             call MPI_RECV(cellDefectRecv,(numSpecies+1)*(numDefectsRecv+1),MPI_DOUBLE_PRECISION,i,&
                     101+2*j,comm,status,ierr)
 
-            !!call MPI_RECV(coordinatesRecv,3,MPI_DOUBLE_PRECISION,i,100,comm,status,ierr)
             write(82,*) 'coordinates',(cellDefectRecv(l,1),l=1,3) , 'cell', j
             write(82,*) 'Cu  ', 'V  ', 'SIA_m  ', 'SIA_im  ', 'num'
 
-            !!call MPI_RECV(cellDefectRecv,numDefectsRecv*(numSpecies+2),MPI_DOUBLE_PRECISION,i,102,comm,status,ierr)
-
 			do k=2,numDefectsRecv+1
-				!!call MPI_RECV(defectTypeRecv,numSpecies,MPI_INTEGER,i,102,comm,status,ierr)
-				!!call MPI_RECV(cellNumberRecv,1,MPI_INTEGER,i,103,comm,status,ierr)
-				!!call MPI_RECV(numRecv,1,MPI_INTEGER,i,104,comm,status,ierr)
+
 				do l=1, numSpecies+1
 					recvTemp(l) = cellDefectRecv(l,k)
 				end do
@@ -73,9 +66,7 @@ if(myProc%taskid==MASTER) then
 			end do
 
 			deallocate(cellDefectRecv)
-			
-			!send a signal telling the other processor to go on to the next cell
-			!call MPI_SEND(tag,1,MPI_INTEGER,i,105,comm,ierr)
+
 		end do
 	end do
     write(82,*)
@@ -107,9 +98,7 @@ else
         j=1
 		defectCurrent=>defectList(i)%next
 		do while(associated(defectCurrent))
-			!!call MPI_SEND(defectCurrent%defectType,numSpecies,MPI_INTEGER,MASTER,102,comm,ierr)
-			!!call MPI_SEND(defectCurrent%cellNumber,1,MPI_INTEGER,MASTER,103,comm,ierr)
-			!!call MPI_SEND(defectCurrent%num,1,MPI_INTEGER,MASTER,104,comm,ierr)
+
             j=j+1
 
             do k=1, numSpecies
@@ -123,9 +112,6 @@ else
 
         call MPI_SEND(cellDefectSend, (numSpecies+1)*(defectCount+1), MPI_DOUBLE_PRECISION, MASTER, &
                 101+2*i, comm, ierr)
-		
-		!This just pauses the sending until the master has recieved all of the above information
-		!call MPI_RECV(buffer,1,MPI_INTEGER,MASTER,105,comm,status,ierr)
 
 		deallocate(cellDefectSend)
 	end do
@@ -161,7 +147,6 @@ integer buffer, tag, i, j, k, status(MPI_STATUS_SIZE), numDefectsRecv, numDefect
 integer products(numSpecies)
 integer defectTypeRecv(numSpecies), cellNumberRecv, numRecv, defectCount, same
 type(defect), pointer :: defectCurrent, defectPrevList, defectCurrentList, outputDefectList
-!double precision defectsRecv(numSpecies+1), defectsSend(numSpecies+1)
 double precision, allocatable :: defectsRecv(:,:)
 double precision, allocatable :: defectsSend(:,:)
 !Simulation variables passed by main program
@@ -194,9 +179,11 @@ double precision VRetained, VAnnihilated
 
 interface
 	subroutine findDefectInList(defectCurrent, defectPrev, products)
-	use mod_constants
-	type(defect), pointer :: defectCurrent, defectPrev
-	integer products(numSpecies)
+		use DerivedType
+		use mod_constants
+		implicit none
+		type(defect), pointer :: defectCurrent, defectPrev
+		integer products(numSpecies)
 	end subroutine
 end interface
 
@@ -748,7 +735,6 @@ integer buffer, tag, i, j, k, status(MPI_STATUS_SIZE), numDefectsRecv, numDefect
 integer products(numSpecies)
 integer defectTypeRecv(numSpecies), cellNumberRecv, numRecv, defectCount, same
 type(defect), pointer :: defectCurrent, defectPrevList, defectCurrentList, outputDefectList
-!double precision defectsRecv(numSpecies+1), defectsSend(numSpecies+1)
 
 double precision, allocatable :: defectsRecv(:,:), defectsSend(:,:)
 
@@ -770,9 +756,11 @@ integer totalVoid, totalLoop, VoidNum
 
 interface
 	subroutine findDefectInList(defectCurrent, defectPrev, products)
-	use mod_constants
-	type(defect), pointer :: defectCurrent, defectPrev
-	integer products(numSpecies)
+		use DerivedType
+		use mod_constants
+		implicit none
+		type(defect), pointer :: defectCurrent, defectPrev
+		integer products(numSpecies)
 	end subroutine
 end interface
 
@@ -892,8 +880,6 @@ if(myProc%taskid==MASTER) then
 		call MPI_RECV(defectsRecv,(numSpecies+1)*numDefectsRecv,MPI_DOUBLE_PRECISION,i,400,comm,status,ierr)
 		
 		do j=1,numDefectsRecv
-			!call MPI_RECV(defectsRecv,numSpecies+1,MPI_DOUBLE_PRECISION,i,400,comm,status,ierr)
-!			write(*,*) 'recieved defect ', j
 			
 			do k=1,numSpecies
 				products(k)=defectsRecv(k,j)
@@ -1274,9 +1260,11 @@ integer, allocatable :: buffer(:,:)
 
 interface
 	subroutine findDefectInList(defectCurrent, defectPrev, products)
-	use mod_constants
-	type(defect), pointer :: defectCurrent, defectPrev
-	integer products(numSpecies)
+		use DerivedType
+		use mod_constants
+		implicit none
+		type(defect), pointer :: defectCurrent, defectPrev
+		integer products(numSpecies)
 	end subroutine
 end interface
 
@@ -1290,18 +1278,18 @@ end interface
 !numY=int(((myProc%globalCoord(4)-myProc%globalCoord(3))/myMesh(1)%length))
 
 !Allocate and initialize array of defect numbers in each processor
-allocate(defectProfileArray(numZ,numSpecies))
-allocate(defectNumArray(numZ,numSpecies))
+allocate(defectProfileArray(numSpecies,numZ))
+allocate(defectNumArray(numSpecies,numZ))
 allocate(defectProfile(numZ))
 
-allocate(tempProfileArray(numZ,numSpecies))
-allocate(tempNumArray(numZ,numSpecies))
+allocate(tempProfileArray(numSpecies,numZ))
+allocate(tempNumArray(numSpecies,numZ))
 
 do i=1,numz
 	allocate(defectProfile(i)%defectType(numSpecies))
 	do j=1,numSpecies
-		defectProfileArray(i,j)=0
-		defectNumArray(i,j)=0
+		defectProfileArray(j,i)=0
+		defectNumArray(j,i)=0
 		defectProfile(i)%defectType(j)=0
 	end do
 	defectProfile(i)%num=0
@@ -1324,9 +1312,9 @@ do i=1,numCells
 			
 			!For now, only count vacancies with n .GE. 5 (used to count stable proto-voids)
 			if(j==2 .AND. defectCurrent%defectType(j) >= 5) then
-				defectProfileArray(zEntry,j)=defectProfileArray(zEntry,j)+defectCurrent%defectType(j)*defectCurrent%num
+				defectProfileArray(j,zEntry)=defectProfileArray(j,zEntry)+defectCurrent%defectType(j)*defectCurrent%num
 				if(defectCurrent%defectType(j) > 0) then
-					defectNumArray(zEntry, j)=defectNumArray(zEntry,j)+defectCurrent%num
+					defectNumArray(j,zEntry)=defectNumArray(j,zEntry)+defectCurrent%num
 				end if
 			end if
 			
@@ -1416,26 +1404,26 @@ if(myProc%taskid==MASTER) then
 			
 			!Add defects of neighboring procs to master processor defect array
 			do j=1,numSpecies
-				defectProfileArray(i,j)=defectProfileArray(i,j)+tempProfileArray(i,j)
+				defectProfileArray(j,i)=defectProfileArray(j,i)+tempProfileArray(j,i)
 			end do
 			
 			!call MPI_RECV(tempArray,numSpecies,MPI_INTEGER, procID, i*600,comm, status, ierr)
 			
 			do j=1,numSpecies
-				defectNumArray(i,j)=defectNumArray(i,j)+tempNumArray(i,j)
+				defectNumArray(j,i)=defectNumArray(j,i)+tempNumArray(j,i)
 			end do
 			
 			call MPI_RECV(numDefectsRecv, 1, MPI_INTEGER, procID, i*800, comm, status, ierr)
 
-			allocate(buffer(numDefectsRecv,numSpecies+1))
-			call MPI_RECV(buffer, numDefectsRecv*(numSpecies+1), MPI_INTEGER, procID, i*900, comm, status, ierr)
+			allocate(buffer(numSpecies+1,numDefectsRecv))
+			call MPI_RECV(buffer, (numSpecies+1)*numDefectsRecv, MPI_INTEGER, procID, i*900, comm, status, ierr)
 			
 			do j=1,numDefectsRecv
 			
 				!call MPI_RECV(buffer, numSpecies+1, MPI_INTEGER, procID, i*900+j, comm, status, ierr)
 				
 				do k=1,numSpecies
-					defectTypeStore(k)=buffer(j,k)
+					defectTypeStore(k)=buffer(k,j)
 				end do
 				
 				!Add recieved defect to list of defects in zCoord
@@ -1458,7 +1446,7 @@ if(myProc%taskid==MASTER) then
 					
 						!if the defect is already present in the list
 					
-						defectListCurrent%num=defectListCurrent%num+buffer(j,numSpecies+1)
+						defectListCurrent%num=defectListCurrent%num+buffer(numSpecies+1,j)
 					
 					else		
 						
@@ -1470,7 +1458,7 @@ if(myProc%taskid==MASTER) then
 						defectListPrev=>defectListPrev%next
 						allocate(defectListPrev%defectType(numSpecies))
 						defectListPrev%cellNumber=i
-						defectListPrev%num=buffer(j,numSpecies+1)
+						defectListPrev%num=buffer(numSpecies+1,j)
 						
 						do k=1,numSpecies
 							defectListPrev%defectType(k)=defectTypeStore(k)
@@ -1490,7 +1478,7 @@ if(myProc%taskid==MASTER) then
 					defectListPrev=>defectListPrev%next
 					allocate(defectListPrev%defectType(numSpecies))
 					defectListPrev%cellNumber=i !no need for cell numbers in outputDefectList
-					defectListPrev%num=buffer(j,numSpecies+1)
+					defectListPrev%num=buffer(numSpecies+1,j)
 					
 					do k=1,numSpecies
 						defectListPrev%defectType(k)=defectTypeStore(k)
@@ -1525,12 +1513,12 @@ if(myProc%taskid==MASTER) then
 		!XCoord=(i-1)*myMesh(1)%length+myMesh(1)%length/2d0
 		ZCoord=(i-1)*myMesh(1)%length+myMesh(1)%length/2d0
 		
-		!write(99,*) XCoord, (dble(defectProfileArray(i,j)/(numY*numz*((1d-9*myMesh(1)%length)**3d0))),&
+		!write(99,*) XCoord, (dble(defectProfileArray(j,i)/(numY*numz*((1d-9*myMesh(1)%length)**3d0))),&
 		!	j=1,3)
 		
 		!Vacancy concen
-		write(99,*) ZCoord, dble(defectProfileArray(i,2)/(numy*numx*((1d-9*myMesh(1)%length)**3d0))), &
-			dble(defectNumArray(i,2)/(numy*numx*((1d-9*myMesh(1)%length)**3d0)))
+		write(99,*) ZCoord, dble(defectProfileArray(2,i)/(numy*numx*((1d-9*myMesh(1)%length)**3d0))), &
+			dble(defectNumArray(2,i)/(numy*numx*((1d-9*myMesh(1)%length)**3d0)))
 			
 		defectListCurrent=>defectProfile(i)
 		do while(associated(defectListCurrent))
@@ -1552,9 +1540,9 @@ else
 	call MPI_SEND(defectNumArray, numz*numSpecies, MPI_INTEGER, MASTER, 600, comm, ierr)
 
 	do i=1,numz
-		!call MPI_SEND(defectProfileArray(i,:),numSpecies,MPI_INTEGER, MASTER, i*700, comm, ierr)
+		!call MPI_SEND(defectProfileArray(:,i),numSpecies,MPI_INTEGER, MASTER, i*700, comm, ierr)
 		
-		!call MPI_SEND(defectNumArray(i,:), numSpecies, MPI_INTEGER, MASTER, i*600, comm, ierr)
+		!call MPI_SEND(defectNumArray(:,i), numSpecies, MPI_INTEGER, MASTER, i*600, comm, ierr)
 		
 		!Compute how many defect types are in this list
 		numDefectsSend=0
@@ -1571,23 +1559,23 @@ else
 		defectCurrent=>defectProfile(i)%next
 		numSend=0
 
-		allocate(buffer(numDefectsSend,numSpecies+1))
+		allocate(buffer(numSpecies+1,numDefectsSend))
 		
 		do while(associated(defectCurrent))
 			
 			!Create buffer of information to send
 			numSend=numSend+1
 			do j=1,numSpecies
-				buffer(numSend,j)=defectCurrent%defectType(j)
+				buffer(j,numSend)=defectCurrent%defectType(j)
 			end do
-			buffer(numSend,numSpecies+1)=defectCurrent%num
+			buffer(numSpecies+1,numSend)=defectCurrent%num
 			
 			!Send information on this defect type
 			!call MPI_SEND(buffer, numSpecies+1, MPI_INTEGER, MASTER, i*900+numSend, comm, ierr)
 			
 			defectCurrent=>defectCurrent%next
 		end do
-		call MPI_SEND(buffer, numDefectsSend*(numSpecies+1), MPI_INTEGER, MASTER, i*900, comm, ierr)
+		call MPI_SEND(buffer, (numSpecies+1)*numDefectsSend, MPI_INTEGER, MASTER, i*900, comm, ierr)
 		deallocate(buffer)
 		
 	end do
@@ -1794,10 +1782,6 @@ if(myProc%taskid==MASTER) then
 
 	!Step 1: Find the dimensions of the (global) mesh (assume cubic elements)
 
-!	numx=(myProc%globalCoord(2)-myProc%globalCoord(1))/myMesh(1)%length
-!	numy=(myProc%globalCoord(4)-myProc%globalCoord(3))/myMesh(1)%length
-!	numz=(myProc%globalCoord(6)-myProc%globalCoord(5))/myMesh(1)%length
-
 	xlength=myMesh(1)%length
 	ylength=myMesh(1)%length
 	zlength=myMesh(1)%length
@@ -1857,13 +1841,7 @@ if(myProc%taskid==MASTER) then
 		call MPI_RECV(defectRecv, 7*numCellsNeighbor, MPI_INTEGER, i, 571, comm, status, ierr)
 
 		do j=1,numCellsNeighbor
-	
-			!call MPI_RECV(cellIndex, 3, MPI_INTEGER, i, 571, comm, status, ierr)
-			!call MPI_RECV(numHe, 1, MPI_INTEGER, i, 568, comm, status, ierr)
-			!call MPI_RECV(numV, 1, MPI_INTEGER, i, 569, comm, status, ierr)
-			!call MPI_RECV(numSIA, 1, MPI_INTEGER, i, 570, comm, status, ierr)
-			!call MPI_RECV(GrainID, 1, MPI_INTEGER, i, 571, comm, status, ierr)
-		
+
 			DefectListGIDVTK(defectRecv(1,j),defectRecv(2,j),defectRecv(3,j),1)=defectRecv(4,j)
 			DefectListGIDVTK(defectRecv(1,j),defectRecv(2,j),defectRecv(3,j),2)=defectRecv(5,j)
 			DefectListGIDVTK(defectRecv(1,j),defectRecv(2,j),defectRecv(3,j),3)=defectRecv(6,j)
@@ -2294,9 +2272,11 @@ integer totalVoid, totalLoop, VoidNum
 
 interface
 	subroutine findDefectInList(defectCurrent, defectPrev, products)
-	use mod_constants
-	type(defect), pointer :: defectCurrent, defectPrev
-	integer products(numSpecies)
+		use DerivedType
+		use mod_constants
+		implicit none
+		type(defect), pointer :: defectCurrent, defectPrev
+		integer products(numSpecies)
 	end subroutine
 end interface
 
@@ -2748,9 +2728,11 @@ integer totalVoid, totalLoop, VoidNum
 
 interface
 	subroutine findDefectInList(defectCurrent, defectPrev, products)
-	use mod_constants
-	type(defect), pointer :: defectCurrent, defectPrev
-	integer products(numSpecies)
+		use DerivedType
+		use mod_constants
+		implicit none
+		type(defect), pointer :: defectCurrent, defectPrev
+		integer products(numSpecies)
 	end subroutine
 end interface
 

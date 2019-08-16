@@ -44,11 +44,11 @@ end interface
 myMesh(CascadeCurrent%cellNumber)%volume=myMesh(CascadeCurrent%cellNumber)%volume+CascadeElementVol*numCellsCascade
 	 
 !Part 1: add defects to coarse mesh
-do 10 i=1,numCellsCascade
+do i=1,numCellsCascade
 	
 	defectCurrentFine=>CascadeCurrent%localDefects(i)
 	
-	do 11 while(associated(defectCurrentFine))
+	do while(associated(defectCurrentFine))
 		
 		nullify(defectPrevCoarse)
 		defectCurrentCoarse=>defectList(CascadeCurrent%cellNumber)
@@ -63,11 +63,11 @@ do 10 i=1,numCellsCascade
 			!Check to see if defectCurrentCoarse is pointing at the same type of defect as in the fine mesh
 			count=0
 			
-			do 14 j=1,numSpecies
+			do j=1,numSpecies
 				if(defectCurrentCoarse%defectType(j)==defectCurrentFine%defectType(j)) then
 					count=count+1
-				endif
-			14 continue
+				end if
+			end do
 			
 			!case 1: this defect already exists in the coarse mesh
 			if(count==numSpecies) then
@@ -86,9 +86,9 @@ do 10 i=1,numCellsCascade
 				allocate(defectPrevCoarse%defectType(numSpecies))
 				defectPrevCoarse%next=>defectCurrentCoarse
 				
-				do 12 j=1,numSpecies
+				do j=1,numSpecies
 					defectPrevCoarse%defectType(j)=defectCurrentFine%defectType(j)
-				12 continue
+				end do
 				
 				defectPrevCoarse%num=defectCurrentFine%num
 				defectPrevCoarse%cellNumber=CascadeCurrent%cellNumber
@@ -109,9 +109,9 @@ do 10 i=1,numCellsCascade
 			defectPrevCoarse%next=>defectCurrentCoarse
 			nullify(defectCurrentCoarse%next)
 			
-			do 13 j=1,numSpecies
+			do j=1,numSpecies
 				defectCurrentCoarse%defectType(j)=defectCurrentFine%defectType(j)
-			13 continue
+			end do
 			
 			defectCurrentCoarse%num=defectCurrentFine%num
 			defectCurrentCoarse%cellNumber=CascadeCurrent%cellNumber
@@ -126,8 +126,8 @@ do 10 i=1,numCellsCascade
 		
 		endif
 		defectCurrentFine=>defectCurrentFine%next
-	11 continue
-10 continue
+	end do
+end do
 
 !write(*,*) 'Part 1 complete: added defects to coarse mesh'
 
@@ -142,19 +142,19 @@ if(associated(CascadeCurrent%prev) .AND. associated(CascadeCurrent%next)) then
 	CascadeCurrent%next%prev=>CascadeCurrent%prev
 	
 	!Deallocate memory: remove defect list, reaction list, and all other data structures
-	do 21 i=1,numCellsCascade
+	do i=1,numCellsCascade
 		
 		defectCurrent=>CascadeCurrent%localDefects(i)%next
 		reactionCurrent=>CascadeCurrent%reactionList(i)%next
 		
-		do 23 while(associated(defectCurrent))
+		do while(associated(defectCurrent))
 			defectPrev=>defectCurrent
 			defectCurrent=>defectCurrent%next
 			deallocate(defectPrev%defectType)
 			deallocate(defectPrev)
-		23 continue
+		end do
 		
-		do 24 while(associated(reactionCurrent))
+		do while(associated(reactionCurrent))
 			reactionPrev=>reactionCurrent
 			reactionCurrent=>reactionCurrent%next
 			
@@ -166,15 +166,11 @@ if(associated(CascadeCurrent%prev) .AND. associated(CascadeCurrent%next)) then
 			deallocate(reactionPrev%cellNumber)
 			deallocate(reactionPrev%taskid)
 			deallocate(reactionPrev)
-		24 continue
+		end do
 		
 		deallocate(CascadeCurrent%localDefects(i)%defectType)
-!		deallocate(CascadeCurrent%reactionList(i)%reactants)
-!		deallocate(CascadeCurrent%reactionList(i)%products)
-!		deallocate(CascadeCurrent%reactionList(i)%cellNumber)
-!		deallocate(CascadeCurrent%reactionList(i)%taskid)
-	
-	21 continue
+
+	end do
 	
 	deallocate(CascadeCurrent%totalRate)
 	deallocate(CascadeCurrent%reactionList)
@@ -186,19 +182,19 @@ else if(associated(CascadeCurrent%prev)) then
 	
 	nullify(CascadeCurrent%prev%next)
 	
-	do 31 i=1,numCellsCascade
+	do i=1,numCellsCascade
 		
 		defectCurrent=>CascadeCurrent%localDefects(i)%next
 		reactionCurrent=>CascadeCurrent%reactionList(i)%next
 		
-		do 33 while(associated(defectCurrent))
+		do while(associated(defectCurrent))
 			defectPrev=>defectCurrent
 			defectCurrent=>defectCurrent%next
 			deallocate(defectPrev%defectType)
 			deallocate(defectPrev)
-		33 continue
+		end do
 		
-		do 34 while(associated(reactionCurrent))
+		do while(associated(reactionCurrent))
 			reactionPrev=>reactionCurrent
 			reactionCurrent=>reactionCurrent%next
 			
@@ -210,15 +206,11 @@ else if(associated(CascadeCurrent%prev)) then
 			deallocate(reactionPrev%cellNumber)
 			deallocate(reactionPrev%taskid)
 			deallocate(reactionPrev)
-		34 continue
+		end do
 		
 		deallocate(CascadeCurrent%localDefects(i)%defectType)
-!		deallocate(CascadeCurrent%reactionList(i)%reactants)
-!		deallocate(CascadeCurrent%reactionList(i)%products)
-!		deallocate(CascadeCurrent%reactionList(i)%cellNumber)
-!		deallocate(CascadeCurrent%reactionList(i)%taskid)
-	
-	31 continue
+
+	end do
 	
 	deallocate(CascadeCurrent%totalRate)
 	deallocate(CascadeCurrent%reactionList)
@@ -231,19 +223,19 @@ else if(associated(CascadeCurrent%next)) then
 	ActiveCascades=>CascadeCurrent%next
 	nullify(ActiveCascades%prev)
 
-	do 41 i=1,numCellsCascade
+	do i=1,numCellsCascade
 
 		defectCurrent=>CascadeCurrent%localDefects(i)%next
 		reactionCurrent=>CascadeCurrent%reactionList(i)%next
 		
-		do 43 while(associated(defectCurrent))
+		do while(associated(defectCurrent))
 			defectPrev=>defectCurrent
 			defectCurrent=>defectCurrent%next
 			deallocate(defectPrev%defectType)
 			deallocate(defectPrev)
-		43 continue
+		end do
 		
-		do 44 while(associated(reactionCurrent))
+		do while(associated(reactionCurrent))
 			reactionPrev=>reactionCurrent
 			reactionCurrent=>reactionCurrent%next
 			
@@ -255,15 +247,11 @@ else if(associated(CascadeCurrent%next)) then
 			deallocate(reactionPrev%cellNumber)
 			deallocate(reactionPrev%taskid)
 			deallocate(reactionPrev)
-		44 continue
+		end do
 
 		deallocate(CascadeCurrent%localDefects(i)%defectType)
-!		deallocate(CascadeCurrent%reactionList(i)%reactants)
-!		deallocate(CascadeCurrent%reactionList(i)%products)
-!		deallocate(CascadeCurrent%reactionList(i)%cellNumber)
-!		deallocate(CascadeCurrent%reactionList(i)%taskid)
 
-	41 continue
+	end do
 	
 	deallocate(CascadeCurrent%totalRate)
 	deallocate(CascadeCurrent%reactionList)
@@ -275,19 +263,19 @@ else
 	
 !	write(*,*) 'got to case 4 in step 2'
 	nullify(ActiveCascades)
-	do 51 i=1,numCellsCascade
+	do i=1,numCellsCascade
 		
 		defectCurrent=>CascadeCurrent%localDefects(i)%next
 		reactionCurrent=>CascadeCurrent%reactionList(i)%next
 		
-		do 53 while(associated(defectCurrent))
+		do while(associated(defectCurrent))
 			defectPrev=>defectCurrent
 			defectCurrent=>defectCurrent%next
 			deallocate(defectPrev%defectType)
 			deallocate(defectPrev)
-		53 continue
+		end do
 		
-		do 54 while(associated(reactionCurrent))
+		do while(associated(reactionCurrent))
 			reactionPrev=>reactionCurrent
 			reactionCurrent=>reactionCurrent%next
 			
@@ -299,15 +287,11 @@ else
 			deallocate(reactionPrev%cellNumber)
 			deallocate(reactionPrev%taskid)
 			deallocate(reactionPrev)
-		54 continue
+		end do
 		
 		deallocate(CascadeCurrent%localDefects(i)%defectType)
-!		deallocate(CascadeCurrent%reactionList(i)%reactants)
-!		deallocate(CascadeCurrent%reactionList(i)%products)
-!		deallocate(CascadeCurrent%reactionList(i)%cellNumber)
-!		deallocate(CascadeCurrent%reactionList(i)%taskid)
 	
-	51 continue
+	end do
 	
 	deallocate(CascadeCurrent%totalRate)
 	deallocate(CascadeCurrent%reactionList)

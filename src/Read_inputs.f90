@@ -26,16 +26,6 @@ logical flag
 Double precision Diff, Eb
 integer matNum
 
-interface
-	double precision function findDiffusivity(DefectType)
-	integer, allocatable :: DefectType(:)
-	end function
-	
-	double precision function findBinding(DefectType, productType)
-	integer, allocatable :: DefectType(:), productType(:)
-	end function
-end interface
-
 open(80, file=filename,action='read', status='old') !read xx_Defects.txt
 
 flag=.FALSE.
@@ -89,9 +79,9 @@ end do
 flag=.FALSE.
 
 do i=1,numSingleForm(matNum)
-	allocate(FormSingle(matNum,i)%defectType(numSpecies))
-	read(80,*) (FormSingle(matNum,i)%defectType(j),j=1,numSpecies)
-	read(80,*) char, FormSingle(matNum,i)%Ef
+	allocate(FormSingle(i,matNum)%defectType(numSpecies))
+	read(80,*) (FormSingle(i,matNum)%defectType(j),j=1,numSpecies)
+	read(80,*) char, FormSingle(i,matNum)%Ef
 end do
 
 !************************************************
@@ -137,14 +127,14 @@ flag=.FALSE.
 
 !write(*,*) 'reading single defect diffusion, proc', myProc%taskid
 do i=1,numSingleDiff(matNum)
-	allocate(DiffSingle(matNum,i)%defectType(numSpecies))
-	read(80,*) (DiffSingle(matNum,i)%defectType(j),j=1,numSpecies)
-	read(80,*) char, DiffSingle(matNum,i)%D, char, DiffSingle(matNum,i)%Em
+	allocate(DiffSingle(i,matNum)%defectType(numSpecies))
+	read(80,*) (DiffSingle(i,matNum)%defectType(j),j=1,numSpecies)
+	read(80,*) char, DiffSingle(i,matNum)%D, char, DiffSingle(i,matNum)%Em
 end do
 
 !do 16 i=1,numSingleDiff(matNum)
-!	write(*,*) 'species', (DiffSingle(matNum,i)%defectType(j),j=1,numSpecies)
-!	write(*,*) 'D0', DiffSingle(matNum,i)%D, 'Em', DiffSingle(matNum,i)%Em
+!	write(*,*) 'species', (DiffSingle(i,matNum)%defectType(j),j=1,numSpecies)
+!	write(*,*) 'D0', DiffSingle(i,matNum)%D, 'Em', DiffSingle(matNum,i)%Em
 !16 continue
 
 do while(flag .eqv. .FALSE.)
@@ -157,37 +147,19 @@ flag=.FALSE.
 
 !write(*,*) 'reading function diffusion values', myProc%taskid
 do i=1,numFuncDiff(matNum)
-	allocate(DiffFunc(matNum,i)%defectType(numSpecies))
-	read(80,*) (DiffFunc(matNum,i)%defectType(j),j=1,numSpecies)	!< read in defectTypes
+	allocate(DiffFunc(i,matNum)%defectType(numSpecies))
+	read(80,*) (DiffFunc(i,matNum)%defectType(j),j=1,numSpecies)	!< read in defectTypes
 	count=0
 	!We need to know min and max sizes for each defect type included
-	allocate(DiffFunc(matNum,i)%min(numSpecies))
-	allocate(DiffFunc(matNum,i)%max(numSpecies))
+	allocate(DiffFunc(i,matNum)%min(numSpecies))
+	allocate(DiffFunc(i,matNum)%max(numSpecies))
 	do j=1,numSpecies
-		read(80,*) char, DiffFunc(matNum,i)%min(j), char, DiffFunc(matNum,i)%max(j)	!< read in min and max
+		read(80,*) char, DiffFunc(i,matNum)%min(j), char, DiffFunc(i,matNum)%max(j)	!< read in min and max
 	end do
-	read(80,*) char, DiffFunc(matNum,i)%functionType, char, DiffFunc(matNum,i)%numParam	!< read in functionType and numParm
-	allocate(DiffFunc(matNum,i)%parameters(DiffFunc(matNum,i)%numParam))
-	read(80,*) (DiffFunc(matNum,i)%parameters(j),j=1,DiffFunc(matNum,i)%numParam)	!< read in paramsters
+	read(80,*) char, DiffFunc(i,matNum)%functionType, char, DiffFunc(i,matNum)%numParam	!< read in functionType and numParm
+	allocate(DiffFunc(i,matNum)%parameters(DiffFunc(i,matNum)%numParam))
+	read(80,*) (DiffFunc(i,matNum)%parameters(j),j=1,DiffFunc(i,matNum)%numParam)	!< read in paramsters
 end do
-
-!< test readIn
-!do 22 i=1,numFuncDiff
-!	write(*,*) 'defect type'
-!	write(*,*)	(DiffFunc(i)%defectType(j),j=1,numSpecies)
-!	do 24 j=1,numSpecies
-!		write(*,*) 'min species', j,'=',DiffFunc(i)%min(j), 'max=', DiffFunction(i)%max(j)
-!	24 continue
-!	write(*,*) 'Function type', DiffFunc(i)%functionType
-!	write(*,*) 'Parameters', (DiffFunc(i)%parameters(j), j=1,DiffFunc(i)%numParam)
-!22 continue
-
-!allocate(DefectType(numSpecies))
-!write(*,*) 'Test: enter defect type (numSpecies values) to find diffusivity'
-!read(*,*) (DefectType(i), i=1,numSpecies)
-!
-!Diff=findDiffusivity(DefectType)
-!write(*,*) 'Diffusivity', Diff
 
 !*****************************************************
 !The following is for binding energies parameters only
@@ -233,10 +205,10 @@ flag=.FALSE.
 !allocate(BindFunc(numFuncBind))
 
 do i=1,numSingleBind(matNum)
-	allocate(BindSingle(matNum,i)%defectType(numSpecies))
-	allocate(BindSingle(matNum,i)%product(numSpecies))
-	read(80,*) (BindSingle(matNum,i)%defectType(j),j=1,numSpecies), (BindSingle(matNum,i)%product(j),j=1,numSpecies)
-	read(80,*) char, BindSingle(matNum,i)%Eb
+	allocate(BindSingle(i,matNum)%defectType(numSpecies))
+	allocate(BindSingle(i,matNum)%product(numSpecies))
+	read(80,*) (BindSingle(i,matNum)%defectType(j),j=1,numSpecies), (BindSingle(i,matNum)%product(j),j=1,numSpecies)
+	read(80,*) char, BindSingle(i,matNum)%Eb
 end do
 
 !do 30 i=1,numSingleBind
@@ -254,29 +226,18 @@ flag=.FALSE.
 
 !write(*,*) 'reading function binding values', myProc%taskid
 do i=1,numFuncBind(matNum)
-	allocate(BindFunc(matNum,i)%defectType(numSpecies))
-	allocate(BindFunc(matNum,i)%product(numSpecies))
-	read(80,*) (BindFunc(matNum,i)%defectType(j),j=1,numSpecies), (BindFunc(matNum,i)%product(j),j=1,numSpecies)
-	allocate(BindFunc(matNum,i)%min(numSpecies))
-	allocate(BindFunc(matNum,i)%max(numSpecies))
+	allocate(BindFunc(i,matNum)%defectType(numSpecies))
+	allocate(BindFunc(i,matNum)%product(numSpecies))
+	read(80,*) (BindFunc(i,matNum)%defectType(j),j=1,numSpecies), (BindFunc(i,matNum)%product(j),j=1,numSpecies)
+	allocate(BindFunc(i,matNum)%min(numSpecies))
+	allocate(BindFunc(i,matNum)%max(numSpecies))
 	do j=1,numSpecies
-		read(80,*) char, BindFunc(matNum,i)%min(j), char, BindFunc(matNum,i)%max(j)
+		read(80,*) char, BindFunc(i,matNum)%min(j), char, BindFunc(i,matNum)%max(j)
 	end do
-	read(80,*) char, BindFunc(matNum,i)%functionType, char, BindFunc(matNum,i)%numParam
-	allocate(BindFunc(matNum,i)%parameters(BindFunc(matNum,i)%numParam))
-	read(80,*) (BindFunc(matNum,i)%parameters(j),j=1,BindFunc(matNum,i)%numParam)
+	read(80,*) char, BindFunc(i,matNum)%functionType, char, BindFunc(i,matNum)%numParam
+	allocate(BindFunc(i,matNum)%parameters(BindFunc(i,matNum)%numParam))
+	read(80,*) (BindFunc(i,matNum)%parameters(j),j=1,BindFunc(i,matNum)%numParam)
 end do
-
-!< test readIn
-!allocate(DefectType(numSpecies))
-!allocate(productType(numSpecies))
-!write(*,*) 'Test: enter defect type (numSpecies values) to find binding energy'
-!read(*,*) (DefectType(i), i=1,numSpecies)
-!write(*,*) 'Enter product type'
-!read(*,*) (productType(i),i=1,numSpecies)
-
-!Eb=findBinding(DefectType, productType)
-!write(*,*) 'Binding Energy', Eb
 
 !******************************************************************
 !Construct reaction list using migration and binding energies above
@@ -304,18 +265,18 @@ flag=.FALSE.
 
 !allocate(DissocReactions(numDissocReac))
 do i=1,numDissocReac(matNum)
-	DissocReactions(matNum,i)%numReactants=1
-	DissocReactions(matNum,i)%numProducts=1
-	allocate(DissocReactions(matNum,i)%reactants(DissocReactions(matNum,i)%numReactants,numSpecies))
-	allocate(DissocReactions(matNum,i)%products(DissocReactions(matNum,i)%numProducts,numSpecies))
-	read(80,*) (DissocReactions(matNum,i)%reactants(1,j),j=1,numSpecies),&
-		(DissocReactions(matNum,i)%products(1,j),j=1,numSpecies)	!< read in defectType
-	allocate(DissocReactions(matNum,i)%min(numSpecies))
-	allocate(DissocReactions(matNum,i)%max(numSpecies))
+	DissocReactions(i,matNum)%numReactants=1
+	DissocReactions(i,matNum)%numProducts=1
+	allocate(DissocReactions(i,matNum)%reactants(numSpecies,DissocReactions(i,matNum)%numReactants))
+	allocate(DissocReactions(i,matNum)%products(numSpecies,DissocReactions(i,matNum)%numProducts))
+	read(80,*) (DissocReactions(i,matNum)%reactants(j,1),j=1,numSpecies),&
+		(DissocReactions(i,matNum)%products(j,1),j=1,numSpecies)	!< read in defectType
+	allocate(DissocReactions(i,matNum)%min(numSpecies))
+	allocate(DissocReactions(i,matNum)%max(numSpecies))
 	do j=1,numSpecies
-		read(80,*) char, DissocReactions(matNum,i)%min(j), char, DissocReactions(matNum,i)%max(j)
+		read(80,*) char, DissocReactions(i,matNum)%min(j), char, DissocReactions(i,matNum)%max(j)
 	end do
-	read(80,*) DissocReactions(matNum,i)%functionType
+	read(80,*) DissocReactions(i,matNum)%functionType
 end do
 
 
@@ -333,18 +294,18 @@ flag=.FALSE.
 
 !allocate(DiffReactions(numDiffReac))
 do i=1,numDiffReac(matNum)
-	DiffReactions(matNum,i)%numReactants=1
-	DiffReactions(matNum,i)%numProducts=1
-	allocate(DiffReactions(matNum,i)%reactants(DiffReactions(matNum,i)%numReactants,numSpecies))
-	allocate(DiffReactions(matNum,i)%products(DiffReactions(matNum,i)%numProducts,numSpecies))
-	read(80,*) (DiffReactions(matNum,i)%reactants(1,j),j=1,numSpecies),&
-		(DiffReactions(matNum,i)%products(1,j),j=1,numSpecies)
-	allocate(DiffReactions(matNum,i)%min(numSpecies))
-	allocate(DiffReactions(matNum,i)%max(numSpecies))
+	DiffReactions(i,matNum)%numReactants=1
+	DiffReactions(i,matNum)%numProducts=1
+	allocate(DiffReactions(i,matNum)%reactants(numSpecies,DiffReactions(i,matNum)%numReactants))
+	allocate(DiffReactions(i,matNum)%products(numSpecies,DiffReactions(i,matNum)%numProducts))
+	read(80,*) (DiffReactions(i,matNum)%reactants(j,1),j=1,numSpecies),&
+		(DiffReactions(i,matNum)%products(j,1),j=1,numSpecies)
+	allocate(DiffReactions(i,matNum)%min(numSpecies))
+	allocate(DiffReactions(i,matNum)%max(numSpecies))
 	do j=1,numSpecies
-		read(80,*) char, DiffReactions(matNum,i)%min(j), char, DiffReactions(matNum,i)%max(j)
+		read(80,*) char, DiffReactions(i,matNum)%min(j), char, DiffReactions(i,matNum)%max(j)
 	end do
-	read(80,*) DiffReactions(matNum,i)%functionType
+	read(80,*) DiffReactions(i,matNum)%functionType
 end do
 
 !********************** sinkRemoval *******************************
@@ -361,16 +322,16 @@ flag=.FALSE.
 
 !allocate(SinkReactions(numSinkReac))
 do i=1,numSinkReac(matNum)
-	SinkReactions(matNum,i)%numReactants=1
-	SinkReactions(matNum,i)%numProducts=0
-	allocate(SinkReactions(matNum,i)%reactants(SinkReactions(matNum,i)%numReactants,numSpecies))
-	read(80,*) (SinkReactions(matNum,i)%reactants(1,j),j=1,numSpecies)
-	allocate(SinkReactions(matNum,i)%min(numSpecies))
-	allocate(SinkReactions(matNum,i)%max(numSpecies))
+	SinkReactions(i,matNum)%numReactants=1
+	SinkReactions(i,matNum)%numProducts=0
+	allocate(SinkReactions(i,matNum)%reactants(numSpecies,SinkReactions(i,matNum)%numReactants))
+	read(80,*) (SinkReactions(i,matNum)%reactants(j,1),j=1,numSpecies)
+	allocate(SinkReactions(i,matNum)%min(numSpecies))
+	allocate(SinkReactions(i,matNum)%max(numSpecies))
 	do j=1,numSpecies
-		read(80,*) char, SinkReactions(matNum,i)%min(j), char, SinkReactions(matNum,i)%max(j)
+		read(80,*) char, SinkReactions(i,matNum)%min(j), char, SinkReactions(i,matNum)%max(j)
 	end do
-	read(80,*) SinkReactions(matNum,i)%functionType
+	read(80,*) SinkReactions(i,matNum)%functionType
 end do
 
 
@@ -384,22 +345,20 @@ do while(flag .eqv. .FALSE.)
 end do
 flag=.FALSE.
 
-!write(*,*) 'reading impurity trapping reactions', myProc%taskid
-
 !allocate(ImpurityReactions(numImpurityReac))
 do i=1,numImpurityReac(matNum)
-	ImpurityReactions(matNum,i)%numReactants=1
-	ImpurityReactions(matNum,i)%numProducts=1
-	allocate(ImpurityReactions(matNum,i)%reactants(ImpurityReactions(matNum,i)%numReactants,numSpecies))
-	allocate(ImpurityReactions(matNum,i)%products(ImpurityReactions(matNum,i)%numProducts,numSpecies))
-	read(80,*) (ImpurityReactions(matNum,i)%reactants(1,j),j=1,numSpecies), &
-		(ImpurityReactions(matNum,i)%products(1,j),j=1,numSpecies)
-	allocate(ImpurityReactions(matNum,i)%min(numSpecies))
-	allocate(ImpurityReactions(matNum,i)%max(numSpecies))
+	ImpurityReactions(i,matNum)%numReactants=1
+	ImpurityReactions(i,matNum)%numProducts=1
+	allocate(ImpurityReactions(i,matNum)%reactants(numSpecies,ImpurityReactions(i,matNum)%numReactants))
+	allocate(ImpurityReactions(i,matNum)%products(numSpecies,ImpurityReactions(i,matNum)%numProducts))
+	read(80,*) (ImpurityReactions(i,matNum)%reactants(j,1),j=1,numSpecies), &
+		(ImpurityReactions(i,matNum)%products(j,1),j=1,numSpecies)
+	allocate(ImpurityReactions(i,matNum)%min(numSpecies))
+	allocate(ImpurityReactions(i,matNum)%max(numSpecies))
 	do j=1,numSpecies
-		read(80,*) char, ImpurityReactions(matNum,i)%min(j), char, ImpurityReactions(matNum,i)%max(j)
+		read(80,*) char, ImpurityReactions(i,matNum)%min(j), char, ImpurityReactions(i,matNum)%max(j)
 	end do
-	read(80,*) ImpurityReactions(matNum,i)%functionType
+	read(80,*) ImpurityReactions(i,matNum)%functionType
 end do
 
 do while(flag .eqv. .FALSE.)
@@ -421,27 +380,25 @@ do while(flag .eqv. .FALSE.)
 end do
 flag=.FALSE.
 
-!write(*,*) 'reading clustering reactions', myProc%taskid
-
 !allocate(ClusterReactions(numClusterReac))
 do i=1,numClusterReac(matNum)
-	ClusterReactions(matNum,i)%numReactants=2
-	ClusterReactions(matNum,i)%numProducts=1
-	allocate(ClusterReactions(matNum,i)%reactants(ClusterReactions(matNum,i)%numReactants,numSpecies))
-	allocate(ClusterReactions(matNum,i)%products(ClusterReactions(matNum,i)%numProducts,numSpecies))
-	read(80,*) (ClusterReactions(matNum,i)%reactants(1,j),j=1,numSpecies),&
-		(ClusterReactions(matNum,i)%reactants(2,j),j=1,numSpecies)
-	allocate(ClusterReactions(matNum,i)%min(numSpecies*ClusterReactions(matNum,i)%numReactants))
-	allocate(ClusterReactions(matNum,i)%max(numSpecies*ClusterReactions(matNum,i)%numReactants))
-	do j=1,numSpecies*ClusterReactions(matNum,i)%numReactants
-		read(80,*) char, ClusterReactions(matNum,i)%min(j), char, ClusterReactions(matNum,i)%max(j)
+	ClusterReactions(i,matNum)%numReactants=2
+	ClusterReactions(i,matNum)%numProducts=1
+	allocate(ClusterReactions(i,matNum)%reactants(numSpecies,ClusterReactions(i,matNum)%numReactants))
+	allocate(ClusterReactions(i,matNum)%products(numSpecies,ClusterReactions(i,matNum)%numProducts))
+	read(80,*) (ClusterReactions(i,matNum)%reactants(j,1),j=1,numSpecies),&
+		(ClusterReactions(i,matNum)%reactants(j,2),j=1,numSpecies)
+	allocate(ClusterReactions(i,matNum)%min(numSpecies*ClusterReactions(i,matNum)%numReactants))
+	allocate(ClusterReactions(i,matNum)%max(numSpecies*ClusterReactions(i,matNum)%numReactants))
+	do j=1,numSpecies*ClusterReactions(i,matNum)%numReactants
+		read(80,*) char, ClusterReactions(i,matNum)%min(j), char, ClusterReactions(i,matNum)%max(j)
 	end do
 	do j=1,numSpecies
 		!ClusterReactions products are reaction-specific, and are not correctly found here. This is just a placeholder.
-		ClusterReactions(matNum,i)%products(1,j)=ClusterReactions(matNum,i)%reactants(1,j)+&
-												 ClusterReactions(matNum,i)%reactants(2,j)
+		ClusterReactions(i,matNum)%products(j,1)=ClusterReactions(i,matNum)%reactants(j,1)+&
+												 ClusterReactions(i,matNum)%reactants(j,2)
 	end do
-	read(80,*) ClusterReactions(matNum,i)%functionType
+	read(80,*) ClusterReactions(i,matNum)%functionType
 end do
 
 
@@ -469,12 +426,12 @@ do i=1,numImplantReac(matNum)
 		
 		!write(*,*) 'reading frenkel pair reactions', myProc%taskid
 		
-		ImplantReactions(matNum,i)%numReactants=0
-		ImplantReactions(matNum,i)%numProducts=2
-		allocate(ImplantReactions(matNum,i)%products(ImplantReactions(matNum,i)%numProducts,numSpecies))
-		read(80,*) (ImplantReactions(matNum,i)%products(1,j),j=1,numSpecies),&
-			(ImplantReactions(matNum,i)%products(2,j),j=1,numSpecies)
-		read(80,*) ImplantReactions(matNum,i)%functionType
+		ImplantReactions(i,matNum)%numReactants=0
+		ImplantReactions(i,matNum)%numProducts=2
+		allocate(ImplantReactions(i,matNum)%products(numSpecies,ImplantReactions(i,matNum)%numProducts))
+		read(80,*) (ImplantReactions(i,matNum)%products(j,1),j=1,numSpecies),&
+			(ImplantReactions(i,matNum)%products(j,2),j=1,numSpecies)
+		read(80,*) ImplantReactions(i,matNum)%functionType
 
 	else if(i==2) then !read in cascade reaction parameters
 
@@ -488,9 +445,9 @@ do i=1,numImplantReac(matNum)
 		
 		!write(*,*) 'reading cascade reactions', myProc%taskid
 		
-		ImplantReactions(matNum,i)%numReactants=-10
-		ImplantReactions(matNum,i)%numProducts=0
-		read(80,*) ImplantReactions(matNum,i)%functionType
+		ImplantReactions(i,matNum)%numReactants=-10
+		ImplantReactions(i,matNum)%numProducts=0
+		read(80,*) ImplantReactions(i,matNum)%functionType
 
 	else
 		write(*,*) 'error numImplantReac'
@@ -513,7 +470,6 @@ end subroutine
 subroutine readCascadeList()
 use mod_constants
 use DerivedType
-
 implicit none
 
 type(cascadeEvent), pointer :: cascadeCurrent
@@ -610,16 +566,16 @@ if(implantType=='Cascade') then
 	!output read-in cascade list to make sure it works
 	!if(myProc%taskid==MASTER) then
 	!	cascadeCurrent=>CascadeList
-	!	do 12 while(associated(CascadeCurrent))
+	!	do while(associated(CascadeCurrent))
 	!		write(*,*) 'Cascade Event'
 	!		defectCurrent=>CascadeCurrent%ListOfDefects
 	!		write(*,*) 'total number of defects', cascadeCurrent%NumDefectsTotal
-	!		do 13 while(associated(defectCurrent))
+	!		do while(associated(defectCurrent))
 	!			write(*,*) 'type', defectCurrent%defectType, 'coordinates', defectCurrent%coordinates
 	!			defectCurrent=>defectCurrent%next
-	!		13 continue
+	!		end do
 	!		CascadeCurrent=>CascadeCurrent%nextCascade
-	!	12 continue
+	!	end do
 	!	write(*,*)
 	!	read(*,*)
 	!	nullify(defectCurrent)
@@ -708,7 +664,7 @@ else if(implantDist=='NonUniform') then
 
 	!2019.05.06 modify: no He
 	!allocate(implantRateData(numImplantDataPoints,3))
-	allocate(implantRateData(numImplantDataPoints,2))
+	allocate(implantRateData(2,numImplantDataPoints))
 	
 	flag=.FALSE.
 	do while(flag .eqv. .FALSE.)
@@ -722,7 +678,7 @@ else if(implantDist=='NonUniform') then
 	do i=1,numImplantDataPoints
 		!2019.05.06 modify: no He
 		!read(80,*) (implantRateData(i,j),j=1,3)
-		read(80,*) (implantRateData(i,j),j=1,2)
+		read(80,*) (implantRateData(j,i),j=1,2)
 	end do
 	
 	close(80)
@@ -805,7 +761,7 @@ do i=1,numMaterials
 		maxNum=numSingleForm(i)
 	end if
 end do
-allocate(FormSingle(numMaterials,maxNum))
+allocate(FormSingle(maxNum,numMaterials))
 
 maxNum=0
 do i=1,numMaterials
@@ -813,7 +769,7 @@ do i=1,numMaterials
 		maxNum=numSingleDiff(i)
 	end if
 end do
-allocate(DiffSingle(numMaterials,maxNum))
+allocate(DiffSingle(maxNum,numMaterials))
 
 maxNum=0
 do i=1,numMaterials
@@ -821,7 +777,7 @@ do i=1,numMaterials
 		maxNum=numFuncDiff(i)
 	end if
 end do
-allocate(DiffFunc(numMaterials,maxNum))
+allocate(DiffFunc(maxNum,numMaterials))
 
 maxNum=0
 do i=1,numMaterials
@@ -829,7 +785,7 @@ do i=1,numMaterials
 		maxNum=numSingleBind(i)
 	end if
 end do
-allocate(BindSingle(numMaterials,maxNum))
+allocate(BindSingle(maxNum,numMaterials))
 
 maxNum=0
 do i=1,numMaterials
@@ -837,7 +793,7 @@ do i=1,numMaterials
 		maxNum=numFuncBind(i)
 	end if
 end do
-allocate(BindFunc(numMaterials,maxNum))
+allocate(BindFunc(maxNum,numMaterials))
 
 maxNum=0
 do i=1,numMaterials
@@ -845,7 +801,7 @@ do i=1,numMaterials
 		maxNum=numDiffReac(i)
 	end if
 end do
-allocate(DiffReactions(numMaterials,maxNum))
+allocate(DiffReactions(maxNum,numMaterials))
 
 maxNum=0
 do i=1,numMaterials
@@ -853,7 +809,7 @@ do i=1,numMaterials
 		maxNum=numClusterReac(i)
 	endif
 end do
-allocate(ClusterReactions(numMaterials,maxNum))
+allocate(ClusterReactions(maxNum,numMaterials))
 
 maxNum=0
 do i=1,numMaterials
@@ -861,7 +817,7 @@ do i=1,numMaterials
 		maxNum=numImplantReac(i)
 	end if
 end do
-allocate(ImplantReactions(numMaterials,maxNum))
+allocate(ImplantReactions(maxNum,numMaterials))
 
 maxNum=0
 do i=1,numMaterials
@@ -869,7 +825,7 @@ do i=1,numMaterials
 		maxNum=numImpurityReac(i)
 	end if
 end do
-allocate(ImpurityReactions(numMaterials,maxNum))
+allocate(ImpurityReactions(maxNum,numMaterials))
 
 maxNum=0
 do i=1,numMaterials
@@ -877,7 +833,7 @@ do i=1,numMaterials
 		maxNum=numSinkReac(i)
 	end if
 end do
-allocate(SinkReactions(numMaterials,maxNum))
+allocate(SinkReactions(maxNum,numMaterials))
 
 maxNum=0
 do i=1,numMaterials
@@ -885,7 +841,7 @@ do i=1,numMaterials
 		maxNum=numDissocReac(i)
 	end if
 end do
-allocate(DissocReactions(numMaterials,maxNum))
+allocate(DissocReactions(maxNum,numMaterials))
 
 do i=1,numMaterials
 	!these subroutines (located in MaterialInput.f90) read in material parameters.

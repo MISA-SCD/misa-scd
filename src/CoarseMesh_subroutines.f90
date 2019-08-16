@@ -109,7 +109,7 @@ if(cellNumber==-1) then
 	numDefects=0
 else
 	numDefects=0
-	defectCurrent=>myBoundary(dir, cellNumber)%defectList
+	defectCurrent=>myBoundary(cellNumber,dir)%defectList
 	
 	do while(associated(defectCurrent))
 		count=0
@@ -225,7 +225,7 @@ else if(implantType=='Cascade') then
 	
 	!search ImplantList for cascade reactions
 	do reac=1,numImplantReac(matNum)
-		if(ImplantReactions(matNum,reac)%numReactants==-10 .AND. ImplantReactions(matNum,reac)%numProducts==0) then	
+		if(ImplantReactions(reac,matNum)%numReactants==-10 .AND. ImplantReactions(reac,matNum)%numProducts==0) then
 			
 			!we have found cascade implantation
 			exit
@@ -239,7 +239,7 @@ else if(implantType=='Cascade') then
 	
 	if(implantScheme=='MonteCarlo') then
 
-		reactionList(cell)%reactionRate=findReactionRate(cell, ImplantReactions(matNum,reac))
+		reactionList(cell)%reactionRate=findReactionRate(cell, ImplantReactions(reac,matNum))
 		
 		!Update total reaction rate for entire processor and for this volume element
 		totalRate=totalRate+reactionList(cell)%reactionRate
@@ -332,21 +332,21 @@ do while(associated(defectUpdate))
 				localGrainID=myMesh(cell)%material
 				
 				!Find the grain ID number of the neighboring volume element
-				if(myMesh(cell)%neighborProcs(j,k) /= myProc%taskid .AND. &
-					myMesh(cell)%neighborProcs(j,k) /= -1) then
+				if(myMesh(cell)%neighborProcs(k,j) /= myProc%taskid .AND. &
+					myMesh(cell)%neighborProcs(k,j) /= -1) then
 				
-					neighborGrainID=myBoundary(j,myMesh(cell)%neighbors(j,k))%material
-				else if(myMesh(cell)%neighborProcs(j,k) == -1) then
+					neighborGrainID=myBoundary(myMesh(cell)%neighbors(k,j),j)%material
+				else if(myMesh(cell)%neighborProcs(k,j) == -1) then
 					neighborGrainID=localGrainID
 				else
-					neighborGrainID=myMesh(myMesh(cell)%neighbors(j,k))%material
-				endif
+					neighborGrainID=myMesh(myMesh(cell)%neighbors(k,j))%material
+				end if
 				
 				if(localGrainID==neighborGrainID) then
 				
 					!Allow diffusion between elements in the same grain
-					call addDiffusionReactions(cell, myMesh(cell)%neighbors(j,k),&
-						myProc%taskid, myMesh(cell)%neighborProcs(j,k),j,defectTemp)
+					call addDiffusionReactions(cell, myMesh(cell)%neighbors(k,j),&
+						myProc%taskid, myMesh(cell)%neighborProcs(k,j),j,defectTemp)
 				
 				else
 				
@@ -357,21 +357,21 @@ do while(associated(defectUpdate))
 
 			else
 			
-				call addDiffusionReactions(cell, myMesh(cell)%neighbors(j,k), myProc%taskid, &
-					myMesh(cell)%neighborProcs(j,k), j, defectTemp)
+				call addDiffusionReactions(cell, myMesh(cell)%neighbors(k,j), myProc%taskid, &
+					myMesh(cell)%neighborProcs(k,j), j, defectTemp)
 			
 			end if
 				
 			!Add diffusion reactions from the neighboring cell into this one
-			if(myMesh(cell)%neighborProcs(j,k)==myProc%taskid) then
-				if(polycrystal=='yes' .AND. myMesh(myMesh(cell)%neighbors(j,k))%material == myMesh(cell)%material) then
+			if(myMesh(cell)%neighborProcs(k,j)==myProc%taskid) then
+				if(polycrystal=='yes' .AND. myMesh(myMesh(cell)%neighbors(k,j))%material == myMesh(cell)%material) then
 					
-					call addDiffusionReactions(myMesh(cell)%neighbors(j,k), cell, myProc%taskid, &
+					call addDiffusionReactions(myMesh(cell)%neighbors(k,j), cell, myProc%taskid, &
 						myProc%taskid, j, defectTemp)
 						
 				else if(polycrystal=='no') then
 				
-					call addDiffusionReactions(myMesh(cell)%neighbors(j,k), cell, myProc%taskid, &
+					call addDiffusionReactions(myMesh(cell)%neighbors(k,j), cell, myProc%taskid, &
 						myProc%taskid, j, defectTemp)
 				
 				end if
@@ -401,12 +401,7 @@ do while(associated(defectUpdate))
 	do while(associated(CascadeCurrent))
 
 		if(CascadeCurrent%cellNumber==cell) then
-			
-!			if(myProc%taskid==MASTER) then
-!				write(*,*) 'adding coarse to fine diffusion'
-!				read(*,*)
-!			endif
-			
+
 			call addDiffusionCoarseToFine(cell, myProc%taskid, CascadeCurrent, defectTemp)
 		
 		endif

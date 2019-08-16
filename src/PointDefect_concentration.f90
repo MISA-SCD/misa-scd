@@ -161,3 +161,37 @@ subroutine computeSIAconcent()
     end if
 
 end subroutine
+
+!**********************************************************************************
+!This function is used to compute the vacancy concentration at this time
+!This function will not be used
+!**********************************************************************************
+double precision function permanentCv(matNum)
+    use DerivedType
+    use mod_constants
+    implicit none
+
+    double precision Kiv, diffV, diffI
+    integer matNum, i
+
+    do i=1,numSingleDiff(matNum)
+        if(DiffSingle(i,matNum)%defectType(1)==0 .AND. DiffSingle(i,matNum)%defectType(2)==1 .AND. &
+                DiffSingle(i,matNum)%defectType(3)==0 .AND. DiffSingle(i,matNum)%defectType(4)==0) then
+
+            diffV = DiffSingle(i,matNum)%D*dexp(-DiffSingle(2,matNum)%Em/(kboltzmann*temperature))
+
+        else if(DiffSingle(i,matNum)%defectType(1)==0 .AND. DiffSingle(i,matNum)%defectType(2)==0 .AND. &
+                DiffSingle(i,matNum)%defectType(3)==1 .AND. DiffSingle(i,matNum)%defectType(4)==0) then
+
+            diffI = DiffSingle(i,matNum)%D*dexp(-DiffSingle(2,matNum)%Em/(kboltzmann*temperature))
+
+        end if
+
+    end do
+
+    Kiv = 4*pi/atomsize*reactionRadius*(diffV + diffI)
+
+    permanentCv = -dislocationDensity*Zint*diffI/(2*Kiv)+&
+            ((dislocationDensity*Zint*diffI/(2*Kiv))**(2d0)+DPARate*Zint*diffI/(Kiv*diffV))**(1d0/2d0)
+
+end function

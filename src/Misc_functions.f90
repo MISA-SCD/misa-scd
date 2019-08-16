@@ -20,7 +20,6 @@ endif
 temp=1
 do i=1,n
 	temp=temp*i
-	!write(*,*) 'temp', temp
 end do
 factorial=temp
 
@@ -39,9 +38,6 @@ implicit none
 
 integer n, k, factorial
 
-!write(*,*) 'binomial', n, k
-!write(*,*) 'factorials', factorial(n), factorial(k), factorial(n-k)
-!read(*,*) 
 binomial=factorial(n)/(factorial(k)*factorial(n-k))
 
 end function

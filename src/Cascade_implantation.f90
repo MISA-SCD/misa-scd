@@ -103,15 +103,12 @@ end do outer
 
 !Checking that reactionCurrent is pointed at the correct reaction
 if(implantType=='Cascade') then
-	if(reactionCurrent%numReactants==0 .OR. reactionCurrent%numReactants==-10) then
-		if(reactionCurrent%numReactants==-10 .AND. reactionCurrent%numProducts==0) then !Cascade implantation
-!			numImplantEvents=numImplantEvents+1
-			numImpAnn(1)=numImpAnn(1)+1
-		else
-			write(*,*) 'Error reaction not allowed ', 'reactants', reactionCurrent%numReactants, &
-				'products', reactionCurrent%numProducts, 'rate', reactionCurrent%reactionRate
-		end if
+
+	if(reactionCurrent%numReactants==-10 .AND. reactionCurrent%numProducts==0) then !Cascade implantation
+!		numImplantEvents=numImplantEvents+1
+		numImpAnn(1)=numImpAnn(1)+1
 	end if
+
 else
 	write(*,*) 'Error wrong implant type for explicit procedure'
 end if
@@ -188,7 +185,7 @@ include 'mpif.h'
 
 integer cascadeCell
 
-integer i, j, k, tag, cellInfoBuffer(6,5), count 
+integer i, j, k, tag, cellInfoBuffer(5,6), count
 integer status(MPI_STATUS_SIZE), request
 integer, allocatable :: defectBuffer(:,:)
 type(defect), pointer :: defectCurrent, defectPrev
@@ -201,9 +198,11 @@ integer localGrainID, neighborGrainID
 
 interface
 	subroutine findDefectInList(defectCurrent, defectPrev, defectType)
-	use mod_constants
-	type(defect), pointer :: defectCurrent, defectPrev
-	integer defectType(numSpecies)
+		use DerivedType
+		use mod_constants
+		implicit none
+		type(defect), pointer :: defectCurrent, defectPrev
+		integer defectType(numSpecies)
 	end subroutine
 end interface
 
@@ -214,15 +213,15 @@ if(cascadeCell==0) then
 	!do nothing, no cascade
 	!write(86,*) 'No Cascade'
 	do j=1,6
-		cellInfoBuffer(j,1)=0
-		cellInfoBuffer(j,2)=0
-		cellInfoBuffer(j,3)=0
-		cellInfoBuffer(j,4)=0
-		cellInfoBuffer(j,5)=0
+		cellInfoBuffer(1,j)=0
+		cellInfoBuffer(2,j)=0
+		cellInfoBuffer(3,j)=0
+		cellInfoBuffer(4,j)=0
+		cellInfoBuffer(5,j)=0
 		
 		!Only send/recv if the neighboring proc is different from this one
 		if(myProc%procNeighbor(j) /= -1 .AND. myProc%procNeighbor(j) /= myProc%taskid) then
-			call MPI_SEND(cellInfoBuffer(j,:), 5, MPI_INTEGER,myProc%procNeighbor(j),251+j,comm,ierr)
+			call MPI_SEND(cellInfoBuffer(:,j), 5, MPI_INTEGER,myProc%procNeighbor(j),251+j,comm,ierr)
 		endif
 		
 	end do
@@ -233,16 +232,16 @@ else
 		
 		do k=1,myMesh(cascadeCell)%numNeighbors(j)
 			
-			if(myMesh(cascadeCell)%neighborProcs(j,k) /= myProc%taskid .AND. &
-				myMesh(cascadeCell)%neighborProcs(j,k) /= -1) then
+			if(myMesh(cascadeCell)%neighborProcs(k,j) /= myProc%taskid .AND. &
+				myMesh(cascadeCell)%neighborProcs(k,j) /= -1) then
 				
 				!this element has a neighbor that is on a different processor
 				
 				!cell number in neighboring proc
-				cellInfoBuffer(j,1)=myMesh(cascadeCell)%neighbors(j,k)
+				cellInfoBuffer(1,j)=myMesh(cascadeCell)%neighbors(k,j)
 				
 				!local cell number
-				cellInfoBuffer(j,4)=cascadeCell
+				cellInfoBuffer(4,j)=cascadeCell
 				
 				!Find out how many defects are in this volume element
 				defectCurrent=>defectList(cascadeCell)%next
@@ -268,27 +267,27 @@ else
 					count = mod(count,maxBufferSize)
 				end if
 				
-				cellInfoBuffer(j,2)=count
-				cellInfoBuffer(j,5)=sendBufferCount
+				cellInfoBuffer(2,j)=count
+				cellInfoBuffer(5,j)=sendBufferCount
 				
 				!Update volume (to send to boundary mesh in neighbor): after cascade addition/deletion,
 				!cell volume will have changed
-				cellInfoBuffer(j,3)=myMesh(cascadeCell)%volume
+				cellInfoBuffer(3,j)=myMesh(cascadeCell)%volume
 				
 				!Send info to neighbor: first send size of defectBuffer, then send defectBuffer
 				!if(myProc%taskid==MASTER) write(*,*) j, 'sending buffer', 101+j
 				
 				!write(86,*) 'Sending full buffer, proc', myProc%taskid, 'to', &
-				!	myMesh(cascadeCell)%neighborProcs(j,k), 'tag', 251+j
+				!	myMesh(cascadeCell)%neighborProcs(k,j), 'tag', 251+j
 				!write(86,*) 'dir', j, 'numNeighbors', myMesh(cascadeCell)%numNeighbors(j), 'k', k
-				!write(86,*) 'cellInfoBuffer', cellInfoBuffer(j,:)
+				!write(86,*) 'cellInfoBuffer', cellInfoBuffer(:,j)
 				
 !				if(cellInfoBuffer(j,2) .GE. 202) then
 !					write(*,*) 'CellInfoBuffer greater than 202'
-!					write(*,*) myProc%taskid, 'to', myMesh(cascadeCell)%neighborProcs(j,k)
+!					write(*,*) myProc%taskid, 'to', myMesh(cascadeCell)%neighborProcs(k,j)
 !				endif
 					
-				call MPI_SEND(cellInfoBuffer(j,:), 5, MPI_INTEGER,myMesh(cascadeCell)%neighborProcs(j,k),&
+				call MPI_SEND(cellInfoBuffer(:,j), 5, MPI_INTEGER,myMesh(cascadeCell)%neighborProcs(k,j),&
 					251+j,comm,ierr)
 				
 				defectCurrent=>defectList(cascadeCell)%next
@@ -297,10 +296,10 @@ else
 				
 					!All defect buffers have maxBufferSize defects except for the last
 					if(bufferCount==sendBufferCount) then
-						allocate(defectBuffer(cellInfoBuffer(j,2),numSpecies+1))
-						numSend=cellInfoBuffer(j,2)
+						allocate(defectBuffer(numSpecies+1,cellInfoBuffer(2,j)))
+						numSend=cellInfoBuffer(2,j)
 					else
-						allocate(defectBuffer(maxBufferSize,numSpecies+1))
+						allocate(defectBuffer(numSpecies+1,maxBufferSize))
 						numSend=maxBufferSize
 !						write(*,*) 'Chopped down to ',maxBufferSize,'Proc', myProc%taskid
 					endif
@@ -316,17 +315,17 @@ else
 						endif
 						
 						do i=1,numSpecies
-							defectBuffer(sendCount,i)=defectCurrent%defectType(i)
+							defectBuffer(i,sendCount)=defectCurrent%defectType(i)
 						end do
 							
-						defectBuffer(sendCount, numSpecies+1)=defectCurrent%num
+						defectBuffer(numSpecies+1,sendCount)=defectCurrent%num
 						defectCurrent=>defectCurrent%next	
 					end do
 					
 					!write(86,*) 'Info sent, sending buffer. Size', cellInfoBuffer(j,2)*(numSpecies+1)
 					
-					call MPI_ISEND(defectBuffer, numSend*(numSpecies+1), MPI_INTEGER, &
-						myMesh(cascadeCell)%neighborProcs(j,k), 351*j+bufferCount, comm,request, ierr)
+					call MPI_ISEND(defectBuffer, (numSpecies+1)*numSend, MPI_INTEGER, &
+						myMesh(cascadeCell)%neighborProcs(k,j), 351*j+bufferCount, comm,request, ierr)
 						
 					!write(86,*) 'Buffer sent'
 	
@@ -334,37 +333,37 @@ else
 					
 				end do
 			
-			else if(myMesh(cascadeCell)%neighborProcs(j,k) /= -1 .AND. &
+			else if(myMesh(cascadeCell)%neighborProcs(k,j) /= -1 .AND. &
 				myProc%procNeighbor(j) /= myProc%taskid) then
 				
 				!Tag shows that neighboring cell is not in another processor
-				cellInfoBuffer(j,1)=0
-				cellInfoBuffer(j,2)=0
-				cellInfoBuffer(j,3)=0
-				cellInfoBuffer(j,4)=0
-				cellInfoBuffer(j,5)=0
+				cellInfoBuffer(1,j)=0
+				cellInfoBuffer(2,j)=0
+				cellInfoBuffer(3,j)=0
+				cellInfoBuffer(4,j)=0
+				cellInfoBuffer(5,j)=0
 				
 				!write(86,*) 'Sending empty buffer, proc', myProc%taskid, 'to', &
 				!	myProc%procNeighbor(j)
 				
-				call MPI_SEND(cellInfoBuffer(j,:), 5, MPI_INTEGER,myProc%procNeighbor(j),&
+				call MPI_SEND(cellInfoBuffer(:,j), 5, MPI_INTEGER,myProc%procNeighbor(j),&
 					251+j,comm,ierr)
 				
-			else if(myMesh(cascadeCell)%neighborProcs(j,k) == -1) then
+			else if(myMesh(cascadeCell)%neighborProcs(k,j) == -1) then
 				
 				!Here, even if we are at a free surface, we send a blank buffer set to the other proc
 				!because the proc mesh is periodic even when the actual mesh has free surfaces.
 				
-				cellInfoBuffer(j,1)=0
-				cellInfoBuffer(j,2)=0
-				cellInfoBuffer(j,3)=0
-				cellInfoBuffer(j,4)=0
-				cellInfoBuffer(j,5)=0
+				cellInfoBuffer(1,j)=0
+				cellInfoBuffer(2,j)=0
+				cellInfoBuffer(3,j)=0
+				cellInfoBuffer(4,j)=0
+				cellInfoBuffer(5,j)=0
 				
 				!write(86,*) 'Sending empty buffer, proc', myProc%taskid, 'to', &
 				!	myProc%procNeighbor(j)
 				
-				call MPI_SEND(cellInfoBuffer(j,:), 5, MPI_INTEGER,myProc%procNeighbor(j),&
+				call MPI_SEND(cellInfoBuffer(:,j), 5, MPI_INTEGER,myProc%procNeighbor(j),&
 					251+j,comm,ierr)
 				
 				!Do nothing, free surface
@@ -427,10 +426,10 @@ do i=1,6
 			
 			!Add defects in recvDefectBuffer to correct boundary element (remove all other defects from boundary element first)
 			!and change the volume of the bondary mesh element
-			myBoundary(i,bndryCellNumber)%volume=cellVol
+			myBoundary(bndryCellNumber,i)%volume=cellVol
 			
 			!remove defects from myBoundary (except for first defect, this is all 0's and is just a placeholder)
-			defectCurrent=>myBoundary(i,bndryCellNumber)%defectList%next
+			defectCurrent=>myBoundary(bndryCellNumber,i)%defectList%next
 
 			nullify(defectPrev)
 			do while(associated(defectCurrent))
@@ -441,7 +440,7 @@ do i=1,6
 			end do
 			
 			!nullify the %next pointer in the first element of the defect list
-			defectCurrent=>myBoundary(i,bndryCellNumber)%defectList
+			defectCurrent=>myBoundary(bndryCellNumber,i)%defectList
 			
 !			nullify(defectCurrent%next)
 			
@@ -452,13 +451,13 @@ do i=1,6
 					numRecv=numDefects
 				else
 					numRecv=maxBufferSize
-				endif
+				end if
 				
 				!if(myProc%taskid==MASTER) write(*,*) 'recieving buffer', bufferCount, 'numDefectsRecv', numRecv
 					
-				allocate(recvDefectBuffer(numRecv,numSpecies+1))
+				allocate(recvDefectBuffer(numSpecies+1,numRecv))
 				
-				call MPI_IRECV(recvDefectBuffer,numRecv*(numSpecies+1),MPI_INTEGER,myProc%procNeighbor(i),&
+				call MPI_IRECV(recvDefectBuffer,(numSpecies+1)*numRecv,MPI_INTEGER,myProc%procNeighbor(i),&
 					351*tag+bufferCount,comm,request,ierr)
 					
 				call MPI_WAIT(request, status, ierr)
@@ -476,16 +475,16 @@ do i=1,6
 					defectCurrent=>defectCurrent%next
 					allocate(defectCurrent%defectType(numSpecies))
 					defectCurrent%cellNumber=bndryCellNumber
-					defectCurrent%num=recvDefectBuffer(j,numSpecies+1)
+					defectCurrent%num=recvDefectBuffer(numSpecies+1,j)
 					do k=1, numSpecies
-						defectCurrent%defectType(k)=recvDefectBuffer(j,k)
+						defectCurrent%defectType(k)=recvDefectBuffer(k,j)
 					end do
 					
 !					do k=1,numSpecies
-!						defectType(k)=recvDefectBuffer(j,k)
+!						defectType(k)=recvDefectBuffer(k,j)
 !					end do
 					
-					!if(myProc%taskid==MASTER) write(*,*) 'defect type', defectType, 'num', recvDefectBuffer(j,numSpecies+1)
+					!if(myProc%taskid==MASTER) write(*,*) 'defect type', defectType, 'num', recvDefectBuffer(numSpecies+1,j)
 
 !					nullify(defectPrev)
 !					call findDefectInList(defectCurrent, defectPrev, defectType)
@@ -515,7 +514,7 @@ do i=1,6
 !							defectPrev=>defectPrev%next
 !							allocate(defectPrev%defectType(numSpecies))
 !							defectPrev%cellNumber=cellNumber
-!							defectPrev%num=recvDefectBuffer(j,numSpecies+1)
+!							defectPrev%num=recvDefectBuffer(numSpecies+1,j)
 !							do k=1,numSpecies
 !								defectPrev%defectType(k)=defectType(k)
 !							end do
@@ -529,7 +528,7 @@ do i=1,6
 !						defectPrev=>defectPrev%next
 !						allocate(defectPrev%defectType(numSpecies))
 !						defectPrev%cellNumber=cellNumber
-!						defectPrev%num=recvDefectBuffer(j,numSpecies+1)
+!						defectPrev%num=recvDefectBuffer(numSpecies+1,j)
 !						do k=1,numSpecies
 !							defectPrev%defectType(k)=defectType(k)
 !						end do
@@ -567,9 +566,9 @@ do i=1,6
 					!processor, not a free surface)
 					if(myProc%procNeighbor(i) /= myProc%taskid .AND. &
 						myProc%procNeighbor(i) /= -1) then
-						neighborGrainID=myBoundary(i,myMesh(cellNumber)%neighbors(i,1))%material		
+						neighborGrainID=myBoundary(myMesh(cellNumber)%neighbors(1,i),i)%material
 					else
-						neighborGrainID=myMesh(myMesh(cellNumber)%neighbors(i,1))%material
+						neighborGrainID=myMesh(myMesh(cellNumber)%neighbors(1,i))%material
 					endif
 					
 					if(localGrainID==neighborGrainID) then
@@ -621,47 +620,47 @@ integer cell
 do cell=1,numCellsCascade
 	if(mod(cell,numxcascade)==0) then !identify cell to the right
 		!cascadeConnectivity(cell, 1)=cell-numxcascade+1
-		cascadeConnectivity(cell, 1)=0	!free in x
+		cascadeConnectivity(1, cell)=0	!free in x
 	else
-		cascadeConnectivity(cell,1)=cell+1
+		cascadeConnectivity(1, cell)=cell+1
 	end if
 	
 	if(mod(cell+numxcascade-1,numxcascade)==0) then !identify cell to the left
 		!cascadeConnectivity(cell,2)=cell+numxcascade-1
-		cascadeConnectivity(cell,2)=0	!free in x
+		cascadeConnectivity(2, cell)=0	!free in x
 	else
-		cascadeConnectivity(cell,2)=cell-1
+		cascadeConnectivity(2, cell)=cell-1
 	end if
 	
 	if(mod(cell,numxcascade*numycascade) > numxcascade*(numycascade-1) .OR. &
 		mod(cell,numxcascade*numycascade)==0) then
-		cascadeConnectivity(cell,3)=0	!free in y
+		cascadeConnectivity(3, cell)=0	!free in y
 		!cascadeConnectivity(cell,3)=cell-(numxcascade*(numycascade-1))
 	else
-		cascadeConnectivity(cell,3)=cell+numxcascade
+		cascadeConnectivity(3, cell)=cell+numxcascade
 	end if
 	
 	if(mod(cell,numxcascade*numycascade) <= numxcascade .AND. mod(cell, numxcascade*numycascade) /= 0) then
-		cascadeConnectivity(cell,4)=0	!free in y
+		cascadeConnectivity(4, cell)=0	!free in y
 		!cascadeConnectivity(cell,4)=cell+(numxcascade*(numycascade-1))
 	else
-		cascadeConnectivity(cell,4)=cell-numxcascade
+		cascadeConnectivity(4, cell)=cell-numxcascade
 	end if
 	
 	if(mod(cell,numxcascade*numycascade*numzcascade) > numxcascade*numycascade*(numzcascade-1) .OR. &
 		mod(cell, numxcascade*numycascade*numzcascade)==0) then
 		
-		cascadeConnectivity(cell,5)=0	!free in z
+		cascadeConnectivity(5, cell)=0	!free in z
 	else
-		cascadeConnectivity(cell,5)=cell+numxcascade*numycascade
+		cascadeConnectivity(5, cell)=cell+numxcascade*numycascade
 	end if
 	
 	if(mod(cell,numxcascade*numycascade*numzcascade) <= numxcascade*numycascade .AND. &
 		mod(cell,numxcascade*numycascade*numzcascade) /= 0) then
 		
-		cascadeConnectivity(cell,6)=0	!free in z
+		cascadeConnectivity(6, cell)=0	!free in z
 	else
-		cascadeConnectivity(cell,6)=cell-numxcascade*numycascade
+		cascadeConnectivity(6, cell)=cell-numxcascade*numycascade
 	end if
 end do
 

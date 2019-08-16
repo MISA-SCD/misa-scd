@@ -53,17 +53,17 @@ double precision cascadeElementVol						!<volume of a cascade element (nm^3)
 integer numMaterials						!<Number of material types (eg. copper, niobium or bulk, grain boundary)
 integer numSpecies							!<Number of chemical species (typically set to 4: He, V, SIA_glissile, SIA_sessile)
 
-type(formationSingle), allocatable :: FormSingle(:,:)           !<Parameters for formation of single defects
-type(diffusionSingle), allocatable :: DiffSingle(:,:)			!<Parameters for diffusion of single defects
-type(diffusionFunction), allocatable :: DiffFunc(:,:)			!<Parameters for functional forms of diffusion rates for defects
-type(bindingSingle), allocatable :: BindSingle(:,:)				!<Parameters for binding of single defects
-type(bindingFunction), allocatable :: BindFunc(:,:)				!<Parameters for functional forms of binding energies for defects
-type(reactionParameters), allocatable :: DissocReactions(:,:)	!<List of allowed dissociation reactions (and ref. to functional form of reaction rate)
-type(reactionParameters), allocatable :: DiffReactions(:,:)		!<List of allowed diffusion reactions (and ref. to functional form of reaction rate)
-type(reactionParameters), allocatable :: SinkReactions(:,:)		!<List of allowed sink reactions (and ref. to functional form of reaction rate)
-type(reactionParameters), allocatable :: ImpurityReactions(:,:)	!<List of allowed impurity reactions (and ref. to functional form of reaction rate)
-type(reactionParameters), allocatable :: ClusterReactions(:,:)	!<List of allowed clustering reactions (and ref. to functional form of reaction rate)
-type(reactionParameters), allocatable :: ImplantReactions(:,:)	!<List of allowed implantation reactions (and ref. to functional form of reaction rate)
+type(formationSingle), allocatable :: FormSingle(:,:)           !<Parameters for formation of single defects--(numSingleForm(matNum),matNum)
+type(diffusionSingle), allocatable :: DiffSingle(:,:)			!<Parameters for diffusion of single defects--(numSingleDiff(matNum),matNum)
+type(diffusionFunction), allocatable :: DiffFunc(:,:)			!<Parameters for functional forms of diffusion rates for defects--(numFuncDiff(matNum),matNum)
+type(bindingSingle), allocatable :: BindSingle(:,:)				!<Parameters for binding of single defects--(numSingleBind(matNum),matNum)
+type(bindingFunction), allocatable :: BindFunc(:,:)				!<Parameters for functional forms of binding energies for defects--(numFuncBind(matNum),matNum)
+type(reactionParameters), allocatable :: DissocReactions(:,:)	!<List of allowed dissociation reactions (and ref. to functional form of reaction rate)--(numDissocReac(matNum),matNum)
+type(reactionParameters), allocatable :: DiffReactions(:,:)		!<List of allowed diffusion reactions (and ref. to functional form of reaction rate)--(numDiffReac(matNum),matNum)
+type(reactionParameters), allocatable :: SinkReactions(:,:)		!<List of allowed sink reactions (and ref. to functional form of reaction rate)--(numSinkReac(matNum),matNum)
+type(reactionParameters), allocatable :: ImpurityReactions(:,:)	!<List of allowed impurity reactions (and ref. to functional form of reaction rate)--(numImpurityReac(matNum),matNum)
+type(reactionParameters), allocatable :: ClusterReactions(:,:)	!<List of allowed clustering reactions (and ref. to functional form of reaction rate)--(numClusterReac(matNum),matNum)
+type(reactionParameters), allocatable :: ImplantReactions(:,:)	!<List of allowed implantation reactions (and ref. to functional form of reaction rate)--(numImplantReac(matNum),matNum)
 
 integer, allocatable :: numSingleForm(:)    !<Number of single defect formation energy in input file
 integer, allocatable :: numSingleDiff(:)	!<Number of single defect diffusion rates in input file

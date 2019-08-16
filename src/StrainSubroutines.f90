@@ -115,23 +115,23 @@ integer dipoleID
 
 !Find the defect type in the dipole tensor list (if it is there)
 dipoleID=0
-do 1 i=1,numDipole
+do i=1,numDipole
 	 
 	same=0
-	do 2 j=1,numSpecies
+	do j=1,numSpecies
 	
-		if(dipoleStore(i)%min(j) .LE. defectType(j)) then
-			if(dipoleStore(i)%max(j) .GE. defectType(j)) then
+		if(dipoleStore(i)%min(j) <= defectType(j)) then
+			if(dipoleStore(i)%max(j) >= defectType(j)) then
 				same=same+1
 			endif
 		endif
 	
-	2 continue
+	end do
 	if(same==numSpecies) then
 		dipoleID=i
 	endif
 
-1 continue
+end do
 
 if(dipoleID == 0) then
 	!No dipole tensor for defects of this type
@@ -197,50 +197,50 @@ double precision, parameter :: Param=0.0
 !If it is in neither, it outputs an error message (defect type should not exist)
 !***************************************************************************************************
 
-do 10 i=1,numSingleDiff(matNum)
+do i=1,numSingleDiff(matNum)
 	numSame=0
-	do 11 j=1,numSpecies
-		if(DefectType(j)==DiffSingle(matNum,i)%defectType(j)) then
+	do j=1,numSpecies
+		if(DefectType(j)==DiffSingle(i,matNum)%defectType(j)) then
 			numSame=numSame+1
-		endif
-	11 continue
+		end if
+	end do
 	if (numSame==numSpecies) then
 		if(matNum==2) then
 		
-			Diff=DiffSingle(matNum,i)%D*dexp(-(DiffSingle(matNum,i)%Em-Param)/(kboltzmann*temperature))
+			Diff=DiffSingle(i,matNum)%D*dexp(-(DiffSingle(i,matNum)%Em-Param)/(kboltzmann*temperature))
 			exit
 		
 		else
 			
 			DeltaEm=calculateDeltaEm(cellNumber, defectType)
-			Diff=DiffSingle(matNum,i)%D*dexp(-(DiffSingle(matNum,i)%Em+DeltaEm)/(kboltzmann*temperature))
+			Diff=DiffSingle(i,matNum)%D*dexp(-(DiffSingle(i,matNum)%Em+DeltaEm)/(kboltzmann*temperature))
 			exit
 		
 		endif
 	endif
-10 continue
+end do
 
 if(i==numSingleDiff(matNum)+1) then	!did not find defect in single defect list
-	do 12 i=1,numFuncDiff(matNum)
+	do i=1,numFuncDiff(matNum)
 		numSame=0
-		do 13 j=1,numSpecies
-			if(DefectType(j)==0 .AND. DiffFunc(matNum,i)%defectType(j)==0) then
+		do j=1,numSpecies
+			if(DefectType(j)==0 .AND. DiffFunc(i,matNum)%defectType(j)==0) then
 				numSame=numSame+1
-			else if(DefectType(j) .NE. 0 .AND. DiffFunc(matNum,i)%defectType(j)==1) then
-				if(DefectType(j) .GE. DiffFunc(matNum,i)%min(j)) then
-				if(DefectType(j) .LE. DiffFunc(matNum,i)%max(j) .OR. DiffFunc(matNum,i)%max(j)==-1) then
+			else if(DefectType(j) /= 0 .AND. DiffFunc(i,matNum)%defectType(j)==1) then
+				if(DefectType(j) >= DiffFunc(i,matNum)%min(j)) then
+				if(DefectType(j) <= DiffFunc(i,matNum)%max(j) .OR. DiffFunc(i,matNum)%max(j)==-1) then
 					numSame=numSame+1
 				endif
 				endif
 			endif
-		13 continue
+		end do
 		if(numSame==numSpecies) then
 		
-			Diff=DiffusivityComputeStrain(DefectType, DiffFunc(matNum,i)%functionType, DiffFunc(matNum,i)%numParam,&
-				DiffFunc(matNum,i)%parameters, cellNumber)
+			Diff=DiffusivityComputeStrain(DefectType, DiffFunc(i,matNum)%functionType, DiffFunc(i,matNum)%numParam,&
+				DiffFunc(i,matNum)%parameters, cellNumber)
 				exit
 		endif
-	12 continue
+	end do
 	if(i==numFuncDiff(matNum)+1) then
 		write(*,*) 'error defect diffusion not allowed'
 		write(*,*) DefectType
