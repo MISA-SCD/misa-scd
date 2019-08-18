@@ -2292,8 +2292,7 @@ end do
 outputDefectList%cellNumber=0
 outputDefectList%num=0
 
-!call MPI_ALLREDUCE(numAnnihilate,numAnnihilateTotal,1,MPI_INTEGER,MPI_SUM,comm,ierr)
-call MPI_ALLREDUCE(numImpAnn,totalImpAnn,2,MPI_INTEGER,MPI_SUM,comm,ierr)
+!call MPI_ALLREDUCE(numImpAnn,totalImpAnn,2,MPI_INTEGER,MPI_SUM,comm,ierr)
 
 if(myProc%taskid==MASTER) then
 	
@@ -2748,8 +2747,7 @@ end do
 outputDefectList%cellNumber=0
 outputDefectList%num=0
 
-!call MPI_ALLREDUCE(numAnnihilate,numAnnihilateTotal,1,MPI_INTEGER,MPI_SUM,comm,ierr)
-call MPI_ALLREDUCE(numImpAnn,totalImpAnn,2,MPI_INTEGER,MPI_SUM,comm,ierr)
+!call MPI_ALLREDUCE(numImpAnn,totalImpAnn,2,MPI_INTEGER,MPI_SUM,comm,ierr)
 
 if(myProc%taskid==MASTER) then
 	

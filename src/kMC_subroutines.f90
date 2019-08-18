@@ -3,13 +3,13 @@
 !!(this is a global timestep)
 !*****************************************************************************************
 
-double precision function GenerateTimestep()
+real function GenerateTimestep()
 use DerivedType
 use mod_constants
 use randdp
 implicit none
 
-double precision r1
+real r1
 
 r1=dprand()
 GenerateTimestep=1/maxRate*dlog(dble(1d0/r1))
@@ -148,25 +148,25 @@ else
 	
 	!for post processing: count annihilation reactions (hard coded)
 	if(reactionCurrent%numReactants==2) then	!clustering reaction
-		if(reactionCurrent%reactants(1,2) /= 0 .AND. reactionCurrent%reactants(2,3) /= 0) then	!V+SIA_mobile
+		if(reactionCurrent%reactants(2,1) /= 0 .AND. reactionCurrent%reactants(3,2) /= 0) then	!V+SIA_mobile
 			
-!			numAnnihilate=numAnnihilate+min(reactionCurrent%reactants(1,2),reactionCurrent%reactants(2,3))
-            numImpAnn(2)=numImpAnn(2)+min(reactionCurrent%reactants(1,2),reactionCurrent%reactants(2,3))
+!			numAnnihilate=numAnnihilate+min(reactionCurrent%reactants(1,2),reactionCurrent%reactants(3,2))
+            numImpAnn(2)=numImpAnn(2)+min(reactionCurrent%reactants(2,1),reactionCurrent%reactants(3,2))
 		
-		else if(reactionCurrent%reactants(1,2) /= 0 .AND. reactionCurrent%reactants(2,4) /= 0) then	!V+SIA_sessile
+		else if(reactionCurrent%reactants(2,1) /= 0 .AND. reactionCurrent%reactants(4,2) /= 0) then	!V+SIA_sessile
 		
-!			numAnnihilate=numAnnihilate+min(reactionCurrent%reactants(1,2),reactionCurrent%reactants(2,4))
-            numImpAnn(2)=numImpAnn(2)+min(reactionCurrent%reactants(1,2),reactionCurrent%reactants(2,4))
+!			numAnnihilate=numAnnihilate+min(reactionCurrent%reactants(2,1),reactionCurrent%reactants(4,2))
+            numImpAnn(2)=numImpAnn(2)+min(reactionCurrent%reactants(2,1),reactionCurrent%reactants(4,2))
 		
-		else if(reactionCurrent%reactants(1,3) /= 0 .AND. reactionCurrent%reactants(2,2) /= 0) then	!SIA_mobile+V
+		else if(reactionCurrent%reactants(3,1) /= 0 .AND. reactionCurrent%reactants(2,2) /= 0) then	!SIA_mobile+V
 		
-!			numAnnihilate=numAnnihilate+min(reactionCurrent%reactants(1,3),reactionCurrent%reactants(2,2))
-            numImpAnn(2)=numImpAnn(2)+min(reactionCurrent%reactants(1,3),reactionCurrent%reactants(2,2))
+!			numAnnihilate=numAnnihilate+min(reactionCurrent%reactants(3,1),reactionCurrent%reactants(2,2))
+            numImpAnn(2)=numImpAnn(2)+min(reactionCurrent%reactants(3,1),reactionCurrent%reactants(2,2))
 		
-		else if(reactionCurrent%reactants(1,4) /= 0 .AND. reactionCurrent%reactants(2,2) /= 0) then !SIA_sessile+V
+		else if(reactionCurrent%reactants(4,1) /= 0 .AND. reactionCurrent%reactants(2,2) /= 0) then !SIA_sessile+V
 		
-!			numAnnihilate=numAnnihilate+min(reactionCurrent%reactants(1,4),reactionCurrent%reactants(2,2))
-            numImpAnn(2)=numImpAnn(2)+min(reactionCurrent%reactants(1,4),reactionCurrent%reactants(2,2))
+!			numAnnihilate=numAnnihilate+min(reactionCurrent%reactants(4,1),reactionCurrent%reactants(2,2))
+            numImpAnn(2)=numImpAnn(2)+min(reactionCurrent%reactants(4,1),reactionCurrent%reactants(2,2))
 		
 		endif
 	endif
@@ -179,14 +179,14 @@ else
 			if(myMesh(reactionCurrent%cellNumber(1))%material == 1 .AND. &
 				myMesh(reactionCurrent%cellNumber(2))%material == 2) then	!trapping on grain boundary
 			
-				numTrapV=numTrapV+reactionCurrent%reactants(1,2)
-				numTrapSIA=numTrapSIA+reactionCurrent%reactants(1,3)
+				numTrapV=numTrapV+reactionCurrent%reactants(2,1)
+				numTrapSIA=numTrapSIA+reactionCurrent%reactants(3,1)
 			
 			else if(myMesh(reactionCurrent%cellNumber(1))%material==2 .AND. &
 					myMesh(reactionCurrent%cellNumber(2))%material==1) then	!emission from grain boundary
 				
-				numEmitV=numEmitV+reactionCurrent%reactants(1,2)
-				numEmitSIA=numEmitSIA+reactionCurrent%reactants(1,3)
+				numEmitV=numEmitV+reactionCurrent%reactants(2,1)
+				numEmitSIA=numEmitSIA+reactionCurrent%reactants(3,1)
 			
 			end if
   		end if
@@ -285,25 +285,25 @@ else
 	
 	!for post processing: count annihilation reactions (hard coded)
 	if(reactionCurrent%numReactants==2) then	!clustering reaction
-		if(reactionCurrent%reactants(1,2) /= 0 .AND. reactionCurrent%reactants(2,3) /= 0) then	!V+SIA_mobile
+		if(reactionCurrent%reactants(2,1) /= 0 .AND. reactionCurrent%reactants(3,2) /= 0) then	!V+SIA_mobile
 			
-!			numAnnihilate=numAnnihilate+min(reactionCurrent%reactants(1,2),reactionCurrent%reactants(2,3))
-            numImpAnn(2)=numImpAnn(2)+min(reactionCurrent%reactants(1,2),reactionCurrent%reactants(2,3))
+!			numAnnihilate=numAnnihilate+min(reactionCurrent%reactants(2,1),reactionCurrent%reactants(3,2))
+            numImpAnn(2)=numImpAnn(2)+min(reactionCurrent%reactants(2,1),reactionCurrent%reactants(3,2))
 		
-		else if(reactionCurrent%reactants(1,2) /= 0 .AND. reactionCurrent%reactants(2,4) /= 0) then	!V+SIA_sessile
+		else if(reactionCurrent%reactants(2,1) /= 0 .AND. reactionCurrent%reactants(4,2) /= 0) then	!V+SIA_sessile
 		
-!			numAnnihilate=numAnnihilate+min(reactionCurrent%reactants(1,2),reactionCurrent%reactants(2,4))
-            numImpAnn(2)=numImpAnn(2)+min(reactionCurrent%reactants(1,2),reactionCurrent%reactants(2,4))
+!			numAnnihilate=numAnnihilate+min(reactionCurrent%reactants(2,1),reactionCurrent%reactants(4,2))
+            numImpAnn(2)=numImpAnn(2)+min(reactionCurrent%reactants(2,1),reactionCurrent%reactants(4,2))
 		
-		else if(reactionCurrent%reactants(1,3) /= 0 .AND. reactionCurrent%reactants(2,2) /= 0) then	!SIA_mobile+V
+		else if(reactionCurrent%reactants(3,1) /= 0 .AND. reactionCurrent%reactants(2,2) /= 0) then	!SIA_mobile+V
 		
-!			numAnnihilate=numAnnihilate+min(reactionCurrent%reactants(1,3),reactionCurrent%reactants(2,2))
-            numImpAnn(2)=numImpAnn(2)+min(reactionCurrent%reactants(1,3),reactionCurrent%reactants(2,2))
+!			numAnnihilate=numAnnihilate+min(reactionCurrent%reactants(3,1),reactionCurrent%reactants(2,2))
+            numImpAnn(2)=numImpAnn(2)+min(reactionCurrent%reactants(3,1),reactionCurrent%reactants(2,2))
 		
-		else if(reactionCurrent%reactants(1,4) /= 0 .AND. reactionCurrent%reactants(2,2) /= 0) then !SIA_sessile+V
+		else if(reactionCurrent%reactants(4,1) /= 0 .AND. reactionCurrent%reactants(2,2) /= 0) then !SIA_sessile+V
 		
-!			numAnnihilate=numAnnihilate+min(reactionCurrent%reactants(1,4),reactionCurrent%reactants(2,2))
-            numImpAnn(2)=numImpAnn(2)+min(reactionCurrent%reactants(1,4),reactionCurrent%reactants(2,2))
+!			numAnnihilate=numAnnihilate+min(reactionCurrent%reactants(4,1),reactionCurrent%reactants(2,2))
+            numImpAnn(2)=numImpAnn(2)+min(reactionCurrent%reactants(4,1),reactionCurrent%reactants(2,2))
 		
 		endif
 	endif
@@ -364,14 +364,15 @@ integer product2(numSpecies)
 double precision diffusionRandom
 logical flag, isCombined
 integer step
+integer recvDir
 
 !Used for cascade recombination
 double precision r1, atemp
 
 !Used for communication between processors
 !defect update counters
-integer numUpdateLocal(6)			!<the number of defects being sent to each processor neighbor
-integer numUpdateBndry(6)			!<the number of defects being recieved from each processor neighbor
+integer numUpdateLocal(6)		!<the number of defects being sent to each processor neighbor
+integer numUpdateBndry(6)		!<the number of defects being recieved from each processor neighbor
 
 integer count, numDefectsRecv
 integer numUpdateLocalRecv(6), numUpdateBndryRecv(6)	!number of defects being recieved from each proc neighbor
@@ -384,38 +385,55 @@ integer numUpdateFinal(6), numUpdateFinalRecv(6)		!number of defects being sent/
 !create buffers of information to send to neighboring elements
 integer, allocatable :: localBuffer(:,:,:)		!(direction, count, defectType+cellNumber+numDefects) array containing which processor to send to,
 integer, allocatable :: bndryBuffer(:,:,:)		!the number of defects to send this way, and the defect information (defectType, cell number, and new number of defects)
-integer, allocatable :: finalBuffer(:,:,:)		
+integer, allocatable :: finalBuffer(:,:,:)
+
+integer, allocatable :: localRecv(:,:,:)
+integer, allocatable :: bndryRecv(:,:,:)
+integer, allocatable :: finalRecv(:,:,:)
+
 integer, allocatable :: localBufferSend(:,:), localBufferRecv(:,:)	!temporary buffers used for sending/recieving data taken from localBuffer and bndryBuffer
 integer, allocatable :: bndryBufferSend(:,:), bndryBufferRecv(:,:)
 integer, allocatable :: finalBufferSend(:,:), finalBufferRecv(:,:)
 
 integer status(MPI_STATUS_SIZE)
+integer sendLocalStatus(MPI_STATUS_SIZE,6), recvBndryStatus(MPI_STATUS_SIZE,6)
+integer sendBndryStatus(MPI_STATUS_SIZE,6), recvLocalStatus(MPI_STATUS_SIZE,6)
+integer sendFinalStatus(MPI_STATUS_SIZE,6), recvFinalStatus(MPI_STATUS_SIZE,6)
+
+integer sendLocalRequest(6), recvBndryRequest(6)
+integer sendBndryRequest(6), recvLocalRequest(6)
+integer sendFinalRequest(6), recvFinalRequest(6)
 
 interface
 	subroutine findDefectInList(defectCurrent, defectPrev, products)
-	use DerivedType
-	use mod_constants
-	type(defect), pointer :: defectCurrent, defectPrev
-	integer products(numSpecies)
+		use DerivedType
+		use mod_constants
+		implicit none
+		type(defect), pointer :: defectCurrent, defectPrev
+		integer products(numSpecies)
 	end subroutine
 	
 	subroutine chooseCascade(CascadeTemp)
-	use DerivedType
-	type(cascadeEvent), pointer :: CascadeTemp
+		use DerivedType
+		implicit none
+		type(cascadeEvent), pointer :: CascadeTemp
 	end subroutine
 	
 	subroutine initializeFineMesh(CascadeCurrent)
-	use DerivedType
-	type(cascade), pointer :: CascadeCurrent
+		use DerivedType
+		type(cascade), pointer :: CascadeCurrent
 	end subroutine
 end interface
 
 !initialize the trackers of number of defects to update
-do i=1,6
-	numUpdateLocal(i)=0
-	numUpdateBndry(i)=0
-end do
+numUpdateLocal(1:6)=0
+numUpdateBndry(1:6)=0
+numUpdateLocalRecv(1:6)=0
+numUpdateBndryRecv(1:6)=0
+numUpdateFinal(1:6)=0
+numUpdateBndryRecv(1:6)=0
 
+totalLocalRecv=0
 mixingEvents=0
 
 if(associated(reactionCurrent)) then	!if we have not chosen a null event
@@ -1156,10 +1174,132 @@ if(associated(reactionCurrent)) then	!if we have not chosen a null event
 	!Reactions in the fine mesh
 		!write(86,*) 'Fine Mesh Reaction Chosen'
 		!create buffers: size greater than max size needed (at most numReactants and numProducts to change)
-		allocate(localBuffer(6,reactionCurrent%numReactants+reactionCurrent%numProducts,numSpecies+3))
-		allocate(bndryBuffer(6,reactionCurrent%numReactants+reactionCurrent%numProducts,numSpecies+2))
-		
-		!Remove reactants from the system
+		allocate(localBuffer(numSpecies+3,reactionCurrent%numProducts,6))
+	!	allocate(bndryBuffer(numSpecies+2,reactionCurrent%numReactants+reactionCurrent%numProducts,6))
+
+        allocate(bndryRecv(numSpecies+3,4,6))
+        allocate(localRecv(numSpecies+2,1,6))
+
+        !***********************************************************************
+        !Here, I will assume cubic cells. If a defect migrates from one cell to another,
+        !the defect will be given a percent chance of removal from the system
+        !based on the cell size (%chance of removal = cell size/grain size)
+        !This is to replicate the OKMC practice of removing SIA clusters after they
+        !migrate 1 um.
+        !***********************************************************************
+        flag=.FALSE.
+        if(grainBoundaryToggle=='yes') then
+
+            !we have toggled the use of grain boundaries to remove defects from system
+
+            if(reactionCurrent%numReactants==1 .and. reactionCurrent%numProducts==1) then
+                diffusionRandom=dprand()
+
+                !randomly choose whether to remove this defect from the system according to the mean free path (parameter) and the
+                !length of the volume element that the defect is currently in
+                if(diffusionRandom <= fineLength/meanFreePath) then
+                    flag=.TRUE.
+                    !reactionCurrent%numProducts=0 !remove that defect from system
+                    !we can no longer remove the defect in this way because changing the reaction list
+                    !is no longer allowed (reaction list is not re-created at each step)
+                end if
+            end if
+        end if
+
+        !Update buffer if needed (only relevant for diffusion from fine to coarse mesh)
+        if(flag .eqv. .FALSE.) then
+            do i=1, reactionCurrent%numProducts
+
+                if(reactionCurrent%taskid(i+reactionCurrent%numReactants) /= -1 .AND. &
+                        reactionCurrent%cellNumber(i+reactionCurrent%numReactants)==0) then
+
+                    !First update local buffer if needed
+                    !write(86,*) 'Fine to coarse reaction'
+                    do j=1,6
+                        do k=1,myMesh(cascadeCurrent%cellNumber)%numNeighbors(j)
+
+                            if(myMesh(cascadeCurrent%cellNumber)%neighborProcs(k,j) /= myProc%taskid .AND. &
+                                    myMesh(cascadeCurrent%cellNumber)%neighborProcs(k,j)/=-1) then
+
+                                !neighboring element not in this proc
+                                numUpdateLocal(j)=numUpdateLocal(j)+1
+
+                                !species
+                                do l=1,numSpecies
+                                    localBuffer(l,numUpdateLocal(j),j)=reactionCurrent%products(l,i)
+                                end do
+
+                                !cell number in local mesh
+                                localBuffer(numSpecies+1,numUpdateLocal(j),j)=cascadeCurrent%cellNumber
+
+                                !cell number of neighbor (in different proc)
+                                localBuffer(numSpecies+3,numUpdateLocal(j),j)= &
+                                        myMesh(cascadeCurrent%cellNumber)%neighbors(k,j)
+
+                                !number of defects to be increased by 1
+                                localBuffer(numSpecies+2,numUpdateLocal(j),j)=1
+
+                            end if
+                        end do
+                    end do
+                end if
+            end do
+        end if
+
+        !Communication
+        do i=1,6
+
+            if(mod(i,2)==0) then
+                recvDir=i-1
+            else
+                recvDir=i+1
+            end if
+
+            !Send
+            if(myProc%procNeighbor(i) /= myProc%taskid .AND. numUpdateLocal(i) /= 0) then
+                tag = myProc%procNeighbor(i)
+                call MPI_ISEND(localBuffer(:,1:numUpdateLocal(i),i),(numSpecies+3)*numUpdateLocal(i),&
+                        MPI_INTEGER,myProc%procNeighbor(i), tag ,comm,sendLocalRequest(i),ierr)
+            end if
+
+            !Recv
+            if(myProc%procNeighbor(recvDir) /= myProc%taskid) then
+                !Recv Bndry
+                flag=.FALSE.
+                count=0
+                call MPI_IPROBE(myProc%procNeighbor(recvDir), myProc%procNeighbor(recvDir),comm,flag,status,ierr)
+                if(flag .eqv. .TRUE.) then
+                    call MPI_GET_COUNT(status,MPI_INTEGER,count,ierr)
+                    numUpdateBndryRecv(recvDir) = count/(numSpecies+3)
+                    if(numUpdateBndryRecv(recvDir) /= 0) then
+                        tag = myProc%procNeighbor(recvDir)
+                        call MPI_IRECV(bndryRecv(:,1:numUpdateBndryRecv(recvDir),recvDir),&
+                                (numSpecies+3)*numUpdateBndryRecv(recvDir),MPI_INTEGER,myProc%procNeighbor(recvDir),&
+                                tag,comm,recvBndryRequest(recvDir),ierr)
+                    end if
+                end if
+
+                !Recv Local
+                flag=.FALSE.
+                count=0
+                call MPI_IPROBE(myProc%procNeighbor(recvDir), myProc%numtasks+myProc%procNeighbor(recvDir),&
+                        comm,flag,status,ierr)
+                if(flag .eqv. .TRUE.) then
+                    call MPI_GET_COUNT(status,MPI_INTEGER,count,ierr)
+                    numUpdateLocalRecv(recvDir) = count/(numSpecies+2)
+                    if(numUpdateLocalRecv(recvDir) /= 0) then
+                        tag = myProc%numtasks+myProc%procNeighbor(recvDir)
+                        totalLocalRecv=totalLocalRecv+numUpdateLocalRecv(recvDir)
+                        call MPI_IRECV(localRecv(:,1:numUpdateLocalRecv(recvDir),recvDir),&
+                                (numSpecies+2)*numUpdateLocalRecv(recvDir),MPI_INTEGER,&
+                                myProc%procNeighbor(recvDir),tag,comm,recvLocalRequest(recvDir),ierr)
+                    end if
+                end if
+            end if
+        end do
+
+
+        !Remove reactants from the system
 		do i=1, reactionCurrent%numReactants
 			
 			!create a new element in defectUpdate and assign all variables except for num (will do later)
@@ -1170,7 +1310,7 @@ if(associated(reactionCurrent)) then	!if we have not chosen a null event
 			allocate(defectUpdateCurrent%defectType(numSpecies))
 			
 			do j=1,numSpecies
-				defectUpdateCurrent%defectType(j)=reactionCurrent%reactants(i,j)
+				defectUpdateCurrent%defectType(j)=reactionCurrent%reactants(j,i)
 			end do
 			
 			defectUpdateCurrent%cellNumber=reactionCurrent%cellNumber(i)	!the cell is the fineMeshID
@@ -1184,7 +1324,7 @@ if(associated(reactionCurrent)) then	!if we have not chosen a null event
 			do while(associated(defectCurrent)) !search for reactant defect
 				same=0
 				do j=1,numSpecies
-					if(defectCurrent%defectType(j)==reactionCurrent%reactants(i,j)) then
+					if(defectCurrent%defectType(j)==reactionCurrent%reactants(j,i)) then
 						same=same+1
 					endif
 				end do
@@ -1246,34 +1386,34 @@ if(associated(reactionCurrent)) then	!if we have not chosen a null event
 				!decrease the number of defects by 1 if the number of defects is greater than 1
 				defectCurrent%num=defectCurrent%num-1 !remove the defect from the system instead of the entire entry in the list
 				defectUpdateCurrent%num=-1	!tell updateReactionList the new number of defects in the cell
-			endif
+			end if
 		end do
 
-		!***********************************************************************
-		!Here, I will assume cubic cells. If a defect migrates from one cell to another,
-		!the defect will be given a percent chance of removal from the system
-		!based on the cell size (%chance of removal = cell size/grain size)
-		!This is to replicate the OKMC practice of removing SIA clusters after they
-		!migrate 1 um.
-		!***********************************************************************
-		flag=.FALSE.
-		if(grainBoundaryToggle=='yes') then	
-		
+	!	!***********************************************************************
+	!	!Here, I will assume cubic cells. If a defect migrates from one cell to another,
+	!	!the defect will be given a percent chance of removal from the system
+	!	!based on the cell size (%chance of removal = cell size/grain size)
+	!	!This is to replicate the OKMC practice of removing SIA clusters after they
+	!	!migrate 1 um.
+	!	!***********************************************************************
+	!	flag=.FALSE.
+	!	if(grainBoundaryToggle=='yes') then
+
 		!we have toggled the use of grain boundaries to remove defects from system
 		
-			if(reactionCurrent%numReactants==1 .and. reactionCurrent%numProducts==1) then 
-				diffusionRandom=dprand()
+	!		if(reactionCurrent%numReactants==1 .and. reactionCurrent%numProducts==1) then
+	!			diffusionRandom=dprand()
 				
 				!randomly choose whether to remove this defect from the system according to the mean free path (parameter) and the
 				!length of the volume element that the defect is currently in
-				if(diffusionRandom <= fineLength/meanFreePath) then
-					flag=.TRUE.
+	!			if(diffusionRandom <= fineLength/meanFreePath) then
+	!				flag=.TRUE.
 					!reactionCurrent%numProducts=0 !remove that defect from system
 					!we can no longer remove the defect in this way because changing the reaction list
 					!is no longer allowed (reaction list is not re-created at each step)
-				endif		
-			endif
-		endif
+	!			end if
+	!		end if
+	!	end if
 	
 		!adding products to the system
 		
@@ -1306,8 +1446,8 @@ if(associated(reactionCurrent)) then	!if we have not chosen a null event
 					
 					nullify(defectPrev)
 					do j=1,numSpecies
-						products(j)=reactionCurrent%products(i,j)
-						defectUpdateCurrent%defectType(j)=reactionCurrent%products(i,j)
+						products(j)=reactionCurrent%products(j,i)
+						defectUpdateCurrent%defectType(j)=reactionCurrent%products(j,i)
 					end do
 					
 					if(reactionCurrent%cellNumber(i+reactionCurrent%numReactants)==0) then
@@ -1335,37 +1475,37 @@ if(associated(reactionCurrent)) then	!if we have not chosen a null event
 	
 					call findDefectInList(defectCurrent, defectPrev, products)
 					
-					if(reactionCurrent%cellNumber(i+reactionCurrent%numReactants)==0) then	!diffusion: fine-to-coarse
+				!	if(reactionCurrent%cellNumber(i+reactionCurrent%numReactants)==0) then	!diffusion: fine-to-coarse
 						!First update local buffer if needed
 						!write(86,*) 'Fine to coarse reaction'
-						do j=1,6
-							do k=1,myMesh(cascadeCurrent%cellNumber)%numNeighbors(j)
+				!		do j=1,6
+				!			do k=1,myMesh(cascadeCurrent%cellNumber)%numNeighbors(j)
 
-								if(myMesh(cascadeCurrent%cellNumber)%neighborProcs(j,k) /= myProc%taskid .AND. &
-									myMesh(cascadeCurrent%cellNumber)%neighborProcs(j,k)/=-1) then
+				!				if(myMesh(cascadeCurrent%cellNumber)%neighborProcs(k,j) /= myProc%taskid .AND. &
+				!					myMesh(cascadeCurrent%cellNumber)%neighborProcs(k,j)/=-1) then
 								
 									!neighboring element not in this proc
-									numUpdateLocal(j)=numUpdateLocal(j)+1
+				!					numUpdateLocal(j)=numUpdateLocal(j)+1
 									
 									!species
-									do l=1,numSpecies
-										localBuffer(j,numUpdateLocal(j),l)=reactionCurrent%products(i,l)
-									end do
+				!					do l=1,numSpecies
+				!						localBuffer(l,numUpdateLocal(j),j)=reactionCurrent%products(l,i)
+				!					end do
 									
 									!cell number in local mesh
-									localBuffer(j,numUpdateLocal(j),numSpecies+1)=cascadeCurrent%cellNumber
+				!					localBuffer(numSpecies+1,numUpdateLocal(j),j)=cascadeCurrent%cellNumber
 									
 									!cell number of neighbor (in different proc)
-									localBuffer(j,numUpdateLocal(j),numSpecies+3)=myMesh(cascadeCurrent%cellNumber)%neighbors(j,k)
+				!					localBuffer(numSpecies+3,numUpdateLocal(j),j)=myMesh(cascadeCurrent%cellNumber)%neighbors(k,j)
 									
 									!number of defects to be increased by 1
-									localBuffer(j,numUpdateLocal(j),numSpecies+2)=1
+				!					localBuffer(numSpecies+2,numUpdateLocal(j),j)=1
 
-								end if
-							end do
-						end do
+				!				end if
+				!			end do
+				!		end do
 					
-					end if
+				!	end if
 					
 					!*********************************************
 					!Update defects
@@ -1397,7 +1537,7 @@ if(associated(reactionCurrent)) then	!if we have not chosen a null event
 							defectPrev%num=1
 							
 							do j=1,numSpecies
-								defectPrev%defectType(j)=reactionCurrent%products(i,j)
+								defectPrev%defectType(j)=reactionCurrent%products(j,i)
 							end do
 							
 							!if inserted defect is in the middle of the list, point it to the next item in the list
@@ -1415,7 +1555,7 @@ if(associated(reactionCurrent)) then	!if we have not chosen a null event
 						defectPrev%num=1
 						
 						do j=1,numSpecies
-							defectPrev%defectType(j)=reactionCurrent%products(i,j)
+							defectPrev%defectType(j)=reactionCurrent%products(j,i)
 						end do
 
 					endif
@@ -1438,8 +1578,219 @@ if(associated(reactionCurrent)) then	!if we have not chosen a null event
 	else	!Reactions in the coarse mesh
 
 		!create buffers: size greater than max size needed (at most numReactants and numProducts to change)
-		allocate(localBuffer(6,reactionCurrent%numReactants+reactionCurrent%numProducts,numSpecies+3))
-		allocate(bndryBuffer(6,reactionCurrent%numReactants+reactionCurrent%numProducts,numSpecies+2))
+		allocate(localBuffer(numSpecies+3,reactionCurrent%numReactants+reactionCurrent%numProducts,6))
+		allocate(bndryBuffer(numSpecies+2,reactionCurrent%numProducts,6))
+
+        allocate(bndryRecv(numSpecies+3,4,6))
+        allocate(localRecv(numSpecies+2,1,6))
+
+        !First update local buffer if needed
+        do i=1, reactionCurrent%numReactants
+
+            nullify(defectPrev)
+            defectCurrent=>defectList(reactionCurrent%cellNumber(i))
+
+            !Check that defectCurrent is pointing towards the reactant
+            do while(associated(defectCurrent)) !search for reactant defect
+                same=0
+                do j=1,numSpecies
+                    if(defectCurrent%defectType(j)==reactionCurrent%reactants(j,i)) then
+                        same=same+1
+                    endif
+                end do
+                if(same==numSpecies) then
+                    exit
+                end if
+                defectPrev=>defectCurrent
+                defectCurrent=>defectCurrent%next
+            end do
+
+            do j=1,6
+                do k=1,myMesh(reactionCurrent%cellNumber(i))%numNeighbors(j)	!k==1
+                if(myMesh(reactionCurrent%cellNumber(i))%neighborProcs(k,j) /= myProc%taskid .AND. &
+                        myMesh(reactionCurrent%cellNumber(i))%neighborProcs(k,j) /= -1) then	!neighboring element not in this proc
+
+                    numUpdateLocal(j)=numUpdateLocal(j)+1
+
+                    do l=1,numSpecies
+                        localBuffer(l,numUpdateLocal(j),j)=reactionCurrent%reactants(l,i)
+                    end do
+
+                    !Cell Number in local mesh
+                    localBuffer(numSpecies+1,numUpdateLocal(j),j)=reactionCurrent%cellNumber(i)
+
+                    !Cell number in boundary mesh
+                    localBuffer(numSpecies+3,numUpdateLocal(j),j)=myMesh(reactionCurrent%cellNumber(i))%neighbors(k,j)
+
+                    if(associated(defectCurrent)) then
+                        localBuffer(numSpecies+2,numUpdateLocal(j),j)=-1	!indetify the num of defects to be updated
+                    else
+                        write(*,*) 'Error tried to delete defect that wasnt there and send to neighboring proc'
+                    end if
+                end if
+                end do
+            end do
+        end do
+
+        !***********************************************************************
+        !Here, I will assume cubic cells. If a defect migrates from one cell to another,
+        !the defect will be given a percent chance of removal from the system
+        !based on the cell size (%chance of removal = cell size/grain size)
+        !This is to replicate the OKMC practice of removing SIA clusters after they
+        !migrate 1 um.
+        !***********************************************************************
+
+        flag=.FALSE.
+        if(grainBoundaryToggle=='yes') then
+
+            !we have toggled the use of grain boundaries to remove defects from system
+            !7/18/2014: NOTE that if we have diffusion from coarse mesh to fine mesh, the length
+            !of the coarse mesh element will be used to calculate the probability of grain boundary
+            !absorption, instead of the effective coarse to fine length. This could be changed if desired.
+
+            if(reactionCurrent%numReactants==1 .and. reactionCurrent%numProducts==1) then
+                diffusionRandom=dprand()
+
+                !randomly choose whether to remove this defect from the system according to the mean free path (parameter) and the
+                !length of the volume element that the defect is currently in
+                if(diffusionRandom <= myMesh(reactionCurrent%cellNumber(1))%length/meanFreePath) then
+                    flag=.TRUE.
+                    !reactionCurrent%numProducts=0 !remove that defect from system
+                    !we can no longer remove the defect in this way because changing the reaction list
+                    !is no longer allowed (reaction list is not re-created at each step)
+                end if
+            end if
+        end if
+
+        if(flag .eqv. .FALSE.) then
+
+            do i=1, reactionCurrent%numProducts
+
+                if(reactionCurrent%taskid(i+reactionCurrent%numReactants) == -1) then
+
+                else if(reactionCurrent%cellNumber(i+reactionCurrent%numReactants) < 0) then	!diffusion: coarse-to-fine
+
+                    !Diffusion to neighbor processes
+                else if(reactionCurrent%taskid(i+reactionCurrent%numReactants) /= myProc%taskid .AND. &
+                        reactionCurrent%taskid(i+reactionCurrent%numReactants) /= -1) then
+
+                    !we have identified a defect that needs to be added to a neighboring processor and the boundary mesh
+                    do j=1,6
+                        do k=1,myMesh(reactionCurrent%cellNumber(1))%numNeighbors(j)	!k=1
+                         if(flag .EQV. .FALSE.) then
+                             if(myMesh(reactionCurrent%cellNumber(1))%neighbors(k,j)==&
+                                     reactionCurrent%cellNumber(i+reactionCurrent%numReactants) .AND. &
+                                     myMesh(reactionCurrent%cellNumber(1))%neighborProcs(k,j)==&
+                                             reactionCurrent%taskid(i+reactionCurrent%numReactants)) then
+
+                                 numUpdateBndry(j)=numUpdateBndry(j)+1
+                                 do l=1,numSpecies
+                                     bndryBuffer(l,numUpdateBndry(j),j)=reactionCurrent%products(l,i)
+                                 end do
+                                 bndryBuffer(numSpecies+1,numUpdateBndry(j),j)=&
+                                         reactionCurrent%cellNumber(i+reactionCurrent%numReactants)
+                                 bndryBuffer(numSpecies+2,numUpdateBndry(j),j)=1	!indicates we are adding one defect
+                                 flag=.TRUE.
+                             end if
+                         end if
+                        end do
+                    end do
+
+                else
+                    !First update local buffer if needed
+                    do j=1,6
+                        do k=1,myMesh(reactionCurrent%cellNumber(i+reactionCurrent%numReactants))%numNeighbors(j)
+                        if(myMesh(reactionCurrent%cellNumber(i+reactionCurrent%numReactants))%neighborProcs(k,j)==-1) then
+                                !do nothing, free surface
+                        else if(myMesh(reactionCurrent%cellNumber(i+reactionCurrent%numReactants))%neighborProcs(k,j) &
+                                /= myProc%taskid) then	!neighboring element not in this proc
+
+                            numUpdateLocal(j)=numUpdateLocal(j)+1
+
+                            !species
+                            do l=1,numSpecies
+                                localBuffer(l,numUpdateLocal(j),j)=reactionCurrent%products(l,i)
+                            end do
+
+                            !cell number in local mesh
+                            localBuffer(numSpecies+1,numUpdateLocal(j),j)=&
+                                    reactionCurrent%cellNumber(i+reactionCurrent%numReactants)
+
+                            !cell number of neighbor (in different proc)
+                            localBuffer(numSpecies+3,numUpdateLocal(j),j)=&
+                                    myMesh(reactionCurrent%cellNumber(i+reactionCurrent%numReactants))%neighbors(k,j)
+
+                            !number of defects to be increased by 1
+                            localBuffer(numSpecies+2,numUpdateLocal(j),j)=1
+
+                        end if
+                        end do
+                    end do
+                end if
+            end do
+        end if
+
+        !Communication
+        do i=1,6
+
+            if(mod(i,2)==0) then
+                recvDir=i-1
+            else
+                recvDir=i+1
+            end if
+
+            !Send
+            if(myProc%procNeighbor(i) /= myProc%taskid) then
+                !Send Local
+                if(numUpdateLocal(i) /= 0) then
+                    tag = myProc%procNeighbor(i)
+                    call MPI_ISEND(localBuffer(:,1:numUpdateLocal(i),i),(numSpecies+3)*numUpdateLocal(i),&
+                            MPI_INTEGER,myProc%procNeighbor(i),tag ,comm,sendLocalRequest(i),ierr)
+                end if
+
+                !Send Bndry
+                if(numUpdateBndry(i) /= 0) then
+                    tag = myProc%numtasks+myProc%procNeighbor(i)
+                    call MPI_ISEND(bndryBuffer(:,1:numUpdateBndry(i),i),(numSpecies+2)*numUpdateBndry(i),&
+                            MPI_INTEGER,myProc%procNeighbor(i),tag ,comm,sendBndryRequest(i),ierr)
+                end if
+            end if
+
+            !Recv
+            if(myProc%procNeighbor(recvDir) /= myProc%taskid) then
+                !Recv Bndry
+                flag=.FALSE.
+                count=0
+                call MPI_IPROBE(myProc%procNeighbor(recvDir), myProc%procNeighbor(recvDir),comm,flag,status,ierr)
+                if(flag .eqv. .TRUE.) then
+                    call MPI_GET_COUNT(status,MPI_INTEGER,count,ierr)
+                    numUpdateBndryRecv(recvDir) = count/(numSpecies+3)
+                    if(numUpdateBndryRecv(recvDir) /= 0) then
+                        tag = myProc%procNeighbor(recvDir)
+                        call MPI_IRECV(bndryRecv(:,1:numUpdateBndryRecv(recvDir),recvDir),&
+                                (numSpecies+3)*numUpdateBndryRecv(recvDir),MPI_INTEGER,myProc%procNeighbor(recvDir),&
+                                tag ,comm,recvBndryRequest(recvDir),ierr)
+                    end if
+                end if
+
+                !Recv Local
+                flag=.FALSE.
+                count=0
+                call MPI_IPROBE(myProc%procNeighbor(recvDir), myProc%numtasks+myProc%procNeighbor(recvDir),&
+                        comm,flag,status,ierr)
+                if(flag .eqv. .TRUE.) then
+                    call MPI_GET_COUNT(status,MPI_INTEGER,count,ierr)
+                    numUpdateLocalRecv(recvDir) = count/(numSpecies+2)
+                    if(numUpdateLocalRecv(recvDir) /= 0) then
+                        tag = myProc%numtasks+myProc%procNeighbor(recvDir)
+                        totalLocalRecv=totalLocalRecv+numUpdateLocalRecv(recvDir)
+                        call MPI_IRECV(localRecv(:,1:numUpdateLocalRecv(recvDir),recvDir),&
+                                (numSpecies+2)*numUpdateLocalRecv(recvDir),MPI_INTEGER,&
+                                myProc%procNeighbor(recvDir),tag,comm,recvLocalRequest(recvDir),ierr)
+                    end if
+                end if
+            end if
+        end do
 
 		!removing reactants from the system
 		do i=1, reactionCurrent%numReactants
@@ -1451,7 +1802,7 @@ if(associated(reactionCurrent)) then	!if we have not chosen a null event
 			defectUpdateCurrent%dir=0	!not pointed at a different proc
 			allocate(defectUpdateCurrent%defectType(numSpecies))
 			do j=1,numSpecies
-				defectUpdateCurrent%defectType(j)=reactionCurrent%reactants(i,j)
+				defectUpdateCurrent%defectType(j)=reactionCurrent%reactants(j,i)
 			end do
 			defectUpdateCurrent%cellNumber=reactionCurrent%cellNumber(i)
 			defectUpdateCurrent%neighbor=0	!not pointed at a different proc
@@ -1465,7 +1816,7 @@ if(associated(reactionCurrent)) then	!if we have not chosen a null event
 			do while(associated(defectCurrent)) !search for reactant defect
 				same=0
 				do j=1,numSpecies
-					if(defectCurrent%defectType(j)==reactionCurrent%reactants(i,j)) then
+					if(defectCurrent%defectType(j)==reactionCurrent%reactants(j,i)) then
 						same=same+1
 					endif
 				end do
@@ -1477,32 +1828,32 @@ if(associated(reactionCurrent)) then	!if we have not chosen a null event
 			end do
 
 			!First update local buffer if needed
-			do j=1,6
-				do k=1,myMesh(reactionCurrent%cellNumber(i))%numNeighbors(j)	!k==1
-					if(myMesh(reactionCurrent%cellNumber(i))%neighborProcs(j,k) /= myProc%taskid .AND. &
-						myMesh(reactionCurrent%cellNumber(i))%neighborProcs(j,k) /= -1) then	!neighboring element not in this proc
+		!	do j=1,6
+		!		do k=1,myMesh(reactionCurrent%cellNumber(i))%numNeighbors(j)	!k==1
+		!			if(myMesh(reactionCurrent%cellNumber(i))%neighborProcs(k,j) /= myProc%taskid .AND. &
+		!				myMesh(reactionCurrent%cellNumber(i))%neighborProcs(k,j) /= -1) then	!neighboring element not in this proc
 						
-						numUpdateLocal(j)=numUpdateLocal(j)+1
+		!				numUpdateLocal(j)=numUpdateLocal(j)+1
 						
-						do l=1,numSpecies
-							localBuffer(j,numUpdateLocal(j),l)=reactionCurrent%reactants(i,l)
-						end do
+		!				do l=1,numSpecies
+		!					localBuffer(l,numUpdateLocal(j),j)=reactionCurrent%reactants(l,i)
+		!				end do
 						
 						!Cell Number in local mesh
-						localBuffer(j,numUpdateLocal(j),numSpecies+1)=reactionCurrent%cellNumber(i)
+		!				localBuffer(numSpecies+1,numUpdateLocal(j),j)=reactionCurrent%cellNumber(i)
 						
 						!Cell number in boundary mesh
-						localBuffer(j,numUpdateLocal(j),numSpecies+3)=myMesh(reactionCurrent%cellNumber(i))%neighbors(j,k)
+		!				localBuffer(numSpecies+3,numUpdateLocal(j),j)=myMesh(reactionCurrent%cellNumber(i))%neighbors(k,j)
 						
-						if(associated(defectCurrent)) then
-							localBuffer(j,numUpdateLocal(j),numSpecies+2)=-1	!indetify the num of defects to be updated
-						else
-							write(*,*) 'Error tried to delete defect that wasnt there and send to neighboring proc'
-						end if
+		!				if(associated(defectCurrent)) then
+		!					localBuffer(numSpecies+2,numUpdateLocal(j),j)=-1	!indetify the num of defects to be updated
+		!				else
+		!					write(*,*) 'Error tried to delete defect that wasnt there and send to neighboring proc'
+		!				end if
 
-					end if
-				end do
-			end do
+		!			end if
+		!		end do
+		!	end do
 			
 			!If reactant defect is not in the list, then we have chosen a reaction that shouldn't exist
 			if(associated(defectCurrent) .EQV. .FALSE.) then
@@ -1575,8 +1926,8 @@ if(associated(reactionCurrent)) then	!if we have not chosen a null event
 		!migrate 1 um.
 		!***********************************************************************
 		
-		flag=.FALSE.
-		if(grainBoundaryToggle=='yes') then	
+	!	flag=.FALSE.
+	!	if(grainBoundaryToggle=='yes') then
 		
 		!we have toggled the use of grain boundaries to remove defects from system
 		!
@@ -1584,19 +1935,19 @@ if(associated(reactionCurrent)) then	!if we have not chosen a null event
 		!of the coarse mesh element will be used to calculate the probability of grain boundary
 		!absorption, instead of the effective coarse to fine length. This could be changed if desired.
 		
-			if(reactionCurrent%numReactants==1 .and. reactionCurrent%numProducts==1) then 
-				diffusionRandom=dprand()
+	!		if(reactionCurrent%numReactants==1 .and. reactionCurrent%numProducts==1) then
+	!			diffusionRandom=dprand()
 				
 				!randomly choose whether to remove this defect from the system according to the mean free path (parameter) and the
 				!length of the volume element that the defect is currently in
-				if(diffusionRandom <= myMesh(reactionCurrent%cellNumber(1))%length/meanFreePath) then
-					flag=.TRUE.
+	!			if(diffusionRandom <= myMesh(reactionCurrent%cellNumber(1))%length/meanFreePath) then
+	!				flag=.TRUE.
 					!reactionCurrent%numProducts=0 !remove that defect from system
 					!we can no longer remove the defect in this way because changing the reaction list
 					!is no longer allowed (reaction list is not re-created at each step)
-				endif		
-			endif
-		endif
+	!			endif
+	!		endif
+	!	endif
 	
 		!adding products to the system
 		
@@ -1655,8 +2006,8 @@ if(associated(reactionCurrent)) then	!if we have not chosen a null event
 					
 					nullify(defectPrev)
 					do j=1,numSpecies
-						products(j)=reactionCurrent%products(i,j)
-						defectUpdateCurrent%defectType(j)=reactionCurrent%products(i,j)
+						products(j)=reactionCurrent%products(j,i)
+						defectUpdateCurrent%defectType(j)=reactionCurrent%products(j,i)
 					end do
 					
 					!Point CascadeCurrent at the correct cascade
@@ -1710,7 +2061,7 @@ if(associated(reactionCurrent)) then	!if we have not chosen a null event
 							defectPrev%cellNumber=defectUpdateCurrent%cellNumber
 							defectPrev%num=1
 							do j=1,numSpecies
-								defectPrev%defectType(j)=reactionCurrent%products(i,j)
+								defectPrev%defectType(j)=reactionCurrent%products(j,i)
 							end do
 							defectPrev%next=>defectCurrent !if inserted defect is in the middle of the list, point it to the next item in the list
 						end if
@@ -1723,7 +2074,7 @@ if(associated(reactionCurrent)) then	!if we have not chosen a null event
 						defectPrev%cellNumber=defectUpdateCurrent%cellNumber
 						defectPrev%num=1
 						do j=1,numSpecies
-							defectPrev%defectType(j)=reactionCurrent%products(i,j)
+							defectPrev%defectType(j)=reactionCurrent%products(j,i)
 						end do
 					end if
 
@@ -1760,28 +2111,28 @@ if(associated(reactionCurrent)) then	!if we have not chosen a null event
 					!as we are not changing anything physical within the system, but I have not found a bug and the results
 					!match expected results so far. Will continue to keep an eye out for a bug in this routine.
 					!**************************************************************************************************
-					flag=.FALSE.
+				!	flag=.FALSE.
 					
-					do j=1,6
-						do k=1,myMesh(reactionCurrent%cellNumber(1))%numNeighbors(j)	!k=1
-							if(flag .EQV. .FALSE.) then
-								if(myMesh(reactionCurrent%cellNumber(1))%neighbors(j,k)==&
-									reactionCurrent%cellNumber(i+reactionCurrent%numReactants) .AND. &
-									myMesh(reactionCurrent%cellNumber(1))%neighborProcs(j,k)==&
-									reactionCurrent%taskid(i+reactionCurrent%numReactants)) then
+				!	do j=1,6
+				!		do k=1,myMesh(reactionCurrent%cellNumber(1))%numNeighbors(j)	!k=1
+				!			if(flag .EQV. .FALSE.) then
+				!				if(myMesh(reactionCurrent%cellNumber(1))%neighbors(k,j)==&
+				!					reactionCurrent%cellNumber(i+reactionCurrent%numReactants) .AND. &
+				!					myMesh(reactionCurrent%cellNumber(1))%neighborProcs(k,j)==&
+				!					reactionCurrent%taskid(i+reactionCurrent%numReactants)) then
 			
-									numUpdateBndry(j)=numUpdateBndry(j)+1
-									do l=1,numSpecies
-										bndryBuffer(j,numUpdateBndry(j),l)=reactionCurrent%products(i,l)
-									end do
-									bndryBuffer(j,numUpdateBndry(j),numSpecies+1)=&
-										reactionCurrent%cellNumber(i+reactionCurrent%numReactants)
-									bndryBuffer(j,numUpdateBndry(j),numSpecies+2)=1	!indicates we are adding one defect
-									flag=.TRUE.
-								end if
-							end if
-						end do
-					end do
+				!					numUpdateBndry(j)=numUpdateBndry(j)+1
+				!					do l=1,numSpecies
+				!						bndryBuffer(l,numUpdateBndry(j),j)=reactionCurrent%products(l,i)
+				!					end do
+				!					bndryBuffer(numSpecies+1,numUpdateBndry(j),j)=&
+				!						reactionCurrent%cellNumber(i+reactionCurrent%numReactants)
+				!					bndryBuffer(numSpecies+2,numUpdateBndry(j),j)=1	!indicates we are adding one defect
+				!					flag=.TRUE.
+				!				end if
+				!			end if
+				!		end do
+				!	end do
 					
 					!update the direction in defectUpdateCurrent (used for updating reaction lists)
 					!create a new element in defectUpdate and assign all variables except for num and dir (will do later)
@@ -1790,8 +2141,8 @@ if(associated(reactionCurrent)) then	!if we have not chosen a null event
 						!if myBoundary at this cell has defectList associated, then it is a boundary element for a local element in this cell.
 						!NOTE: this will not work in the case of a non-uniform mesh (because there could be more
 						!than one local neighbor, will have to change to localNeighbor())
-						if(myBoundary(j,reactionCurrent%cellNumber(i+reactionCurrent%numReactants))%localNeighbor /= 0 &
-							.AND. myBoundary(j,reactionCurrent%cellNumber(i+reactionCurrent%numReactants))%proc == &
+						if(myBoundary(reactionCurrent%cellNumber(i+reactionCurrent%numReactants),j)%localNeighbor /= 0 &
+							.AND. myBoundary(reactionCurrent%cellNumber(i+reactionCurrent%numReactants),j)%proc == &
 							reactionCurrent%taskid(i+reactionCurrent%numReactants)) then
 							
 							!Create next entry in defectUpdate (used for updating reaction lists)
@@ -1807,16 +2158,16 @@ if(associated(reactionCurrent)) then	!if we have not chosen a null event
 							
 							!This information is used to tell us which element in the local
 							!processor bounds this element in myBoundary
-							defectUpdateCurrent%neighbor=myBoundary(j,reactionCurrent%cellNumber(i+reactionCurrent%numReactants))&
+							defectUpdateCurrent%neighbor=myBoundary(reactionCurrent%cellNumber(i+reactionCurrent%numReactants),j)&
 								%localNeighbor		
 							
 							do l=1,numSpecies
-								products(l)=reactionCurrent%products(i,l)
-								defectUpdateCurrent%defectType(l)=reactionCurrent%products(i,l)
+								products(l)=reactionCurrent%products(l,i)
+								defectUpdateCurrent%defectType(l)=reactionCurrent%products(l,i)
 							end do
 							
 							!Find defect in defect list on myBoundary
-							defectCurrent=>myBoundary(j,reactionCurrent%cellNumber(i+reactionCurrent%numReactants))%defectList
+							defectCurrent=>myBoundary(reactionCurrent%cellNumber(i+reactionCurrent%numReactants),j)%defectList
 	
 							call findDefectInList(defectCurrent, defectPrev, products)
 	
@@ -1843,7 +2194,7 @@ if(associated(reactionCurrent)) then	!if we have not chosen a null event
 									defectPrev%cellNumber=reactionCurrent%cellNumber(i+reactionCurrent%numReactants)
 									defectPrev%num=1
 									do l=1,numSpecies
-										defectPrev%defectType(l)=reactionCurrent%products(i,l)
+										defectPrev%defectType(l)=reactionCurrent%products(l,i)
 									end do
 									defectPrev%next=>defectCurrent !if inserted defect is in the middle of the list, point it to the next item in the list
 								endif
@@ -1856,7 +2207,7 @@ if(associated(reactionCurrent)) then	!if we have not chosen a null event
 								defectPrev%cellNumber=reactionCurrent%cellNumber(i+reactionCurrent%numReactants)
 								defectPrev%num=1
 								do l=1,numSpecies
-									defectPrev%defectType(l)=reactionCurrent%products(i,l)
+									defectPrev%defectType(l)=reactionCurrent%products(l,i)
 								end do
 							end if
 						end if
@@ -1879,8 +2230,8 @@ if(associated(reactionCurrent)) then	!if we have not chosen a null event
 					
 					nullify(defectPrev)
 					do j=1,numSpecies
-						products(j)=reactionCurrent%products(i,j)
-						defectUpdateCurrent%defectType(j)=reactionCurrent%products(i,j)
+						products(j)=reactionCurrent%products(j,i)
+						defectUpdateCurrent%defectType(j)=reactionCurrent%products(j,i)
 					end do
 					
 					defectCurrent=>defectList(reactionCurrent%cellNumber(i+reactionCurrent%numReactants))
@@ -1891,33 +2242,33 @@ if(associated(reactionCurrent)) then	!if we have not chosen a null event
 					call findDefectInList(defectCurrent, defectPrev, products)
 	
 					!First update local buffer if needed
-					do j=1,6
-						do k=1,myMesh(reactionCurrent%cellNumber(i+reactionCurrent%numReactants))%numNeighbors(j)
-							if(myMesh(reactionCurrent%cellNumber(i+reactionCurrent%numReactants))%neighborProcs(j,k)==-1) then
+				!	do j=1,6
+				!		do k=1,myMesh(reactionCurrent%cellNumber(i+reactionCurrent%numReactants))%numNeighbors(j)
+				!			if(myMesh(reactionCurrent%cellNumber(i+reactionCurrent%numReactants))%neighborProcs(k,j)==-1) then
 								!do nothing, free surface
-							else if(myMesh(reactionCurrent%cellNumber(i+reactionCurrent%numReactants))%neighborProcs(j,k) &
-								/= myProc%taskid) then	!neighboring element not in this proc
+				!			else if(myMesh(reactionCurrent%cellNumber(i+reactionCurrent%numReactants))%neighborProcs(k,j) &
+				!				/= myProc%taskid) then	!neighboring element not in this proc
 							
-								numUpdateLocal(j)=numUpdateLocal(j)+1
+				!				numUpdateLocal(j)=numUpdateLocal(j)+1
 								
 								!species
-								do l=1,numSpecies
-									localBuffer(j,numUpdateLocal(j),l)=reactionCurrent%products(i,l)
-								end do
+				!				do l=1,numSpecies
+				!					localBuffer(l,numUpdateLocal(j),j)=reactionCurrent%products(l,i)
+				!				end do
 								
 								!cell number in local mesh
-								localBuffer(j,numUpdateLocal(j),numSpecies+1)=reactionCurrent%cellNumber(i+reactionCurrent%numReactants)
+				!				localBuffer(numSpecies+1,numUpdateLocal(j),j)=reactionCurrent%cellNumber(i+reactionCurrent%numReactants)
 								
 								!cell number of neighbor (in different proc)
-								localBuffer(j,numUpdateLocal(j),numSpecies+3)=myMesh(reactionCurrent%cellNumber(i+reactionCurrent%numReactants))&
-									%neighbors(j,k)
+				!				localBuffer(numSpecies+3,numUpdateLocal(j),j)=myMesh(reactionCurrent%cellNumber(i+reactionCurrent%numReactants))&
+				!					%neighbors(k,j)
 								
 								!number of defects to be increased by 1
-								localBuffer(j,numUpdateLocal(j),numSpecies+2)=1
+				!				localBuffer(numSpecies+2,numUpdateLocal(j),j)=1
 
-							end if
-						end do
-					end do
+				!			end if
+				!		end do
+				!	end do
 					
 					!***************************************
 					!Update defects within coarse mesh
@@ -1948,7 +2299,7 @@ if(associated(reactionCurrent)) then	!if we have not chosen a null event
 							defectPrev%cellNumber=reactionCurrent%cellNumber(i+reactionCurrent%numReactants)
 							defectPrev%num=1
 							do j=1,numSpecies
-								defectPrev%defectType(j)=reactionCurrent%products(i,j)
+								defectPrev%defectType(j)=reactionCurrent%products(j,i)
 							end do
 							defectPrev%next=>defectCurrent !if inserted defect is in the middle of the list, point it to the next item in the list
 						endif
@@ -1961,7 +2312,7 @@ if(associated(reactionCurrent)) then	!if we have not chosen a null event
 						defectPrev%cellNumber=reactionCurrent%cellNumber(i+reactionCurrent%numReactants)
 						defectPrev%num=1
 						do j=1,numSpecies
-							defectPrev%defectType(j)=reactionCurrent%products(i,j)
+							defectPrev%defectType(j)=reactionCurrent%products(j,i)
 						end do
 					end if
 					
@@ -1980,354 +2331,614 @@ end if	!if associated(reactionCurrent)
 !Step 2: send/recieve data about local and boundary defects that have changed
 !*************
 
-do i=1,6
+!do i=1,6
 
-	if(myProc%procNeighbor(i) /= myProc%taskid) then
+!	if(myProc%procNeighbor(i) /= myProc%taskid) then
 
-		call MPI_SEND(numUpdateLocal(i),1,MPI_INTEGER,myProc%procNeighbor(i),200+i,comm, ierr)	!number of local defects that have changed on boundary of processor i
-		call MPI_SEND(numUpdateBndry(i),1,MPI_INTEGER,myProc%procNeighbor(i),i+6,comm, ierr)		!number of defects in the mesh of processor i that have changed (diffusion only)
+!		call MPI_SEND(numUpdateLocal(i),1,MPI_INTEGER,myProc%procNeighbor(i),200+i,comm, ierr)	!number of local defects that have changed on boundary of processor i
+!		call MPI_SEND(numUpdateBndry(i),1,MPI_INTEGER,myProc%procNeighbor(i),i+6,comm, ierr)		!number of defects in the mesh of processor i that have changed (diffusion only)
 		
 		!EDIT: need to only send the first numUpdateLocal(i) elements of localBuffer(i,:,:)
-		if(numUpdateLocal(i) /= 0) then
+!		if(numUpdateLocal(i) /= 0) then
 
-			allocate(localBufferSend(numUpdateLocal(i),numSpecies+3))
+!			allocate(localBufferSend(numSpecies+3,numUpdateLocal(i)))
 			
-			do j=1,numUpdateLocal(i)
-				do k=1,numSpecies+3
-					localBufferSend(j,k)=localBuffer(i,j,k)
-				end do
-			end do
+!			do j=1,numUpdateLocal(i)
+!				do k=1,numSpecies+3
+!					localBufferSend(k,j)=localBuffer(k,j,i)
+!				end do
+!			end do
 
-			call MPI_SEND(localBufferSend,numUpdateLocal(i)*(numSpecies+3), MPI_INTEGER, &
-				myProc%procNeighbor(i),i+12,comm,ierr)
+!			call MPI_SEND(localBufferSend,(numSpecies+3)*numUpdateLocal(i), MPI_INTEGER, &
+!				myProc%procNeighbor(i),i+12,comm,ierr)
 
-			deallocate(localBufferSend)
+!			deallocate(localBufferSend)
 
-		end if
+!		end if
 		
-		if(numUpdateBndry(i) /= 0) then
+!		if(numUpdateBndry(i) /= 0) then
 
-			allocate(bndryBufferSend(numUpdateBndry(i),numSpecies+2))
+!			allocate(bndryBufferSend(numSpecies+2,numUpdateBndry(i)))
 			
-			do j=1,numUpdateBndry(i)
-				do k=1,numSpecies+2
-					bndryBufferSend(j,k)=bndryBuffer(i,j,k)
-				end do
-			end do
+!			do j=1,numUpdateBndry(i)
+!				do k=1,numSpecies+2
+!					bndryBufferSend(k,j)=bndryBuffer(k,j,i)
+!				end do
+!			end do
 
-			call MPI_SEND(bndryBufferSend,numUpdateBndry(i)*(numSpecies+2), MPI_INTEGER, &
-				myProc%procNeighbor(i),i+18,comm,ierr)
-			deallocate(bndryBufferSend)
+!			call MPI_SEND(bndryBufferSend,(numSpecies+2)*numUpdateBndry(i), MPI_INTEGER, &
+!				myProc%procNeighbor(i),i+18,comm,ierr)
+!			deallocate(bndryBufferSend)
 
-		end if
+!		end if
 
-	end if
-end do
+!	end if
+!end do
 
 !**************
 !Step 3: Recieve data about local/bdry defects that have changed and update defectList and myBoundary accordingly
 !**************
 
-do i=1,6
-	numUpdateFinal(i)=0
-end do
-totalLocalRecv=0
+!do i=1,6
+!	numUpdateFinal(i)=0
+!end do
+!totalLocalRecv=0
 
-do i=1,6
+!do i=1,6
 
 	!We have to switch the tags on MPI_RECV in order for the correct send/recieve pair to be exchanged
-	if(i==1 .OR. i==3 .OR. i==5) then
-		tag=i+1
-	else
-		tag=i-1
-	endif
+!	if(i==1 .OR. i==3 .OR. i==5) then
+!		tag=i+1
+!	else
+!		tag=i-1
+!	endif
 	
-	if(myProc%procNeighbor(i) /= myProc%taskid) then
+!	if(myProc%procNeighbor(i) /= myProc%taskid) then
 
-		call MPI_RECV(numUpdateBndryRecv(i),1,MPI_INTEGER,myProc%procNeighbor(i),200+tag,comm,status,ierr)	!number of bndry defects that have changed (local to processor i, boundary here)
-		call MPI_RECV(numUpdateLocalRecv(i),1,MPI_INTEGER,myProc%procNeighbor(i),tag+6,comm,status,ierr)	!number of local defects that have changed (bndry to processor i, local here)
-		totalLocalRecv=totalLocalRecv+numUpdateLocalRecv(i)
-	endif
-end do
+!		call MPI_RECV(numUpdateBndryRecv(i),1,MPI_INTEGER,myProc%procNeighbor(i),200+tag,comm,status,ierr)	!number of bndry defects that have changed (local to processor i, boundary here)
+!		call MPI_RECV(numUpdateLocalRecv(i),1,MPI_INTEGER,myProc%procNeighbor(i),tag+6,comm,status,ierr)	!number of local defects that have changed (bndry to processor i, local here)
+!		totalLocalRecv=totalLocalRecv+numUpdateLocalRecv(i)
+!	endif
+!end do
 !if(totalLocalRecv /= 0) then
 !        write(*,*) 'proc', myProc%taskid, 'totalLocalRecv', totalLocalRecv
 !end if
-allocate(finalBuffer(6,totalLocalRecv,numSpecies+3))
-
+allocate(finalBuffer(numSpecies+3,totalLocalRecv,6))
 !Update defectList
 do i=1,6
+
+    if(numUpdateBndryRecv(i) /= 0) then
+
+        !Add defects in bndryRecv to myBoundary()
+        call MPI_WAIT(recvBndryRequest(i),recvBndryStatus(:,i),ierr)
+
+        do j=1,numUpdateBndryRecv(i)
+
+            !create a new element in defectUpdate and assign all variables except for num (will do later)
+            allocate(defectUpdateCurrent%next)
+            defectUpdateCurrent=>defectUpdateCurrent%next
+            defectUpdateCurrent%proc=myProc%procNeighbor(i)
+            defectUpdateCurrent%dir=i
+            allocate(defectUpdateCurrent%defectType(numSpecies))
+            defectUpdateCurrent%cellNumber=bndryRecv(numSpecies+1,j,i)
+            defectUpdateCurrent%num=bndryRecv(numSpecies+2,j,i)	!This will be +/- 1 only
+            defectUpdateCurrent%cascadeNumber=0	!not inside a cascade
+            nullify(defectUpdateCurrent%next)
+
+            !This information is used to tell us which element in the local
+            !processor bounds this element in myBoundary
+            defectUpdateCurrent%neighbor=bndryRecv(numSpecies+3,j,i)
+
+            !point defectCurrent at the defect list in the correct cell of myBoundary
+            defectCurrent=>myBoundary(bndryRecv(numSpecies+1,j,i),i)%defectList
+            if(.NOT. associated(defectCurrent)) then
+                write(*,*) 'error myBoundary not allocated correctly'
+                write(*,*) 'dir', i, 'cell', bndryRecv(numSpecies+1,j,i)
+                call MPI_ABORT(comm,ierr)
+            end if
+
+            do k=1,numSpecies
+                products(k)=bndryRecv(k,j,i)
+                defectUpdateCurrent%defectType(k)=bndryRecv(k,j,i)	!used to update reaction lists
+            end do
+
+            !point DefectCurrent at the defect we are looking for (if it is there), otherwise
+            !point defectCurrent after and defectPrev before where it should go in defectList.
+            nullify(defectPrev)
+            call findDefectInList(defectCurrent, defectPrev, products)
+
+            !Next update defects in myBoundary
+            if(associated(defectCurrent)) then !if we aren't at the end of the list
+
+                same=0
+                do l=1,numSpecies
+                    if(defectCurrent%defectType(l)==products(l)) then
+                        same=same+1
+                    end if
+                end do
+                if(same==numSpecies) then	!if the defect is already present in the list
+                    defectCurrent%num=defectCurrent%num+bndryRecv(numSpecies+2,j,i) !this will be +/- 1 only
+
+                    !2019.05.26 Debug: if the defect of this type is at the end of the defectList
+                    !if there is one defect of this type and it is in the middle of the defectList
+                    if(defectCurrent%num==0 .AND. associated(defectCurrent%next) .AND. associated(defectPrev)) then
+                        !delete this defect from the list in myBoundary
+                        defectPrev%next=>defectCurrent%next !remove that defect type from the system
+                        deallocate(defectCurrent%defectType)
+                        deallocate(defectCurrent)
+                        nullify(defectCurrent)
+                        !if there is one defect of this type and it is 	at the end of the defectList
+                    else if(defectCurrent%num==0 .AND. associated(defectPrev)) then
+                        deallocate(defectCurrent%defectType)
+                        deallocate(defectCurrent)
+                        nullify(defectCurrent)
+                        nullify(defectPrev%next)
+                    end if
+                else		!if the defect is to be inserted in the list
+
+                    if(bndryRecv(numSpecies+2,j,i) == -1) then
+                        write(*,*) 'defectCurrent associated', defectCurrent%defectType, 'num', defectCurrent%num
+                        if(associated(defectPrev)) write(*,*) 'defectPrev', defectPrev%defectType, 'num', defectPrev%num
+                        write(*,*) 'error in defectUpdate negative defect numbers', myProc%taskid
+                        write(*,*) 'proc', myProc%taskid, 'dir', i, 'neighbor proc', myProc%procNeighbor(i)
+                        write(*,*) (bndryRecv(k,j,i),k=1,numSpecies+2)
+
+                        call MPI_ABORT(comm,ierr)
+
+                    else
+                        nullify(defectPrev%next)
+                        allocate(defectPrev%next)
+                        nullify(defectPrev%next%next)
+                        defectPrev=>defectPrev%next
+                        allocate(defectPrev%defectType(numSpecies))
+                        defectPrev%cellNumber=bndryRecv(numSpecies+1,j,i)
+                        defectPrev%num=bndryRecv(numSpecies+2,j,i)	!This will be +/- 1 only
+
+                        do l=1,numSpecies
+                            defectPrev%defectType(l)=bndryRecv(l,j,i)
+                        end do
+                        defectPrev%next=>defectCurrent !if inserted defect is in the middle of the list, point it to the next item in the list
+                    end if
+
+                end if
+            else 			!add a defect to the end of the list
+
+                if(bndryRecv(numSpecies+2,j,i) == -1) then
+                    write(*,*) 'defectCurrent not associated'
+                    write(*,*) 'error in defectUpdate negative defect numbers'
+                    write(*,*) 'proc', myProc%taskid, 'dir', i, 'neighbor proc', myProc%procNeighbor(i)
+                    write(*,*) (bndryRecv(k,j,i),k=1,numSpecies+2)
+                    call MPI_ABORT(comm,ierr)
+                else
+
+                    nullify(defectPrev%next)
+                    allocate(defectPrev%next)
+                    nullify(defectPrev%next%next)
+                    defectPrev=>defectPrev%next
+                    allocate(defectPrev%defectType(numSpecies))
+                    defectPrev%cellNumber=bndryRecv(numSpecies+1,j,i)
+                    defectPrev%num=bndryRecv(numSpecies+2,j,i)	!This will be +/- 1 only
+
+                    do l=1,numSpecies
+                        defectPrev%defectType(l)=bndryRecv(l,j,i)
+                    end do
+                end if
+
+            end if
+        end do
+
+    end if
+
+    if(numUpdateLocalRecv(i) /= 0) then
+
+        !Add defects in localRecv to defectList()
+        call MPI_WAIT(recvLocalRequest(i),recvLocalStatus(:,i),ierr)
+
+        do j=1,numUpdateLocalRecv(i)
+            !create a new element in defectUpdate and assign all variables except for num (will do later)
+            allocate(defectUpdateCurrent%next)
+            defectUpdateCurrent=>defectUpdateCurrent%next
+            defectUpdateCurrent%proc=myProc%taskid
+            defectUpdateCurrent%dir=0	!not pointed at a different proc
+            defectUpdateCurrent%neighbor=0	!not pointed at a different proc
+            allocate(defectUpdateCurrent%defectType(numSpecies))
+            defectUpdateCurrent%cellNumber=localRecv(numSpecies+1,j,i)
+            defectUpdateCurrent%num=localRecv(numSpecies+2,j,i) !This will be +/- 1 only
+            defectUpdateCurrent%cascadeNumber=0	!not inside a cascade
+            nullify(defectUpdateCurrent%next)
+
+            !point defectCurrent at the defect list in the correct cell of defectList
+            defectCurrent=>defectList(localRecv(numSpecies+1,j,i))
+
+            do k=1,numSpecies
+                products(k)=localRecv(k,j,i)
+                defectUpdateCurrent%defectType(k)=localRecv(k,j,i)
+            end do
+
+            !point DefectCurrent at the defect we are looking for (if it is there), otherwise
+            !point defectCurrent after and defectPrev before where it should go in defectList.
+            nullify(defectPrev)
+            call findDefectInList(defectCurrent, defectPrev, products)
+
+            !Next update defects in local mesh
+            if(associated(defectCurrent)) then !if we aren't at the end of the list
+                same=0
+                do l=1,numSpecies
+                    if(defectCurrent%defectType(l)==products(l)) then
+                        same=same+1
+                    endif
+                end do
+                if(same==numSpecies) then	!if the defect is already present in the list
+                    defectCurrent%num=defectCurrent%num+localRecv(numSpecies+2,j,i)	!This will be +1 only
+
+                    if(defectCurrent%num==0) then
+                        write(*,*) 'Error zero defects in updateDefectList, step 3 of communication'
+                        !		defectPrev%next=>defectCurrent%next !remove that defect type from the system
+                        !		deallocate(defectCurrent%defectType)
+                        !		deallocate(defectCurrent)
+                        !		nullify(defectCurrent)
+                    end if
+                else		!if the defect is to be inserted in the list
+                    nullify(defectPrev%next)
+                    allocate(defectPrev%next)
+                    nullify(defectPrev%next%next)
+                    defectPrev=>defectPrev%next
+                    allocate(defectPrev%defectType(numSpecies))
+                    defectPrev%cellNumber=localRecv(numSpecies+1,j,i)
+                    defectPrev%num=localRecv(numSpecies+2,j,i) !This will be +/- 1 only (should be only +1 here)
+                    do l=1,numSpecies
+                        defectPrev%defectType(l)=localRecv(l,j,i)
+                    end do
+                    defectPrev%next=>defectCurrent !if inserted defect is in the middle of the list, point it to the next item in the list
+                end if
+            else 			!add a defect to the end of the list
+                nullify(defectPrev%next)
+                allocate(defectPrev%next)
+                nullify(defectPrev%next%next)
+                defectPrev=>defectPrev%next
+                allocate(defectPrev%defectType(numSpecies))
+                defectPrev%cellNumber=localRecv(numSpecies+1,j,i)
+                defectPrev%num=localRecv(numSpecies+2,j,i) !This will be +/- 1 only (should be only +1 here)
+                do l=1,numSpecies
+                    defectPrev%defectType(l)=localRecv(l,j,i)
+                end do
+            end if
+
+            !*****************************************************
+            !Prep for step 4: check to see if element updated has more than one neighbor proc
+            !*****************************************************
+
+            do k=1,6
+                do l=1,myMesh(localRecv(numSpecies+1,j,i))%numNeighbors(k)
+
+                    !if a neighbor of this element is not in this proc or in the proc that just communicated with it
+                    if (myMesh(localRecv(numSpecies+1,j,i))%neighborProcs(l,k) /= myProc%taskid .AND. &
+                            myMesh(localRecv(numSpecies+1,j,i))%neighborProcs(l,k) /= myProc%procNeighbor(i) .AND. &
+                            myMesh(localRecv(numSpecies+1,j,i))%neighborProcs(l,k) /= -1) then
+
+                        !Add this defect to a final buffer
+                        numUpdateFinal(k)=numUpdateFinal(k)+1
+
+                        do m=1,numSpecies
+                            finalBuffer(m,numUpdateFinal(k),k)=localRecv(m,j,i)
+                        end do
+                        finalBuffer(numSpecies+1,numUpdateFinal(k),k)=localRecv(numSpecies+1,j,i)	!local cell number
+                        finalBuffer(numSpecies+2,numUpdateFinal(k),k)=localRecv(numSpecies+2,j,i) !This should be +1 only
+                        finalBuffer(numSpecies+3,numUpdateFinal(k),k)=myMesh(localRecv(numSpecies+1,j,i))%neighbors(l,k)	!cell number in neighboring proc
+
+                        if(localRecv(numSpecies+2,j,i)==-1) then
+                            write(*,*) 'error: cell in boundary of multiple procs removing defect'
+                            call MPI_ABORT(comm,ierr)
+                        end if
+
+                    end if
+
+                end do
+            end do
+        end do
+    end if
+
+end do
+
+ if(allocated(bndryRecv)) then
+     deallocate(bndryRecv)
+end if
+if(allocated(localRecv)) then
+    deallocate(localRecv)
+end if
+
+!Update defectList
+!do i=1,6
 	
 	!We have to switch the tags on MPI_RECV in order for the correct send/recieve pair to be exchanged
-	if(i==1 .OR. i==3 .OR. i==5) then
-		tag=i+1
-	else
-		tag=i-1
-	endif
+!	if(i==1 .OR. i==3 .OR. i==5) then
+!		tag=i+1
+!	else
+!		tag=i-1
+!	endif
 	
-	if(myProc%procNeighbor(i) /= myProc%taskid) then
+!	if(myProc%procNeighbor(i) /= myProc%taskid) then
 		
-		if(numUpdateBndryRecv(i) /= 0) then
+!		if(numUpdateBndryRecv(i) /= 0) then
 		
 			!Read in defects to update in boundary
-			allocate(bndryBufferRecv(numUpdateBndryRecv(i),numSpecies+3))
-			call MPI_RECV(bndryBufferRecv,numUpdateBndryRecv(i)*(numSpecies+3),MPI_INTEGER,&
-				myProc%procNeighbor(i),tag+12,comm,status,ierr)
+!			allocate(bndryBufferRecv(numSpecies+3,numUpdateBndryRecv(i)))
+!			call MPI_RECV(bndryBufferRecv,(numSpecies+3)*numUpdateBndryRecv(i),MPI_INTEGER,&
+!				myProc%procNeighbor(i),tag+12,comm,status,ierr)
 
 			!Add defects in bndryBufferRecv to myBoundary()
-			do j=1,numUpdateBndryRecv(i)
+!			do j=1,numUpdateBndryRecv(i)
 
 				!create a new element in defectUpdate and assign all variables except for num (will do later)
-				allocate(defectUpdateCurrent%next)
-				defectUpdateCurrent=>defectUpdateCurrent%next
-				defectUpdateCurrent%proc=myProc%procNeighbor(i)
-				defectUpdateCurrent%dir=i	
-				allocate(defectUpdateCurrent%defectType(numSpecies))
-				defectUpdateCurrent%cellNumber=bndryBufferRecv(j,numSpecies+1)
-				defectUpdateCurrent%num=bndryBufferRecv(j,numSpecies+2)	!This will be +/- 1 only
-				defectUpdateCurrent%cascadeNumber=0	!not inside a cascade
-				nullify(defectUpdateCurrent%next)
+!				allocate(defectUpdateCurrent%next)
+!				defectUpdateCurrent=>defectUpdateCurrent%next
+!				defectUpdateCurrent%proc=myProc%procNeighbor(i)
+!				defectUpdateCurrent%dir=i
+!				allocate(defectUpdateCurrent%defectType(numSpecies))
+!				defectUpdateCurrent%cellNumber=bndryBufferRecv(numSpecies+1,j)
+!				defectUpdateCurrent%num=bndryBufferRecv(numSpecies+2,j)	!This will be +/- 1 only
+!				defectUpdateCurrent%cascadeNumber=0	!not inside a cascade
+!				nullify(defectUpdateCurrent%next)
 				
 				!This information is used to tell us which element in the local
 				!processor bounds this element in myBoundary
-				defectUpdateCurrent%neighbor=bndryBufferRecv(j,numSpecies+3)
+!				defectUpdateCurrent%neighbor=bndryBufferRecv(numSpecies+3,j)
 				
 				!point defectCurrent at the defect list in the correct cell of myBoundary
-				defectCurrent=>myBoundary(i,bndryBufferRecv(j,numSpecies+1))%defectList
-				if(.NOT. associated(defectCurrent)) then
-					write(*,*) 'error myBoundary not allocated correctly'
-					write(*,*) 'dir', i, 'cell', bndryBufferRecv(j,numSpecies+1)
-					call MPI_ABORT(comm,ierr)
-				end if
+!				defectCurrent=>myBoundary(bndryBufferRecv(numSpecies+1,j),i)%defectList
+!				if(.NOT. associated(defectCurrent)) then
+!					write(*,*) 'error myBoundary not allocated correctly'
+!					write(*,*) 'dir', i, 'cell', bndryBufferRecv(numSpecies+1,j)
+!					call MPI_ABORT(comm,ierr)
+!				end if
 
-				do k=1,numSpecies
-					products(k)=bndryBufferRecv(j,k)
-					defectUpdateCurrent%defectType(k)=bndryBufferRecv(j,k)	!used to update reaction lists
-				end do
+!				do k=1,numSpecies
+!					products(k)=bndryBufferRecv(k,j)
+!					defectUpdateCurrent%defectType(k)=bndryBufferRecv(k,j)	!used to update reaction lists
+!				end do
 				
 				!point DefectCurrent at the defect we are looking for (if it is there), otherwise
 				!point defectCurrent after and defectPrev before where it should go in defectList.
-				nullify(defectPrev)
-				call findDefectInList(defectCurrent, defectPrev, products)
+!				nullify(defectPrev)
+!				call findDefectInList(defectCurrent, defectPrev, products)
 
 				!Next update defects in myBoundary
-				if(associated(defectCurrent)) then !if we aren't at the end of the list
+!				if(associated(defectCurrent)) then !if we aren't at the end of the list
 					
-					same=0
-					do l=1,numSpecies
-						if(defectCurrent%defectType(l)==products(l)) then
-							same=same+1
-						end if
-					end do
-					if(same==numSpecies) then	!if the defect is already present in the list
-						defectCurrent%num=defectCurrent%num+bndryBufferRecv(j,numSpecies+2) !this will be +/- 1 only
+!					same=0
+!					do l=1,numSpecies
+!						if(defectCurrent%defectType(l)==products(l)) then
+!							same=same+1
+!						end if
+!					end do
+!					if(same==numSpecies) then	!if the defect is already present in the list
+!						defectCurrent%num=defectCurrent%num+bndryBufferRecv(numSpecies+2,j) !this will be +/- 1 only
 
 						!2019.05.26 Debug: if the defect of this type is at the end of the defectList
 						!if there is one defect of this type and it is in the middle of the defectList
-						if(defectCurrent%num==0 .AND. associated(defectCurrent%next) .AND. associated(defectPrev)) then
+!						if(defectCurrent%num==0 .AND. associated(defectCurrent%next) .AND. associated(defectPrev)) then
 							!delete this defect from the list in myBoundary
-							defectPrev%next=>defectCurrent%next !remove that defect type from the system
-							deallocate(defectCurrent%defectType)
-							deallocate(defectCurrent)
-							nullify(defectCurrent)
+!							defectPrev%next=>defectCurrent%next !remove that defect type from the system
+!							deallocate(defectCurrent%defectType)
+!							deallocate(defectCurrent)
+!							nullify(defectCurrent)
 						!if there is one defect of this type and it is 	at the end of the defectList
-						else if(defectCurrent%num==0 .AND. associated(defectPrev)) then
-							deallocate(defectCurrent%defectType)
-							deallocate(defectCurrent)
-							nullify(defectCurrent)
-							nullify(defectPrev%next)
-						end if
-					else		!if the defect is to be inserted in the list
+!						else if(defectCurrent%num==0 .AND. associated(defectPrev)) then
+!							deallocate(defectCurrent%defectType)
+!							deallocate(defectCurrent)
+!							nullify(defectCurrent)
+!							nullify(defectPrev%next)
+!						end if
+!					else		!if the defect is to be inserted in the list
 					
-						if(bndryBufferRecv(j,numSpecies+2) == -1) then
-							write(*,*) 'defectCurrent associated', defectCurrent%defectType, 'num', defectCurrent%num
-							if(associated(defectPrev)) write(*,*) 'defectPrev', defectPrev%defectType, 'num', defectPrev%num
-							write(*,*) 'error in defectUpdate negative defect numbers', myProc%taskid
-							write(*,*) 'proc', myProc%taskid, 'dir', i, 'neighbor proc', myProc%procNeighbor(i)
-							write(*,*) (bndryBufferRecv(j,k),k=1,numSpecies+2)
+!						if(bndryBufferRecv(numSpecies+2,j) == -1) then
+!							write(*,*) 'defectCurrent associated', defectCurrent%defectType, 'num', defectCurrent%num
+!							if(associated(defectPrev)) write(*,*) 'defectPrev', defectPrev%defectType, 'num', defectPrev%num
+!							write(*,*) 'error in defectUpdate negative defect numbers', myProc%taskid
+!							write(*,*) 'proc', myProc%taskid, 'dir', i, 'neighbor proc', myProc%procNeighbor(i)
+!							write(*,*) (bndryBufferRecv(k,j),k=1,numSpecies+2)
 							
-							call MPI_ABORT(comm,ierr)
+!							call MPI_ABORT(comm,ierr)
 							
-						else
-							nullify(defectPrev%next)
-							allocate(defectPrev%next)
-							nullify(defectPrev%next%next)
-							defectPrev=>defectPrev%next
-							allocate(defectPrev%defectType(numSpecies))
-							defectPrev%cellNumber=bndryBufferRecv(j,numSpecies+1)
-							defectPrev%num=bndryBufferRecv(j,numSpecies+2)	!This will be +/- 1 only
+!						else
+!							nullify(defectPrev%next)
+!							allocate(defectPrev%next)
+!							nullify(defectPrev%next%next)
+!							defectPrev=>defectPrev%next
+!							allocate(defectPrev%defectType(numSpecies))
+!							defectPrev%cellNumber=bndryBufferRecv(numSpecies+1,j)
+!							defectPrev%num=bndryBufferRecv(numSpecies+2,j)	!This will be +/- 1 only
 							
-							do l=1,numSpecies
-								defectPrev%defectType(l)=bndryBufferRecv(j,l)
-							end do
-							defectPrev%next=>defectCurrent !if inserted defect is in the middle of the list, point it to the next item in the list
-						end if
+!							do l=1,numSpecies
+!								defectPrev%defectType(l)=bndryBufferRecv(l,j)
+!							end do
+!							defectPrev%next=>defectCurrent !if inserted defect is in the middle of the list, point it to the next item in the list
+!						end if
 												
-					end if
-				else 			!add a defect to the end of the list
+!					end if
+!				else 			!add a defect to the end of the list
 					
-					if(bndryBufferRecv(j,numSpecies+2) == -1) then
-						write(*,*) 'defectCurrent not associated'
-						write(*,*) 'error in defectUpdate negative defect numbers'
-						write(*,*) 'proc', myProc%taskid, 'dir', i, 'neighbor proc', myProc%procNeighbor(i)
-						write(*,*) (bndryBufferRecv(j,k),k=1,numSpecies+2)
-						call MPI_ABORT(comm,ierr)
-					else
+!					if(bndryBufferRecv(numSpecies+2,j) == -1) then
+!						write(*,*) 'defectCurrent not associated'
+!						write(*,*) 'error in defectUpdate negative defect numbers'
+!						write(*,*) 'proc', myProc%taskid, 'dir', i, 'neighbor proc', myProc%procNeighbor(i)
+!						write(*,*) (bndryBufferRecv(k,j),k=1,numSpecies+2)
+!						call MPI_ABORT(comm,ierr)
+!					else
 					
-						nullify(defectPrev%next)
-						allocate(defectPrev%next)
-						nullify(defectPrev%next%next)
-						defectPrev=>defectPrev%next
-						allocate(defectPrev%defectType(numSpecies))
-						defectPrev%cellNumber=bndryBufferRecv(j,numSpecies+1)
-						defectPrev%num=bndryBufferRecv(j,numSpecies+2)	!This will be +/- 1 only
+!						nullify(defectPrev%next)
+!						allocate(defectPrev%next)
+!						nullify(defectPrev%next%next)
+!						defectPrev=>defectPrev%next
+!						allocate(defectPrev%defectType(numSpecies))
+!						defectPrev%cellNumber=bndryBufferRecv(numSpecies+1,j)
+!						defectPrev%num=bndryBufferRecv(numSpecies+2,j)	!This will be +/- 1 only
 											
-						do l=1,numSpecies
-							defectPrev%defectType(l)=bndryBufferRecv(j,l)
-						end do
-					end if
+!						do l=1,numSpecies
+!							defectPrev%defectType(l)=bndryBufferRecv(l,j)
+!						end do
+!					end if
+!
+!				end if
+!			end do
+!			deallocate(bndryBufferRecv)
+!		end if
 
-				end if
-			end do
-			deallocate(bndryBufferRecv)
-		end if
-		
-		if(numUpdateLocalRecv(i) /= 0) then
+!		if(numUpdateLocalRecv(i) /= 0) then
 
                 !write(*,*) 'proc', myProc%taskid, numUpdateLocalRecv(i) 
 			
 			!Read in defects to update in local mesh
-			allocate(localBufferRecv(numUpdateLocalRecv(i),numSpecies+2))
-			call MPI_RECV(localBufferRecv,numUpdateLocalRecv(i)*(numSpecies+2),MPI_INTEGER,&
-				myProc%procNeighbor(i),tag+18,comm,status,ierr)
+!			allocate(localBufferRecv(numSpecies+2,numUpdateLocalRecv(i)))
+!			call MPI_RECV(localBufferRecv,(numSpecies+2)*numUpdateLocalRecv(i),MPI_INTEGER,&
+!				myProc%procNeighbor(i),tag+18,comm,status,ierr)
 
 			!Add defects in localBufferRecv to defectList()
-			do j=1,numUpdateLocalRecv(i)
+!			do j=1,numUpdateLocalRecv(i)
 				!create a new element in defectUpdate and assign all variables except for num (will do later)
-				allocate(defectUpdateCurrent%next)
-				defectUpdateCurrent=>defectUpdateCurrent%next
-				defectUpdateCurrent%proc=myProc%taskid
-				defectUpdateCurrent%dir=0	!not pointed at a different proc
-				defectUpdateCurrent%neighbor=0	!not pointed at a different proc
-				allocate(defectUpdateCurrent%defectType(numSpecies))
-				defectUpdateCurrent%cellNumber=localBufferRecv(j,numSpecies+1)
-				defectUpdateCurrent%num=localBufferRecv(j,numSpecies+2) !This will be +/- 1 only
-				defectUpdateCurrent%cascadeNumber=0	!not inside a cascade
-				nullify(defectUpdateCurrent%next)
+!				allocate(defectUpdateCurrent%next)
+!				defectUpdateCurrent=>defectUpdateCurrent%next
+!				defectUpdateCurrent%proc=myProc%taskid
+!				defectUpdateCurrent%dir=0	!not pointed at a different proc
+!				defectUpdateCurrent%neighbor=0	!not pointed at a different proc
+!				allocate(defectUpdateCurrent%defectType(numSpecies))
+!				defectUpdateCurrent%cellNumber=localBufferRecv(numSpecies+1,j)
+!				defectUpdateCurrent%num=localBufferRecv(numSpecies+2,j) !This will be +/- 1 only
+!				defectUpdateCurrent%cascadeNumber=0	!not inside a cascade
+!				nullify(defectUpdateCurrent%next)
 
 				!point defectCurrent at the defect list in the correct cell of defectList
-				defectCurrent=>defectList(localBufferRecv(j,numSpecies+1))
+!				defectCurrent=>defectList(localBufferRecv(numSpecies+1,j))
 
-				do k=1,numSpecies
-					products(k)=localBufferRecv(j,k)
-					defectUpdateCurrent%defectType(k)=localBufferRecv(j,k)
-				end do
+!				do k=1,numSpecies
+!					products(k)=localBufferRecv(k,j)
+!					defectUpdateCurrent%defectType(k)=localBufferRecv(k,j)
+!				end do
 				
 				!point DefectCurrent at the defect we are looking for (if it is there), otherwise
 				!point defectCurrent after and defectPrev before where it should go in defectList.
-				nullify(defectPrev)
-				call findDefectInList(defectCurrent, defectPrev, products)
+!				nullify(defectPrev)
+!				call findDefectInList(defectCurrent, defectPrev, products)
 
 				!Next update defects in local mesh
-				if(associated(defectCurrent)) then !if we aren't at the end of the list
-					same=0
-					do l=1,numSpecies
-						if(defectCurrent%defectType(l)==products(l)) then
-							same=same+1
-						endif
-					end do
-					if(same==numSpecies) then	!if the defect is already present in the list
-						defectCurrent%num=defectCurrent%num+localBufferRecv(j,numSpecies+2)	!This will be +1 only
+!				if(associated(defectCurrent)) then !if we aren't at the end of the list
+!					same=0
+!					do l=1,numSpecies
+!						if(defectCurrent%defectType(l)==products(l)) then
+!							same=same+1
+!						endif
+!					end do
+!					if(same==numSpecies) then	!if the defect is already present in the list
+!						defectCurrent%num=defectCurrent%num+localBufferRecv(numSpecies+2,j)	!This will be +1 only
 						
-						if(defectCurrent%num==0) then
-							write(*,*) 'Error zero defects in updateDefectList, step 3 of communication'
+!						if(defectCurrent%num==0) then
+!							write(*,*) 'Error zero defects in updateDefectList, step 3 of communication'
 					!		defectPrev%next=>defectCurrent%next !remove that defect type from the system
 					!		deallocate(defectCurrent%defectType)
 					!		deallocate(defectCurrent)
 					!		nullify(defectCurrent)
-						end if
-					else		!if the defect is to be inserted in the list
+!						end if
+!					else		!if the defect is to be inserted in the list
 
-					!	if(localBufferRecv(j,numSpecies+2) == -1) then
+					!	if(localBufferRecv(numSpecies+2,j) == -1) then
 					!		write(*,*) 'defectCurrent associated', defectCurrent%defectType, 'num', defectCurrent%num
 					!		if(associated(defectPrev)) write(*,*) 'defectPrev', defectPrev%defectType, 'num', defectPrev%num
 					!		write(*,*) 'error in defectUpdate negative defect numbers', myProc%taskid
 					!		write(*,*) 'proc', myProc%taskid, 'dir', i, 'neighbor proc', myProc%procNeighbor(i)
-					!		write(*,*) (localBufferRecv(j,k),k=1,numSpecies+2)
+					!		write(*,*) (localBufferRecv(k,j),k=1,numSpecies+2)
 					!	else
 
-							nullify(defectPrev%next)
-							allocate(defectPrev%next)
-							nullify(defectPrev%next%next)
-							defectPrev=>defectPrev%next
-							allocate(defectPrev%defectType(numSpecies))
-							defectPrev%cellNumber=localBufferRecv(j,numSpecies+1)
-							defectPrev%num=localBufferRecv(j,numSpecies+2) !This will be +/- 1 only (should be only +1 here)
-							do l=1,numSpecies
-								defectPrev%defectType(l)=localBufferRecv(j,l)
-							end do
-							defectPrev%next=>defectCurrent !if inserted defect is in the middle of the list, point it to the next item in the list
+!							nullify(defectPrev%next)
+!							allocate(defectPrev%next)
+!							nullify(defectPrev%next%next)
+!							defectPrev=>defectPrev%next
+!							allocate(defectPrev%defectType(numSpecies))
+!							defectPrev%cellNumber=localBufferRecv(numSpecies+1,j)
+!							defectPrev%num=localBufferRecv(numSpecies+2,j) !This will be +/- 1 only (should be only +1 here)
+!							do l=1,numSpecies
+!								defectPrev%defectType(l)=localBufferRecv(l,j)
+!							end do
+!							defectPrev%next=>defectCurrent !if inserted defect is in the middle of the list, point it to the next item in the list
 					!	end if
-					end if
-				else 			!add a defect to the end of the list
-				!	if(localBufferRecv(j,numSpecies+2) == -1) then
+!					end if
+!				else 			!add a defect to the end of the list
+				!	if(localBufferRecv(numSpecies+2,j) == -1) then
 				!		write(*,*) 'defectCurrent not associated'
 				!		write(*,*) 'error in defectUpdate negative defect numbers'
 				!		write(*,*) 'proc', myProc%taskid, 'dir', i, 'neighbor proc', myProc%procNeighbor(i)
-				!		write(*,*) (localBufferRecv(j,k),k=1,numSpecies+2)
+				!		write(*,*) (localBufferRecv(k,j),k=1,numSpecies+2)
 						!call MPI_ABORT(comm,ierr)
 				!	else
 
-						nullify(defectPrev%next)
-						allocate(defectPrev%next)
-						nullify(defectPrev%next%next)
-						defectPrev=>defectPrev%next
-						allocate(defectPrev%defectType(numSpecies))
-						defectPrev%cellNumber=localBufferRecv(j,numSpecies+1)
-						defectPrev%num=localBufferRecv(j,numSpecies+2) !This will be +/- 1 only (should be only +1 here)
-						do l=1,numSpecies
-							defectPrev%defectType(l)=localBufferRecv(j,l)
-						end do
+!						nullify(defectPrev%next)
+!						allocate(defectPrev%next)
+!						nullify(defectPrev%next%next)
+!						defectPrev=>defectPrev%next
+!						allocate(defectPrev%defectType(numSpecies))
+!						defectPrev%cellNumber=localBufferRecv(numSpecies+1,j)
+!						defectPrev%num=localBufferRecv(numSpecies+2,j) !This will be +/- 1 only (should be only +1 here)
+!						do l=1,numSpecies
+!							defectPrev%defectType(l)=localBufferRecv(l,j)
+!						end do
 				!	end if
-				end if
+!				end if
 				
 				!*****************************************************
 				!Prep for step 4: check to see if element updated has more than one neighbor proc
 				!*****************************************************
 				
-				do k=1,6
-					do l=1,myMesh(localBufferRecv(j,numSpecies+1))%numNeighbors(k)
+!				do k=1,6
+!					do l=1,myMesh(localBufferRecv(numSpecies+1,j))%numNeighbors(k)
 						
 						!if a neighbor of this element is not in this proc or in the proc that just communicated with it
-						if (myMesh(localBufferRecv(j,numSpecies+1))%neighborProcs(k,l) /= myProc%taskid .AND. &
-							myMesh(localBufferRecv(j,numSpecies+1))%neighborProcs(k,l) /= myProc%procNeighbor(i) .AND. &
-							myMesh(localBufferRecv(j,numSpecies+1))%neighborProcs(k,l) /= -1) then
+!						if (myMesh(localBufferRecv(numSpecies+1,j))%neighborProcs(l,k) /= myProc%taskid .AND. &
+!							myMesh(localBufferRecv(numSpecies+1,j))%neighborProcs(l,k) /= myProc%procNeighbor(i) .AND. &
+!							myMesh(localBufferRecv(numSpecies+1,j))%neighborProcs(l,k) /= -1) then
 							
 							!Add this defect to a final buffer
-							numUpdateFinal(k)=numUpdateFinal(k)+1
+!							numUpdateFinal(k)=numUpdateFinal(k)+1
 							
-							do m=1,numSpecies
-								finalBuffer(k,numUpdateFinal(k),m)=localBufferRecv(j,m)
-							end do
-							finalBuffer(k,numUpdateFinal(k),numSpecies+1)=localBufferRecv(j,numSpecies+1)	!local cell number
-							finalBuffer(k,numUpdateFinal(k),numSpecies+2)=localBufferRecv(j,numSpecies+2) !This should be +1 only
-							finalBuffer(k,numUpdateFinal(k),numSpecies+3)=myMesh(localBufferRecv(j,numSpecies+1))%neighbors(k,l)	!cell number in neighboring proc
+!							do m=1,numSpecies
+!								finalBuffer(m,numUpdateFinal(k),k)=localBufferRecv(m,j)
+!							end do
+!							finalBuffer(numSpecies+1,numUpdateFinal(k),k)=localBufferRecv(numSpecies+1,j)	!local cell number
+!							finalBuffer(numSpecies+2,numUpdateFinal(k),k)=localBufferRecv(numSpecies+2,j) !This should be +1 only
+!							finalBuffer(numSpecies+3,numUpdateFinal(k),k)=myMesh(localBufferRecv(numSpecies+1,j))%neighbors(l,k)	!cell number in neighboring proc
 							
-							if(localBufferRecv(j,numSpecies+2)==-1) then
-								write(*,*) 'error: cell in boundary of multiple procs removing defect'
-								call MPI_ABORT(comm,ierr)
-							end if
+!							if(localBufferRecv(numSpecies+2,j)==-1) then
+!								write(*,*) 'error: cell in boundary of multiple procs removing defect'
+!								call MPI_ABORT(comm,ierr)
+!							end if
 
-						end if
+!						end if
 
-					end do
-				end do
-			end do
+!					end do
+!				end do
+!			end do
 
-			deallocate(localBufferRecv)
-		end if
+!			deallocate(localBufferRecv)
+!		end if
 		
-	end if
+!	end if
+!end do
+
+do i=1,6
+    if(numUpdateLocal(i) /= 0) then
+        call MPI_WAIT(sendLocalRequest(i),sendLocalStatus(:,i),ierr)
+    end if
+
+    if(numUpdateBndry(i) /= 0) then
+        call MPI_WAIT(sendBndryRequest(i),sendBndryStatus(:,i),ierr)
+    end if
 end do
+
+if(allocated(localBuffer)) then
+    deallocate(localBuffer)
+end if
+
+if(allocated(bndryBuffer)) then
+    deallocate(bndryBuffer)
+end if
 
 !*************
 !Step 4: if a local defect is updated due to diffusion to the boundary of another processor,
@@ -2336,133 +2947,259 @@ end do
 !*************
 
 do i=1,6
-	if(myProc%procNeighbor(i) /= myProc%taskid) then
-		call MPI_SEND(numUpdateFinal(i), 1, MPI_INTEGER, myProc%procNeighbor(i), i+24, comm, ierr)	!number of local defects that have changed on boundary of processor i
-		
-		if(numUpdateFinal(i) /= 0) then
-			allocate(finalBufferSend(numUpdateFinal(i),numSpecies+3))
-			
-			do j=1,numUpdateFinal(i)
-				do k=1,numSpecies+3
-					finalBufferSend(j,k)=finalBuffer(i,j,k)
-				end do
-			end do
-			
-			call MPI_SEND(finalBufferSend,numUpdateFinal(i)*(numSpecies+3), MPI_INTEGER, &
-				myProc%procNeighbor(i),i+30,comm,ierr)
-			deallocate(finalBufferSend)
-		end if
-	end if
+
+    if(mod(i,2)==0) then
+        recvDir = i-1
+    else
+        recvDir = i+1
+    end if
+
+    !Send
+    if(myProc%procNeighbor(i) /= myProc%taskid .AND. numUpdateFinal(i) /= 0) then
+        tag = 2*myProc%numtasks+myProc%procNeighbor(i)
+        call MPI_ISEND(finalBuffer(:,1:numUpdateFinal(i),i),(numSpecies+3)*numUpdateFinal(i),MPI_INTEGER,&
+                myProc%procNeighbor(i), tag ,comm,sendFinalRequest(i),ierr)
+    end if
+
+    !Recv
+    if(myProc%procNeighbor(recvDir) /= myProc%taskid) then
+
+        !Recv Bndry
+        flag=.FALSE.
+        count=0
+        call MPI_IPROBE(myProc%procNeighbor(recvDir), 2*myProc%numtasks+myProc%procNeighbor(recvDir),comm,flag,status,ierr)
+
+        if(flag .eqv. .TRUE.) then
+            call MPI_GET_COUNT(status,MPI_INTEGER,count,ierr)
+            numUpdateFinalRecv(recvDir) = count/(numSpecies+3)
+            if(numUpdateFinalRecv(recvDir) /= 0) then
+                tag = 2*myProc%numtasks+myProc%procNeighbor(recvDir)
+
+                allocate(finalBufferRecv(numSpecies+3,numUpdateFinalRecv(recvDir)))
+                call MPI_IRECV(finalBufferRecv,(numSpecies+3)*numUpdateFinalRecv(recvDir),MPI_INTEGER,&
+                        myProc%procNeighbor(recvDir),tag ,comm,recvFinalRequest(recvDir),ierr)
+                call MPI_WAIT(recvFinalRequest(recvDir),recvLocalStatus(:,recvDir),ierr)
+
+                !Add defects in finalBufferRecv to myBoundary()
+                do j=1,numUpdateFinalRecv(recvDir)
+
+                    if(finalBufferRecv(numSpecies+2,j)==-1) then
+                        write(*,*) 'error deleting defects in finalBufferRecv'
+                        !call MPI_ABORT(comm,ierr)
+                    else
+
+                        !create a new element in defectUpdate and assign all variables except for num (will do later)
+                        allocate(defectUpdateCurrent%next)
+                        defectUpdateCurrent=>defectUpdateCurrent%next
+                        defectUpdateCurrent%proc=myProc%procNeighbor(recvDir)
+                        defectUpdateCurrent%dir=recvDir
+                        allocate(defectUpdateCurrent%defectType(numSpecies))
+                        defectUpdateCurrent%cellNumber=finalBufferRecv(numSpecies+1,j)	!cell number in boundary mesh
+                        defectUpdateCurrent%num=finalBufferRecv(numSpecies+2,j) !This should be +1 only
+                        defectUpdateCurrent%neighbor=finalBufferRecv(numSpecies+3,j) !cell number in myMesh
+                        defectUpdateCurrent%cascadeNumber=0	!not inside a cascade
+                        nullify(defectUpdateCurrent%next)
+
+                        !point defectCurrent at the defect list in the correct cell of myBoundary
+                        defectCurrent=>myBoundary(finalBufferRecv(numSpecies+1,j),recvDir)%defectList
+                        nullify(defectPrev)
+
+                        do k=1,numSpecies
+                            products(k)=finalBufferRecv(k,j)
+                            defectUpdateCurrent%defectType(k)=finalBufferRecv(k,j)
+                        end do
+
+                        !point DefectCurrent at the defect we are looking for (if it is there), otherwise
+                        !point defectCurrent after and defectPrev before where it should go in defectList.
+
+                        call findDefectInList(defectCurrent, defectPrev, products)
+
+                        !Next update defects in myBoundary
+                        if(associated(defectCurrent)) then !if we aren't at the end of the list
+                            same=0
+                            do l=1,numSpecies
+                                if(defectCurrent%defectType(l)==products(l)) then
+                                    same=same+1
+                                endif
+                            end do
+                            if(same==numSpecies) then	!if the defect is already present in the list
+                                defectCurrent%num=defectCurrent%num+finalBufferRecv(numSpecies+2,j) !This should be +1 only
+
+                                if(defectCurrent%num==0) then
+                                    write(*,*) 'Error zero defects in updateDefectList, step 5 of communication'
+                                endif
+                            else		!if the defect is to be inserted in the list
+                                nullify(defectPrev%next)
+                                allocate(defectPrev%next)
+                                nullify(defectPrev%next%next)
+                                defectPrev=>defectPrev%next
+                                allocate(defectPrev%defectType(numSpecies))
+                                defectPrev%cellNumber=finalBufferRecv(numSpecies+1,j)
+                                defectPrev%num=finalBufferRecv(numSpecies+2,j) !This should be +1 only
+                                do l=1,numSpecies
+                                    defectPrev%defectType(l)=finalBufferRecv(l,j)
+                                end do
+                                defectPrev%next=>defectCurrent !if inserted defect is in the middle of the list, point it to the next item in the list
+                            end if
+                        else 			!add a defect to the end of the list
+                            nullify(defectPrev%next)
+                            allocate(defectPrev%next)
+                            nullify(defectPrev%next%next)
+                            defectPrev=>defectPrev%next
+                            allocate(defectPrev%defectType(numSpecies))
+                            defectPrev%cellNumber=finalBufferRecv(numSpecies+1,j)
+                            defectPrev%num=finalBufferRecv(numSpecies+2,j) !This should be +1 only
+                            do l=1,numSpecies
+                                defectPrev%defectType(l)=finalBufferRecv(l,j)
+                            end do
+                        end if
+
+                    end if
+                end do
+                deallocate(finalBufferRecv)
+            end if
+        end if
+    end if
 end do
+
+do i=1,6
+    if(numUpdateFinal(i) /= 0) then
+        call MPI_WAIT(sendFinalRequest(i),sendFinalStatus(:,i),ierr)
+    end if
+end do
+
+if(allocated(finalBuffer)) then
+    deallocate(finalBuffer)
+end if
+
+!do i=1,6
+!	if(myProc%procNeighbor(i) /= myProc%taskid) then
+!		call MPI_SEND(numUpdateFinal(i), 1, MPI_INTEGER, myProc%procNeighbor(i), i+24, comm, ierr)	!number of local defects that have changed on boundary of processor i
+		
+!		if(numUpdateFinal(i) /= 0) then
+!			allocate(finalBufferSend(numSpecies+3,numUpdateFinal(i)))
+			
+!			do j=1,numUpdateFinal(i)
+!				do k=1,numSpecies+3
+!					finalBufferSend(k,j)=finalBuffer(k,j,i)
+!				end do
+!			end do
+			
+!			call MPI_SEND(finalBufferSend,(numSpecies+3)*numUpdateFinal(i), MPI_INTEGER, &
+!				myProc%procNeighbor(i),i+30,comm,ierr)
+!			deallocate(finalBufferSend)
+!		end if
+!	end if
+!end do
 
 !*************
 !Step 5: update myBoundary again, based on information sent in step 4
 !*************
 
-do i=1,6
+!do i=1,6
 
 	!We have to switch the tags on MPI_RECV in order for the correct send/recieve pair to be exchanged
-	if(i==1 .OR. i==3 .OR. i==5) then
-		tag=i+1
-	else
-		tag=i-1
-	endif
+!	if(i==1 .OR. i==3 .OR. i==5) then
+!		tag=i+1
+!	else
+!		tag=i-1
+!	endif
 	
-	if(myProc%procNeighbor(i) /= myProc%taskid) then
+!	if(myProc%procNeighbor(i) /= myProc%taskid) then
 		
 		
 		!number of bndry defects that have changed (local to processor i, boundary here)
-		call MPI_RECV(numUpdateFinalRecv(i),1,MPI_INTEGER,myProc%procNeighbor(i),tag+24,comm,status,ierr)
+!		call MPI_RECV(numUpdateFinalRecv(i),1,MPI_INTEGER,myProc%procNeighbor(i),tag+24,comm,status,ierr)
 		
-		if(numUpdateFinalRecv(i) /= 0) then
+!		if(numUpdateFinalRecv(i) /= 0) then
 			
 			!Read in defects to update in boundary
-			allocate(finalBufferRecv(numUpdateFinalRecv(i),numSpecies+3))
-			call MPI_RECV(finalBufferRecv,numUpdateFinalRecv(i)*(numSpecies+3),MPI_INTEGER,&
-				myProc%procNeighbor(i),tag+30,comm,status,ierr)
+!			allocate(finalBufferRecv(numSpecies+3,numUpdateFinalRecv(i)))
+!			call MPI_RECV(finalBufferRecv,(numSpecies+3)*numUpdateFinalRecv(i),MPI_INTEGER,&
+!				myProc%procNeighbor(i),tag+30,comm,status,ierr)
 
 			!Add defects in finalBufferRecv to myBoundary()
-			do j=1,numUpdateFinalRecv(i)
+!			do j=1,numUpdateFinalRecv(i)
 
-				if(finalBufferRecv(j,numSpecies+2)==-1) then
-					write(*,*) 'error deleting defects in finalBufferRecv'
+!				if(finalBufferRecv(numSpecies+2,j)==-1) then
+!					write(*,*) 'error deleting defects in finalBufferRecv'
 					!call MPI_ABORT(comm,ierr)
-				else
+!				else
 					
 					!create a new element in defectUpdate and assign all variables except for num (will do later)
-					allocate(defectUpdateCurrent%next)
-					defectUpdateCurrent=>defectUpdateCurrent%next
-					defectUpdateCurrent%proc=myProc%procNeighbor(i)
-					defectUpdateCurrent%dir=i	
-					allocate(defectUpdateCurrent%defectType(numSpecies))
-					defectUpdateCurrent%cellNumber=finalBufferRecv(j,numSpecies+1)	!cell number in boundary mesh
-					defectUpdateCurrent%num=finalBufferRecv(j,numSpecies+2) !This should be +1 only
-					defectUpdateCurrent%neighbor=finalBufferRecv(j,numSpecies+3) !cell number in myMesh
-					defectUpdateCurrent%cascadeNumber=0	!not inside a cascade
-					nullify(defectUpdateCurrent%next)
+!					allocate(defectUpdateCurrent%next)
+!					defectUpdateCurrent=>defectUpdateCurrent%next
+!					defectUpdateCurrent%proc=myProc%procNeighbor(i)
+!					defectUpdateCurrent%dir=i
+!					allocate(defectUpdateCurrent%defectType(numSpecies))
+!					defectUpdateCurrent%cellNumber=finalBufferRecv(numSpecies+1,j)	!cell number in boundary mesh
+!					defectUpdateCurrent%num=finalBufferRecv(numSpecies+2,j) !This should be +1 only
+!					defectUpdateCurrent%neighbor=finalBufferRecv(numSpecies+3,j) !cell number in myMesh
+!					defectUpdateCurrent%cascadeNumber=0	!not inside a cascade
+!					nullify(defectUpdateCurrent%next)
 					
 					!point defectCurrent at the defect list in the correct cell of myBoundary
-					defectCurrent=>myBoundary(i,finalBufferRecv(j,numSpecies+1))%defectList
-					nullify(defectPrev)
+!					defectCurrent=>myBoundary(finalBufferRecv(numSpecies+1,j),i)%defectList
+!					nullify(defectPrev)
 					
-					do k=1,numSpecies
-						products(k)=finalBufferRecv(j,k)
-						defectUpdateCurrent%defectType(k)=finalBufferRecv(j,k)
-					end do
+!					do k=1,numSpecies
+!						products(k)=finalBufferRecv(k,j)
+!						defectUpdateCurrent%defectType(k)=finalBufferRecv(k,j)
+!					end do
 					
 					!point DefectCurrent at the defect we are looking for (if it is there), otherwise
 					!point defectCurrent after and defectPrev before where it should go in defectList.
 	
-					call findDefectInList(defectCurrent, defectPrev, products)
+!					call findDefectInList(defectCurrent, defectPrev, products)
 	
 					!Next update defects in myBoundary
-					if(associated(defectCurrent)) then !if we aren't at the end of the list
-						same=0
-						do l=1,numSpecies
-							if(defectCurrent%defectType(l)==products(l)) then
-								same=same+1
-							endif
-						end do
-						if(same==numSpecies) then	!if the defect is already present in the list
-							defectCurrent%num=defectCurrent%num+finalBufferRecv(j,numSpecies+2) !This should be +1 only
+!					if(associated(defectCurrent)) then !if we aren't at the end of the list
+!						same=0
+!						do l=1,numSpecies
+!							if(defectCurrent%defectType(l)==products(l)) then
+!								same=same+1
+!							endif
+!						end do
+!						if(same==numSpecies) then	!if the defect is already present in the list
+!							defectCurrent%num=defectCurrent%num+finalBufferRecv(numSpecies+2,j) !This should be +1 only
 							
-							if(defectCurrent%num==0) then
-								write(*,*) 'Error zero defects in updateDefectList, step 5 of communication'
-							endif
-						else		!if the defect is to be inserted in the list
-							nullify(defectPrev%next)
-							allocate(defectPrev%next)
-							nullify(defectPrev%next%next)
-							defectPrev=>defectPrev%next
-							allocate(defectPrev%defectType(numSpecies))
-							defectPrev%cellNumber=finalBufferRecv(j,numSpecies+1)
-							defectPrev%num=finalBufferRecv(j,numSpecies+2) !This should be +1 only
-							do l=1,numSpecies
-								defectPrev%defectType(l)=finalBufferRecv(j,l)
-							end do
-							defectPrev%next=>defectCurrent !if inserted defect is in the middle of the list, point it to the next item in the list
-						end if
-					else 			!add a defect to the end of the list
-						nullify(defectPrev%next)
-						allocate(defectPrev%next)
-						nullify(defectPrev%next%next)
-						defectPrev=>defectPrev%next
-						allocate(defectPrev%defectType(numSpecies))
-						defectPrev%cellNumber=finalBufferRecv(j,numSpecies+1)
-						defectPrev%num=finalBufferRecv(j,numSpecies+2) !This should be +1 only
-						do l=1,numSpecies
-							defectPrev%defectType(l)=finalBufferRecv(j,l)
-						end do
-					end if
+!							if(defectCurrent%num==0) then
+!								write(*,*) 'Error zero defects in updateDefectList, step 5 of communication'
+!							endif
+!						else		!if the defect is to be inserted in the list
+!							nullify(defectPrev%next)
+!							allocate(defectPrev%next)
+!							nullify(defectPrev%next%next)
+!							defectPrev=>defectPrev%next
+!							allocate(defectPrev%defectType(numSpecies))
+!							defectPrev%cellNumber=finalBufferRecv(numSpecies+1,j)
+!							defectPrev%num=finalBufferRecv(numSpecies+2,j) !This should be +1 only
+!							do l=1,numSpecies
+!								defectPrev%defectType(l)=finalBufferRecv(l,j)
+!							end do
+!							defectPrev%next=>defectCurrent !if inserted defect is in the middle of the list, point it to the next item in the list
+!						end if
+!					else 			!add a defect to the end of the list
+!						nullify(defectPrev%next)
+!						allocate(defectPrev%next)
+!						nullify(defectPrev%next%next)
+!						defectPrev=>defectPrev%next
+!						allocate(defectPrev%defectType(numSpecies))
+!						defectPrev%cellNumber=finalBufferRecv(numSpecies+1,j)
+!						defectPrev%num=finalBufferRecv(numSpecies+2,j) !This should be +1 only
+!						do l=1,numSpecies
+!							defectPrev%defectType(l)=finalBufferRecv(l,j)
+!						end do
+!					end if
 				
-				end if
-			end do
+!				end if
+!			end do
 			
-			deallocate(finalBufferRecv)
-		end if
-	end if
+!			deallocate(finalBufferRecv)
+!		end if
+!	end if
 
-end do
+!end do
 
 !NOTE: steps 4-5 are necessary in the case that one element is a member of the boundary of 
 !more than one processor (ex: the corner of a processor's mesh).
@@ -2511,16 +3248,16 @@ double precision r1, atemp
 
 
 !defect update counters
-integer numUpdateLocal(6)			!<the number of defects being sent to each processor neighbor
-integer numUpdateBndry(6)			!<the number of defects being recieved from each processor neighbor
+integer :: numUpdateLocal(6)=0			!<the number of defects being sent to each processor neighbor
+integer :: numUpdateBndry(6)=0			!<the number of defects being recieved from each processor neighbor
 
 integer count, numDefectsRecv
-integer numUpdateLocalRecv(6), numUpdateBndryRecv(6)	!number of defects being recieved from each proc neighbor
+integer :: numUpdateLocalRecv(6)=0, numUpdateBndryRecv(6)=0	!number of defects being recieved from each proc neighbor
 
 !NOTE: this final step could be eliminated by keeping the global mesh in each local processor
 !(thus each element could be identified as being part of the local mesh of one proc and the boundary of 
 !any other procs)
-integer numUpdateFinal(6), numUpdateFinalRecv(6)		!number of defects being sent/recieved in final update step
+integer :: numUpdateFinal(6)=0, numUpdateFinalRecv(6)=0		!number of defects being sent/recieved in final update step
 
 !create buffers of information to send to neighboring elements
 integer, allocatable :: localBuffer(:,:,:)		!(direction, count, defectType+cellNumber+numDefects) array containing which processor to send to,
@@ -2534,32 +3271,30 @@ integer status(MPI_STATUS_SIZE)
 
 interface
 	subroutine findDefectInList(defectCurrent, defectPrev, products)
-	use DerivedType
-	use mod_constants
-	type(defect), pointer :: defectCurrent, defectPrev
-	integer products(numSpecies)
+		use DerivedType
+		use mod_constants
+		implicit none
+		type(defect), pointer :: defectCurrent, defectPrev
+		integer products(numSpecies)
 	end subroutine
 	
 	subroutine chooseCascade(CascadeTemp)
-	use DerivedType
-	type(cascadeEvent), pointer :: CascadeTemp
+		use DerivedType
+		implicit none
+		type(cascadeEvent), pointer :: CascadeTemp
 	end subroutine
 	
 	subroutine initializeFineMesh(CascadeCurrent)
-	use DerivedType
-	type(cascade), pointer :: CascadeCurrent
+		use DerivedType
+		implicit none
+		type(cascade), pointer :: CascadeCurrent
 	end subroutine
 end interface
 
-!initialize the trackers of number of defects to update
-do i=1,6
-	numUpdateLocal(i)=0
-	numUpdateBndry(i)=0
-end do
 
 !create buffers: size greater than max size needed (max 3 reactants/products per reaction, numCells reactions)
-allocate(localBuffer(6,numCells*3,numSpecies+3))
-allocate(bndryBuffer(6,numCells*3,numSpecies+2))
+allocate(localBuffer(numSpecies+3,numCells*3,6))
+allocate(bndryBuffer(numSpecies+2,numCells*3,6))
 
 !Initialize buffers here instead of inside the loop
 
@@ -2608,7 +3343,7 @@ do while(associated(reactionCurrent))	!loop through all non-null reactions chose
 			defectUpdateCurrent%dir=0	!not pointed at a different proc
 			allocate(defectUpdateCurrent%defectType(numSpecies))
 			do j=1,numSpecies
-				defectUpdateCurrent%defectType(j)=reactionCurrent%reactants(i,j)
+				defectUpdateCurrent%defectType(j)=reactionCurrent%reactants(j,i)
 			end do
 			defectUpdateCurrent%cellNumber=reactionCurrent%cellNumber(i)
 			defectUpdateCurrent%neighbor=0	!not pointed at a different proc
@@ -2618,77 +3353,63 @@ do while(associated(reactionCurrent))	!loop through all non-null reactions chose
 			nullify(defectPrev)
 			defectCurrent=>defectList(reactionCurrent%cellNumber(i))
 			
-			call findDefectInList(defectCurrent, defectPrev, reactionCurrent%reactants(i,:))
+!			call findDefectInList(defectCurrent, defectPrev, reactionCurrent%reactants(:,i))
 			
 			!Check that defectCurrent is pointing towards the reactant
-			same=0
-			do j=1,numSpecies
-				if(defectCurrent%defectType(j)==reactionCurrent%reactants(i,j)) then
-					same=same+1
-				endif
-			end do
-			
-			if(same /= numSpecies) then
-				write(*,*) 'Proc', myProc%taskid, 'error defectCurrent not pointing to reactants'
-				write(*,*) 'reactants', reactionCurrent%reactants(:,:)
-				write(*,*) 'products', reactionCurrent%products(:,:)
-				write(*,*) 'searching for', reactionCurrent%reactants(i,:)
-				if(associated(defectCurrent)) write(*,*) 'DefectCurrent', defectCurrent%defectType
-				if(associated(defectPrev)) write(*,*) 'DefectPrev', defectPrev%defectType
-			endif
-			
-!			do 11 while(associated(defectCurrent)) !search for reactant defect
-!				same=0
-!				do 77 j=1,numSpecies
-!					if(defectCurrent%defectType(j)==reactionCurrent%reactants(i,j)) then
-!						same=same+1
-!					endif
-!				77 continue
-!				if(same==numSpecies) then
-!					exit
+!			same=0
+!			do j=1,numSpecies
+!				if(defectCurrent%defectType(j)==reactionCurrent%reactants(j,i)) then
+!					same=same+1
 !				endif
-!				defectPrev=>defectCurrent
-!				defectCurrent=>defectCurrent%next
-!			11 continue
+!			end do
+			
+!			if(same /= numSpecies) then
+!				write(*,*) 'Proc', myProc%taskid, 'error defectCurrent not pointing to reactants'
+!				write(*,*) 'reactants', reactionCurrent%reactants(:,:)
+!				write(*,*) 'products', reactionCurrent%products(:,:)
+!				write(*,*) 'searching for', reactionCurrent%reactants(:,i)
+!				if(associated(defectCurrent)) write(*,*) 'DefectCurrent', defectCurrent%defectType
+!				if(associated(defectPrev)) write(*,*) 'DefectPrev', defectPrev%defectType
+!			end if
+			
+			do while(associated(defectCurrent)) !search for reactant defect
+				same=0
+				do j=1,numSpecies
+					if(defectCurrent%defectType(j)==reactionCurrent%reactants(i,j)) then
+						same=same+1
+					endif
+				end do
+				if(same==numSpecies) then
+					exit
+				endif
+				defectPrev=>defectCurrent
+				defectCurrent=>defectCurrent%next
+			end do
 			
 			!First update local buffer if needed
 			do j=1, 6
 				do k=1,myMesh(reactionCurrent%cellNumber(i))%numNeighbors(j)
-					if(myMesh(reactionCurrent%cellNumber(i))%neighborProcs(j,k) /= myProc%taskid .AND. &
-						myMesh(reactionCurrent%cellNumber(i))%neighborProcs(j,k) /= -1) then	!neighboring element not in this proc
+					if(myMesh(reactionCurrent%cellNumber(i))%neighborProcs(k,j) /= myProc%taskid .AND. &
+						myMesh(reactionCurrent%cellNumber(i))%neighborProcs(k,j) /= -1) then	!neighboring element not in this proc
 						
 						numUpdateLocal(j)=numUpdateLocal(j)+1
 						
 						do l=1,numSpecies
-							localBuffer(j,numUpdateLocal(j),l)=reactionCurrent%reactants(i,l)	!defect type
+							localBuffer(l,numUpdateLocal(j),j)=reactionCurrent%reactants(l,i)	!defect type
 						end do
 						
 						!Cell Number in local mesh
-						localBuffer(j,numUpdateLocal(j),numSpecies+1)=reactionCurrent%cellNumber(i)
+						localBuffer(numSpecies+1,numUpdateLocal(j),j)=reactionCurrent%cellNumber(i)
 						
 						!Cell number in boundary mesh
-						localBuffer(j,numUpdateLocal(j),numSpecies+3)=myMesh(reactionCurrent%cellNumber(i))%neighbors(j,k)
+						localBuffer(numSpecies+3,numUpdateLocal(j),j)=myMesh(reactionCurrent%cellNumber(i))%neighbors(k,j)
 						
 						if(associated(defectCurrent)) then
-							localBuffer(j,numUpdateLocal(j),numSpecies+2)=-1
+							localBuffer(numSpecies+2,numUpdateLocal(j),j)=-1
 						else
 							write(*,*) 'Error tried to delete defect that was not there and send to neighboring proc'
-						endif
-						
-						!write(*,*) 'localBuffer update: dir', j, 'proc', myProc%taskid, 'neighbor', &
-						!	myMesh(reactionCurrent%cellNumber(i))%neighborProcs(j,k)
-						!write(*,*) 'buffer:', (localBuffer(j,numUpdateLocal(j),l),l=1,numSpecies+2)
-						
-						!write(*,*) 'proc', myProc%taskid, 'neighborProc', myMesh(reactionCurrent%cellNumber(i))%neighborProcs(j,k)
-						!write(*,*) (localBuffer(j,numUpdateLocal(j),l),l=1,numSpecies+1)
-	!					if(myProc%taskid==4) then
-	!						if(j==5) then
-	!							write(*,*) 'dir', j, 'buffer contents',(localBuffer(j,numUpdateLocal(j),l),l=1,numSpecies+2), 'remove'
-	!						else if(j==6) then
-	!							write(*,*) 'dir', j, 'buffer contents',(localBuffer(j,numUpdateLocal(j),l),l=1,numSpecies+2), 'remove'
-	!						endif
-	!					endif
-					endif
+						end if
+					end if
 				end do
 			end do
 			
@@ -2837,8 +3558,8 @@ do while(associated(reactionCurrent))	!loop through all non-null reactions chose
 					
 					nullify(defectPrev)
 					do j=1,numSpecies
-						products(j)=reactionCurrent%products(i,j)
-						defectUpdateCurrent%defectType(j)=reactionCurrent%products(i,j)
+						products(j)=reactionCurrent%products(j,i)
+						defectUpdateCurrent%defectType(j)=reactionCurrent%products(j,i)
 					end do
 					
 					!Point CascadeCurrent at the correct cascade
@@ -2890,7 +3611,7 @@ do while(associated(reactionCurrent))	!loop through all non-null reactions chose
 							defectPrev%cellNumber=defectUpdateCurrent%cellNumber
 							defectPrev%num=1
 							do j=1,numSpecies
-								defectPrev%defectType(j)=reactionCurrent%products(i,j)
+								defectPrev%defectType(j)=reactionCurrent%products(j,i)
 							end do
 							defectPrev%next=>defectCurrent !if inserted defect is in the middle of the list, point it to the next item in the list
 						end if
@@ -2903,7 +3624,7 @@ do while(associated(reactionCurrent))	!loop through all non-null reactions chose
 						defectPrev%cellNumber=defectUpdateCurrent%cellNumber
 						defectPrev%num=1
 						do j=1,numSpecies
-							defectPrev%defectType(j)=reactionCurrent%products(i,j)
+							defectPrev%defectType(j)=reactionCurrent%products(j,i)
 						end do
 					end if
 					
@@ -2944,18 +3665,18 @@ do while(associated(reactionCurrent))	!loop through all non-null reactions chose
 					do j=1,6
 						do k=1,myMesh(reactionCurrent%cellNumber(1))%numNeighbors(j)
 							if(flag .EQV. .FALSE.) then
-								if(myMesh(reactionCurrent%cellNumber(1))%neighbors(j,k)==&
+								if(myMesh(reactionCurrent%cellNumber(1))%neighbors(k,j)==&
 									reactionCurrent%cellNumber(i+reactionCurrent%numReactants) .AND. &
-									myMesh(reactionCurrent%cellNumber(1))%neighborProcs(j,k)==&
+									myMesh(reactionCurrent%cellNumber(1))%neighborProcs(k,j)==&
 									reactionCurrent%taskid(i+reactionCurrent%numReactants)) then
 			
 									numUpdateBndry(j)=numUpdateBndry(j)+1
 									do l=1,numSpecies
-										bndryBuffer(j,numUpdateBndry(j),l)=reactionCurrent%products(i,l)
+										bndryBuffer(l,numUpdateBndry(j),j)=reactionCurrent%products(l,i)
 									end do
-									bndryBuffer(j,numUpdateBndry(j),numSpecies+1)=&
+									bndryBuffer(numSpecies+1,numUpdateBndry(j),j)=&
 										reactionCurrent%cellNumber(i+reactionCurrent%numReactants)
-									bndryBuffer(j,numUpdateBndry(j),numSpecies+2)=1	!indicates we are adding one defect
+									bndryBuffer(numSpecies+2,numUpdateBndry(j),j)=1	!indicates we are adding one defect
 									flag=.TRUE.
 								endif
 							endif
@@ -2969,8 +3690,8 @@ do while(associated(reactionCurrent))	!loop through all non-null reactions chose
 						!if myBoundary at this cell has defectList associated, then it is a boundary element for a local element in this cell.
 						!NOTE: this will not work in the case of a non-uniform mesh (because there could be more
 						!than one local neighbor, will have to change to localNeighbor())
-						if(myBoundary(j,reactionCurrent%cellNumber(i+reactionCurrent%numReactants))%localNeighbor /= 0 &
-							.AND. myBoundary(j,reactionCurrent%cellNumber(i+reactionCurrent%numReactants))%proc == &
+						if(myBoundary(reactionCurrent%cellNumber(i+reactionCurrent%numReactants),j)%localNeighbor /= 0 &
+							.AND. myBoundary(reactionCurrent%cellNumber(i+reactionCurrent%numReactants),j)%proc == &
 							reactionCurrent%taskid(i+reactionCurrent%numReactants)) then
 							
 							!Create next entry in defectUpdate (used for updating reaction lists)
@@ -2986,16 +3707,16 @@ do while(associated(reactionCurrent))	!loop through all non-null reactions chose
 							
 							!This information is used to tell us which element in the local
 							!processor bounds this element in myBoundary
-							defectUpdateCurrent%neighbor=myBoundary(j,reactionCurrent%cellNumber(i+reactionCurrent%numReactants))&
+							defectUpdateCurrent%neighbor=myBoundary(reactionCurrent%cellNumber(i+reactionCurrent%numReactants),j)&
 								%localNeighbor		
 							
 							do l=1,numSpecies
-								products(l)=reactionCurrent%products(i,l)
-								defectUpdateCurrent%defectType(l)=reactionCurrent%products(i,l)
+								products(l)=reactionCurrent%products(l,i)
+								defectUpdateCurrent%defectType(l)=reactionCurrent%products(l,i)
 							end do
 							
 							!Find defect in defect list on myBoundary
-							defectCurrent=>myBoundary(j,reactionCurrent%cellNumber(i+reactionCurrent%numReactants))%defectList
+							defectCurrent=>myBoundary(reactionCurrent%cellNumber(i+reactionCurrent%numReactants),j)%defectList
 	
 							call findDefectInList(defectCurrent, defectPrev, products)
 	
@@ -3018,7 +3739,7 @@ do while(associated(reactionCurrent))	!loop through all non-null reactions chose
 									defectPrev%cellNumber=reactionCurrent%cellNumber(i+reactionCurrent%numReactants)
 									defectPrev%num=1
 									do l=1,numSpecies
-										defectPrev%defectType(l)=reactionCurrent%products(i,l)
+										defectPrev%defectType(l)=reactionCurrent%products(l,i)
 									end do
 									defectPrev%next=>defectCurrent !if inserted defect is in the middle of the list, point it to the next item in the list
 								endif
@@ -3031,7 +3752,7 @@ do while(associated(reactionCurrent))	!loop through all non-null reactions chose
 								defectPrev%cellNumber=reactionCurrent%cellNumber(i+reactionCurrent%numReactants)
 								defectPrev%num=1
 								do l=1,numSpecies
-									defectPrev%defectType(l)=reactionCurrent%products(i,l)
+									defectPrev%defectType(l)=reactionCurrent%products(l,i)
 								end do
 							endif
 						endif
@@ -3051,8 +3772,8 @@ do while(associated(reactionCurrent))	!loop through all non-null reactions chose
 					
 					nullify(defectPrev)
 					do j=1,numSpecies
-						products(j)=reactionCurrent%products(i,j)
-						defectUpdateCurrent%defectType(j)=reactionCurrent%products(i,j)
+						products(j)=reactionCurrent%products(j,i)
+						defectUpdateCurrent%defectType(j)=reactionCurrent%products(j,i)
 					end do
 					
 					defectCurrent=>defectList(reactionCurrent%cellNumber(i+reactionCurrent%numReactants))
@@ -3065,35 +3786,28 @@ do while(associated(reactionCurrent))	!loop through all non-null reactions chose
 					!First update local buffer if needed
 					do j=1,6
 						do k=1,myMesh(reactionCurrent%cellNumber(i+reactionCurrent%numReactants))%numNeighbors(j)
-							if(myMesh(reactionCurrent%cellNumber(i+reactionCurrent%numReactants))%neighborProcs(j,k)==-1) then
+							if(myMesh(reactionCurrent%cellNumber(i+reactionCurrent%numReactants))%neighborProcs(k,j)==-1) then
 								!do nothing, free surface
-							else if(myMesh(reactionCurrent%cellNumber(i+reactionCurrent%numReactants))%neighborProcs(j,k) &
+							else if(myMesh(reactionCurrent%cellNumber(i+reactionCurrent%numReactants))%neighborProcs(k,j) &
 								/= myProc%taskid) then	!neighboring element not in this proc
 							
 								numUpdateLocal(j)=numUpdateLocal(j)+1
 								
 								!species
 								do l=1,numSpecies
-									localBuffer(j,numUpdateLocal(j),l)=reactionCurrent%products(i,l)
+									localBuffer(l,numUpdateLocal(j),j)=reactionCurrent%products(l,i)
 								end do
 								
 								!cell number in local mesh
-								localBuffer(j,numUpdateLocal(j),numSpecies+1)=reactionCurrent%cellNumber(i+reactionCurrent%numReactants)
+								localBuffer(numSpecies+1,numUpdateLocal(j),j)=reactionCurrent%cellNumber(i+reactionCurrent%numReactants)
 								
 								!cell number of neighbor (in different proc)
-								localBuffer(j,numUpdateLocal(j),numSpecies+3)=myMesh(reactionCurrent%cellNumber(i+reactionCurrent%numReactants))&
-									%neighbors(j,k)
+								localBuffer(numSpecies+3,numUpdateLocal(j),j)=myMesh(reactionCurrent%cellNumber(i+reactionCurrent%numReactants))&
+									%neighbors(k,j)
 								
 								!number of defects to be increased by 1
-								localBuffer(j,numUpdateLocal(j),numSpecies+2)=1
-								
-	!							if(myProc%taskid==4) then
-	!								if(j==5) then
-	!									write(*,*) 'dir', j, 'buffer contents',(localBuffer(j,numUpdateLocal(j),l),l=1,numSpecies+2), 'add'
-	!								else if(j==6) then
-	!									write(*,*) 'dir', j, 'buffer contents',(localBuffer(j,numUpdateLocal(j),l),l=1,numSpecies+2), 'add'
-	!								endif
-	!							endif
+								localBuffer(numSpecies+2,numUpdateLocal(j),j)=1
+
 							end if
 						end do
 					end do
@@ -3124,7 +3838,7 @@ do while(associated(reactionCurrent))	!loop through all non-null reactions chose
 							defectPrev%cellNumber=reactionCurrent%cellNumber(i+reactionCurrent%numReactants)
 							defectPrev%num=1
 							do j=1,numSpecies
-								defectPrev%defectType(j)=reactionCurrent%products(i,j)
+								defectPrev%defectType(j)=reactionCurrent%products(j,i)
 							end do
 							defectPrev%next=>defectCurrent !if inserted defect is in the middle of the list, point it to the next item in the list
 						end if
@@ -3137,7 +3851,7 @@ do while(associated(reactionCurrent))	!loop through all non-null reactions chose
 						defectPrev%cellNumber=reactionCurrent%cellNumber(i+reactionCurrent%numReactants)
 						defectPrev%num=1
 						do j=1,numSpecies
-							defectPrev%defectType(j)=reactionCurrent%products(i,j)
+							defectPrev%defectType(j)=reactionCurrent%products(j,i)
 						end do
 					end if
 					
@@ -3183,15 +3897,15 @@ do i=1,6
 		
 		if(numUpdateLocal(i) /= 0) then
 
-			allocate(localBufferSend(numUpdateLocal(i),numSpecies+3))
+			allocate(localBufferSend(numSpecies+3,numUpdateLocal(i)))
 			
 			do j=1,numUpdateLocal(i)
 				do k=1,numSpecies+3
-					localBufferSend(j,k)=localBuffer(i,j,k)
+					localBufferSend(k,j)=localBuffer(k,j,i)
 				end do
 			end do
 
-			call MPI_SEND(localBufferSend,numUpdateLocal(i)*(numSpecies+3), MPI_INTEGER, &
+			call MPI_SEND(localBufferSend,(numSpecies+3)*numUpdateLocal(i), MPI_INTEGER, &
 				myProc%procNeighbor(i),i+12,comm,ierr)
 !			if(myProc%taskid==4) then
 !				write(*,*) 'dir', i, 'proc sent', myProc%procNeighbor(i), 'numUpdateLocal', numUpdateLocal(i)
@@ -3203,15 +3917,15 @@ do i=1,6
 		
 		if(numUpdateBndry(i) /= 0) then
 
-			allocate(bndryBufferSend(numUpdateBndry(i),numSpecies+2))
+			allocate(bndryBufferSend(numSpecies+2,numUpdateBndry(i)))
 			
 			do j=1,numUpdateBndry(i)
 				do k=1,numSpecies+2
-					bndryBufferSend(j,k)=bndryBuffer(i,j,k)
+					bndryBufferSend(k,j)=bndryBuffer(k,j,i)
 				end do
 			end do
 
-			call MPI_SEND(bndryBufferSend,numUpdateBndry(i)*(numSpecies+2), MPI_INTEGER, &
+			call MPI_SEND(bndryBufferSend,(numSpecies+2)*numUpdateBndry(i), MPI_INTEGER, &
 				myProc%procNeighbor(i),i+18,comm,ierr)
 			deallocate(bndryBufferSend)
 
@@ -3246,7 +3960,7 @@ do i=1,6
 	endif
 end do
 
-allocate(finalBuffer(6,totalLocalRecv,numSpecies+3))
+allocate(finalBuffer(numSpecies+3,totalLocalRecv,6))
 
 do i=1,6
 	
@@ -3262,51 +3976,41 @@ do i=1,6
 		if(numUpdateBndryRecv(i) /= 0) then
 			
 			!Read in defects to update in boundary
-			allocate(bndryBufferRecv(numUpdateBndryRecv(i),numSpecies+3))
-			call MPI_RECV(bndryBufferRecv,numUpdateBndryRecv(i)*(numSpecies+3),MPI_INTEGER,&
+			allocate(bndryBufferRecv(numSpecies+3,numUpdateBndryRecv(i)))
+			call MPI_RECV(bndryBufferRecv,(numSpecies+3)*numUpdateBndryRecv(i),MPI_INTEGER,&
 				myProc%procNeighbor(i),tag+12,comm,status,ierr)
-!			if(myProc%taskid==MASTER) then
-!				write(*,*) 'dir', i, 'proc recvd', myProc%procNeighbor(i), 'numUpdateBndryRecv', numUpdateBndryRecv(i)
-!			endif
-			
+
 			!Add defects in bndryBufferRecv to myBoundary()
 			do j=1,numUpdateBndryRecv(i)
-!				if(myProc%taskid==0) then
-!					if(i==5) then
-!						write(*,*) 'dir', i, 'bdry recv',(bndryBufferRecv(j,m),m=1,numSpecies+2)
-!					else if(i==6) then
-!						write(*,*) 'dir', i, 'bdry recv',(bndryBufferRecv(j,m),m=1,numSpecies+2)
-!					endif
-!				endif
-				
+
 				!create a new element in defectUpdate and assign all variables except for num (will do later)
 				allocate(defectUpdateCurrent%next)
 				defectUpdateCurrent=>defectUpdateCurrent%next
 				defectUpdateCurrent%proc=myProc%procNeighbor(i)
 				defectUpdateCurrent%dir=i	
 				allocate(defectUpdateCurrent%defectType(numSpecies))
-				defectUpdateCurrent%cellNumber=bndryBufferRecv(j,numSpecies+1)
-				defectUpdateCurrent%num=bndryBufferRecv(j,numSpecies+2)	!This will be +/- 1 only
+				defectUpdateCurrent%cellNumber=bndryBufferRecv(numSpecies+1,j)
+				defectUpdateCurrent%num=bndryBufferRecv(numSpecies+2,j)	!This will be +/- 1 only
 				defectUpdateCurrent%cascadeNumber=0	!not inside a cascade
 				nullify(defectUpdateCurrent%next)
 				
 				!This information is used to tell us which element in the local
 				!processor bounds this element in myBoundary
-				defectUpdateCurrent%neighbor=bndryBufferRecv(j,numSpecies+3)
+				defectUpdateCurrent%neighbor=bndryBufferRecv(numSpecies+3,j)
 				
 				!point defectCurrent at the defect list in the correct cell of myBoundary
-				defectCurrent=>myBoundary(i,bndryBufferRecv(j,numSpecies+1))%defectList
+				defectCurrent=>myBoundary(bndryBufferRecv(numSpecies+1,j),i)%defectList
 				if(.NOT. associated(defectCurrent)) then
 					write(*,*) 'error myBoundary not allocated correctly'
-					write(*,*) 'dir', i, 'cell', bndryBufferRecv(j,numSpecies+1)
+					write(*,*) 'dir', i, 'cell', bndryBufferRecv(numSpecies+1,j)
 					call MPI_ABORT(comm,ierr)
 				endif
 				
 				nullify(defectPrev)
 				
 				do k=1,numSpecies
-					products(k)=bndryBufferRecv(j,k)
-					defectUpdateCurrent%defectType(k)=bndryBufferRecv(j,k)	!used to update reaction lists
+					products(k)=bndryBufferRecv(k,j)
+					defectUpdateCurrent%defectType(k)=bndryBufferRecv(k,j)	!used to update reaction lists
 				end do
 				
 				!point DefectCurrent at the defect we are looking for (if it is there), otherwise
@@ -3314,7 +4018,7 @@ do i=1,6
 !				if(myProc%taskid==MASTER .OR. myProc%taskid==3) then
 !					write(*,*) 'proc', myProc%taskid
 !					write(*,*) 'numUpdateBndryRecv', numUpdateBndryRecv(i)
-!					write(*,*) 'dir', i, (bndryBufferRecv(j,k),k=1,numSpecies+2)
+!					write(*,*) 'dir', i, (bndryBufferRecv(k,j),k=1,numSpecies+2)
 !				endif
 				
 				call findDefectInList(defectCurrent, defectPrev, products)
@@ -3329,7 +4033,7 @@ do i=1,6
 						end if
 					end do
 					if(same==numSpecies) then	!if the defect is already present in the list
-						defectCurrent%num=defectCurrent%num+bndryBufferRecv(j,numSpecies+2) !this will be +/- 1 only
+						defectCurrent%num=defectCurrent%num+bndryBufferRecv(numSpecies+2,j) !this will be +/- 1 only
 						
 						if(defectCurrent%num==0) then
 							!delete this defect from the list in myBoundary
@@ -3340,12 +4044,12 @@ do i=1,6
 						end if
 					else		!if the defect is to be inserted in the list
 					
-						if(bndryBufferRecv(j,numSpecies+2) == -1) then
+						if(bndryBufferRecv(numSpecies+2,j) == -1) then
 							write(*,*) 'defectCurrent associated', defectCurrent%defectType, 'num', defectCurrent%num
 							if(associated(defectPrev)) write(*,*) 'defectPrev', defectPrev%defectType, 'num', defectPrev%num
 							write(*,*) 'error in defectUpdate negative defect numbers', myProc%taskid
 							write(*,*) 'proc', myProc%taskid, 'dir', i, 'neighbor proc', myProc%procNeighbor(i)
-							write(*,*) (bndryBufferRecv(j,k),k=1,numSpecies+2)
+							write(*,*) (bndryBufferRecv(k,j),k=1,numSpecies+2)
 							
 							call MPI_ABORT(comm,ierr)
 							
@@ -3355,11 +4059,11 @@ do i=1,6
 							nullify(defectPrev%next%next)
 							defectPrev=>defectPrev%next
 							allocate(defectPrev%defectType(numSpecies))
-							defectPrev%cellNumber=bndryBufferRecv(j,numSpecies+1)
-							defectPrev%num=bndryBufferRecv(j,numSpecies+2)	!This will be +/- 1 only
+							defectPrev%cellNumber=bndryBufferRecv(numSpecies+1,j)
+							defectPrev%num=bndryBufferRecv(numSpecies+2,j)	!This will be +/- 1 only
 							
 							do l=1,numSpecies
-								defectPrev%defectType(l)=bndryBufferRecv(j,l)
+								defectPrev%defectType(l)=bndryBufferRecv(l,j)
 							end do
 							defectPrev%next=>defectCurrent !if inserted defect is in the middle of the list, point it to the next item in the list
 						end if
@@ -3367,11 +4071,11 @@ do i=1,6
 					end if
 				else 			!add a defect to the end of the list
 					
-					if(bndryBufferRecv(j,numSpecies+2) == -1) then
+					if(bndryBufferRecv(numSpecies+2,j) == -1) then
 						write(*,*) 'defectCurrent not associated'
 						write(*,*) 'error in defectUpdate negative defect numbers'
 						write(*,*) 'proc', myProc%taskid, 'dir', i, 'neighbor proc', myProc%procNeighbor(i)
-						write(*,*) (bndryBufferRecv(j,k),k=1,numSpecies+2)
+						write(*,*) (bndryBufferRecv(k,j),k=1,numSpecies+2)
 						call MPI_ABORT(comm,ierr)
 					else
 					
@@ -3380,11 +4084,11 @@ do i=1,6
 						nullify(defectPrev%next%next)
 						defectPrev=>defectPrev%next
 						allocate(defectPrev%defectType(numSpecies))
-						defectPrev%cellNumber=bndryBufferRecv(j,numSpecies+1)
-						defectPrev%num=bndryBufferRecv(j,numSpecies+2)	!This will be +/- 1 only
+						defectPrev%cellNumber=bndryBufferRecv(numSpecies+1,j)
+						defectPrev%num=bndryBufferRecv(numSpecies+2,j)	!This will be +/- 1 only
 											
 						do l=1,numSpecies
-							defectPrev%defectType(l)=bndryBufferRecv(j,l)
+							defectPrev%defectType(l)=bndryBufferRecv(l,j)
 						end do
 					end if
 
@@ -3396,8 +4100,8 @@ do i=1,6
 		if(numUpdateLocalRecv(i) /= 0) then
 			
 			!Read in defects to update in local mesh
-			allocate(localBufferRecv(numUpdateLocalRecv(i),numSpecies+2))
-			call MPI_RECV(localBufferRecv,numUpdateLocalRecv(i)*(numSpecies+2),MPI_INTEGER,&
+			allocate(localBufferRecv(numSpecies+2,numUpdateLocalRecv(i)))
+			call MPI_RECV(localBufferRecv,(numSpecies+2)*numUpdateLocalRecv(i),MPI_INTEGER,&
 				myProc%procNeighbor(i),tag+18,comm,status,ierr)
 
 			!Add defects in localBufferRecv to defectList()
@@ -3409,18 +4113,18 @@ do i=1,6
 				defectUpdateCurrent%dir=0	!not pointed at a different proc
 				defectUpdateCurrent%neighbor=0	!not pointed at a different proc
 				allocate(defectUpdateCurrent%defectType(numSpecies))
-				defectUpdateCurrent%cellNumber=localBufferRecv(j,numSpecies+1)
-				defectUpdateCurrent%num=localBufferRecv(j,numSpecies+2) !This will be +/- 1 only
+				defectUpdateCurrent%cellNumber=localBufferRecv(numSpecies+1,j)
+				defectUpdateCurrent%num=localBufferRecv(numSpecies+2,j) !This will be +/- 1 only
 				defectUpdateCurrent%cascadeNumber=0	!not inside a cascade
 				nullify(defectUpdateCurrent%next)
 
 				!point defectCurrent at the defect list in the correct cell of defectList
-				defectCurrent=>defectList(localBufferRecv(j,numSpecies+1))
+				defectCurrent=>defectList(localBufferRecv(numSpecies+1,j))
 				nullify(defectPrev)
 				
 				do k=1,numSpecies
-					products(k)=localBufferRecv(j,k)
-					defectUpdateCurrent%defectType(k)=localBufferRecv(j,k)
+					products(k)=localBufferRecv(k,j)
+					defectUpdateCurrent%defectType(k)=localBufferRecv(k,j)
 				end do
 				
 				!point DefectCurrent at the defect we are looking for (if it is there), otherwise
@@ -3437,7 +4141,7 @@ do i=1,6
 						endif
 					end do
 					if(same==numSpecies) then	!if the defect is already present in the list
-						defectCurrent%num=defectCurrent%num+localBufferRecv(j,numSpecies+2)	!This will be +/- 1 only (should be only +1 here)
+						defectCurrent%num=defectCurrent%num+localBufferRecv(numSpecies+2,j)	!This will be +/- 1 only (should be only +1 here)
 						
 						if(defectCurrent%num==0) then
 							write(*,*) 'Error zero defects in updateDefectList, step 3 of communication'
@@ -3448,10 +4152,10 @@ do i=1,6
 						nullify(defectPrev%next%next)
 						defectPrev=>defectPrev%next
 						allocate(defectPrev%defectType(numSpecies))
-						defectPrev%cellNumber=localBufferRecv(j,numSpecies+1)
-						defectPrev%num=localBufferRecv(j,numSpecies+2) !This will be +/- 1 only (should be only +1 here)
+						defectPrev%cellNumber=localBufferRecv(numSpecies+1,j)
+						defectPrev%num=localBufferRecv(numSpecies+2,j) !This will be +/- 1 only (should be only +1 here)
 						do l=1,numSpecies
-							defectPrev%defectType(l)=localBufferRecv(j,l)
+							defectPrev%defectType(l)=localBufferRecv(l,j)
 						end do
 						defectPrev%next=>defectCurrent !if inserted defect is in the middle of the list, point it to the next item in the list
 					endif
@@ -3461,10 +4165,10 @@ do i=1,6
 					nullify(defectPrev%next%next)
 					defectPrev=>defectPrev%next
 					allocate(defectPrev%defectType(numSpecies))
-					defectPrev%cellNumber=localBufferRecv(j,numSpecies+1)
-					defectPrev%num=localBufferRecv(j,numSpecies+2) !This will be +/- 1 only (should be only +1 here)
+					defectPrev%cellNumber=localBufferRecv(numSpecies+1,j)
+					defectPrev%num=localBufferRecv(numSpecies+2,j) !This will be +/- 1 only (should be only +1 here)
 					do l=1,numSpecies
-						defectPrev%defectType(l)=localBufferRecv(j,l)
+						defectPrev%defectType(l)=localBufferRecv(l,j)
 					end do
 				endif
 				
@@ -3473,24 +4177,24 @@ do i=1,6
 				!*****************************************************
 				
 				do k=1,6
-					do l=1,myMesh(localBufferRecv(j,numSpecies+1))%numNeighbors(k)
+					do l=1,myMesh(localBufferRecv(numSpecies+1,j))%numNeighbors(k)
 						
 						!if a neighbor of this element is not in this proc or in the proc that just communicated with it
-						if (myMesh(localBufferRecv(j,numSpecies+1))%neighborProcs(k,l) /= myProc%taskid .AND. &
-							myMesh(localBufferRecv(j,numSpecies+1))%neighborProcs(k,l) /= myProc%procNeighbor(i) .AND. &
-							myMesh(localBufferRecv(j,numSpecies+1))%neighborProcs(k,l) /= -1) then
+						if (myMesh(localBufferRecv(numSpecies+1,j))%neighborProcs(l,k) /= myProc%taskid .AND. &
+							myMesh(localBufferRecv(numSpecies+1,j))%neighborProcs(l,k) /= myProc%procNeighbor(i) .AND. &
+							myMesh(localBufferRecv(numSpecies+1,j))%neighborProcs(l,k) /= -1) then
 							
 							!Add this defect to a final buffer
 							numUpdateFinal(k)=numUpdateFinal(k)+1
 							!finalBuffer(1,1,1)=100	!why is this here?
 							do m=1,numSpecies
-								finalBuffer(k,numUpdateFinal(k),m)=localBufferRecv(j,m)
+								finalBuffer(m,numUpdateFinal(k),k)=localBufferRecv(m,j)
 							end do
-							finalBuffer(k,numUpdateFinal(k),numSpecies+1)=localBufferRecv(j,numSpecies+1)	!local cell number
-							finalBuffer(k,numUpdateFinal(k),numSpecies+2)=localBufferRecv(j,numSpecies+2) !This should be +1 only
-							finalBuffer(k,numUpdateFinal(k),numSpecies+3)=myMesh(localBufferRecv(j,numSpecies+1))%neighbors(k,l)	!cell number in neighboring proc
+							finalBuffer(numSpecies+1,numUpdateFinal(k),k)=localBufferRecv(numSpecies+1,j)	!local cell number
+							finalBuffer(numSpecies+2,numUpdateFinal(k),k)=localBufferRecv(numSpecies+2,j) !This should be +1 only
+							finalBuffer(numSpecies+3,numUpdateFinal(k),k)=myMesh(localBufferRecv(numSpecies+1,j))%neighbors(l,k)	!cell number in neighboring proc
 							
-							if(localBufferRecv(j,numSpecies+2)==-1) then
+							if(localBufferRecv(numSpecies+2,j)==-1) then
 								write(*,*) 'error: cell in boundary of multiple procs removing defect'
 								call MPI_ABORT(comm,ierr)
 							endif
@@ -3524,15 +4228,15 @@ do i=1,6
 		call MPI_SEND(numUpdateFinal(i), 1, MPI_INTEGER, myProc%procNeighbor(i), i+24, comm, ierr)	!number of local defects that have changed on boundary of processor i
 		
 		if(numUpdateFinal(i) /= 0) then
-			allocate(finalBufferSend(numUpdateFinal(i),numSpecies+3))
+			allocate(finalBufferSend(numSpecies+3,numUpdateFinal(i)))
 			
 			do j=1,numUpdateFinal(i)
 				do k=1,numSpecies+3
-					finalBufferSend(j,k)=finalBuffer(i,j,k)
+					finalBufferSend(k,j)=finalBuffer(k,j,i)
 				end do
 			end do
 			
-			call MPI_SEND(finalBufferSend,numUpdateFinal(i)*(numSpecies+3), MPI_INTEGER, &
+			call MPI_SEND(finalBufferSend,(numSpecies+3)*numUpdateFinal(i), MPI_INTEGER, &
 				myProc%procNeighbor(i),i+30,comm,ierr)
 			deallocate(finalBufferSend)
 		end if
@@ -3561,22 +4265,14 @@ do i=1,6
 		if(numUpdateFinalRecv(i) /= 0) then
 			
 			!Read in defects to update in boundary
-			allocate(finalBufferRecv(numUpdateFinalRecv(i),numSpecies+3))
-			call MPI_RECV(finalBufferRecv,numUpdateFinalRecv(i)*(numSpecies+3),MPI_INTEGER,&
+			allocate(finalBufferRecv(numSpecies+3,numUpdateFinalRecv(i)))
+			call MPI_RECV(finalBufferRecv,(numSpecies+3)*numUpdateFinalRecv(i),MPI_INTEGER,&
 				myProc%procNeighbor(i),tag+30,comm,status,ierr)
 
 			!Add defects in finalBufferRecv to myBoundary()
 			do j=1,numUpdateFinalRecv(i)
-				
-!				if(myProc%taskid==0) then
-!					if(i==5) then
-!						write(*,*) 'dir', i, 'final recv',(finalBufferRecv(j,m),m=1,numSpecies+2)
-!					else if(i==6) then
-!						write(*,*) 'dir', i, 'final recv',(finalBufferRecv(j,m),m=1,numSpecies+2)
-!					endif
-!				endif
-				
-				if(finalBufferRecv(j,numSpecies+2)==-1) then
+
+				if(finalBufferRecv(numSpecies+2,j)==-1) then
 					write(*,*) 'error deleting defects in finalBufferRecv'
 					!call MPI_ABORT(comm,ierr)
 				else
@@ -3587,19 +4283,19 @@ do i=1,6
 					defectUpdateCurrent%proc=myProc%procNeighbor(i)
 					defectUpdateCurrent%dir=i	
 					allocate(defectUpdateCurrent%defectType(numSpecies))
-					defectUpdateCurrent%cellNumber=finalBufferRecv(j,numSpecies+1)	!cell number in boundary mesh
-					defectUpdateCurrent%num=finalBufferRecv(j,numSpecies+2) !This should be +1 only
-					defectUpdateCurrent%neighbor=finalBufferRecv(j,numSpecies+3) !cell number in myMesh
+					defectUpdateCurrent%cellNumber=finalBufferRecv(numSpecies+1,j)	!cell number in boundary mesh
+					defectUpdateCurrent%num=finalBufferRecv(numSpecies+2,j) !This should be +1 only
+					defectUpdateCurrent%neighbor=finalBufferRecv(numSpecies+3,j) !cell number in myMesh
 					defectUpdateCurrent%cascadeNumber=0	!not inside a cascade
 					nullify(defectUpdateCurrent%next)
 					
 					!point defectCurrent at the defect list in the correct cell of myBoundary
-					defectCurrent=>myBoundary(i,finalBufferRecv(j,numSpecies+1))%defectList
+					defectCurrent=>myBoundary(finalBufferRecv(numSpecies+1,j),i)%defectList
 					nullify(defectPrev)
 					
 					do k=1,numSpecies
-						products(k)=finalBufferRecv(j,k)
-						defectUpdateCurrent%defectType(k)=finalBufferRecv(j,k)
+						products(k)=finalBufferRecv(k,j)
+						defectUpdateCurrent%defectType(k)=finalBufferRecv(k,j)
 					end do
 					
 					!point DefectCurrent at the defect we are looking for (if it is there), otherwise
@@ -3616,7 +4312,7 @@ do i=1,6
 							end if
 						end do
 						if(same==numSpecies) then	!if the defect is already present in the list
-							defectCurrent%num=defectCurrent%num+finalBufferRecv(j,numSpecies+2) !This should be +1 only
+							defectCurrent%num=defectCurrent%num+finalBufferRecv(numSpecies+2,j) !This should be +1 only
 							
 							if(defectCurrent%num==0) then
 								write(*,*) 'Error zero defects in updateDefectList, step 5 of communication'
@@ -3627,10 +4323,10 @@ do i=1,6
 							nullify(defectPrev%next%next)
 							defectPrev=>defectPrev%next
 							allocate(defectPrev%defectType(numSpecies))
-							defectPrev%cellNumber=finalBufferRecv(j,numSpecies+1)
-							defectPrev%num=finalBufferRecv(j,numSpecies+2) !This should be +1 only
+							defectPrev%cellNumber=finalBufferRecv(numSpecies+1,j)
+							defectPrev%num=finalBufferRecv(numSpecies+2,j) !This should be +1 only
 							do l=1,numSpecies
-								defectPrev%defectType(l)=finalBufferRecv(j,l)
+								defectPrev%defectType(l)=finalBufferRecv(l,j)
 							end do
 							defectPrev%next=>defectCurrent !if inserted defect is in the middle of the list, point it to the next item in the list
 						end if
@@ -3640,10 +4336,10 @@ do i=1,6
 						nullify(defectPrev%next%next)
 						defectPrev=>defectPrev%next
 						allocate(defectPrev%defectType(numSpecies))
-						defectPrev%cellNumber=finalBufferRecv(j,numSpecies+1)
-						defectPrev%num=finalBufferRecv(j,numSpecies+2) !This should be +1 only
+						defectPrev%cellNumber=finalBufferRecv(numSpecies+1,j)
+						defectPrev%num=finalBufferRecv(numSpecies+2,j) !This should be +1 only
 						do l=1,numSpecies
-							defectPrev%defectType(l)=finalBufferRecv(j,l)
+							defectPrev%defectType(l)=finalBufferRecv(l,j)
 						end do
 					end if
 				
@@ -3795,21 +4491,21 @@ do while(associated(defectUpdateCurrent))
 						localGrainID=myMesh(defectUpdateCurrent%cellNumber)%material
 
 						!Find the grain ID number of the neighboring volume element
-						if(myMesh(defectUpdateCurrent%cellNumber)%neighborProcs(j,k) /= myProc%taskid .AND. &
-							myMesh(defectUpdateCurrent%cellNumber)%neighborProcs(j,k) /= -1) then
+						if(myMesh(defectUpdateCurrent%cellNumber)%neighborProcs(k,j) /= myProc%taskid .AND. &
+							myMesh(defectUpdateCurrent%cellNumber)%neighborProcs(k,j) /= -1) then
 						
-							neighborGrainID=myBoundary(j,myMesh(defectUpdateCurrent%cellNumber)%neighbors(j,k))%material
-						else if(myMesh(defectUpdateCurrent%cellNumber)%neighborProcs(j,k) == -1) then
+							neighborGrainID=myBoundary(myMesh(defectUpdateCurrent%cellNumber)%neighbors(k,j),j)%material
+						else if(myMesh(defectUpdateCurrent%cellNumber)%neighborProcs(k,j) == -1) then
 							neighborGrainID=localGrainID	!free surface release, don't need to do anything special
 						else
-							neighborGrainID=myMesh(myMesh(defectUpdateCurrent%cellNumber)%neighbors(j,k))%material
+							neighborGrainID=myMesh(myMesh(defectUpdateCurrent%cellNumber)%neighbors(k,j))%material
 						endif
 
 						if(localGrainID==neighborGrainID) then
 
 							!Allow diffusion between elements in the same grain
-							call addDiffusionReactions(defectUpdateCurrent%cellNumber, myMesh(defectUpdateCurrent%cellNumber)%neighbors(j,k),&
-								myProc%taskid, myMesh(defectUpdateCurrent%cellNumber)%neighborProcs(j,k),j,defectTemp)
+							call addDiffusionReactions(defectUpdateCurrent%cellNumber, myMesh(defectUpdateCurrent%cellNumber)%neighbors(k,j),&
+								myProc%taskid, myMesh(defectUpdateCurrent%cellNumber)%neighborProcs(k,j),j,defectTemp)
 						
 						else
 
@@ -3819,8 +4515,8 @@ do while(associated(defectUpdateCurrent))
 						endif
 					else
 						
-						call addDiffusionReactions(defectUpdateCurrent%cellNumber, myMesh(defectUpdateCurrent%cellNumber)%neighbors(j,k),&
-							myProc%taskid, myMesh(defectUpdateCurrent%cellNumber)%neighborProcs(j,k),j,defectTemp)
+						call addDiffusionReactions(defectUpdateCurrent%cellNumber, myMesh(defectUpdateCurrent%cellNumber)%neighbors(k,j),&
+							myProc%taskid, myMesh(defectUpdateCurrent%cellNumber)%neighborProcs(k,j),j,defectTemp)
 							
 					end if
 						
@@ -3831,17 +4527,17 @@ do while(associated(defectUpdateCurrent))
 					!NOTE: don't need to switch j (direction) here even though diffusion is in opposite
 					!direction because dir is only used when diffusing into/out of neighbor processor
 					
-					if(myMesh(defectUpdateCurrent%cellNumber)%neighborProcs(j,k)==myProc%taskid) then	
+					if(myMesh(defectUpdateCurrent%cellNumber)%neighborProcs(k,j)==myProc%taskid) then
 					!Don't need to do this for diffusion between different grains
-						if(polycrystal=='yes' .AND. myMesh(myMesh(defectUpdateCurrent%cellNumber)%neighbors(j,k))%material &
+						if(polycrystal=='yes' .AND. myMesh(myMesh(defectUpdateCurrent%cellNumber)%neighbors(k,j))%material &
 							== myMesh(defectUpdateCurrent%cellNumber)%material) then
 							
-							call addDiffusionReactions(myMesh(defectUpdateCurrent%cellNumber)%neighbors(j,k), defectUpdateCurrent%cellNumber, &
+							call addDiffusionReactions(myMesh(defectUpdateCurrent%cellNumber)%neighbors(k,j), defectUpdateCurrent%cellNumber, &
 								myProc%taskid, myProc%taskid, j, defectTemp)
 						
 						else if(polycrystal=='no') then	!2015.05.20 Noticed that this wasn't here, probably was a bug. Fixed?
 					
-							call addDiffusionReactions(myMesh(defectUpdateCurrent%cellNumber)%neighbors(j,k), defectUpdateCurrent%cellNumber, &
+							call addDiffusionReactions(myMesh(defectUpdateCurrent%cellNumber)%neighbors(k,j), defectUpdateCurrent%cellNumber, &
 								myProc%taskid, myProc%taskid, j, defectTemp)
 							
 						end if
@@ -3943,10 +4639,10 @@ do while(associated(defectUpdateCurrent))
 				!from neighboring cells into this cell. (both directions)
 
 				call addDiffusionReactionsFine(defectUpdateCurrent%cascadeNumber, defectUpdateCurrent%cellNumber, &
-					cascadeConnectivity(defectUpdateCurrent%cellNumber,j),myProc%taskid, myProc%taskid,j,defectTemp)
+					cascadeConnectivity(j, defectUpdateCurrent%cellNumber),myProc%taskid, myProc%taskid,j,defectTemp)
 				
-				if(cascadeConnectivity(defectUpdateCurrent%cellNumber,j) /= 0) then
-					call addDiffusionReactionsFine(defectUpdateCurrent%cascadeNumber, cascadeConnectivity(defectUpdateCurrent%cellNumber,j), &
+				if(cascadeConnectivity(j, defectUpdateCurrent%cellNumber) /= 0) then
+					call addDiffusionReactionsFine(defectUpdateCurrent%cascadeNumber, cascadeConnectivity(j, defectUpdateCurrent%cellNumber), &
 						defectUpdateCurrent%cellNumber,myProc%taskid, myProc%taskid,j,defectTemp)
 				end if
 
@@ -3978,7 +4674,7 @@ do while(associated(defectUpdateCurrent))
 		
 			localGrainID=myMesh(defectUpdateCurrent%neighbor)%material
 			
-			neighborGrainID=myBoundary(defectUpdateCurrent%dir,defectUpdateCurrent%cellNumber)%material
+			neighborGrainID=myBoundary(defectUpdateCurrent%cellNumber,defectUpdateCurrent%dir)%material
 			
 			if(localGrainID==neighborGrainID) then
 				

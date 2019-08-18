@@ -22,28 +22,23 @@ type(defect), pointer :: defectCurrent									!used to find defects
 type(defectUpdateTracker), pointer :: defectUpdate, defectUpdateCurrent !used to update reactions
 type(reaction), pointer :: reactionCurrent								!used to find reactions
 type(reaction), pointer :: reactionChoiceList, reactionChoiceCurrent	!used to create a list of chosen reactions (for one KMC domain per volume element case)
+type(reaction), pointer :: reactionTemp
 type(cascade), pointer :: CascadeCurrent								!used to find defects/reactions in fine mesh
 
 double precision  elapsedTime, totalTime, tau, GenerateTimestep, TotalRateCheck, rateSingle
-integer status(MPI_STATUS_SIZE),  step, annealIter, sim, numDefectsRecv, tracker, outputCounter, nullSteps
-integer cascadeCell, i, j, k, cell
+integer status(MPI_STATUS_SIZE),  step, annealIter, sim, outputCounter, nullSteps
+integer cascadeCell, i, j, cell
+real  elapsedTime, totalTime, tau, GenerateTimestep
 real time1, time2
+double precision  TotalRateCheck, rateSingle
 
 integer CascadeCount, TotalCascades !<Used to count the number of cascades present in the simulation
 
 character(12) filename, filename2, filename3, filename4, filename5, filename6
 
-double precision rateDiff	!temporary
-type(Reaction), pointer :: reactionTemp
-
-!2019.05.13 Add: used to change double to integer
-!double precision CuAtomsEverMeshTemp
-!character*20 CuAtomsEverMeshTemp2
-
 !***********************************************************************
 !7.2.2015 Adding an iterative search for sink efficiency. Variables below:
 !***********************************************************************
-
 double precision, allocatable :: conc_v_store(:), conc_i_store(:)
 logical alpha_v_search, alpha_i_search, searchToggle
 double precision conc_v_avg, conc_v_stdev, conc_i_avg, conc_i_stdev
@@ -279,8 +274,8 @@ if(myProc%taskid==MASTER) then
 	write(*,*) 'initialCeqi', initialCeqi
 end if
 
-call DEBUGPrintReactionList(0)		!prints all reaction lists at a given Monte Carlo step
-call DEBUGPrintDefectList(0)
+!call DEBUGPrintReactionList(0)		!prints all reaction lists at a given Monte Carlo step
+!call DEBUGPrintDefectList(0)
 !******************************************************************
 !Initialize Counters
 !******************************************************************
@@ -292,12 +287,11 @@ if(debugToggle=='yes') then		!inpput parameter
 	!and He implant events are tracked in the master processor.
 	
 	if(myProc%taskid==MASTER) then
-!		numImplantEvents = numImplantEventsReset		!numImplantEventsReset is read in from debug restart file
-        numImpAnn(1) = numImplantEventsReset
+        numImpAnn(1) = numImplantEventsReset			!numImplantEventsReset is read in from debug restart file
 	else
-!		numImplantEvents = 0
         numImpAnn(1) = 0
 	end if
+	numImpAnn(2)=0
 	elapsedTime	= elapsedTimeReset
 	!Reset the reactions within this cell and diffusion to neighboring
 	!cells in the same processor
@@ -320,11 +314,9 @@ if(debugToggle=='yes') then		!inpput parameter
 	write(*,*) 'Processor', myProc%taskid, 'Defect lists and reaction lists initialized'
 	
 else
-!	numImplantEvents	= 0		!<Postprocessing: number of Frenkel pairs / cascades (local)
-!	numAnnihilate		= 0		!<Postprocessing: number of annihilation reactions carried out
-    numImpAnn(1)        = 0     !<Postprocessing: number of Frenkel pairs / cascades (local)
-    numImpAnn(2)        = 0     !<Postprocessing: number of annihilation reactions carried out
-	elapsedTime			= 0d0	!The simulation time that has passed
+    numImpAnn(1)=0     	!<Postprocessing: number of Frenkel pairs / cascades (local)
+    numImpAnn(2)=0     	!<Postprocessing: number of annihilation reactions carried out
+	elapsedTime=0d0		!The simulation time that has passed
 	
 	numTrapSIA=0	!<Postprocessing: number of SIAs trapped on grain boundary
 	numTrapV=0		!<Postprocessing: number of vacancies trapped on grain boundary
@@ -335,7 +327,7 @@ end if
 step=0
 nullSteps=0		!Record the number of steps in which an empty event was selected
 
-!2019.04.30 Add
+!Initialize totalTime
 if(totalDPA > 0d0 .AND. DPARate > 0d0) then
 	totalTime=totalDPA/DPARate	!simulation time
 else
@@ -346,6 +338,9 @@ TotalCascades=0
 outputCounter=0
 nullify(ActiveCascades)		! pointer ActiveCascades=NULL
 annealIdentify=.FALSE.		!(.TRUE. if in annealing phase, .FALSE. otherwise) used to determine how to reset reaction rates (should we include implantation or not)
+
+!Initizlize maxRate and tau. rateTau(1)=maxRate, rateTau(2)=tau
+rateTau(1:2)=0d0
 
 !*********************************************************************************************************************
 !*********************************************************************************************************************
@@ -360,7 +355,6 @@ do while(elapsedTime < totalTime)
 !do while(step < 2)
 	
 	step=step+1
-!
         
 	!Logical variable tells us whether cascade communication step needs to be carried out
 	!(0=no cascade, nonzero=number of volume element where cascade event has happened)
@@ -381,7 +375,51 @@ do while(elapsedTime < totalTime)
 		totalRate=rateSingle	!find the maximum totalRate in the local peocessor
 	end if
 	
-	call MPI_ALLREDUCE(totalRate,maxRate,1,MPI_DOUBLE_PRECISION,MPI_MAX,comm,ierr)
+!	call MPI_ALLREDUCE(totalRate,maxRate,1,MPI_DOUBLE_PRECISION,MPI_MAX,comm,ierr)
+	call MPI_REDUCE(totalRate,maxRate,1,MPI_DOUBLE_PRECISION,MPI_MAX,0,comm,ierr)
+
+	if(myProc%taskid==MASTER) then
+		rateTau(1)=maxRate
+	end if
+
+	if(singleElemKMC=='yes') then
+		if(implantScheme=='explicit') then
+			write(*,*) 'Error explicit implantation not implemented for single element kMC'
+		else
+			!Generate timestep in the master processor and send it to all other processors
+			if(myProc%taskid==MASTER) then
+			!	tau=GenerateTimestep()
+				rateTau(2)=GenerateTimestep()
+			end if
+		end if
+	else
+		!If implantScheme=='explicit', cascade implantation needs to be carried out explicitly
+		if(implantScheme=='explicit') then
+			if(elapsedTime >= numImpAnn(1)*(numDisplacedAtoms*atomsize)/(totalVolume*DPARate)) then
+				!Do not generate a timestep in this case; this is an explicit (zero-time) reaction
+				if(myProc%taskid==MASTER) then
+			!		tau=0d0
+					rateTau(2)=0d0
+				end if
+			else
+				if(myProc%taskid==MASTER) then
+				!	tau=GenerateTimestep()
+					rateTau(2)=GenerateTimestep()
+				end if
+			end if
+
+		else if(implantScheme=='MonteCarlo') then
+			if(myProc%taskid==MASTER) then
+			!	tau=GenerateTimestep()
+				rateTau(2)=GenerateTimestep()
+			end if
+		end if
+	end if
+
+	call MPI_BCAST(rateTau, 2, MPI_DOUBLE_PRECISION, MASTER, comm,ierr)
+
+	maxRate=maxRate(1)	!update maxRate
+	tau=rateTau(2)		!update time step
 
 !*************************************************************************
 !	if(mod(step,10)==0) then
@@ -411,9 +449,9 @@ do while(elapsedTime < totalTime)
 			write(*,*) 'Error explicit implantation not implemented for single element kMC'
 		else
 			!Generate timestep in the master processor and send it to all other processors
-			if(myProc%taskid==MASTER) then
-				tau=GenerateTimestep()
-			end if
+		!	if(myProc%taskid==MASTER) then
+		!		tau=GenerateTimestep()
+		!	end if
 			
 			allocate(reactionChoiceList)	!type(reaction). Allocate memory for reactionChoiceList
 			nullify(reactionChoiceList%next)	!set pointer reactionChoiceList%next=NULL
@@ -521,9 +559,9 @@ do while(elapsedTime < totalTime)
 				
 				!Do not generate a timestep in this case; this is an explicit (zero-time) reaction
 				
-				if(myProc%taskid==MASTER) then
-					tau=0d0
-				end if
+			!	if(myProc%taskid==MASTER) then
+			!		tau=0d0
+			!	end if
 				
 			else
 
@@ -533,9 +571,9 @@ do while(elapsedTime < totalTime)
 				
 				!Generate timestep in the master processor and send it to all other processors
 				
-				if(myProc%taskid==MASTER) then
-					tau=GenerateTimestep()
-				end if
+			!	if(myProc%taskid==MASTER) then
+			!		tau=GenerateTimestep()
+			!	end if
 				
 			end if
 			
@@ -546,9 +584,9 @@ do while(elapsedTime < totalTime)
 			!call DEBUGPrintReaction(reactionCurrent, step)
 			!Generate timestep in the master processor and send it to all other processors
 			
-			if(myProc%taskid==MASTER) then
-				tau=GenerateTimestep()
-			end if
+		!	if(myProc%taskid==MASTER) then
+		!		tau=GenerateTimestep()
+		!	end if
 		
 		else	
 		
@@ -596,12 +634,12 @@ do while(elapsedTime < totalTime)
 	end if
 	
 	!Update elapsed time based on tau, generated timestep. If cascade implant chosen in explicit scheme, tau=0d0
-	if(myProc%taskid==MASTER) then
+!	if(myProc%taskid==MASTER) then
 		
 		elapsedTime=elapsedTime+tau
-	end if
+!	end if
 
-	call MPI_BCAST(elapsedTime, 1, MPI_DOUBLE_PRECISION, MASTER, comm,ierr)
+!	call MPI_BCAST(elapsedTime, 1, MPI_DOUBLE_PRECISION, MASTER, comm,ierr)
 
 !*********************************************************
 !	if(singleElemKMC=='no' .AND. associated(reactionCurrent) .AND. &
@@ -675,20 +713,22 @@ do while(elapsedTime < totalTime)
 	! Output according to outputCounter
 	!********************************************************************************
 
-!	call computeVconcent()
 
 !	if(elapsedTime >= 1d-4*(10d0)**(outputCounter)) then
 	if(elapsedTime >= totalTime/200d0*(2d0)**(outputCounter)) then
 	! or if(mod(step,100000)==0) then
 !		call MPI_ALLREDUCE(numImplantEvents,totalImplantEvents, 1, MPI_INTEGER, MPI_SUM, comm, ierr)
-        call MPI_ALLREDUCE(numImpAnn,totalImpAnn, 2, MPI_INTEGER, MPI_SUM, comm, ierr)
+    !    call MPI_ALLREDUCE(numImpAnn,totalImpAnn, 2, MPI_INTEGER, MPI_SUM, comm, ierr)
+		call MPI_REDUCE(numImpAnn,totalImpAnn, 2, MPI_INTEGER, MPI_SUM, 0,comm, ierr)
 		
 !		DPA=dble(totalImplantEvents)/(((myProc%globalCoord(2)-myProc%globalCoord(1))*(myProc%globalCoord(4)-myProc%globalCoord(3))*&
 !			(myProc%globalCoord(6)-myProc%globalCoord(5)))/(numDisplacedAtoms*atomsize))
-        DPA=dble(totalImpAnn(1))/(((myProc%globalCoord(2)-myProc%globalCoord(1))*(myProc%globalCoord(4)-myProc%globalCoord(3))*&
-                (myProc%globalCoord(6)-myProc%globalCoord(5)))/(numDisplacedAtoms*atomsize))
+    !    DPA=dble(totalImpAnn(1))/(((myProc%globalCoord(2)-myProc%globalCoord(1))*(myProc%globalCoord(4)-myProc%globalCoord(3))*&
+    !            (myProc%globalCoord(6)-myProc%globalCoord(5)))/(numDisplacedAtoms*atomsize))
 		
 		if(myProc%taskid==MASTER) then
+			DPA=dble(totalImpAnn(1))/(((myProc%globalCoord(2)-myProc%globalCoord(1))*(myProc%globalCoord(4)-myProc%globalCoord(3))*&
+					(myProc%globalCoord(6)-myProc%globalCoord(5)))/(numDisplacedAtoms*atomsize))
 			call cpu_time(time2)
 			write(*,*)
 			write(*,*) 'time', elapsedTime, 'dpa', DPA, 'steps', step, 'Average time step', elapsedTime/dble(step)
@@ -775,14 +815,17 @@ end do
 !***********************************************************************
 
 !call MPI_ALLREDUCE(numImplantEvents,totalImplantEvents, 1, MPI_INTEGER, MPI_SUM, comm, ierr)
-call MPI_ALLREDUCE(numImpAnn, totalImpAnn, 2, MPI_INTEGER, MPI_SUM, comm, ierr)
+!call MPI_ALLREDUCE(numImpAnn, totalImpAnn, 2, MPI_INTEGER, MPI_SUM, comm, ierr)
+call MPI_ALLREDUCE(numImpAnn, totalImpAnn, 2, MPI_INTEGER, MPI_SUM,0, comm, ierr)
 
 !DPA=dble(totalImplantEvents)/(((myProc%globalCoord(2)-myProc%globalCoord(1))*(myProc%globalCoord(4)-myProc%globalCoord(3))*&
 !	(myProc%globalCoord(6)-myProc%globalCoord(5)))/(numDisplacedAtoms*atomsize))
-DPA=dble(totalImpAnn(1))/(((myProc%globalCoord(2)-myProc%globalCoord(1))*(myProc%globalCoord(4)-myProc%globalCoord(3))*&
-        (myProc%globalCoord(6)-myProc%globalCoord(5)))/(numDisplacedAtoms*atomsize))
+!DPA=dble(totalImpAnn(1))/(((myProc%globalCoord(2)-myProc%globalCoord(1))*(myProc%globalCoord(4)-myProc%globalCoord(3))*&
+!        (myProc%globalCoord(6)-myProc%globalCoord(5)))/(numDisplacedAtoms*atomsize))
 
 if(myProc%taskid==MASTER) then
+	DPA=dble(totalImpAnn(1))/(((myProc%globalCoord(2)-myProc%globalCoord(1))*(myProc%globalCoord(4)-myProc%globalCoord(3))*&
+			(myProc%globalCoord(6)-myProc%globalCoord(5)))/(numDisplacedAtoms*atomsize))
 	call cpu_time(time2)
 	write(*,*)
 	write(*,*) 'Final  step'
@@ -907,7 +950,43 @@ do annealIter=1,annealSteps	!default value: annealSteps = 1
 			totalRate=rateSingle
 		end if
 	
-		call MPI_ALLREDUCE(totalRate,maxRate,1,MPI_DOUBLE_PRECISION,MPI_MAX,comm,ierr)
+	!	call MPI_ALLREDUCE(totalRate,maxRate,1,MPI_DOUBLE_PRECISION,MPI_MAX,comm,ierr)
+		call MPI_REDUCE(totalRate,maxRate,1,MPI_DOUBLE_PRECISION,MPI_MAX,0,comm,ierr)
+
+		if(myProc%taskid==MASTER) then
+			rateTau(1)=maxRate
+		end if
+
+		if(singleElemKMC=='yes') then	!choose a reaction in each volume element
+
+			if(implantScheme=='explicit') then
+				write(*,*) 'Error explicit implantation not implemented for single element kMC'
+			else
+				!Generate timestep in the master processor and send it to all other processors
+				if(myProc%taskid==MASTER) then
+					tau=GenerateTimestep()
+					if(elapsedTime-totalTime+tau > annealTime/dble(annealSteps)*outputCounter) then
+						!we have taken a timestep that moves us past this annealing step
+						tau=annealTime/dble(annealSteps)*outputCounter-(elapsedTime-totalTime)
+					end if
+				end if
+			end if
+		else
+			if(myProc%taskid==MASTER) then
+				tau=GenerateTimestep()
+				if(elapsedTime-totalTime+tau > annealTime/dble(annealSteps)*outputCounter) then
+					!we have taken a timestep that moves us past this annealing step
+					tau=annealTime/dble(annealSteps)*outputCounter-(elapsedTime-totalTime)
+				end if
+			end if
+		end if
+
+		rateTau(2)=tau
+
+		call MPI_BCAST(rateTau, 2, MPI_DOUBLE_PRECISION, MASTER, comm,ierr)
+
+		maxRate=rateTau(1)	!update maxRate
+		tau=rateTau(2)		!update time step
 
 !*************************************************************************
 !	if(mod(step,10)==0) then
@@ -1018,12 +1097,12 @@ do annealIter=1,annealSteps	!default value: annealSteps = 1
 		end if
 	
 		!Update elapsed time based on tau, generated timestep. If cascade implant chosen in explicit scheme, tau=0d0
-		if(myProc%taskid==MASTER) then
+	!	if(myProc%taskid==MASTER) then
 		
 			elapsedTime=elapsedTime+tau
-		end if
+	!	end if
 
-		call MPI_BCAST(elapsedTime, 1, MPI_DOUBLE_PRECISION, MASTER, comm,ierr)
+	!	call MPI_BCAST(elapsedTime, 1, MPI_DOUBLE_PRECISION, MASTER, comm,ierr)
 		!***********************************************************************************
 		!call DEBUGPrintDefectUpdate(defectUpdate)
 
@@ -1079,14 +1158,17 @@ do annealIter=1,annealSteps	!default value: annealSteps = 1
 		if((elapsedTime-totalTime) >= annealTime/dble(annealSteps)*outputCounter) then
 		
 !			call MPI_ALLREDUCE(numImplantEvents,totalImplantEvents, 1, MPI_INTEGER, MPI_SUM, comm, ierr)
-            call MPI_ALLREDUCE(numImpAnn,totalImpAnn, 2, MPI_INTEGER, MPI_SUM, comm, ierr)
+        !    call MPI_ALLREDUCE(numImpAnn,totalImpAnn, 2, MPI_INTEGER, MPI_SUM, comm, ierr)
+			call MPI_ALLREDUCE(numImpAnn,totalImpAnn, 2, MPI_INTEGER, MPI_SUM,0,comm, ierr)
 		
 !			DPA=dble(totalImplantEvents)/(((myProc%globalCoord(2)-myProc%globalCoord(1))*(myProc%globalCoord(4)-myProc%globalCoord(3))*&
 !				(myProc%globalCoord(6)-myProc%globalCoord(5)))/(numDisplacedAtoms*atomsize))
-            DPA=dble(totalImpAnn(1))/(((myProc%globalCoord(2)-myProc%globalCoord(1))*(myProc%globalCoord(4)-myProc%globalCoord(3))*&
-                    (myProc%globalCoord(6)-myProc%globalCoord(5)))/(numDisplacedAtoms*atomsize))
+        !    DPA=dble(totalImpAnn(1))/(((myProc%globalCoord(2)-myProc%globalCoord(1))*(myProc%globalCoord(4)-myProc%globalCoord(3))*&
+        !            (myProc%globalCoord(6)-myProc%globalCoord(5)))/(numDisplacedAtoms*atomsize))
 	
 			if(myProc%taskid==MASTER) then
+				DPA=dble(totalImpAnn(1))/(((myProc%globalCoord(2)-myProc%globalCoord(1))*(myProc%globalCoord(4)-myProc%globalCoord(3))*&
+						(myProc%globalCoord(6)-myProc%globalCoord(5)))/(numDisplacedAtoms*atomsize))
 				call cpu_time(time2)
 				write(*,*) 'time', elapsedTime, 'anneal time', elapsedTime-totalTime, 'dpa', dpa, 'steps', step
 				write(*,*) 'Cascades/Frenkel pairs', totalImpAnn(1), 'computation time', time2-time1
@@ -1139,16 +1221,19 @@ end do
 if(annealTime > 0d0) then
 
 !	call MPI_ALLREDUCE(numImplantEvents,totalImplantEvents, 1, MPI_INTEGER, MPI_SUM, comm, ierr)
-    call MPI_ALLREDUCE(numImpAnn,totalImpAnn, 2, MPI_INTEGER, MPI_SUM, comm, ierr)
+!    call MPI_ALLREDUCE(numImpAnn,totalImpAnn, 2, MPI_INTEGER, MPI_SUM, comm, ierr)
+	call MPI_ALLREDUCE(numImpAnn,totalImpAnn, 2, MPI_INTEGER, MPI_SUM, 0, comm, ierr)
 
 !	DPA=dble(totalImplantEvents)/(((myProc%globalCoord(2)-myProc%globalCoord(1))*(myProc%globalCoord(4)-&
 !			myProc%globalCoord(3))*(myProc%globalCoord(6)-myProc%globalCoord(5)))/(numDisplacedAtoms*atomsize))
-    DPA=dble(totalImpAnn(1))/(((myProc%globalCoord(2)-myProc%globalCoord(1))*(myProc%globalCoord(4)-&
-            myProc%globalCoord(3))*(myProc%globalCoord(6)-myProc%globalCoord(5)))/(numDisplacedAtoms*atomsize))
+!    DPA=dble(totalImpAnn(1))/(((myProc%globalCoord(2)-myProc%globalCoord(1))*(myProc%globalCoord(4)-&
+!            myProc%globalCoord(3))*(myProc%globalCoord(6)-myProc%globalCoord(5)))/(numDisplacedAtoms*atomsize))
 
 	write(*,*) 'Fraction null steps', dble(nullSteps)/dble(step), 'Proc', myProc%taskid
 
 	if(myProc%taskid==MASTER) then
+		DPA=dble(totalImpAnn(1))/(((myProc%globalCoord(2)-myProc%globalCoord(1))*(myProc%globalCoord(4)-&
+				myProc%globalCoord(3))*(myProc%globalCoord(6)-myProc%globalCoord(5)))/(numDisplacedAtoms*atomsize))
 		call cpu_time(time2)
 	
 		if(sinkEffSearch=='no') then
