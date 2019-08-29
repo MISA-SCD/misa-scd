@@ -1050,7 +1050,7 @@ maxElement=0
 do dir=1,6
 	if(myProc%procNeighbor(dir)/=myProc%taskid) then
 
-		call MPI_SEND(send(:,1:numSend(dir),dir),numSend(dir)*2,MPI_INTEGER,myProc%procNeighbor(dir),200+dir,&
+		call MPI_SEND(send(1,1,dir),numSend(dir)*2,MPI_INTEGER,myProc%procNeighbor(dir),200+dir,&
 				comm,ierr)
 
 	end if
@@ -1077,7 +1077,7 @@ do dir=1,6
 	!	end if
 		numRecv(dir)=numSend(dir)
 	!	allocate(recvBuffer(2,numRecv(dir)))
-		call MPI_RECV(recv(:,1:numRecv(dir),dir),numRecv(dir)*2,MPI_INTEGER,myProc%procNeighbor(dir),200+tag,&
+		call MPI_RECV(recv(1,1,dir),numRecv(dir)*2,MPI_INTEGER,myProc%procNeighbor(dir),200+tag,&
 				comm,status,ierr)
 		do i=1, numRecv(dir)
 			localCell=send(1,i,dir)
@@ -1090,12 +1090,12 @@ do dir=1,6
 	end if
 end do
 
-if(myProc%taskid==MASTER) then
-	write(*,*) 'neighbors'
-	do i=1,numCells
-		write(*,*) myMesh(i)%neighbors
-	end do
-end if
+!if(myProc%taskid==MASTER) then
+!	write(*,*) 'neighbors'
+!	do i=1,numCells
+!		write(*,*) myMesh(i)%neighbors
+!	end do
+!end if
 
 !***************************************************************************************************
 !Initializing myBoundary with elements that are in neighboring processors that bound this one
@@ -1150,15 +1150,16 @@ do i=1,numCells
         end if
     end do
 end do
-
-if(myProc%taskid==MASTER) then
-	write(*,*) 'maxElement',maxElement
-	do dir=1,6
-		do i=1,maxElement
-			write(*,*) 'dir',dir,'i',i,myBoundary(i,dir)%localNeighbor
-		end do
-	end do
-end if
+deallocate(send)
+deallocate(recv)
+!if(myProc%taskid==MASTER) then
+!	write(*,*) 'maxElement',maxElement
+!	do dir=1,6
+!		do i=1,maxElement
+!			write(*,*) 'dir',dir,'i',i,myBoundary(i,dir)%localNeighbor
+!		end do
+!	end do
+!end if
 
 end subroutine
 
@@ -1327,7 +1328,7 @@ end do
 !Send
 do dir=1,6
 	if(myProc%procNeighbor(dir)/=myProc%taskid) then
-		call MPI_ISEND(sendBuffer(:,1:numSend(dir),dir), numSend(dir)*2, MPI_INTEGER, myProc%procNeighbor(dir), &
+		call MPI_ISEND(sendBuffer(1,1,dir), 2*numSend(dir), MPI_INTEGER, myProc%procNeighbor(dir), &
 				200+dir, comm, sendRequest(dir),ierr)
 	end if
 end do
@@ -1347,7 +1348,7 @@ do dir=1,6
 		allocate(recvBuffer(2,numRecv(dir)))
 		call MPI_IRECV(recvBuffer, numRecv(dir)*2, MPI_INTEGER, myProc%procNeighbor(dir), &
 				200+tag, comm, recvRequest(dir), ierr)
-		call MPI_WAIT(recvRequest(dir),recvStatus(:,dir),ierr)
+		call MPI_WAIT(recvRequest(dir),recvStatus(1,dir),ierr)
 
 		do i=1, numRecv(dir)
 			localCell=sendBuffer(1,i,dir)
@@ -1361,7 +1362,7 @@ end do
 
 do dir=1,6
 	if(myProc%procNeighbor(dir)/=myProc%taskid) then
-		call MPI_WAIT(sendRequest(dir),sendStatus(:,dir),ierr)
+		call MPI_WAIT(sendRequest(dir),sendStatus(1,dir),ierr)
 	end if
 end do
 

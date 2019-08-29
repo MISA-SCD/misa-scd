@@ -1146,8 +1146,8 @@ do cell=1,numCells
 				end if
 
 			end if  !myMesh(cell)%neighborProcs(dir,k) /= myProc%taskid
-		end do  !dir
-	end do  !cell
+		end do
+	end do
 end do
 
 end subroutine

@@ -23,11 +23,11 @@ length (nm)		!Specify the length of volume elements in nm (uniform cubic mesh on
 5d0
 
 numx
-40
+8
 numy
-40
+8
 numz
-2
+4
 
 end
 

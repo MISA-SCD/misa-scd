@@ -66,7 +66,7 @@ type(defect), pointer :: defectCurrent
 integer defectType(numSpecies), cellNumber, numDefects, i, count
 
 numDefects=0
-defectCurrent=>defectList(cellNumber)
+defectCurrent=>defectList(cellNumber)%next
 
 do while(associated(defectCurrent))
 	count=0

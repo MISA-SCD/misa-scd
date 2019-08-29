@@ -17,66 +17,68 @@ use DerivedType
 implicit none
 
 !Processor and mesh information, created in MeshReader.f90
-type(processorData) myProc								!<Contains processor information (id, neighbors)
-type(mesh), allocatable :: myMesh(:)					!<Contains (local) mesh information
-type(boundaryMesh), allocatable ::  myBoundary(:,:)		!<Boundary elements (direction, element #)
-integer numCells										!<Number of cells in local mesh
-integer numTotal                                        !<Total meshes in the sysytem
-double precision meshLength                             !<Length of a coarse mesh
-integer numx,numy,numz                                  !<Number of meshes on x/y/z
-integer numxLocal,numyLocal,numzLocal                            !<Number of meshes on x/y/z in this processor
+type(processorData) myProc							!<Contains processor information (id, neighbors)
+type(mesh),allocatable :: myMesh(:)					!<Contains (local) mesh information
+type(boundaryMesh),allocatable ::  myBoundary(:,:)	!<Boundary elements (direction, element #)
+integer numCells						            !<Number of cells in local mesh
+integer numTotal                                    !<Total meshes in the sysytem
+double precision meshLength                         !<Length of a coarse mesh
+integer numx,numy,numz                              !<Number of global meshes in x-direction, y-direction, z-direction
+integer numxLocal,numyLocal,numzLocal               !<Number of local meshes in x-direction, y-direction, z-direction
 
 !reaction and defect lists
-type(reaction), pointer :: reactionList(:)				!<List of reactions in local (coarse) mesh
-type(defect), pointer :: defectList(:)					!<List of defects in local (coarse) mesh
-double precision totalRate								!<Total reaction rate in this processor
-double precision, allocatable :: totalRateVol(:)		!<Total reaction rate in each volume element
-double precision maxRate								!<Max reaction rate in all processors
+type(reaction),pointer :: reactionList(:)			!<List of reactions in local (coarse) mesh
+type(defect),pointer :: defectList(:)			    !<List of defects in local (coarse) mesh
+double precision,allocatable :: totalRateVol(:)	    !<Total reaction rate in each volume element
+double precision totalRate						    !<Total reaction rate in this processor
+double precision maxRate						    !<Max reaction rate in all processors
+
+double precision totalTime                          !<Total time
+double precision elapsedTime                        !<Elapsed time
+integer step                                        !<Current number of time steps
 
 !List of cascades to be chosen from when cascade implantation occurs
-type(cascadeEvent), pointer :: cascadeList				!<List of cascades (read from file) that can be implanted
+type(cascadeEvent),pointer :: cascadeList			!<List of cascades (read from file) that can be implanted
 
 !Fine meshes of cascades implanted in coarse mesh
-type(cascade), pointer :: ActiveCascades				!<List of fine meshes that are active due to recent cascade implantation
-														!!(Contains defect lists and reaction lists)
-integer numCascades										!<number of cascades in the cascade input file (used to choose cascades to input in simulation)
-integer numCellsCascade									!<number of volume elements within a cascade (fine) mesh
-integer numxCascade										!<number of elements in cascade x-direction
-integer numyCascade										!<number of elements in cascade y-direction
-integer numzCascade										!<number of elements in cascade z-direction
+type(cascade),pointer :: ActiveCascades				!<List of fine meshes that are active due to recent cascade implantation. Contains defect lists and reaction lists)
+integer numCascades							        !<number of cascades in the cascade input file (used to choose cascades to input in simulation)
+integer numCellsCascade							    !<number of volume elements within a cascade (fine) mesh
+integer numxCascade,numyCascade,numzCascade	        !<number of elements in cascade x-direction, y-direction, z-direction
+
 !double precision, allocatable :: globalMeshCoord(:,:)
-integer, allocatable :: cascadeConnectivity(:,:) 		!<connectivity matrix for cascade meshes (same for all fine meshes)
-double precision fineLength								!<length of a cascade volume element (nm)
-double precision cascadeElementVol						!<volume of a cascade element (nm^3)
+integer,allocatable :: cascadeConnectivity(:,:) 	!<connectivity matrix for cascade meshes (same for all fine meshes)
+double precision fineLength						    !<length of a cascade volume element (nm)
+double precision cascadeElementVol				    !<volume of a cascade element (nm^3)
 
 !Material input information, created in MaterialInput.f90
-integer numMaterials						!<Number of material types (eg. copper, niobium or bulk, grain boundary)
-integer numSpecies							!<Number of chemical species (typically set to 4: He, V, SIA_glissile, SIA_sessile)
+integer numMaterials						        !<Number of material types (eg. copper, niobium or bulk, grain boundary)
+integer numSpecies							        !<Number of chemical species (typically set to 4: He, V, SIA_glissile, SIA_sessile)
 
-type(formationSingle), allocatable :: FormSingle(:,:)           !<Parameters for formation of single defects--(numSingleForm(matNum),matNum)
-type(diffusionSingle), allocatable :: DiffSingle(:,:)			!<Parameters for diffusion of single defects--(numSingleDiff(matNum),matNum)
-type(diffusionFunction), allocatable :: DiffFunc(:,:)			!<Parameters for functional forms of diffusion rates for defects--(numFuncDiff(matNum),matNum)
-type(bindingSingle), allocatable :: BindSingle(:,:)				!<Parameters for binding of single defects--(numSingleBind(matNum),matNum)
-type(bindingFunction), allocatable :: BindFunc(:,:)				!<Parameters for functional forms of binding energies for defects--(numFuncBind(matNum),matNum)
-type(reactionParameters), allocatable :: DissocReactions(:,:)	!<List of allowed dissociation reactions (and ref. to functional form of reaction rate)--(numDissocReac(matNum),matNum)
-type(reactionParameters), allocatable :: DiffReactions(:,:)		!<List of allowed diffusion reactions (and ref. to functional form of reaction rate)--(numDiffReac(matNum),matNum)
-type(reactionParameters), allocatable :: SinkReactions(:,:)		!<List of allowed sink reactions (and ref. to functional form of reaction rate)--(numSinkReac(matNum),matNum)
-type(reactionParameters), allocatable :: ImpurityReactions(:,:)	!<List of allowed impurity reactions (and ref. to functional form of reaction rate)--(numImpurityReac(matNum),matNum)
-type(reactionParameters), allocatable :: ClusterReactions(:,:)	!<List of allowed clustering reactions (and ref. to functional form of reaction rate)--(numClusterReac(matNum),matNum)
-type(reactionParameters), allocatable :: ImplantReactions(:,:)	!<List of allowed implantation reactions (and ref. to functional form of reaction rate)--(numImplantReac(matNum),matNum)
+type(formationSingle),allocatable :: FormSingle(:,:)                !<Parameters for formation of single defects--(numSingleForm(matNum),matNum)
+type(diffusionSingle),allocatable :: DiffSingle(:,:)			    !<Parameters for diffusion of single defects--(numSingleDiff(matNum),matNum)
+type(diffusionFunction), allocatable :: DiffFunc(:,:)			    !<Parameters for functional forms of diffusion rates for defects--(numFuncDiff(matNum),matNum)
+type(bindingSingle), allocatable :: BindSingle(:,:)				    !<Parameters for binding of single defects--(numSingleBind(matNum),matNum)
+type(bindingFunction), allocatable :: BindFunc(:,:)				    !<Parameters for functional forms of binding energies for defects--(numFuncBind(matNum),matNum)
+type(reactionParameters), allocatable :: DissocReactions(:,:)	    !<List of allowed dissociation reactions (and ref. to functional form of reaction rate)--(numDissocReac(matNum),matNum)
+type(reactionParameters), allocatable :: DiffReactions(:,:)		    !<List of allowed diffusion reactions (and ref. to functional form of reaction rate)--(numDiffReac(matNum),matNum)
+type(reactionParameters), allocatable :: SinkReactions(:,:)		    !<List of allowed sink reactions (and ref. to functional form of reaction rate)--(numSinkReac(matNum),matNum)
+type(reactionParameters), allocatable :: ImpurityReactions(:,:)	    !<List of allowed impurity reactions (and ref. to functional form of reaction rate)--(numImpurityReac(matNum),matNum)
+type(reactionParameters), allocatable :: ClusterReactions(:,:)	    !<List of allowed clustering reactions (and ref. to functional form of reaction rate)--(numClusterReac(matNum),matNum)
+type(reactionParameters), allocatable :: ImplantReactions(:,:)	    !<List of allowed implantation reactions (and ref. to functional form of reaction rate)--(numImplantReac(matNum),matNum)
 
-integer, allocatable :: numSingleForm(:)    !<Number of single defect formation energy in input file
-integer, allocatable :: numSingleDiff(:)	!<Number of single defect diffusion rates in input file
-integer, allocatable :: numFuncDiff(:)		!<Number of functional forms for diffusion rates in input files
-integer, allocatable :: numSingleBind(:)	!<Number of single defect binding energies in input file
-integer, allocatable :: numFuncBind(:)		!<Number of functional forms for binding energies in input files
+integer, allocatable :: numSingleForm(:)                            !<Number of single defect formation energy in input file
+integer, allocatable :: numSingleDiff(:)	                        !<Number of single defect diffusion rates in input file
+integer, allocatable :: numFuncDiff(:)		                        !<Number of functional forms for diffusion rates in input files
+integer, allocatable :: numSingleBind(:)	                        !<Number of single defect binding energies in input file
+integer, allocatable :: numFuncBind(:)		                        !<Number of functional forms for binding energies in input files
 
-integer, allocatable :: numDissocReac(:)	!<Number of dissociation reactions in input file
-integer, allocatable :: numDiffReac(:)		!<Number of diffusion reactions in input file
-integer, allocatable :: numSinkReac(:)		!<Number of sink reactions in input file
-integer, allocatable :: numImpurityReac(:)	!<Number of impurity reactions in input file
-integer, allocatable :: numClusterReac(:)	!<Number of clustering reactions in input file
-integer, allocatable :: numImplantReac(:)	!<Number of implantation reactions in input file (cascade, Frenkel pair, He currently implemented)
+integer, allocatable :: numDissocReac(:)	                        !<Number of dissociation reactions in input file
+integer, allocatable :: numDiffReac(:)		                        !<Number of diffusion reactions in input file
+integer, allocatable :: numSinkReac(:)		                        !<Number of sink reactions in input file
+integer, allocatable :: numImpurityReac(:)	                        !<Number of impurity reactions in input file
+integer, allocatable :: numClusterReac(:)	                        !<Number of clustering reactions in input file
+integer, allocatable :: numImplantReac(:)	                        !<Number of implantation reactions in input file (cascade, Frenkel pair, He currently implemented)
 
 !constants
 double precision, parameter :: kboltzmann=8.625d-5	    !<Boltzmann's constant (eV/K)
@@ -84,31 +86,30 @@ double precision, parameter :: pi=3.141592653589793		!<Pi
 double precision, parameter :: Zint = 1.2				!<Constant representing preference for clustering of interstitials by interstitial clusters (increases clustering cross-section)
 double precision, parameter :: Zv = 1.0
 double precision, parameter :: reactionRadius=0.65	    !<Material parameter used for reaction distances (impacts reaction rates) (nm)
-double precision, parameter :: lattice = 2.867d-1       !<lattice constant (nm)
+double precision, parameter :: lattice = 0.2867         !<lattice constant (nm)
 
 !2019.04.30 Add
 !Cu solubility CeqCu(T) = exp(DelatS/kB)*exp(-Omega/(kB*T))  Reference: (F. Christien and A. Barbu, 2004)
-double precision initialCeqv    !Thermal equilibrium concentration of vacancy
-double precision initialCeqi    !Thermal equilibrium concentration of SIA
-double precision Vconcent       !Vacancy concentration
-double precision SIAconcent     !SIA concentration
-double precision atomsEverMesh  !number of atoms of my processor
-integer numCuCell               !Initial number of Cu atoms in one mesh
-integer initialTotalV           !Total number of initial vacancies in the whole system
-integer initialTotalI           !Total number of initial Initial self-interstitial atoms in the whole system
-integer, allocatable :: VgCellList(:)   !List the globalID of the mesh where initial vacancies are located.
-integer, allocatable :: IgCellList(:)   !List the globalID of the mesh where initial self-interstitial atoms are located.
+double precision initialCeqv                            !Thermal equilibrium concentration of vacancy
+double precision initialCeqi                            !Thermal equilibrium concentration of SIA
+double precision Vconcent                               !Vacancy concentration
+double precision SIAconcent                             !SIA concentration
+double precision atomsEverMesh                          !number of atoms of my processor
+integer numCuCell                                       !Initial number of Cu atoms in one mesh
+integer initialTotalV                                   !Total number of initial vacancies in the whole system
+integer initialTotalI                                   !Total number of initial Initial self-interstitial atoms in the whole system
+integer, allocatable :: VgCellList(:)                   !List the globalID of the mesh where initial vacancies are located.
+integer, allocatable :: IgCellList(:)                   !List the globalID of the mesh where initial self-interstitial atoms are located.
 
-double precision firr           !firr = Vconcent / initialCeqv. Radiation enhanced factor
+double precision firr                                   !firr = Vconcent / initialCeqv. Radiation enhanced factor
 
 !simulation parameters, to be read during readParameters() in main program
 double precision temperature			!<Temperature (K)
 double precision tempStore				!<Temperature read in (K) - used when temp. changes several times during a simulation
+double precision atomsize				!<atomic volume (nm^3)
 double precision CuContent              !<The initial content of Cu in iron
 double precision DPARate				!<DPA rate in dpa/s
-double precision atomsize				!<atomic volume (nm^3)
 double precision DPA					!<DPA tracker (not a parameter)
-double precision defectDensity			!<total density of defects (?), not sure if this is needed
 double precision dislocationDensity		!<density of dislocations (sinks for point defects)
 double precision impurityDensity		!<denstiy of impurity atoms (traps for SIA loops)
 double precision totalDPA				!<total DPA in simulation
@@ -118,61 +119,57 @@ double precision numDisplacedAtoms		!<number of atoms displaced per cascade, rea
 double precision meanFreePath			!<mean free path before a defect is absorbed by a grain boundary (AKA avg. grain size)
 double precision cascadeReactionLimit	!<Total reaction rate in a cascade cell to consider it annealed and release cascade back to coarse mesh (s^-1)
 double precision cascadeVolume			!<Volume of cascade (used for cascade mixing probability)
+
 double precision totalVolume			!<Volume of single processor's mesh (nm^3)
 double precision systemVol				!<Volume of all processors (global), not including grain boundary elements (nm^3)
-
-!Sink efficiency parameters
-double precision alpha_v				!<Grain boundary sink efficiency for vacancies
-double precision alpha_i				!<Grain boundary sink efficiency for interstitials
-double precision conc_v					!<Concentration of vacancies found by GB model (used to fit alpha_v)
-double precision conc_i					!<Concentration of interstitials found by GB model (used to fit alpha_i)
 
 !annealing information
 double precision annealTime				!<Amount of time for anneal (s)
 double precision annealTemp				!<Temperature of anneal stage (K)
-integer			 annealSteps			!<Number of annealing steps
 double precision annealTempInc			!<Temperature increment at each annealing step (additive or multipliciative)
-character*20 	 annealType				!<('mult' or 'add') toggles additive or multiplicative anneal steps
-logical 		 annealIdentify			!<(.TRUE. if in annealing phase, .FALSE. otherwise) used to determine how to reset reaction rates (should we include implantation or not)
+integer	annealSteps			            !<Number of annealing steps
+character(len=20) annealType		    !<('mult' or 'add') toggles additive or multiplicative anneal steps
+logical annealIdentify			        !<(.TRUE. if in annealing phase, .FALSE. otherwise) used to determine how to reset reaction rates (should we include implantation or not)
+integer annealIter                      !<Current number of time steps
 
-integer numSims							!<Number of times to repeat simulation
-integer max3DInt						!<largest SIA size that can diffuse in 3D as spherical cluster
-integer SIAPinMin						!<Smallest size of SIA that can pin at HeV clusters
-integer numGrains						!<Number of grains inside polycrystal (default 1)
+integer numSims				            !<Number of times to repeat simulation
+integer max3DInt			            !<largest SIA size that can diffuse in 3D as spherical cluster
+integer SIAPinMin			            !<Smallest size of SIA that can pin at HeV clusters
+integer numGrains			            !<Number of grains inside polycrystal (default 1)
 
-character*20 implantType				!<(Frenkel pairs or cascades), used to determine the type of damage in the simulation
-character*20 grainBoundaryToggle		!<Used to determine whether or not we are using grain boundaries to remove defects from simulation
-character*20 pointDefectToggle			!<Toggles whether or not we allow HeSIA clusters to form ('yes' or 'no')
-!character*20 SIAPinToggle				!<Toggles whether or not we allow point defects to move only
-character*20 meshingType				!<(adaptive or nonAdaptive), used to determine whether we are simulating cascade implantation with adaptive meshing
-character*20 implantScheme				!<(MonteCarlo or explicit), used to determine if cascades are implanted through Monte Carlo algorithm or explicitly
-character*20 implantDist				!<(Uniform or NonUniform), used to determine if defects are implanted uniformly or if DPA rate / He implant rate are given for each volume element
-character*20 polycrystal				!<(yes or no), used to identify whether or not we have multiple grains in our crystal
-character*20 singleElemKMC				!<(yes or no), used to toggle whether we are making one kMC choice per volume element or one kMC choice for the whole processors
-character*20 sinkEffSearch				!<(yes or no), used to toggle search for effective sink efficiency
-character*20 strainField				!<(yes or no), used to toggle whether we are simulating diffusion in a strain field	
+character(len=20) implantType				!<(Frenkel pairs or cascades), used to determine the type of damage in the simulation
+character(len=20) grainBoundaryToggle		!<Used to determine whether or not we are using grain boundaries to remove defects from simulation
+character(len=20) pointDefectToggle			!<Toggles whether or not we allow HeSIA clusters to form ('yes' or 'no')
+!character(len=20) SIAPinToggle				!<Toggles whether or not we allow point defects to move only
+character(len=20) meshingType				!<(adaptive or nonAdaptive), used to determine whether we are simulating cascade implantation with adaptive meshing
+character(len=20) implantScheme				!<(MonteCarlo or explicit), used to determine if cascades are implanted through Monte Carlo algorithm or explicitly
+character(len=20) implantDist				!<(Uniform or NonUniform), used to determine if defects are implanted uniformly or if DPA rate / He implant rate are given for each volume element
+character(len=20) polycrystal				!<(yes or no), used to identify whether or not we have multiple grains in our crystal
+character(len=20) singleElemKMC				!<(yes or no), used to toggle whether we are making one kMC choice per volume element or one kMC choice for the whole processors
+character(len=20) sinkEffSearch				!<(yes or no), used to toggle search for effective sink efficiency
+character(len=20) strainField				!<(yes or no), used to toggle whether we are simulating diffusion in a strain field
 
 !Output  parameters
-character*20 postprToggle				!<(yes or no), used to toggle whether we output the postpr.out data file
-character*20 totdatToggle				!<(yes or no), used to toggle whether we output the totdat.out data file
-character*20 rawdatToggle				!<(yes or no), used to toggle whether we output the rawdat.out data file
-character*20 vtkToggle					!<(yes or no), used to toggle whether we want vtk output at each time increment (log scale)
-character*20 xyzToggle					!<(yes or no), used to toggle whether we output an .xyz data file (for visualization)
-character*20 outputDebug				!<(yes or no), used to toggle whether we want to output a debug restart file at each time increment
-character*20 profileToggle				!<(yes or no), used to toggle whether we output a DefectProfile.out data file
-integer minCuCluster                    !<Only n>minVoid nCu clusters are used for calculating the average cluster radius and number density
-integer minVoid                         !<Only n>minLoop nV clusters are used for calculating the average cluster radius and number density
-integer minLoop                         !<Only n>minLoop nSIA clusters are used for calculating the average cluster radius and number density
-integer minCuV                          !<Only (n+m)>minLoop nCumV clusters are used for calculating the average cluster radius and number density
+character(len=20) postprToggle				!<(yes or no), used to toggle whether we output the postpr.out data file
+character(len=20) totdatToggle				!<(yes or no), used to toggle whether we output the totdat.out data file
+character(len=20) rawdatToggle				!<(yes or no), used to toggle whether we output the rawdat.out data file
+character(len=20) vtkToggle					!<(yes or no), used to toggle whether we want vtk output at each time increment (log scale)
+character(len=20) xyzToggle					!<(yes or no), used to toggle whether we output an .xyz data file (for visualization)
+character(len=20) outputDebug				!<(yes or no), used to toggle whether we want to output a debug restart file at each time increment
+character(len=20) profileToggle				!<(yes or no), used to toggle whether we output a DefectProfile.out data file
+integer minCuCluster                        !<Only n>minVoid nCu clusters are used for calculating the average cluster radius and number density
+integer minVoid                             !<Only n>minLoop nV clusters are used for calculating the average cluster radius and number density
+integer minLoop                             !<Only n>minLoop nSIA clusters are used for calculating the average cluster radius and number density
+integer minCuV                              !<Only (n+m)>minLoop nCumV clusters are used for calculating the average cluster radius and number density
 
 !(hard-coded) constants used for clustering rates
-double precision omega					!<Geometric constant for 3D spherical clustering (see Dunn et al. JNM 2013)
-double precision omega2D				!<Geometric constant for clustering with dislocation loops (see Dunn et al. JNM 2013)
-double precision omega1D				!<Geometric constant for clustering with dislocation loops (see Dunn et al. JNM 2013)
-double precision omegastar				!<Geometric constant for 3D spherical clustering (see Dunn et al. JNM 2013)
-double precision omegastar1D			!<Geometric constant for clustering with dislocation loops (see Dunn et al. JNM 2013)
-double precision omegacircle1D			!<Geometric constant for clustering with dislocation loops (see Dunn et al. JNM 2013)
-double precision recombinationCoeff		!<Geometric constant for Frenkel pair recombination (see Dunn et al. JNM 2013)
+double precision omega					    !<Geometric constant for 3D spherical clustering (see Dunn et al. JNM 2013)
+double precision omega2D				    !<Geometric constant for clustering with dislocation loops (see Dunn et al. JNM 2013)
+double precision omega1D				    !<Geometric constant for clustering with dislocation loops (see Dunn et al. JNM 2013)
+double precision omegastar				    !<Geometric constant for 3D spherical clustering (see Dunn et al. JNM 2013)
+double precision omegastar1D			    !<Geometric constant for clustering with dislocation loops (see Dunn et al. JNM 2013)
+double precision omegacircle1D			    !<Geometric constant for clustering with dislocation loops (see Dunn et al. JNM 2013)
+double precision recombinationCoeff		    !<Geometric constant for Frenkel pair recombination (see Dunn et al. JNM 2013)
 
 !used for MPI commands
 integer comm                            !<New communication domain: created by MPI_CART_CREAT
@@ -183,34 +180,40 @@ integer, parameter :: MASTER=0			!<Define the master node as ID=0
 integer, parameter :: maxBufferSize=50	!<Used to define the max size of a send/recieve buffer
 
 !counters
-double precision rateTau(2)         !<Used for collective communication
-integer numImpAnn(2)                !<Postprocessing: numImpAnn(1) is the num of Frenkel pairs / cascades (local), numImpAnn(2) is the number of annihilation reactions carried out (local)
-integer totalImpAnn(2)              !<Postprocessing: numImpAnn(1) is the number of implant events across all processors, numImpAnn(2) is the number of annihilation reactions across all processors
-!integer numImplantEvents			!<Postprocessing: number of Frenkel pairs / cascades (local)
-!integer totalImplantEvents			!<Postprocessing: number of implant events across all processors
-!integer numAnnihilate				!<Postprocessing: number of annihilation reactions carried out
+double precision rateTau(2)             !<Used for collective communication
+integer numImpAnn(2)                    !<Postprocessing: numImpAnn(1) is the num of Frenkel pairs / cascades (local), numImpAnn(2) is the number of annihilation reactions carried out (local)
+integer totalImpAnn(2)                  !<Postprocessing: numImpAnn(1) is the number of implant events across all processors, numImpAnn(2) is the number of annihilation reactions across all processors
+!integer numImplantEvents			    !<Postprocessing: number of Frenkel pairs / cascades (local)
+!integer totalImplantEvents			    !<Postprocessing: number of implant events across all processors
+!integer numAnnihilate				    !<Postprocessing: number of annihilation reactions carried out
 
 !counters for sink efficiency
-integer numTrapV					!<Postprocessing: number of vacancies trapped on grain boundary
-integer numTrapSIA					!<Postprocessing: number of SIAs trapped on grain boundary
-integer numEmitV					!<Postprocessing: number of vacancies emitted from grain boundary
-integer numEmitSIA					!<Postprocessing: number of SIAs emitted from grain boundary
+integer numTrapV			            !<Postprocessing: number of vacancies trapped on grain boundary
+integer numTrapSIA			            !<Postprocessing: number of SIAs trapped on grain boundary
+integer numEmitV			            !<Postprocessing: number of vacancies emitted from grain boundary
+integer numEmitSIA			            !<Postprocessing: number of SIAs emitted from grain boundary
 
 !DEBUG reset parameters
-integer numImplantEventsReset		!<For creating restart file (debugging tool, see example): number of cascades/Frenkel pairs
-double precision elapsedTimeReset	!<For creating restart file (debugging tool, see example): elapsed time
-character*20 debugToggle			!<('yes' or 'no') input parameter indicating whether we are restarting from a file
-character*50 restartFileName		!<Name of restart file
+integer numImplantEventsReset		    !<For creating restart file (debugging tool, see example): number of cascades/Frenkel pairs
+double precision elapsedTimeReset	    !<For creating restart file (debugging tool, see example): elapsed time
+character(len=20) debugToggle		    !<('yes' or 'no') input parameter indicating whether we are restarting from a file
+character(len=50) restartFileName	    !<Name of restart file
 
 !array containing distribution of DPA and He implantation rates
-integer numImplantDataPoints							!<For non-uniform implantation, number of input data points through-thickness
-double precision, allocatable :: implantRateData(:,:)	!<Data containing implantation rates as a function of depth (for non-uniform implantation)
+integer numImplantDataPoints							    !<For non-uniform implantation, number of input data points through-thickness
+double precision, allocatable :: implantRateData(:,:)	    !<Data containing implantation rates as a function of depth (for non-uniform implantation)
+
+!Sink efficiency parameters
+double precision alpha_v				!<Grain boundary sink efficiency for vacancies
+double precision alpha_i				!<Grain boundary sink efficiency for interstitials
+double precision conc_v					!<Concentration of vacancies found by GB model (used to fit alpha_v)
+double precision conc_i					!<Concentration of interstitials found by GB model (used to fit alpha_i)
 
 !Strain-related varialbes
-integer numDipole										!<Number of dipole tensors that are read in from a file
+integer numDipole									    !<Number of dipole tensors that are read in from a file
 type(dipoleTensor), allocatable :: dipoleStore(:)		!<Array of dipole tensors for associated defects, size numDipole
-character*50 strainFileName								!<File name of strain field intput data
-character*50 dipoleFileName								!<File name of dipole tensor input data
+character(len=50) strainFileName					    !<File name of strain field intput data
+character(len=50) dipoleFileName					    !<File name of dipole tensor input data
 
 contains
 

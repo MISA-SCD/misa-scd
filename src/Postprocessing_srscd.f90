@@ -6,7 +6,7 @@
 !Compiles data from local as well as global processors.
 !***************************************************************************************************
 
-subroutine outputDefects(elapsedTime,step)
+subroutine outputDefects()
 use mod_constants
 use DerivedType
 implicit none
@@ -17,9 +17,6 @@ integer defectCount, recvTemp(numSpecies+1)
 type(defect), pointer :: defectCurrent
 double precision, allocatable :: cellDefectSend(:,:)
 double precision, allocatable :: cellDefectRecv(:,:)
-
-double precision elapsedTime
-integer step
 
 tag=0
 
@@ -136,7 +133,7 @@ end subroutine
 !
 !***********************************************************************
 
-subroutine outputDefectsTotal(elapsedTime, step, outputCounter)
+subroutine outputDefectsTotal(outputCounter)
 use DerivedType
 use mod_constants
 implicit none
@@ -150,8 +147,7 @@ type(defect), pointer :: defectCurrent, defectPrevList, defectCurrentList, outpu
 double precision, allocatable :: defectsRecv(:,:)
 double precision, allocatable :: defectsSend(:,:)
 !Simulation variables passed by main program
-double precision elapsedTime
-integer step, outputCounter
+integer outputCounter
 
 !variables for computation statistics
 integer reactionsCoarse, reactionsFine
@@ -166,7 +162,7 @@ double precision CuNum
 !number of vacancies and SIAs in the system
 integer totalVac, totalSIA
 !Average radius of clusters
-double precision CuAverRadius,VoidAverRadius, LoopAverRadius, CuVAverRadius
+double precision CuAverRadius,VoidAverRadius, LoopAverRadius, CuVAverRadius, totalCuN
 !Average size of clusters
 double precision CuAverSize, VoidAverSize, LoopAverSize, CuVAverSize
 !number of clusters
@@ -437,6 +433,8 @@ if(myProc%taskid==MASTER) then
 	totalLoop=0
 	totalCuV=0
 
+	totalCuN=0d0
+
     CuAverRadius=0d0
 	VoidAverRadius=0d0
     LoopAverRadius=0d0
@@ -453,7 +451,7 @@ if(myProc%taskid==MASTER) then
 
 	do while(associated(defectCurrentList))
 		
-		!Compile statistics for vacancy and SIA concentrations
+		!Compile statistics for Cu, vacancy, SIA concentrations
 		if(defectCurrentList%defectType(1) /= 0) then
 
 			if(defectCurrentList%defectType(2) /= 0 .AND. &
@@ -464,6 +462,7 @@ if(myProc%taskid==MASTER) then
 			end if
 
 			if(defectCurrentList%defectType(1) > minCuCluster) then
+				totalCuN=totalCuN+dble(defectCurrentList%num)*dble(defectCurrentList%defectType(1))**(1d0/3d0)
 				CuClusterNum = CuClusterNum + defectCurrentList%num
 				totalCuCluster = totalCuCluster + defectCurrentList%defectType(1) * defectCurrentList%num
 			end if
@@ -520,10 +519,11 @@ if(myProc%taskid==MASTER) then
 	LoopCon = dble(LoopNum)/systemVol
 	CuVCon = dble(CuVNum)/systemVol
 
-	CuAverRadius = (3*(dble(totalCuCluster)/dble(CuClusterNum))*atomSize/(4*pi))**(1d0/3d0)
-	VoidAverRadius = (3*(dble(totalVoid)/dble(VoidNum))*atomSize/(4*pi))**(1d0/3d0)
+	!CuAverRadius = (3*(dble(totalCuCluster)/dble(CuClusterNum))*atomSize/(4*pi))**(1d0/3d0)
+	CuAverRadius = totalCuN/dble(CuClusterNum)*(3d0*atomSize/(4d0*pi))**(1d0/3d0)
+	VoidAverRadius = (3d0*(dble(totalVoid)/dble(VoidNum))*atomSize/(4d0*pi))**(1d0/3d0)
     LoopAverRadius = ((dble(totalLoop)/dble(LoopNum))*atomSize/(pi*burgers))**(1d0/2d0)
-	CuVAverRadius = (3*(dble(totalCuV)/dble(CuVNum))*atomSize/(4*pi))**(1d0/3d0)
+	CuVAverRadius = (3d0*(dble(totalCuV)/dble(CuVNum))*atomSize/(4d0*pi))**(1d0/3d0)
 
 	CuAverSize = dble(totalCuCluster)/dble(CuClusterNum)
 	VoidAverSize = dble(totalVoid)/dble(VoidNum)
@@ -534,20 +534,15 @@ if(myProc%taskid==MASTER) then
 !	VAnnihilated = dble(numAnnihilateTotal)/(dble(numDisplacedAtoms)*dble(totalImplantEvents))
 	VRetained = dble(totalVac)/(dble(numDisplacedAtoms)*dble(totalImpAnn(1)))
 	VAnnihilated = dble(totalImpAnn(2))/(dble(numDisplacedAtoms)*dble(totalImpAnn(1)))
-	
-!This is now calculated in MeshReader.f90
-!	systemVol=(myProc%globalCoord(2)-myProc%globalCoord(1))*&
-!			  (myProc%globalCoord(4)-myProc%globalCoord(3))*&
-!			  (myProc%globalCoord(6)-myProc%globalCoord(5))*1d-27
 
 	!Output postpr.out
 	if(outputCounter==0) then
 		write(84,*) 'First line:	step	time	dpa'
 		write(84,*)	'Second line:	CuClusterNum	CuCon(m-3)	At.%	CuAverRadius(nm)	CuAverSize'
-		write(84,*)	 'Third line:	VoidNum	VoidCon(m-3)	At.%	VoidAverRadius	VoidAverSize'
-		write(84,*)	 'Fourth line:	LoopNum	LoopCon(m-3)	At.%	LoopAverRadius	LoopAverSize'
-		write(84,*)	 'Fifth line:	CuVNum	CuVCon(m-3)	At.%	VoidAverRadius	CuVAverSize'
-		write(84,*)	 'Sixth line:	PercentVRetained	PercentVAnnihilated'
+		write(84,*)	'Third line:	VoidNum	VoidCon(m-3)	At.%	VoidAverRadius	VoidAverSize'
+		write(84,*)	'Fourth line:	LoopNum	LoopCon(m-3)	At.%	LoopAverRadius	LoopAverSize'
+		write(84,*)	'Fifth line:	CuVNum	CuVCon(m-3)	At.%	VoidAverRadius	CuVAverSize'
+		write(84,*)	'Sixth line:	PercentVRetained	PercentVAnnihilated'
 		write(84,*)
 	end if
 
@@ -556,6 +551,7 @@ if(myProc%taskid==MASTER) then
 	write(84,*) VoidNum, VoidCon*1d27, VoidCon*atomSize, VoidAverRadius,VoidAverSize
 	write(84,*)	LoopNum, LoopCon*1d27,LoopCon*atomSize, LoopAverRadius,LoopAverSize
 	write(84,*)	VRetained, VAnnihilated
+	write(84,*) 'Vcon: ', dble(VNum)/systemVol*atomSize, 'SIAcon: ', dble(totalSIA)/systemVol*atomSize
 	write(84,*)
 	write(84,*)
 
@@ -724,7 +720,7 @@ end subroutine
 !
 !***********************************************************************
 
-subroutine outputDefectsBoundary(elapsedTime, step)
+subroutine outputDefectsBoundary()
 use DerivedType
 use mod_constants
 implicit none
@@ -739,10 +735,6 @@ type(defect), pointer :: defectCurrent, defectPrevList, defectCurrentList, outpu
 double precision, allocatable :: defectsRecv(:,:), defectsSend(:,:)
 
 double precision atomArea, systemArea
-
-!Simulation variables passed by main program
-double precision elapsedTime
-integer step
 
 !variables for computation statistics
 integer reactionsCoarse, reactionsFine
@@ -1540,9 +1532,9 @@ else
 	call MPI_SEND(defectNumArray, numz*numSpecies, MPI_INTEGER, MASTER, 600, comm, ierr)
 
 	do i=1,numz
-		!call MPI_SEND(defectProfileArray(:,i),numSpecies,MPI_INTEGER, MASTER, i*700, comm, ierr)
+		!call MPI_SEND(defectProfileArray(1,i),numSpecies,MPI_INTEGER, MASTER, i*700, comm, ierr)
 		
-		!call MPI_SEND(defectNumArray(:,i), numSpecies, MPI_INTEGER, MASTER, i*600, comm, ierr)
+		!call MPI_SEND(defectNumArray(1,i), numSpecies, MPI_INTEGER, MASTER, i*600, comm, ierr)
 		
 		!Compute how many defect types are in this list
 		numDefectsSend=0
@@ -1616,7 +1608,7 @@ end subroutine
 !
 !***********************************************************************
 
-subroutine outputDefectsXYZ(elapsedTime,step)
+subroutine outputDefectsXYZ()
 use mod_constants
 use DerivedType
 implicit none
@@ -1631,9 +1623,6 @@ double precision, allocatable ::  xyzSend(:,:)
 integer points(myProc%numTasks)
 
 type(defect), pointer :: defectCurrent
-
-double precision elapsedTime
-integer step
 
 call MPI_ALLREDUCE(numCells, numPoints, 1, MPI_INTEGER, MPI_SUM, comm, ierr)
 call MPI_GATHER(numCells,1,MPI_INTEGER,points,1,MPI_INTEGER,MASTER,comm, ierr)
@@ -2000,41 +1989,43 @@ end subroutine
 ! Outputs: reaction rate of each processor written in file
 !****************************************************************************************************
 
-subroutine outputRates(elapsedTime, step)
+subroutine outputRates()
 use mod_constants
 use DerivedType
 implicit none
 
 include 'mpif.h'
 
-integer i, step, status(MPI_STATUS_SIZE)
-double precision rate(myProc%numtasks), rateTemp, elapsedTime
+integer i,status(MPI_STATUS_SIZE)
+double precision rate(myProc%numtasks), rateTemp
+
+call MPI_GATHER(totalRate,1,MPI_DOUBLE_PRECISION,rate,1,MPI_DOUBLE_PRECISION,0,comm,ierr)
 
 if(myProc%taskid==MASTER) then
 
 	!Record master reaction rate
-	rate(1)=totalRate
+!	rate(1)=totalRate
 	
-	do i=1,myProc%numtasks-1
+!	do i=1,myProc%numtasks-1
 		
 		!Recieve data from other procs
 		!record data from other procs in rate()
 		
-		call MPI_RECV(rateTemp,1,MPI_DOUBLE_PRECISION,i,step,comm,status,ierr)
-		rate(i+1)=rateTemp
+!		call MPI_RECV(rateTemp,1,MPI_DOUBLE_PRECISION,i,step,comm,status,ierr)
+!		rate(i+1)=rateTemp
 		
-	end do
+!	end do
 
 	!Output data from other procs to file
 	
 	write(85,*) 'step', step, 'rates', (rate(i), i=1,myProc%numtasks)
 	
-else
+!else
 
 	!send reaction rate to master proc
-	call MPI_SEND(totalRate, 1, MPI_DOUBLE_PRECISION, MASTER, step, comm, ierr)
+!	call MPI_SEND(totalRate, 1, MPI_DOUBLE_PRECISION, MASTER, step, comm, ierr)
 	
-endif
+end if
 
 end subroutine
 
@@ -2048,7 +2039,7 @@ end subroutine
 !
 !****************************************************************************************************
 
-subroutine outputDebugRestart(fileNumber, elapsedTime)	!fileNumber = outputCounter
+subroutine outputDebugRestart(fileNumber)	!fileNumber = outputCounter
 use mod_constants
 use DerivedType
 implicit none
@@ -2065,8 +2056,6 @@ integer numCellsNeighbor,defectData(numSpecies+1)
 double precision coordsAndNumTypesSend(4), coordsAndNumTypesRecv(4)
 double precision, allocatable :: defectDataSend(:,:), defectDataRecv(:,:)
 
-
-double precision elapsedTime
 type(defect), pointer :: defectCurrent
 character(12) :: fileName
 
@@ -2255,10 +2244,6 @@ type(defect), pointer :: defectCurrent, defectPrevList, defectCurrentList, outpu
 
 double precision, allocatable :: defectsRecv(:,:)
 double precision, allocatable :: defectsSend(:,:)
-
-!Simulation variables passed by main program
-double precision elapsedTime
-integer step
 
 !variables for computation statistics
 integer reactionsCoarse, reactionsFine
@@ -2710,10 +2695,6 @@ type(defect), pointer :: defectCurrent, defectPrevList, defectCurrentList, outpu
 
 double precision, allocatable :: defectsRecv(:,:)
 double precision, allocatable :: defectsSend(:,:)
-
-!Simulation variables passed by main program
-double precision elapsedTime
-integer step
 
 !variables for computation statistics
 integer reactionsCoarse, reactionsFine

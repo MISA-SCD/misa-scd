@@ -25,12 +25,10 @@ type(reaction), pointer :: reactionChoiceList, reactionChoiceCurrent	!used to cr
 type(reaction), pointer :: reactionTemp
 type(cascade), pointer :: CascadeCurrent								!used to find defects/reactions in fine mesh
 
-double precision  elapsedTime, totalTime, tau, GenerateTimestep, TotalRateCheck, rateSingle
-integer status(MPI_STATUS_SIZE),  step, annealIter, sim, outputCounter, nullSteps
+double precision  GenerateTimestep, TotalRateCheck, rateSingle, tau
+integer status(MPI_STATUS_SIZE), sim, outputCounter, nullSteps
 integer cascadeCell, i, j, cell
-real  elapsedTime, totalTime, tau, GenerateTimestep
 real time1, time2
-double precision  TotalRateCheck, rateSingle
 
 integer CascadeCount, TotalCascades !<Used to count the number of cascades present in the simulation
 
@@ -72,13 +70,12 @@ interface
 		type(reaction), pointer :: reactionCurrent
 	end subroutine
 	
-	subroutine updateDefectList(reactionCurrent, defectUpdateCurrent, CascadeCurrent, step)
+	subroutine updateDefectList(reactionCurrent, defectUpdateCurrent, CascadeCurrent)
 		use DerivedType
 		implicit none
 		type(reaction), pointer :: reactionCurrent
 		type(DefectUpdateTracker), pointer :: defectUpdateCurrent
 		type(cascade), pointer :: CascadeCurrent
-		integer step
 	end subroutine
 	
 	subroutine updateDefectListMultiple(reactionChoiceCurrent, defectUpdateCurrent, CascadeCurrent)
@@ -95,11 +92,10 @@ interface
 		type(DefectUpdateTracker), pointer :: defectUpdate
 	end subroutine
 	
-	subroutine DEBUGPrintReaction(reactionCurrent, step)
+	subroutine DEBUGPrintReaction(reactionCurrent)
 		use DerivedType
 		implicit none
 		type(reaction), pointer :: reactionCurrent
-		integer step
 	end subroutine
 	
 	subroutine DEBUGPrintDefectUpdate(defectUpdate)
@@ -108,11 +104,10 @@ interface
 		type(defectUpdateTracker), pointer :: defectUpdate
 	end subroutine
 
-	subroutine DEBUGcheckForUnadmissible(reactionCurrent, step)
+	subroutine DEBUGcheckForUnadmissible(reactionCurrent)
 		use DerivedType
 		implicit none
 		type(Reaction), pointer :: reactionCurrent
-		integer step
 	end subroutine
 
 	subroutine releaseFineMeshDefects(CascadeCurrent)
@@ -132,9 +127,7 @@ call cpu_time(time1)
 
 open(81, file='parameters.txt',action='read', status='old')
 
-periods(1) = .true.
-periods(2) = .true.
-periods(3) = .true.
+periods(1:3) = .true.
 
 !Initialize MPI interface
 call MPI_INIT(ierr)
@@ -274,8 +267,8 @@ if(myProc%taskid==MASTER) then
 	write(*,*) 'initialCeqi', initialCeqi
 end if
 
-!call DEBUGPrintReactionList(0)		!prints all reaction lists at a given Monte Carlo step
-!call DEBUGPrintDefectList(0)
+!call DEBUGPrintReactionList()		!prints all reaction lists at a given Monte Carlo step
+!call DEBUGPrintDefectList()
 !******************************************************************
 !Initialize Counters
 !******************************************************************
@@ -418,7 +411,7 @@ do while(elapsedTime < totalTime)
 
 	call MPI_BCAST(rateTau, 2, MPI_DOUBLE_PRECISION, MASTER, comm,ierr)
 
-	maxRate=maxRate(1)	!update maxRate
+	maxRate=rateTau(1)	!update maxRate
 	tau=rateTau(2)		!update time step
 
 !*************************************************************************
@@ -609,17 +602,17 @@ do while(elapsedTime < totalTime)
 
 		!Input: reactionCurrent
 		!Output: defectUpdateCurrent, CascadeCurrent
-		call updateDefectList(reactionCurrent, defectUpdateCurrent, CascadeCurrent, step)
+		call updateDefectList(reactionCurrent, defectUpdateCurrent, CascadeCurrent)
 
 		!call DEBUGPrintDefectList(step)
 
 		!call DEBUGPrintDefectUpdate(defectUpdate)
-	
+
 		!If a cascade is chosen, update reaction rates for all defects remaining in coarse mesh element
-		
+
 		if(associated(reactionCurrent)) then
 			if(reactionCurrent%numReactants==-10) then
-				
+
 				!Resets reaction list in cell and neighbors (on same processor)
 				call resetReactionListSingleCell(reactionCurrent%cellNumber(1))
 				
@@ -649,6 +642,8 @@ do while(elapsedTime < totalTime)
 		call updateReactionList(defectUpdate)
 !	end if
 !	call updateReactionList(defectUpdate)
+	call DEBUGPrintReactionList()		!prints all reaction lists at a given Monte Carlo step
+	call DEBUGPrintDefectList()
 
 	if(totalRate < 0d0) then
 		write(*,*) 'error totalRate less than zero', step
@@ -680,8 +675,9 @@ do while(elapsedTime < totalTime)
 	!Cascade communication step:
 	!Tell neighbors whether a cascade has occurred in a cell that is a boundary of a neighbor.
 	!If so, update boundary mesh (send defects to boundary mesh) and update all diffusion reaction rates.
-
-	call cascadeUpdateStep(cascadeCell)
+	if(implantType=='Cascade') then
+		call cascadeUpdateStep(cascadeCell)
+	end if
 
 	!****************************************************************************************
 	!Every time a cascade is added, we reset the total rate and check how wrong it has become
@@ -692,7 +688,6 @@ do while(elapsedTime < totalTime)
 	if(associated(reactionCurrent)) then
 		if(implantType=='Cascade') then
 			if(reactionCurrent%numReactants==-10) then
-				!if(myProc%taskid==MASTER) write(*,*) 'Checking Total Rate'
 				totalRate=TotalRateCheck()
 			end if
 		else if(implantType=='FrenkelPair') then
@@ -714,21 +709,20 @@ do while(elapsedTime < totalTime)
 	!********************************************************************************
 
 
-!	if(elapsedTime >= 1d-4*(10d0)**(outputCounter)) then
-	if(elapsedTime >= totalTime/200d0*(2d0)**(outputCounter)) then
+	if(elapsedTime >= totalTime/10d7*(10d0)**(outputCounter)) then
+!	if(elapsedTime >= totalTime/200d0*(2d0)**(outputCounter)) then
 	! or if(mod(step,100000)==0) then
-!		call MPI_ALLREDUCE(numImplantEvents,totalImplantEvents, 1, MPI_INTEGER, MPI_SUM, comm, ierr)
+	!	call MPI_ALLREDUCE(numImplantEvents,totalImplantEvents, 1, MPI_INTEGER, MPI_SUM, comm, ierr)
     !    call MPI_ALLREDUCE(numImpAnn,totalImpAnn, 2, MPI_INTEGER, MPI_SUM, comm, ierr)
 		call MPI_REDUCE(numImpAnn,totalImpAnn, 2, MPI_INTEGER, MPI_SUM, 0,comm, ierr)
 		
-!		DPA=dble(totalImplantEvents)/(((myProc%globalCoord(2)-myProc%globalCoord(1))*(myProc%globalCoord(4)-myProc%globalCoord(3))*&
-!			(myProc%globalCoord(6)-myProc%globalCoord(5)))/(numDisplacedAtoms*atomsize))
+	!	DPA=dble(totalImplantEvents)/(((myProc%globalCoord(2)-myProc%globalCoord(1))*(myProc%globalCoord(4)-myProc%globalCoord(3))*&
+	!		(myProc%globalCoord(6)-myProc%globalCoord(5)))/(numDisplacedAtoms*atomsize))
     !    DPA=dble(totalImpAnn(1))/(((myProc%globalCoord(2)-myProc%globalCoord(1))*(myProc%globalCoord(4)-myProc%globalCoord(3))*&
     !            (myProc%globalCoord(6)-myProc%globalCoord(5)))/(numDisplacedAtoms*atomsize))
 		
 		if(myProc%taskid==MASTER) then
-			DPA=dble(totalImpAnn(1))/(((myProc%globalCoord(2)-myProc%globalCoord(1))*(myProc%globalCoord(4)-myProc%globalCoord(3))*&
-					(myProc%globalCoord(6)-myProc%globalCoord(5)))/(numDisplacedAtoms*atomsize))
+			DPA=dble(totalImpAnn(1))/(systemVol/(numDisplacedAtoms*atomsize))
 			call cpu_time(time2)
 			write(*,*)
 			write(*,*) 'time', elapsedTime, 'dpa', DPA, 'steps', step, 'Average time step', elapsedTime/dble(step)
@@ -738,47 +732,38 @@ do while(elapsedTime < totalTime)
 			if(implantType=='FrenkelPair') then
 				write(*,*) 'Frenkel pairs', totalImpAnn(1), 'computation time', time2-time1
 				write(83,*) 'Frenkel pairs', totalImpAnn(1), 'computation time', time2-time1
-
 			else if(implantType=='Cascade')	then
 				write(*,*) 'Cascades', totalImpAnn(1), 'computation time', time2-time1
 				write(83,*) 'Cascades', totalImpAnn(1), 'computation time', time2-time1
-
 			else
 				write(*,*) 'No implantation', totalImpAnn(1), 'computation time', time2-time1
 				write(83,*) 'No implantation', totalImpAnn(1), 'computation time', time2-time1
-
 			end if
 
-			!Optional: output average number of cascades present per step in local processor
-			!write(84,*) 'Processor ', myProc%taskid, 'Avg. cascades present', dble(TotalCascades)/dble(step)
-			
 			!Optional: output fraction of steps that are null events
 			if(singleElemKMC=='yes') then
 				write(83,*) 'Fraction null steps', dble(nullSteps)/dble(step*numCells)
-
 			else
 				write(83,*) 'Fraction null steps', dble(nullSteps)/dble(step)
-
 			end if
 			write(*,*)
-
 		end if
 		
 		!Several defect output optionas available, these outputs should be chosen in input file (currently hard coded)
 		
-		if(rawdatToggle=='yes') call outputDefects(elapsedTime,step)
+		if(rawdatToggle=='yes') call outputDefects()
 		!if(sinkEffSearch=='no' .AND. numMaterials .GT. 1) call outputDefectsBoundary(elapsedTime,step)
 		!if(sinkEffSearch=='no' .AND. numMaterials==1) call outputDefectsTotal(elapsedTime, step)
 		if(postprToggle=='yes') then
 			if(totdatToggle=='yes') then
-				call outputDefectsTotal(elapsedTime,step, outputCounter)
+				call outputDefectsTotal(outputCounter)
 			else
 				write(*,*) 'Error outputing postpr.out but not totdat.out'
 			end if
 		end if
-		if(xyzToggle=='yes') call outputDefectsXYZ(elapsedTime,step)	!write(87,*): defect.xyz
+		if(xyzToggle=='yes') call outputDefectsXYZ()	!write(87,*): defect.xyz
 		if(vtkToggle=='yes') call outputDefectsVTK(outputCounter)	!write(88,*): VTKout.vtk
-		if(outputDebug=='yes') call outputDebugRestart(outputCounter, elapsedTime)	!write(88,*): Restart.in
+		if(outputDebug=='yes') call outputDebugRestart(outputCounter)	!write(88,*): Restart.in
 		
 		outputCounter=outputCounter+1
 
@@ -816,7 +801,7 @@ end do
 
 !call MPI_ALLREDUCE(numImplantEvents,totalImplantEvents, 1, MPI_INTEGER, MPI_SUM, comm, ierr)
 !call MPI_ALLREDUCE(numImpAnn, totalImpAnn, 2, MPI_INTEGER, MPI_SUM, comm, ierr)
-call MPI_ALLREDUCE(numImpAnn, totalImpAnn, 2, MPI_INTEGER, MPI_SUM,0, comm, ierr)
+call MPI_REDUCE(numImpAnn, totalImpAnn, 2, MPI_INTEGER, MPI_SUM,0, comm, ierr)
 
 !DPA=dble(totalImplantEvents)/(((myProc%globalCoord(2)-myProc%globalCoord(1))*(myProc%globalCoord(4)-myProc%globalCoord(3))*&
 !	(myProc%globalCoord(6)-myProc%globalCoord(5)))/(numDisplacedAtoms*atomsize))
@@ -824,8 +809,7 @@ call MPI_ALLREDUCE(numImpAnn, totalImpAnn, 2, MPI_INTEGER, MPI_SUM,0, comm, ierr
 !        (myProc%globalCoord(6)-myProc%globalCoord(5)))/(numDisplacedAtoms*atomsize))
 
 if(myProc%taskid==MASTER) then
-	DPA=dble(totalImpAnn(1))/(((myProc%globalCoord(2)-myProc%globalCoord(1))*(myProc%globalCoord(4)-myProc%globalCoord(3))*&
-			(myProc%globalCoord(6)-myProc%globalCoord(5)))/(numDisplacedAtoms*atomsize))
+	DPA=dble(totalImpAnn(1))/(systemVol/(numDisplacedAtoms*atomsize))
 	call cpu_time(time2)
 	write(*,*)
 	write(*,*) 'Final  step'
@@ -853,17 +837,17 @@ if(myProc%taskid==MASTER) then
 end if
 
 !Final output
-if(rawdatToggle=='yes') call outputDefects(elapsedTime,step)
+if(rawdatToggle=='yes') call outputDefects()
 if(postprToggle=='yes') then
 	if(totdatToggle=='yes') then
-		call outputDefectsTotal(elapsedTime,step, outputCounter)
+		call outputDefectsTotal(outputCounter)
 	else
 		write(*,*) 'Error outputing postpr.out but not totdat.out'
 	end if
 end if
 !call outputDefectsProfile(sim)	!write(99,*): DepthProfile.out
 if(vtkToggle=='yes') call outputDefectsVTK(outputCounter)
-if(outputDebug=='yes') call outputDebugRestart(outputCounter ,elapsedTime)
+if(outputDebug=='yes') call outputDebugRestart(outputCounter)
 
 
 
@@ -893,7 +877,6 @@ if(annealTime > 0d0) then
 		write(83,*) 'Entering Annealing Phase'
 		write(84,*) 'Entering Annealing Phase'
 	end if
-
 end if
 
 !begin annealing
@@ -1047,7 +1030,7 @@ do annealIter=1,annealSteps	!default value: annealSteps = 1
 						end if
 					end if
 			
-					call updateDefectList(reactionCurrent, defectUpdateCurrent, CascadeCurrent,step)
+					call updateDefectList(reactionCurrent, defectUpdateCurrent, CascadeCurrent)
 			
 					!call DEBUGPrintDefectUpdate(defectUpdate)
 			
@@ -1086,7 +1069,7 @@ do annealIter=1,annealSteps	!default value: annealSteps = 1
 				!write(*,*) 'null step', myProc%taskid
 			end if
 	
-			call updateDefectList(reactionCurrent, defectUpdateCurrent, CascadeCurrent, step)
+			call updateDefectList(reactionCurrent, defectUpdateCurrent, CascadeCurrent)
 		
 			if(associated(reactionCurrent)) then
 				if(reactionCurrent%numReactants==-10) then
@@ -1159,7 +1142,7 @@ do annealIter=1,annealSteps	!default value: annealSteps = 1
 		
 !			call MPI_ALLREDUCE(numImplantEvents,totalImplantEvents, 1, MPI_INTEGER, MPI_SUM, comm, ierr)
         !    call MPI_ALLREDUCE(numImpAnn,totalImpAnn, 2, MPI_INTEGER, MPI_SUM, comm, ierr)
-			call MPI_ALLREDUCE(numImpAnn,totalImpAnn, 2, MPI_INTEGER, MPI_SUM,0,comm, ierr)
+			call MPI_REDUCE(numImpAnn,totalImpAnn, 2, MPI_INTEGER, MPI_SUM,0,comm, ierr)
 		
 !			DPA=dble(totalImplantEvents)/(((myProc%globalCoord(2)-myProc%globalCoord(1))*(myProc%globalCoord(4)-myProc%globalCoord(3))*&
 !				(myProc%globalCoord(6)-myProc%globalCoord(5)))/(numDisplacedAtoms*atomsize))
@@ -1190,19 +1173,19 @@ do annealIter=1,annealSteps	!default value: annealSteps = 1
 				write(*,*)
 			end if
 		
-			if(rawdatToggle=='yes') call outputDefects(elapsedTime,step)
+			if(rawdatToggle=='yes') call outputDefects()
 			!if(sinkEffSearch=='no' .AND. numMaterials .GT. 1) call outputDefectsBoundary(elapsedTime,step)
 			!if(sinkEffSearch=='no' .AND. numMaterials==1) call outputDefectsTotal(elapsedTime, step)
 			if(postprToggle=='yes') then
 				if(totdatToggle=='yes') then
-					call outputDefectsTotal(elapsedTime,step)
+					call outputDefectsTotal(outputCounter)
 				else
 					write(*,*) 'Error outputing postpr.out but not totdat.out'
 				end if
 			end if
-			if(xyzToggle=='yes') call outputDefectsXYZ(elapsedTime,step)
+			if(xyzToggle=='yes') call outputDefectsXYZ()
 			if(vtkToggle=='yes') call outputDefectsVTK(outputCounter)
-			if(outputDebug=='yes') call outputDebugRestart(outputCounter, elapsedTime)
+			if(outputDebug=='yes') call outputDebugRestart(outputCounter)
 		
 			outputCounter=outputCounter+1
 
@@ -1222,7 +1205,7 @@ if(annealTime > 0d0) then
 
 !	call MPI_ALLREDUCE(numImplantEvents,totalImplantEvents, 1, MPI_INTEGER, MPI_SUM, comm, ierr)
 !    call MPI_ALLREDUCE(numImpAnn,totalImpAnn, 2, MPI_INTEGER, MPI_SUM, comm, ierr)
-	call MPI_ALLREDUCE(numImpAnn,totalImpAnn, 2, MPI_INTEGER, MPI_SUM, 0, comm, ierr)
+	call MPI_REDUCE(numImpAnn,totalImpAnn, 2, MPI_INTEGER, MPI_SUM, 0, comm, ierr)
 
 !	DPA=dble(totalImplantEvents)/(((myProc%globalCoord(2)-myProc%globalCoord(1))*(myProc%globalCoord(4)-&
 !			myProc%globalCoord(3))*(myProc%globalCoord(6)-myProc%globalCoord(5)))/(numDisplacedAtoms*atomsize))
@@ -1276,19 +1259,19 @@ if(annealTime > 0d0) then
 		end if
 	end if
 
-	if(rawdatToggle=='yes') call outputDefects(elapsedTime,step)
+	if(rawdatToggle=='yes') call outputDefects()
 !	if(sinkEffSearch=='no' .AND. numMaterials .GT. 1) call outputDefectsBoundary(elapsedTime,step)
 !	if(sinkEffSearch=='no' .AND. numMaterials==1) call outputDefectsTotal(elapsedTime, step)
 	if(postprToggle=='yes') then
 		if(totdatToggle=='yes') then
-			call outputDefectsTotal(elapsedTime,step)
+			call outputDefectsTotal(outputCounter)
 		else
 			write(*,*) 'Error outputing postpr.out but not totdat.out'
 		end if
 	end if
-	if(xyzToggle=='yes') call outputDefectsXYZ(elapsedTime,step)
+	if(xyzToggle=='yes') call outputDefectsXYZ()
 	if(vtkToggle=='yes') call outputDefectsVTK(outputCounter)
-	if(outputDebug=='yes') call outputDebugRestart(outputCounter, elapsedTime)
+	if(outputDebug=='yes') call outputDebugRestart(outputCounter)
 
 end if
 

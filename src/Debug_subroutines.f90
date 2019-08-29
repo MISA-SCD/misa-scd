@@ -14,7 +14,7 @@
 !! OUTPUT: unadmissible defects, if any (on the screen)
 !***************************************************************************************************
 
-subroutine DEBUGCheckForUnadmissible(reactionCurrent, step)
+subroutine DEBUGCheckForUnadmissible(reactionCurrent)
 use mod_constants
 use DerivedType
 implicit none
@@ -23,14 +23,13 @@ type(reaction), pointer :: reactionCurrent
 type(defect), pointer :: defectCurrent
 type(cascade), pointer :: cascadeCurrent
 
-integer i,j,k,count,step
+integer i,j,k,count
 
 interface
-	subroutine DEBUGPrintReaction(reactionCurrent, step)
+	subroutine DEBUGPrintReaction(reactionCurrent)
 		use DerivedType
 		implicit none
 		type(Reaction), pointer :: reactionCurrent
-		integer step
 	end subroutine
 end interface
 
@@ -47,8 +46,8 @@ do i=1,numCells
 	!No admissible defects have 3 or 4 nonzero numbers in defectType()
 	if(count == 3 .OR. count == 4) then
 		write(*,*) 'Unadmissible defect found coarse mesh cell', i, 'step', step
-		call DEBUGPrintReaction(reactionCurrent, step)
-		call DEBUGPrintDefects(step)
+		call DEBUGPrintReaction(reactionCurrent)
+		call DEBUGPrintDefects()
 	endif
 	defectCurrent=>defectCurrent%next
 end do
@@ -69,8 +68,8 @@ do while(associated(CascadeCurrent))
 		!No admissible defects have 3 or 4 nonzero numbers in defectType()
 		if(count == 3 .OR. count == 4) then
 			write(*,*) 'Unadmissible defect found in fine mesh cell', i, 'step', step, 'Cascade', CascadeCurrent%cascadeID
-			call DEBUGPrintReaction(reactionCurrent, step)
-			call DEBUGPrintDefects(step)
+			call DEBUGPrintReaction(reactionCurrent)
+			call DEBUGPrintDefects()
 		endif
 		defectCurrent=>defectCurrent%next
 	end do
@@ -114,12 +113,12 @@ end subroutine
 !!Prints reaction lists in coarse mesh as well as in cascades, if any are present
 !*****************************************************************************************
 
-subroutine DEBUGPrintReactionList(step)
+subroutine DEBUGPrintReactionList()
 use mod_constants
 use DerivedType
 implicit none
 
-integer i, j, k,step
+integer i, j, k
 type(reaction), pointer :: reactionCurrent
 type(cascade), pointer :: CascadeCurrent
 
@@ -228,12 +227,12 @@ end subroutine
 !!Have the option to skip volume elements that are empty.
 !*****************************************************************************************
 
-subroutine DEBUGPrintDefects(step)
+subroutine DEBUGPrintDefects()
 use DerivedType
 use mod_constants
 implicit none
 
-integer i, j, k, count, step
+integer i, j, k, count
 type(defect), pointer :: defectCurrent
 type(Cascade), pointer :: CascadeCurrent
 
@@ -306,14 +305,13 @@ end subroutine
 !master processor. Used for debugging.
 !***********************************************************************
 
-subroutine DEBUGPrintReaction(reactionCurrent, step)
+subroutine DEBUGPrintReaction(reactionCurrent)
 use mod_constants
 use DerivedType
 implicit none
 
 type(Reaction), pointer :: reactionCurrent
 double precision totalRateCheck
-integer step
 
 if(myProc%taskid==MASTER) then	
 	write(*,*) 'reaction chosen processor', myProc%taskid, 'step', step
@@ -347,12 +345,12 @@ end subroutine
 !***********************************************************************
 !> Subroutine debug print defectList - outputs defects in the coarse meshes of this processor.
 !***********************************************************************
-subroutine DEBUGPrintDefectList(step)
+subroutine DEBUGPrintDefectList()
 	use mod_constants
 	use DerivedType
 	implicit none
 
-	integer i, step
+	integer i
 	type(defect), pointer :: defectCurrent
 
 	!output reaction list

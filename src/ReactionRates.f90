@@ -913,10 +913,11 @@ implicit none
 
 integer cell, defectType1(numSpecies), defectType2(numSpecies), matNum
 type(reaction), pointer :: reactionCurrent, reactionPrev
-integer i, j, count, numReactants, numProducts
+type(defect), pointer :: defectTemp
+integer i, j, count, numReactants, numProducts,count1
 integer, allocatable :: reactants(:,:), products(:,:)
 double precision reactionRate
-logical isLegal
+logical isLegal, isLegalTemp
 
 integer findNumDefect
 
@@ -931,8 +932,37 @@ if(numMaterials==1) then
 else
 	matNum=myMesh(cell)%material
 endif
+isLegalTemp =.TRUE.
 
+!count=0
+!count1=0
+!do i=1, numSpecies
+!	if(defectType1(i)==defectType2(i)) then
+!		count=count+1
+!	end if
+!end do
 
+!if(count==numSpecies) then
+!	defectTemp=>defectList(cell)%next
+!	do while(associated(defectTemp))
+!		do i=1, numSpecies
+!			if(defectType1(i)==defectTemp%defectType(i)) then
+!				count1=count1+1
+!			end if
+!		end do
+!		if(count1==numSpecies) then
+!			exit
+!		else
+!			defectTemp=>defectTemp%next
+!		end if
+!	end do
+
+!	if(associated(defectTemp) .AND. defectTemp%num < 2) then
+!		isLegalTemp =.FALSE.
+!	end if
+!end if
+
+!if(isLegalTemp .eqv. .TRUE.) then
 do i=1, numClusterReac(matNum)
 
     !*******************************************************
@@ -1504,6 +1534,8 @@ do i=1, numClusterReac(matNum)
 	end if
 	
 end do
+!;.
+end if
 
 end subroutine
 
@@ -3138,7 +3170,8 @@ implicit none
 
 integer cell, defectType1(numSpecies), defectType2(numSpecies), i, count
 type(reactionParameters) :: reactionParameter
-double precision reactionRate, Diff1, Diff2, size1, size2, num1, num2, vol, Ztemp
+double precision reactionRate, Diff1, Diff2, vol, Ztemp
+integer size1, size2, num1, num2
 integer findNumDefect, findDefectSize, matNum, grainNum
 double precision findDiffusivity
 double precision rad1, rad2, area
@@ -3167,34 +3200,40 @@ else
 	Ztemp=1.0d0
 endif
 
-count=0
-do i=1,numSpecies
-	if(defectType1(i)==defectType2(i)) then
-		count=count+1
-	end if
-end do
-if(count==numSpecies) then
+!count=0
+!do i=1,numSpecies
+!	if(defectType1(i)==defectType2(i)) then
+!		count=count+1
+!	end if
+!end do
+!if(count==numSpecies) then
 	!we have two defects of the same type, have to modify the defect numbers for a defect to combine with itself
-	num2=num2-1
-endif
+!	num2=num2-1
+!endif
 
 vol=myMesh(cell)%volume
 area=(myMesh(cell)%length)**2d0	!assuming square elements in grain boundary
 
 if(reactionParameter%functionType==5) then
 
-    reactionRate=Ztemp*(omegastar+omega*(dble(size1)**(1d0/3d0)+dble(size2)**(1d0/3d0)))*&
-            (Diff1+Diff2)*dble(num1)*dble(num2)*atomsize/vol
+	reactionRate=Ztemp*omega*(dble(size1)**(1d0/3d0)+dble(size2)**(1d0/3d0))*&
+	        (Diff1+Diff2)*dble(num1)*dble(num2)*atomsize/vol
+    !reactionRate=Ztemp*(omegastar+omega*(dble(size1)**(1d0/3d0)+dble(size2)**(1d0/3d0)))*&
+    !        (Diff1+Diff2)*dble(num1)*dble(num2)*atomsize/vol
         
 else if(reactionParameter%functionType==6) then	!spherical clusters other than Cu-Cu clusters
 
-	reactionRate=Ztemp*(omegastar+omega*(dble(size1)**(1d0/3d0)+dble(size2)**(1d0/3d0)))*(Diff1+Diff2)*dble(num1)*dble(num2)&
+	reactionRate=Ztemp*omega*(dble(size1)**(1d0/3d0)+dble(size2)**(1d0/3d0))*(Diff1+Diff2)*dble(num1)*dble(num2)&
 				 *atomsize/vol
+	!reactionRate=Ztemp*(omegastar+omega*(dble(size1)**(1d0/3d0)+dble(size2)**(1d0/3d0)))*(Diff1+Diff2)*dble(num1)*dble(num2)&
+	!			 *atomsize/vol
 
-else if(reactionParameter%functionType==7) then	!For HeV clusters. NOTE that this is the same as function type 6 (identical for now)
+else if(reactionParameter%functionType==7) then	!For CuV clusters. NOTE that this is the same as function type 6 (identical for now)
 
-	reactionRate=Ztemp*(omegastar+omega*(dble(size1)**(1d0/3d0)+dble(size2)**(1d0/3d0)))*(Diff1+Diff2)*dble(num1)*dble(num2)&
-				 *atomsize/vol
+	reactionRate=Ztemp*omega*(dble(size1)**(1d0/3d0)+dble(size2)**(1d0/3d0))*(Diff1+Diff2)*dble(num1)*dble(num2)&
+			*atomsize/vol
+	!reactionRate=Ztemp*(omegastar+omega*(dble(size1)**(1d0/3d0)+dble(size2)**(1d0/3d0)))*(Diff1+Diff2)*dble(num1)*dble(num2)&
+	!		*atomsize/vol
 
 else if(reactionParameter%functionType==8) then
 
@@ -3221,14 +3260,17 @@ else if(reactionParameter%functionType==8) then
 		reactionRate=0d0
 	endif
 
-	reactionRate=Zint*(omegastar+(omega*dble(size1)**(1d0/3d0)+omega2D*dble(size2)**(1d0/2d0)))*&
-		Diff1*num1*num2*atomsize/vol+&
-		(Zint*(omegastar1D+omegacircle1D*dble(size2)**(1d0/2d0)+omega1D*dble(size1)**(1d0/3d0)))**4d0*&
+	reactionRate=(omega*dble(size1)**(1d0/3d0)+omega2D*dble(size2)**(1d0/2d0))*Diff1*num1*num2*atomsize/vol+&
+		(Ztemp*(omegacircle1D*dble(size2)**(1d0/2d0)+omega1D*dble(size1)**(1d0/3d0)))**4d0*&
 		Diff2*dble(num2)*dble(num1)**(2d0)*(atomsize/vol)**(2d0)
+	!reactionRate=Zint*(omegastar+(omega*dble(size1)**(1d0/3d0)+omega2D*dble(size2)**(1d0/2d0)))*&
+	!		Diff1*num1*num2*atomsize/vol+&
+	!		(Zint*(omegastar1D+omegacircle1D*dble(size2)**(1d0/2d0)+omega1D*dble(size1)**(1d0/3d0)))**4d0*&
+	!				Diff2*dble(num2)*dble(num1)**(2d0)*(atomsize/vol)**(2d0)
 		
 else if(reactionParameter%functionType==9) then
 	
-	reactionRate=(Zint*(omegastar1D+omegacircle1D*(dble(size1)**(1d0/2d0)+dble(size2)**(1d0/2d0))))**4d0*&
+	reactionRate=(Ztemp*(omegastar1D+omegacircle1D*(dble(size1)**(1d0/2d0)+dble(size2)**(1d0/2d0))))**4d0*&
 		(Diff1*dble(num2)+Diff2*dble(num1))*dble(num1*num2)*(atomsize/vol)**(2d0)
 
 else if(reactionParameter%functionType==10) then	!Diffusion rate for 2D defect recombination on the grain boundary
@@ -4103,7 +4145,7 @@ do while(associated(reactionCurrent))
 		if(flag .EQV. .FALSE.) then	!we have found the reaction
 			exit
 		endif
-	endif
+	end if
 	
 	reactionPrev=>reactionCurrent
 	reactionCurrent=>reactionCurrent%next

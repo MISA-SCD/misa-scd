@@ -82,9 +82,6 @@ dpaRate			! NOTE: if the implant profile is non-uniform, this should be the AVER
 firr            !Radiation enhanced factor
 2.5d7
 
-atomSize
-8.79d-3 		!(Fe) 			8.79d-3 		!(Cu)		! atomsize (nm^3)
-
 burgers
 0.132d0 		!(Fe) 			.36d0 			!(Cu)		! dislocation loop burgers vector (lattice constant) (nm)
 
@@ -147,16 +144,16 @@ profileToggle   !‘yes’ or ‘no’: toggles output of damage profile as a fu
 no              !Default 'no'
 
 minCuCluster    !Only n>minCuCluster nCu clusters are used for calculating the average cluster radius and number density
-5
+10
 
 minVoid         !Only n>minVoidn nV clusters are used for calculating the average cluster radius and number density
-5
+10
 
 minLoop         !Only n>minLoop nSIA clusters are used for calculating the average cluster radius and number density
-5
+10
 
 minCuV          !Only (n+m)>minLoop nCumV clusters are used for calculating the average cluster radius and number density
-5
+10
 
 end            !Tag for the end of the Output parameters file
 
