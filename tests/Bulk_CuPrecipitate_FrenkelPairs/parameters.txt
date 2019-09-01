@@ -79,8 +79,11 @@ annealTemp
 dpaRate			! NOTE: if the implant profile is non-uniform, this should be the AVERAGE DPA rate.
 2d-9
 
-firr            !Radiation enhanced factor
-2.5d7
+atomSize
+1.18d-2 		!(Cu) (nm^3)
+
+firr
+2.5d7           !Radiation enhanced factor
 
 burgers
 0.132d0 		!(Fe) 			.36d0 			!(Cu)		! dislocation loop burgers vector (lattice constant) (nm)

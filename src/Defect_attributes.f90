@@ -154,7 +154,7 @@ double precision function diffusivityCu(matNum)
 		if(DiffSingle(i,matNum)%defectType(1)==1 .AND. DiffSingle(i,matNum)%defectType(2)==0 .AND. &
 				DiffSingle(i,matNum)%defectType(3)==0 .AND. DiffSingle(i,matNum)%defectType(4)==0) then
 
-			if(totalDPA > 0d0 .AND. DPARate > 0d0) then
+			if(totalDPA > 0d0 .AND. dpaRate > 0d0) then
 			!	diffusivityCu=(DiffSingle(i,matNum)%D*dexp(-DiffSingle(i,matNum)%Em/(kboltzmann*temperature)))* &
 			!			(Vconcent/initialCeqv)
 				diffusivityCu=(DiffSingle(i,matNum)%D*dexp(-DiffSingle(i,matNum)%Em/(kboltzmann*temperature)))* firr
@@ -305,7 +305,7 @@ if(functionType==2) then	!used for Cu cluster dislocation
 
 	CuNum=DefectType(1)
 	Eb=parameters(1)*kboltzmann-parameters(2)*kboltzmann*tempStore- &
-			(36d0*pi)**(1d0/3d0)*atomsize**(2d0/3d0)*parameters(3)*(dble(CuNum)**(2d0/3d0)-dble(CuNum-1)**(2d0/3d0))
+			(36d0*pi)**(1d0/3d0)*atomSize**(2d0/3d0)*parameters(3)*(dble(CuNum)**(2d0/3d0)-dble(CuNum-1)**(2d0/3d0))
 
 else if(functionType==4) then	!V / SIA cluster dislocation
 	num=0

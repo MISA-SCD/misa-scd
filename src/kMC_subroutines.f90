@@ -460,9 +460,13 @@ if(.NOT. associated(reactionCurrent)) then
 		!Send
 		if(myProc%procNeighbor(i) /= myProc%taskid) then
 
-			call MPI_ISEND(localSend,0,MPI_INTEGER,myProc%procNeighbor(i),200+i ,comm,sendLocalRequest(i),ierr)
+			!call MPI_ISEND(localSend,0,MPI_INTEGER,myProc%procNeighbor(i),200+i ,comm,sendLocalRequest(i),ierr)
 
-			call MPI_ISEND(bndrySend,0,MPI_INTEGER,myProc%procNeighbor(i),800+i ,comm,sendBndryRequest(i),ierr)
+			!call MPI_ISEND(bndrySend,0,MPI_INTEGER,myProc%procNeighbor(i),800+i ,comm,sendBndryRequest(i),ierr)
+
+			call MPI_SEND(localSend,0,MPI_INTEGER,myProc%procNeighbor(i),200+i ,comm,ierr)
+
+			call MPI_SEND(bndrySend,0,MPI_INTEGER,myProc%procNeighbor(i),800+i ,comm,ierr)
 
 		end if
 
@@ -476,9 +480,12 @@ if(.NOT. associated(reactionCurrent)) then
 
 			numUpdateBndryRecv(recvDir) = count/(numSpecies+3)
 
-			call MPI_IRECV(bndryRecv(1,1,recvDir),&
+			!call MPI_IRECV(bndryRecv(1,1,recvDir),&
+			!		(numSpecies+3)*numUpdateBndryRecv(recvDir),MPI_INTEGER,myProc%procNeighbor(recvDir),&
+			!		200+i ,comm,recvBndryRequest(recvDir),ierr)
+			call MPI_RECV(bndryRecv(1,1,recvDir),&
 					(numSpecies+3)*numUpdateBndryRecv(recvDir),MPI_INTEGER,myProc%procNeighbor(recvDir),&
-					200+i ,comm,recvBndryRequest(recvDir),ierr)
+					200+i ,comm,status,ierr)
 
 			!Recv Local
 			count=0
@@ -489,9 +496,12 @@ if(.NOT. associated(reactionCurrent)) then
 			numUpdateLocalRecv(recvDir) = count/(numSpecies+2)
 
 			totalLocalRecv=totalLocalRecv+numUpdateLocalRecv(recvDir)
-			call MPI_IRECV(localRecv(1,1,recvDir),&
+			!call MPI_IRECV(localRecv(1,1,recvDir),&
+			!		(numSpecies+2)*numUpdateLocalRecv(recvDir),MPI_INTEGER,&
+			!		myProc%procNeighbor(recvDir),800+i,comm,recvLocalRequest(recvDir),ierr)
+			call MPI_RECV(localRecv(1,1,recvDir),&
 					(numSpecies+2)*numUpdateLocalRecv(recvDir),MPI_INTEGER,&
-					myProc%procNeighbor(recvDir),800+i,comm,recvLocalRequest(recvDir),ierr)
+					myProc%procNeighbor(recvDir),800+i,comm,status,ierr)
 		end if
 	end do
 
@@ -1317,6 +1327,12 @@ else
 
                 call MPI_ISEND(bndrySend(1,1,i),(numSpecies+2)*numUpdateBndry(i),MPI_INTEGER,myProc%procNeighbor(i),&
                         800+i ,comm,sendBndryRequest(i),ierr)
+
+				!call MPI_SEND(localSend(1,1,i),(numSpecies+3)*numUpdateLocal(i),MPI_INTEGER,myProc%procNeighbor(i), &
+				!		200+i ,comm,ierr)
+
+				!call MPI_SEND(bndrySend(1,1,i),(numSpecies+2)*numUpdateBndry(i),MPI_INTEGER,myProc%procNeighbor(i),&
+				!		800+i ,comm,ierr)
             end if
 
             !Recv
@@ -1330,6 +1346,8 @@ else
 
                 call MPI_IRECV(bndryRecv(1,1,recvDir),(numSpecies+3)*numUpdateBndryRecv(recvDir),MPI_INTEGER,&
                         myProc%procNeighbor(recvDir),200+i,comm,recvBndryRequest(recvDir),ierr)
+				!call MPI_RECV(bndryRecv(1,1,recvDir),(numSpecies+3)*numUpdateBndryRecv(recvDir),MPI_INTEGER,&
+				!		myProc%procNeighbor(recvDir),200+i,comm,status,ierr)
 
                 !Recv Local
                 count=0
@@ -1341,6 +1359,8 @@ else
 
                 call MPI_IRECV(localRecv(1,1,recvDir),(numSpecies+2)*numUpdateLocalRecv(recvDir),MPI_INTEGER,&
                         myProc%procNeighbor(recvDir),800+i,comm,recvLocalRequest(recvDir),ierr)
+				!call MPI_RECV(localRecv(1,1,recvDir),(numSpecies+2)*numUpdateLocalRecv(recvDir),MPI_INTEGER,&
+				!		myProc%procNeighbor(recvDir),800+i,comm,status,ierr)
             end if
         end do
 
@@ -1563,20 +1583,6 @@ else
 
 	else	!Reactions in the coarse mesh
 
-	!	if(reactionCurrent%reactants(1,1)==1 .AND. reactionCurrent%reactants(2,1)==0 .AND.&
-	!			reactionCurrent%reactants(3,1)==0 .AND. reactionCurrent%reactants(4,1)==0 .AND. &
-	!			reactionCurrent%reactants(1,2)==1 .AND. reactionCurrent%reactants(2,2)==0 .AND. &
-	!			reactionCurrent%reactants(3,2)==0 .AND. reactionCurrent%reactants(4,2)==0) then
-
-	!		write(*,*) 'step',step,'proc',myProc%taskid, 'cell',reactionCurrent%cellNumber(1)
-	!		write(*,*) 'proc',myProc%taskid, reactionCurrent%products, 'cell',reactionCurrent%cellNumber
-	!		defectTemp=>defectList(reactionCurrent%cellNumber(1))%next
-	!		do while(associated(defectTemp))
-	!			write(*,*) 'proc',myProc%taskid,'defects',defectTemp%defectType, 'num', defectTemp%num
-	!			defectTemp=>defectTemp%next
-	!		end do
-	!	end if
-
         !First update local buffer if needed
         do i=1, reactionCurrent%numReactants
 
@@ -1733,14 +1739,14 @@ else
                 !Send Local
                 call MPI_ISEND(localSend(1,1,i),(numSpecies+3)*numUpdateLocal(i),MPI_INTEGER,myProc%procNeighbor(i),&
                         200+i ,comm,sendLocalRequest(i),ierr)
-			!	call MPI_SEND(localSend(1,1,i),(numSpecies+3)*numUpdateLocal(i),MPI_INTEGER,myProc%procNeighbor(i),&
-			!			200+i ,comm,ierr)
+				!call MPI_SEND(localSend(1,1,i),(numSpecies+3)*numUpdateLocal(i),MPI_INTEGER,myProc%procNeighbor(i),&
+				!		200+i ,comm,ierr)
 
                 !Send Bndry
                 call MPI_ISEND(bndrySend(1,1,i),(numSpecies+2)*numUpdateBndry(i),MPI_INTEGER,myProc%procNeighbor(i),&
                         800+i ,comm,sendBndryRequest(i),ierr)
-			!	call MPI_SEND(bndrySend(1,1,i),(numSpecies+2)*numUpdateBndry(i),MPI_INTEGER,myProc%procNeighbor(i),&
-			!			800+i ,comm,ierr)
+				!call MPI_SEND(bndrySend(1,1,i),(numSpecies+2)*numUpdateBndry(i),MPI_INTEGER,myProc%procNeighbor(i),&
+				!		800+i ,comm,ierr)
             end if
 
             !Recv
@@ -1754,8 +1760,8 @@ else
 
                 call MPI_IRECV(bndryRecv(1,1,recvDir),(numSpecies+3)*numUpdateBndryRecv(recvDir),MPI_INTEGER,&
                         myProc%procNeighbor(recvDir),200+i ,comm,recvBndryRequest(recvDir),ierr)
-			!	call MPI_RECV(bndryRecv(1,1,recvDir),(numSpecies+3)*numUpdateBndryRecv(recvDir),MPI_INTEGER,&
-			!			myProc%procNeighbor(recvDir),200+i ,comm,status,ierr)
+				!call MPI_RECV(bndryRecv(1,1,recvDir),(numSpecies+3)*numUpdateBndryRecv(recvDir),MPI_INTEGER,&
+				!		myProc%procNeighbor(recvDir),200+i ,comm,status,ierr)
 
                 !Recv Local
                 count=0
@@ -1767,11 +1773,15 @@ else
 
                 call MPI_IRECV(localRecv(1,1,recvDir),(numSpecies+2)*numUpdateLocalRecv(recvDir),MPI_INTEGER,&
                         myProc%procNeighbor(recvDir),800+i,comm,recvLocalRequest(recvDir),ierr)
-			!	call MPI_RECV(localRecv(1,1,recvDir),(numSpecies+2)*numUpdateLocalRecv(recvDir),MPI_INTEGER,&
-			!			myProc%procNeighbor(recvDir),800+i,comm,status,ierr)
+				!call MPI_RECV(localRecv(1,1,recvDir),(numSpecies+2)*numUpdateLocalRecv(recvDir),MPI_INTEGER,&
+				!		myProc%procNeighbor(recvDir),800+i,comm,status,ierr)
             end if
         end do
 
+		!*****************************test
+		!write(*,*) '%%%% step', step, 'proc',myProc%taskid,&
+		!		'reacts', reactionCurrent%reactants, 'products',reactionCurrent%products
+		!****************************
 
 		!removing reactants from the system
 		do i=1, reactionCurrent%numReactants
@@ -1839,17 +1849,18 @@ else
 			else if(defectCurrent%num==1 .AND. associated(defectCurrent%next)) then
 				defectList(reactionCurrent%cellNumber(i))%num=0 !first defect in system never deallocates
 				defectUpdateCurrent%num=-1
-				!write(*,*) 'Removing the first defect from the list'
+				write(*,*) 'Removing the first defect from the list'
 			
 			!if there is one defect of this type and it is the only defect in the list, then make its number 0 (don't remove first defect from list)
 			else if(defectCurrent%num==1) then
 				defectList(reactionCurrent%cellNumber(i))%num=0
 				defectUpdateCurrent%num=-1
-				!write(*,*) 'Removing the only defect from the list'
+				write(*,*) 'Removing the only defect from the list'
 			
 			!if the defect is in the list but none present, we have chosen a reaction that shouldn't exist
 			else if(defectCurrent%num==0) then
-				write(*,*) 'trying to remove a defect that isnt there'
+				write(*,*) '&&&&trying to remove a defect that isnt there'
+				write(*,*) 'step', step,'proc',myProc%taskid,'cell',reactionCurrent%cellNumber(i)
 				call MPI_ABORT(comm,ierr)
 			else
 				!decrease the number of defects by 1 if the number of defects is greater than 1
@@ -2218,6 +2229,7 @@ do i=1,6
 end do
 
 allocate(finalSend(numSpecies+3,totalLocalRecv,6))
+
 !Update defectList
 do i=1,6
 
@@ -2483,10 +2495,10 @@ do i=1,6
 
     !Send
     if(myProc%procNeighbor(i) /= myProc%taskid) then
-       ! call MPI_ISEND(finalSend(1,1,i),(numSpecies+3)*numUpdateFinal(i),MPI_INTEGER,&
-       !         myProc%procNeighbor(i), 400+i ,comm,sendFinalRequest(i),ierr)
-		call MPI_SEND(finalSend(1,1,i),(numSpecies+3)*numUpdateFinal(i),MPI_INTEGER,&
-				myProc%procNeighbor(i), 400+i ,comm,ierr)
+        call MPI_ISEND(finalSend(1,1,i),(numSpecies+3)*numUpdateFinal(i),MPI_INTEGER,&
+                myProc%procNeighbor(i), 400+i ,comm,sendFinalRequest(i),ierr)
+		!call MPI_SEND(finalSend(1,1,i),(numSpecies+3)*numUpdateFinal(i),MPI_INTEGER,&
+		!		myProc%procNeighbor(i), 400+i ,comm,ierr)
     end if
 
     !Recv
@@ -2583,13 +2595,12 @@ do i=1,6
         end do
         deallocate(finalBufferRecv)
     end if
-end do
 
-!do i=1,6
-!    if(myProc%procNeighbor(i) /= myProc%taskid) then
-!        call MPI_WAIT(sendFinalRequest(i),sendFinalStatus,ierr)
-!    end if
-!end do
+	if(myProc%procNeighbor(i) /= myProc%taskid) then
+		call MPI_WAIT(sendFinalRequest(i),sendFinalStatus,ierr)
+	end if
+
+end do
 
 if(allocated(finalSend)) then
     deallocate(finalSend)

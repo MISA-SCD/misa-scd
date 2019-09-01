@@ -262,13 +262,12 @@ call initializeDebugRestart()		!input defects into coarse mesh from restart file
 
 if(myProc%taskid==MASTER) then
 	write(*,*) 'CuEverMesh', numCuCell
-	write(*,*) 'initialTotalV', initialTotalV, 'initialTotalSIA', initialTotalI
-	write(*,*) 'initialCeqv', initialCeqv
-	write(*,*) 'initialCeqi', initialCeqi
+	write(*,*) 'Initial number of V', initialNumV
+	write(*,*) 'Initial number of SIA', initialNumI
+	write(*,*) 'Equilibrium concentration of V', ceqV
+	write(*,*) 'Equilibrium concentration of SIA', ceqI
 end if
 
-!call DEBUGPrintReactionList()		!prints all reaction lists at a given Monte Carlo step
-!call DEBUGPrintDefectList()
 !******************************************************************
 !Initialize Counters
 !******************************************************************
@@ -321,8 +320,8 @@ step=0
 nullSteps=0		!Record the number of steps in which an empty event was selected
 
 !Initialize totalTime
-if(totalDPA > 0d0 .AND. DPARate > 0d0) then
-	totalTime=totalDPA/DPARate	!simulation time
+if(totalDPA > 0d0 .AND. dpaRate > 0d0) then
+	totalTime=totalDPA/dpaRate	!simulation time
 else
 	totalTime = agingTime
 end if
@@ -335,6 +334,11 @@ annealIdentify=.FALSE.		!(.TRUE. if in annealing phase, .FALSE. otherwise) used 
 !Initizlize maxRate and tau. rateTau(1)=maxRate, rateTau(2)=tau
 rateTau(1:2)=0d0
 
+!call DEBUGPrintReactionList()		!prints all reaction lists at a given Monte Carlo step
+!write(*,*)
+!write(*,*)
+!call DEBUGPrintDefectList()
+
 !*********************************************************************************************************************
 !*********************************************************************************************************************
 !**																		                                            **
@@ -345,7 +349,7 @@ rateTau(1:2)=0d0
 !*********************************************************************************************************************
 
 do while(elapsedTime < totalTime)
-!do while(step < 2)
+!do while(step <= 0)
 	
 	step=step+1
         
@@ -388,7 +392,7 @@ do while(elapsedTime < totalTime)
 	else
 		!If implantScheme=='explicit', cascade implantation needs to be carried out explicitly
 		if(implantScheme=='explicit') then
-			if(elapsedTime >= numImpAnn(1)*(numDisplacedAtoms*atomsize)/(totalVolume*DPARate)) then
+			if(elapsedTime >= numImpAnn(1)*(numDisplacedAtoms*atomSize)/(totalVolume*dpaRate)) then
 				!Do not generate a timestep in this case; this is an explicit (zero-time) reaction
 				if(myProc%taskid==MASTER) then
 			!		tau=0d0
@@ -544,8 +548,8 @@ do while(elapsedTime < totalTime)
 		!If implantScheme=='explicit', cascade implantation needs to be carried out explicitly
 		if(implantScheme=='explicit') then
 			
-!			if(elapsedTime >= numImplantEvents*(numDisplacedAtoms*atomsize)/(totalVolume*DPARate)) then
-            if(elapsedTime >= numImpAnn(1)*(numDisplacedAtoms*atomsize)/(totalVolume*DPARate)) then
+!			if(elapsedTime >= numImplantEvents*(numDisplacedAtoms*atomSize)/(totalVolume*DPARate)) then
+            if(elapsedTime >= numImpAnn(1)*(numDisplacedAtoms*atomSize)/(totalVolume*dpaRate)) then
 				
 				!choose a cell in the peocessor to implant cascade
 				call addCascadeExplicit(reactionCurrent)
@@ -642,8 +646,12 @@ do while(elapsedTime < totalTime)
 		call updateReactionList(defectUpdate)
 !	end if
 !	call updateReactionList(defectUpdate)
-	call DEBUGPrintReactionList()		!prints all reaction lists at a given Monte Carlo step
-	call DEBUGPrintDefectList()
+	!write(*,*)
+	!write(*,*)
+	!call DEBUGPrintReactionList()		!prints all reaction lists at a given Monte Carlo step
+	!write(*,*)
+	!write(*,*)
+	!call DEBUGPrintDefectList()
 
 	if(totalRate < 0d0) then
 		write(*,*) 'error totalRate less than zero', step
@@ -717,12 +725,12 @@ do while(elapsedTime < totalTime)
 		call MPI_REDUCE(numImpAnn,totalImpAnn, 2, MPI_INTEGER, MPI_SUM, 0,comm, ierr)
 		
 	!	DPA=dble(totalImplantEvents)/(((myProc%globalCoord(2)-myProc%globalCoord(1))*(myProc%globalCoord(4)-myProc%globalCoord(3))*&
-	!		(myProc%globalCoord(6)-myProc%globalCoord(5)))/(numDisplacedAtoms*atomsize))
+	!		(myProc%globalCoord(6)-myProc%globalCoord(5)))/(numDisplacedAtoms*atomSize))
     !    DPA=dble(totalImpAnn(1))/(((myProc%globalCoord(2)-myProc%globalCoord(1))*(myProc%globalCoord(4)-myProc%globalCoord(3))*&
-    !            (myProc%globalCoord(6)-myProc%globalCoord(5)))/(numDisplacedAtoms*atomsize))
+    !            (myProc%globalCoord(6)-myProc%globalCoord(5)))/(numDisplacedAtoms*atomSize))
 		
 		if(myProc%taskid==MASTER) then
-			DPA=dble(totalImpAnn(1))/(systemVol/(numDisplacedAtoms*atomsize))
+			DPA=dble(totalImpAnn(1))/(systemVol/(numDisplacedAtoms*atomSize))
 			call cpu_time(time2)
 			write(*,*)
 			write(*,*) 'time', elapsedTime, 'dpa', DPA, 'steps', step, 'Average time step', elapsedTime/dble(step)
@@ -804,12 +812,12 @@ end do
 call MPI_REDUCE(numImpAnn, totalImpAnn, 2, MPI_INTEGER, MPI_SUM,0, comm, ierr)
 
 !DPA=dble(totalImplantEvents)/(((myProc%globalCoord(2)-myProc%globalCoord(1))*(myProc%globalCoord(4)-myProc%globalCoord(3))*&
-!	(myProc%globalCoord(6)-myProc%globalCoord(5)))/(numDisplacedAtoms*atomsize))
+!	(myProc%globalCoord(6)-myProc%globalCoord(5)))/(numDisplacedAtoms*atomSize))
 !DPA=dble(totalImpAnn(1))/(((myProc%globalCoord(2)-myProc%globalCoord(1))*(myProc%globalCoord(4)-myProc%globalCoord(3))*&
-!        (myProc%globalCoord(6)-myProc%globalCoord(5)))/(numDisplacedAtoms*atomsize))
+!        (myProc%globalCoord(6)-myProc%globalCoord(5)))/(numDisplacedAtoms*atomSize))
 
 if(myProc%taskid==MASTER) then
-	DPA=dble(totalImpAnn(1))/(systemVol/(numDisplacedAtoms*atomsize))
+	DPA=dble(totalImpAnn(1))/(systemVol/(numDisplacedAtoms*atomSize))
 	call cpu_time(time2)
 	write(*,*)
 	write(*,*) 'Final  step'
@@ -1145,13 +1153,13 @@ do annealIter=1,annealSteps	!default value: annealSteps = 1
 			call MPI_REDUCE(numImpAnn,totalImpAnn, 2, MPI_INTEGER, MPI_SUM,0,comm, ierr)
 		
 !			DPA=dble(totalImplantEvents)/(((myProc%globalCoord(2)-myProc%globalCoord(1))*(myProc%globalCoord(4)-myProc%globalCoord(3))*&
-!				(myProc%globalCoord(6)-myProc%globalCoord(5)))/(numDisplacedAtoms*atomsize))
+!				(myProc%globalCoord(6)-myProc%globalCoord(5)))/(numDisplacedAtoms*atomSize))
         !    DPA=dble(totalImpAnn(1))/(((myProc%globalCoord(2)-myProc%globalCoord(1))*(myProc%globalCoord(4)-myProc%globalCoord(3))*&
-        !            (myProc%globalCoord(6)-myProc%globalCoord(5)))/(numDisplacedAtoms*atomsize))
+        !            (myProc%globalCoord(6)-myProc%globalCoord(5)))/(numDisplacedAtoms*atomSize))
 	
 			if(myProc%taskid==MASTER) then
 				DPA=dble(totalImpAnn(1))/(((myProc%globalCoord(2)-myProc%globalCoord(1))*(myProc%globalCoord(4)-myProc%globalCoord(3))*&
-						(myProc%globalCoord(6)-myProc%globalCoord(5)))/(numDisplacedAtoms*atomsize))
+						(myProc%globalCoord(6)-myProc%globalCoord(5)))/(numDisplacedAtoms*atomSize))
 				call cpu_time(time2)
 				write(*,*) 'time', elapsedTime, 'anneal time', elapsedTime-totalTime, 'dpa', dpa, 'steps', step
 				write(*,*) 'Cascades/Frenkel pairs', totalImpAnn(1), 'computation time', time2-time1
@@ -1208,15 +1216,15 @@ if(annealTime > 0d0) then
 	call MPI_REDUCE(numImpAnn,totalImpAnn, 2, MPI_INTEGER, MPI_SUM, 0, comm, ierr)
 
 !	DPA=dble(totalImplantEvents)/(((myProc%globalCoord(2)-myProc%globalCoord(1))*(myProc%globalCoord(4)-&
-!			myProc%globalCoord(3))*(myProc%globalCoord(6)-myProc%globalCoord(5)))/(numDisplacedAtoms*atomsize))
+!			myProc%globalCoord(3))*(myProc%globalCoord(6)-myProc%globalCoord(5)))/(numDisplacedAtoms*atomSize))
 !    DPA=dble(totalImpAnn(1))/(((myProc%globalCoord(2)-myProc%globalCoord(1))*(myProc%globalCoord(4)-&
-!            myProc%globalCoord(3))*(myProc%globalCoord(6)-myProc%globalCoord(5)))/(numDisplacedAtoms*atomsize))
+!            myProc%globalCoord(3))*(myProc%globalCoord(6)-myProc%globalCoord(5)))/(numDisplacedAtoms*atomSize))
 
 	write(*,*) 'Fraction null steps', dble(nullSteps)/dble(step), 'Proc', myProc%taskid
 
 	if(myProc%taskid==MASTER) then
 		DPA=dble(totalImpAnn(1))/(((myProc%globalCoord(2)-myProc%globalCoord(1))*(myProc%globalCoord(4)-&
-				myProc%globalCoord(3))*(myProc%globalCoord(6)-myProc%globalCoord(5)))/(numDisplacedAtoms*atomsize))
+				myProc%globalCoord(3))*(myProc%globalCoord(6)-myProc%globalCoord(5)))/(numDisplacedAtoms*atomSize))
 		call cpu_time(time2)
 	
 		if(sinkEffSearch=='no') then

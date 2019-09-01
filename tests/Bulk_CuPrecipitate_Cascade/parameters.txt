@@ -79,6 +79,9 @@ annealTemp
 dpaRate			! NOTE: if the implant profile is non-uniform, this should be the AVERAGE DPA rate.
 1.4d-7
 
+atomSize
+1.18d-2 		!(Cu) (nm^3)
+
 firr            !Radiation enhanced factor
 7.69d5
 

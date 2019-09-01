@@ -883,7 +883,7 @@ tempStore		=273d0
 CuContent		=0.5d-2
 dpaRate			=1d-4
 firr			=0d0
-atomsize		=(lattice**(3d0))/2d0
+atomSize		=0d0
 burgers			=0.287d0
 totalDPA		=1d-1
 alpha_v			=1d0
@@ -952,19 +952,19 @@ do while(flag .eqv. .FALSE.)
 			read(81,*) CuContent
 		else if(char=='dpaRate') then
 			flag2=.TRUE.
-			read(81,*) DPARate
+			read(81,*) dpaRate
+		else if(char=='totalDPA') then
+			flag2=.TRUE.
+			read(81,*) totalDPA
 		else if(char=='firr') then
 			flag2=.TRUE.
 			read(81,*) firr
 		else if(char=='atomSize') then
 			flag2=.TRUE.
-			read(81,*) atomsize
+			read(81,*) atomSize
 		else if(char=='burgers') then
 			flag2=.TRUE.
 			read(81,*) burgers
-		else if(char=='totalDPA') then
-			flag2=.TRUE.
-			read(81,*) totalDPA
 		else if(char=='annealTemp') then
 			flag2=.TRUE.
 			read(81,*) annealTemp
@@ -1022,27 +1022,6 @@ do while(flag .eqv. .FALSE.)
 		else if(char=='numGrains') then
 			flag2=.TRUE.
 			read(81,*) numGrains
-!		else if(char=='vtkToggle') then
-!			flag2=.TRUE.
-!			read(81,*) vtkToggle
-!		else if(char=='xyzToggle') then
-!			flag2=.TRUE.
-!			read(81,*) xyzToggle
-!		else if(char=='restartToggle') then
-!			flag2=.TRUE.
-!			read(81,*) outputDebug
-!		else if(char=='postprToggle') then
-!			flag2=.TRUE.
-!			read(81,*) postprToggle
-!		else if(char=='totdatToggle') then
-!			flag2=.TRUE.
-!			read(81,*) totdatToggle
-!		else if(char=='rawdatToggle') then
-!			flag2=.TRUE.
-!			read(81,*) rawdatToggle
-!		else if(char=='profileToggle') then
-!			flag2=.TRUE.
-!			read(81,*) profileToggle
 		else if(char=='singleElemKMC') then
 			flag2=.TRUE.
 			read(81,*) singleElemKMC
@@ -1178,15 +1157,15 @@ endif
 !clustering rate constants
 !***********************************************************************
 
-omega=(48d0*pi**2/atomsize**2)**(1d0/3d0) 			!clustering rate parameter for spherical clusters
-omegastar=(4*pi*reactionRadius)/atomsize			!clustering rate parameter modifier due to reaction radius
-omega2D=(4d0*pi/(atomsize*burgers))**(1d0/2d0)		!clustering rate parameter for 1D migrating circular clusters
-omega1D=(9d0*pi/(16d0*atomsize))**(1d0/6d0)			!clustering rate parameter for 1D migrating spherical clusters
-omegastar1D=reactionRadius*(pi/atomsize)**(1d0/2d0)
+omega=(48d0*pi**2/atomSize**2)**(1d0/3d0) 			!clustering rate parameter for spherical clusters
+omegastar=(4*pi*reactionRadius)/atomSize			!clustering rate parameter modifier due to reaction radius
+omega2D=(4d0*pi/(atomSize*burgers))**(1d0/2d0)		!clustering rate parameter for 1D migrating circular clusters
+omega1D=(9d0*pi/(16d0*atomSize))**(1d0/6d0)			!clustering rate parameter for 1D migrating spherical clusters
+omegastar1D=reactionRadius*(pi/atomSize)**(1d0/2d0)
 !omegastar1D=0d0										!clustering rate parameter modifier due to reaction radius
 omegacircle1D=(1d0/burgers)**(1d0/2d0)				!clustering rate parameter for 1D migrating circular clusters
 
-recombinationCoeff=4d0*pi*(.4466)/atomsize			!from Stoller et al., not used any longer
+recombinationCoeff=4d0*pi*(.4466)/atomSize			!from Stoller et al., not used any longer
 
 !***********************************************************************
 !initialize counters

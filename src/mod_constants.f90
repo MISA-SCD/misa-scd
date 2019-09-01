@@ -90,38 +90,41 @@ double precision, parameter :: lattice = 0.2867         !<lattice constant (nm)
 
 !2019.04.30 Add
 !Cu solubility CeqCu(T) = exp(DelatS/kB)*exp(-Omega/(kB*T))  Reference: (F. Christien and A. Barbu, 2004)
-double precision initialCeqv                            !Thermal equilibrium concentration of vacancy
-double precision initialCeqi                            !Thermal equilibrium concentration of SIA
-double precision Vconcent                               !Vacancy concentration
-double precision SIAconcent                             !SIA concentration
-double precision atomsEverMesh                          !number of atoms of my processor
-integer numCuCell                                       !Initial number of Cu atoms in one mesh
-integer initialTotalV                                   !Total number of initial vacancies in the whole system
-integer initialTotalI                                   !Total number of initial Initial self-interstitial atoms in the whole system
-integer, allocatable :: VgCellList(:)                   !List the globalID of the mesh where initial vacancies are located.
-integer, allocatable :: IgCellList(:)                   !List the globalID of the mesh where initial self-interstitial atoms are located.
+double precision ceqV                   !Thermal equilibrium concentration of vacancy
+double precision ceqI                   !Thermal equilibrium concentration of SIA
+double precision concV                  !Vacancy concentration
+double precision concI                  !SIA concentration
+integer numCuCell                       !Initial number of Cu atoms in one mesh
+integer initialNumV                     !Initial number of vacancies in the whole system
+integer initialNumI                     !Initial number of self-interstitial atoms in the whole system
+integer, allocatable :: listVI(:,:)     !List the globalID of the mesh where initial vacancies and self-interstitial atoms are located.
 
-double precision firr                                   !firr = Vconcent / initialCeqv. Radiation enhanced factor
-
-!simulation parameters, to be read during readParameters() in main program
+!simulation parameters, to be computed during simulation
 double precision temperature			!<Temperature (K)
-double precision tempStore				!<Temperature read in (K) - used when temp. changes several times during a simulation
-double precision atomsize				!<atomic volume (nm^3)
-double precision CuContent              !<The initial content of Cu in iron
-double precision DPARate				!<DPA rate in dpa/s
 double precision DPA					!<DPA tracker (not a parameter)
-double precision dislocationDensity		!<density of dislocations (sinks for point defects)
-double precision impurityDensity		!<denstiy of impurity atoms (traps for SIA loops)
-double precision totalDPA				!<total DPA in simulation
-double precision agingTime              !<Thermal aging time (s)
-double precision burgers				!<magnitude of burgers vector, equal to lattice constant
 double precision numDisplacedAtoms		!<number of atoms displaced per cascade, read from cascade file
-double precision meanFreePath			!<mean free path before a defect is absorbed by a grain boundary (AKA avg. grain size)
-double precision cascadeReactionLimit	!<Total reaction rate in a cascade cell to consider it annealed and release cascade back to coarse mesh (s^-1)
-double precision cascadeVolume			!<Volume of cascade (used for cascade mixing probability)
-
 double precision totalVolume			!<Volume of single processor's mesh (nm^3)
 double precision systemVol				!<Volume of all processors (global), not including grain boundary elements (nm^3)
+
+!simulation parameters, to be read during readParameters() in main program
+double precision tempStore				!<Temperature read in (K) - used when temp. changes several times during a simulation
+double precision CuContent              !<The initial content of Cu in iron
+double precision dpaRate				!<DPA rate in dpa/s
+double precision totalDPA				!<total DPA in simulation
+double precision firr                   !firr = Vconcent / initialCeqv. Radiation enhanced factor
+double precision atomSize				!<atomic volume (nm^3)
+double precision burgers				!<magnitude of burgers vector, equal to lattice constant
+double precision agingTime              !<Thermal aging time (s)
+double precision meanFreePath			!<mean free path before a defect is absorbed by a grain boundary (AKA avg. grain size)
+double precision dislocationDensity		!<density of dislocations (sinks for point defects)
+double precision impurityDensity		!<denstiy of impurity atoms (traps for SIA loops)
+double precision cascadeVolume			!<Volume of cascade (used for cascade mixing probability)
+double precision cascadeReactionLimit	!<Total reaction rate in a cascade cell to consider it annealed and release cascade back to coarse mesh (s^-1)
+
+integer max3DInt			            !<largest SIA size that can diffuse in 3D as spherical cluster
+integer SIAPinMin			            !<Smallest size of SIA that can pin at HeV clusters
+integer numGrains			            !<Number of grains inside polycrystal (default 1)
+integer numSims				            !<Number of times to repeat simulation
 
 !annealing information
 double precision annealTime				!<Amount of time for anneal (s)
@@ -132,44 +135,40 @@ character(len=20) annealType		    !<('mult' or 'add') toggles additive or multip
 logical annealIdentify			        !<(.TRUE. if in annealing phase, .FALSE. otherwise) used to determine how to reset reaction rates (should we include implantation or not)
 integer annealIter                      !<Current number of time steps
 
-integer numSims				            !<Number of times to repeat simulation
-integer max3DInt			            !<largest SIA size that can diffuse in 3D as spherical cluster
-integer SIAPinMin			            !<Smallest size of SIA that can pin at HeV clusters
-integer numGrains			            !<Number of grains inside polycrystal (default 1)
-
-character(len=20) implantType				!<(Frenkel pairs or cascades), used to determine the type of damage in the simulation
-character(len=20) grainBoundaryToggle		!<Used to determine whether or not we are using grain boundaries to remove defects from simulation
-character(len=20) pointDefectToggle			!<Toggles whether or not we allow HeSIA clusters to form ('yes' or 'no')
-!character(len=20) SIAPinToggle				!<Toggles whether or not we allow point defects to move only
-character(len=20) meshingType				!<(adaptive or nonAdaptive), used to determine whether we are simulating cascade implantation with adaptive meshing
-character(len=20) implantScheme				!<(MonteCarlo or explicit), used to determine if cascades are implanted through Monte Carlo algorithm or explicitly
-character(len=20) implantDist				!<(Uniform or NonUniform), used to determine if defects are implanted uniformly or if DPA rate / He implant rate are given for each volume element
-character(len=20) polycrystal				!<(yes or no), used to identify whether or not we have multiple grains in our crystal
-character(len=20) singleElemKMC				!<(yes or no), used to toggle whether we are making one kMC choice per volume element or one kMC choice for the whole processors
-character(len=20) sinkEffSearch				!<(yes or no), used to toggle search for effective sink efficiency
-character(len=20) strainField				!<(yes or no), used to toggle whether we are simulating diffusion in a strain field
+!Toggles
+character(len=20) implantType			!<(Frenkel pairs or cascades), used to determine the type of damage in the simulation
+character(len=20) grainBoundaryToggle	!<Used to determine whether or not we are using grain boundaries to remove defects from simulation
+character(len=20) pointDefectToggle		!<Toggles whether or not we allow HeSIA clusters to form ('yes' or 'no')
+!character(len=20) SIAPinToggle			!<Toggles whether or not we allow point defects to move only
+character(len=20) meshingType			!<(adaptive or nonAdaptive), used to determine whether we are simulating cascade implantation with adaptive meshing
+character(len=20) implantScheme			!<(MonteCarlo or explicit), used to determine if cascades are implanted through Monte Carlo algorithm or explicitly
+character(len=20) implantDist			!<(Uniform or NonUniform), used to determine if defects are implanted uniformly or if DPA rate / He implant rate are given for each volume element
+character(len=20) polycrystal			!<(yes or no), used to identify whether or not we have multiple grains in our crystal
+character(len=20) singleElemKMC			!<(yes or no), used to toggle whether we are making one kMC choice per volume element or one kMC choice for the whole processors
+character(len=20) sinkEffSearch			!<(yes or no), used to toggle search for effective sink efficiency
+character(len=20) strainField			!<(yes or no), used to toggle whether we are simulating diffusion in a strain field
 
 !Output  parameters
-character(len=20) postprToggle				!<(yes or no), used to toggle whether we output the postpr.out data file
-character(len=20) totdatToggle				!<(yes or no), used to toggle whether we output the totdat.out data file
-character(len=20) rawdatToggle				!<(yes or no), used to toggle whether we output the rawdat.out data file
-character(len=20) vtkToggle					!<(yes or no), used to toggle whether we want vtk output at each time increment (log scale)
-character(len=20) xyzToggle					!<(yes or no), used to toggle whether we output an .xyz data file (for visualization)
-character(len=20) outputDebug				!<(yes or no), used to toggle whether we want to output a debug restart file at each time increment
-character(len=20) profileToggle				!<(yes or no), used to toggle whether we output a DefectProfile.out data file
-integer minCuCluster                        !<Only n>minVoid nCu clusters are used for calculating the average cluster radius and number density
-integer minVoid                             !<Only n>minLoop nV clusters are used for calculating the average cluster radius and number density
-integer minLoop                             !<Only n>minLoop nSIA clusters are used for calculating the average cluster radius and number density
-integer minCuV                              !<Only (n+m)>minLoop nCumV clusters are used for calculating the average cluster radius and number density
+character(len=20) postprToggle			!<(yes or no), used to toggle whether we output the postpr.out data file
+character(len=20) totdatToggle			!<(yes or no), used to toggle whether we output the totdat.out data file
+character(len=20) rawdatToggle			!<(yes or no), used to toggle whether we output the rawdat.out data file
+character(len=20) vtkToggle				!<(yes or no), used to toggle whether we want vtk output at each time increment (log scale)
+character(len=20) xyzToggle				!<(yes or no), used to toggle whether we output an .xyz data file (for visualization)
+character(len=20) outputDebug			!<(yes or no), used to toggle whether we want to output a debug restart file at each time increment
+character(len=20) profileToggle			!<(yes or no), used to toggle whether we output a DefectProfile.out data file
+integer minCuCluster                    !<Only n>minVoid nCu clusters are used for calculating the average cluster radius and number density
+integer minVoid                         !<Only n>minLoop nV clusters are used for calculating the average cluster radius and number density
+integer minLoop                         !<Only n>minLoop nSIA clusters are used for calculating the average cluster radius and number density
+integer minCuV                          !<Only (n+m)>minLoop nCumV clusters are used for calculating the average cluster radius and number density
 
 !(hard-coded) constants used for clustering rates
-double precision omega					    !<Geometric constant for 3D spherical clustering (see Dunn et al. JNM 2013)
-double precision omega2D				    !<Geometric constant for clustering with dislocation loops (see Dunn et al. JNM 2013)
-double precision omega1D				    !<Geometric constant for clustering with dislocation loops (see Dunn et al. JNM 2013)
-double precision omegastar				    !<Geometric constant for 3D spherical clustering (see Dunn et al. JNM 2013)
-double precision omegastar1D			    !<Geometric constant for clustering with dislocation loops (see Dunn et al. JNM 2013)
-double precision omegacircle1D			    !<Geometric constant for clustering with dislocation loops (see Dunn et al. JNM 2013)
-double precision recombinationCoeff		    !<Geometric constant for Frenkel pair recombination (see Dunn et al. JNM 2013)
+double precision omega					!<Geometric constant for 3D spherical clustering (see Dunn et al. JNM 2013)
+double precision omega2D				!<Geometric constant for clustering with dislocation loops (see Dunn et al. JNM 2013)
+double precision omega1D				!<Geometric constant for clustering with dislocation loops (see Dunn et al. JNM 2013)
+double precision omegastar				!<Geometric constant for 3D spherical clustering (see Dunn et al. JNM 2013)
+double precision omegastar1D			!<Geometric constant for clustering with dislocation loops (see Dunn et al. JNM 2013)
+double precision omegacircle1D			!<Geometric constant for clustering with dislocation loops (see Dunn et al. JNM 2013)
+double precision recombinationCoeff		!<Geometric constant for Frenkel pair recombination (see Dunn et al. JNM 2013)
 
 !used for MPI commands
 integer comm                            !<New communication domain: created by MPI_CART_CREAT

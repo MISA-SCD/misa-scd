@@ -244,7 +244,6 @@ if(myProc%taskid==MASTER) then
 					else		
 						
 						!if the defect is to be inserted in the list
-						
 						nullify(defectPrevList%next)
 						allocate(defectPrevList%next)
 						nullify(defectPrevList%next%next)
@@ -264,13 +263,11 @@ if(myProc%taskid==MASTER) then
 						end do
 						
 						!if inserted defect is in the middle of the list, point it to the next item in the list
-						
 						defectPrevList%next=>defectCurrentList
 					endif
 				else if(associated(defectPrevList)) then			
 					
 					!add a defect to the end of the list
-					
 					nullify(defectPrevList%next)
 					allocate(defectPrevList%next)
 					nullify(defectPrevList%next%next)
@@ -290,10 +287,8 @@ if(myProc%taskid==MASTER) then
 					end do
 					
 				else
-					
 					write(*,*) 'error tried to insert defect at beginning of output defect list'
-	
-				endif
+				end if
 				
 				defectCurrent=>defectCurrent%next
 			end do
@@ -433,7 +428,7 @@ if(myProc%taskid==MASTER) then
 	totalLoop=0
 	totalCuV=0
 
-	totalCuN=0d0
+	!totalCuN=0d0
 
     CuAverRadius=0d0
 	VoidAverRadius=0d0
@@ -462,7 +457,7 @@ if(myProc%taskid==MASTER) then
 			end if
 
 			if(defectCurrentList%defectType(1) > minCuCluster) then
-				totalCuN=totalCuN+dble(defectCurrentList%num)*dble(defectCurrentList%defectType(1))**(1d0/3d0)
+				!totalCuN=totalCuN+dble(defectCurrentList%num)*dble(defectCurrentList%defectType(1))**(1d0/3d0)
 				CuClusterNum = CuClusterNum + defectCurrentList%num
 				totalCuCluster = totalCuCluster + defectCurrentList%defectType(1) * defectCurrentList%num
 			end if
@@ -519,8 +514,8 @@ if(myProc%taskid==MASTER) then
 	LoopCon = dble(LoopNum)/systemVol
 	CuVCon = dble(CuVNum)/systemVol
 
-	!CuAverRadius = (3*(dble(totalCuCluster)/dble(CuClusterNum))*atomSize/(4*pi))**(1d0/3d0)
-	CuAverRadius = totalCuN/dble(CuClusterNum)*(3d0*atomSize/(4d0*pi))**(1d0/3d0)
+	CuAverRadius = (3*(dble(totalCuCluster)/dble(CuClusterNum))*atomSize/(4*pi))**(1d0/3d0)
+	!CuAverRadius = totalCuN/dble(CuClusterNum)*(3d0*atomSize/(4d0*pi))**(1d0/3d0)
 	VoidAverRadius = (3d0*(dble(totalVoid)/dble(VoidNum))*atomSize/(4d0*pi))**(1d0/3d0)
     LoopAverRadius = ((dble(totalLoop)/dble(LoopNum))*atomSize/(pi*burgers))**(1d0/2d0)
 	CuVAverRadius = (3d0*(dble(totalCuV)/dble(CuVNum))*atomSize/(4d0*pi))**(1d0/3d0)
@@ -1022,7 +1017,7 @@ if(myProc%taskid==MASTER) then
 !			  (myProc%globalCoord(4)-myProc%globalCoord(3))*&
 !			  (myProc%globalCoord(6)-myProc%globalCoord(5))*1d-27
 
-	atomArea=(9d0*pi*atomsize**2d0/16d0)**(1d0/3d0)
+	atomArea=(9d0*pi*atomSize**2d0/16d0)**(1d0/3d0)
 	systemArea=(myProc%globalCoord(4)-myProc%globalCoord(3))*&
 				(myProc%globalCoord(6)-myProc%globalCoord(5))
 	
@@ -2523,7 +2518,7 @@ if(myProc%taskid==MASTER) then
 	
 	computeVConc=dble(Vnum)*atomSize/systemVol
 	!do i=1,myProc%numtasks-1
-	!	call MPI_SEND(dble(Vnum)*atomsize/systemVol,1,MPI_DOUBLE_PRECISION, i, 1406,comm, ierr)
+	!	call MPI_SEND(dble(Vnum)*atomSize/systemVol,1,MPI_DOUBLE_PRECISION, i, 1406,comm, ierr)
 	!end do
 
 else
@@ -2973,7 +2968,7 @@ if(myProc%taskid==MASTER) then
 	
 	computeIConc=dble(SIAnum)*atomSize/systemVol
 	!do i=1,myProc%numtasks-1
-		!call MPI_SEND(dble(SIAnum)*atomsize/systemVol,1,MPI_DOUBLE_PRECISION, i, 2406,comm, ierr)
+		!call MPI_SEND(dble(SIAnum)*atomSize/systemVol,1,MPI_DOUBLE_PRECISION, i, 2406,comm, ierr)
 	!end do
 
 else

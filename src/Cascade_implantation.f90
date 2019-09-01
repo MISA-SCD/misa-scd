@@ -225,6 +225,9 @@ if(cascadeCell==0) then
         if(myProc%procNeighbor(i) /= myProc%taskid) then
             call MPI_ISEND(defectSend, (numSpecies+1)*numSend, MPI_DOUBLE_PRECISION, myProc%procNeighbor(i), &
                     900+i, comm, sendRequest, ierr)
+            !call MPI_WAIT(sendRequest, sendStatus, ierr)
+            !call MPI_SEND(defectSend, (numSpecies+1)*numSend, MPI_DOUBLE_PRECISION, myProc%procNeighbor(i), &
+            !        900+i, comm, ierr)
         end if
 
         if(myProc%procNeighbor(recvDir) /= myProc%taskid) then
@@ -236,9 +239,11 @@ if(cascadeCell==0) then
             numRecv=count/(numSpecies+1)
             allocate(defectRecv(numSpecies+1,numRecv))
 
-            call MPI_IRECV(defectRecv,(numSpecies+1)*numRecv,MPI_DOUBLE_PRECISION,myProc%procNeighbor(recvDir),&
-                    900+i,comm,recvRequest,ierr)
-            call MPI_WAIT(recvRequest, recvStatus, ierr)
+            !call MPI_IRECV(defectRecv,(numSpecies+1)*numRecv,MPI_DOUBLE_PRECISION,myProc%procNeighbor(recvDir),&
+            !        900+i,comm,recvRequest,ierr)
+            !call MPI_WAIT(recvRequest, recvStatus, ierr)
+            call MPI_RECV(defectRecv,(numSpecies+1)*numRecv,MPI_DOUBLE_PRECISION,myProc%procNeighbor(recvDir),&
+                    900+i,comm,status,ierr)
 
             if(numRecv /= 0) then
                 !Update my boundary
@@ -314,6 +319,10 @@ if(cascadeCell==0) then
             end if
             deallocate(defectRecv)
         end if
+
+        if(myProc%procNeighbor(i) /= myProc%taskid) then
+            call MPI_WAIT(sendRequest, sendStatus, ierr)
+        end if
     end do
 
 else    !cascadeCell /= 0
@@ -383,7 +392,9 @@ else    !cascadeCell /= 0
 
             call MPI_ISEND(defectSend, (numSpecies+1)*numSend, MPI_DOUBLE_PRECISION, myProc%procNeighbor(i), &
                     900+i, comm, sendRequest, ierr)
-            call MPI_WAIT(sendRequest, sendStatus, ierr)
+            !call MPI_WAIT(sendRequest, sendStatus, ierr)
+            !call MPI_SEND(defectSend, (numSpecies+1)*numSend, MPI_DOUBLE_PRECISION, myProc%procNeighbor(i), &
+            !        900+i, comm, ierr)
         end if
 
         !Recv
@@ -396,9 +407,11 @@ else    !cascadeCell /= 0
             numRecv=count/(numSpecies+1)
             allocate(defectRecv(numSpecies+1,numRecv))
 
-            call MPI_IRECV(defectRecv,(numSpecies+1)*numRecv,MPI_DOUBLE_PRECISION,myProc%procNeighbor(recvDir),&
-                    900+i,comm,recvRequest,ierr)
-            call MPI_WAIT(recvRequest, recvStatus, ierr)
+            !call MPI_IRECV(defectRecv,(numSpecies+1)*numRecv,MPI_DOUBLE_PRECISION,myProc%procNeighbor(recvDir),&
+            !        900+i,comm,recvRequest,ierr)
+            !call MPI_WAIT(recvRequest, recvStatus, ierr)
+            call MPI_RECV(defectRecv,(numSpecies+1)*numRecv,MPI_DOUBLE_PRECISION,myProc%procNeighbor(recvDir),&
+                    900+i,comm,status,ierr)
 
             if(numRecv /= 0) then
 
@@ -476,6 +489,11 @@ else    !cascadeCell /= 0
             end if
             deallocate(defectRecv)
         end if
+
+        if(myProc%procNeighbor(i) /= myProc%taskid) then
+            call MPI_WAIT(sendRequest, sendStatus, ierr)
+        end if
+
     end do
 end if
 

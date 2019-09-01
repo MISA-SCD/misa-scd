@@ -354,7 +354,7 @@ subroutine DEBUGPrintDefectList()
 	type(defect), pointer :: defectCurrent
 
 	!output reaction list
-	if(myProc%taskid==4) then
+	if(myProc%taskid==0) then
 		write(*,*) 'processor', myProc%taskid, 'reactions after step', step, 'numCells', numCells
 		do i=1, numCells
 			!!reactionCurrent=>reactionList(i)%next

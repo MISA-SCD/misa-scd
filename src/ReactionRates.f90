@@ -913,8 +913,7 @@ implicit none
 
 integer cell, defectType1(numSpecies), defectType2(numSpecies), matNum
 type(reaction), pointer :: reactionCurrent, reactionPrev
-type(defect), pointer :: defectTemp
-integer i, j, count, numReactants, numProducts,count1
+integer i, j, count, numReactants, numProducts
 integer, allocatable :: reactants(:,:), products(:,:)
 double precision reactionRate
 logical isLegal, isLegalTemp
@@ -934,35 +933,6 @@ else
 endif
 isLegalTemp =.TRUE.
 
-!count=0
-!count1=0
-!do i=1, numSpecies
-!	if(defectType1(i)==defectType2(i)) then
-!		count=count+1
-!	end if
-!end do
-
-!if(count==numSpecies) then
-!	defectTemp=>defectList(cell)%next
-!	do while(associated(defectTemp))
-!		do i=1, numSpecies
-!			if(defectType1(i)==defectTemp%defectType(i)) then
-!				count1=count1+1
-!			end if
-!		end do
-!		if(count1==numSpecies) then
-!			exit
-!		else
-!			defectTemp=>defectTemp%next
-!		end if
-!	end do
-
-!	if(associated(defectTemp) .AND. defectTemp%num < 2) then
-!		isLegalTemp =.FALSE.
-!	end if
-!end if
-
-!if(isLegalTemp .eqv. .TRUE.) then
 do i=1, numClusterReac(matNum)
 
     !*******************************************************
@@ -1534,8 +1504,6 @@ do i=1, numClusterReac(matNum)
 	end if
 	
 end do
-!;.
-end if
 
 end subroutine
 
@@ -2688,12 +2656,12 @@ if(reactionParameter%functionType==10) then	!Frenkel pair implantation
 	volume=(myMesh(cell)%length)**3d0
 	
 	if(implantDist=='Uniform') then
-		findReactionRate=volume*DPARate/atomsize
+		findReactionRate=volume*dpaRate/atomSize
 	else if(implantDist=='NonUniform') then
 		
 		zCoord=myMesh(cell)%coordinates(3)
 		DPARateLocal=findDPARateLocal(zCoord)
-		findReactionRate=volume*DPARateLocal/atomsize
+		findReactionRate=volume*DPARateLocal/atomSize
 		
 	else
 		write(*,*) 'Error implant distribution not recognized'
@@ -2705,12 +2673,12 @@ else if(reactionParameter%functionType==11) then	!cascade implantation
 	volume=(myMesh(cell)%length)**3d0
 	
 	if(implantDist=='Uniform') then
-		findReactionRate=volume*DPARate/(numDisplacedAtoms*atomsize)
+		findReactionRate=volume*dpaRate/(numDisplacedAtoms*atomSize)
 	else if(implantDist=='NonUniform') then
 		
 		zCoord=myMesh(cell)%coordinates(3)
 		DPARateLocal=findDPARateLocal(zCoord)
-		findReactionRate=volume*DPARateLocal/(numDisplacedAtoms*atomsize)
+		findReactionRate=volume*DPARateLocal/(numDisplacedAtoms*atomSize)
 		
 	else
 		write(*,*) 'Error implant distribution not recognized'
@@ -3200,16 +3168,16 @@ else
 	Ztemp=1.0d0
 endif
 
-!count=0
-!do i=1,numSpecies
-!	if(defectType1(i)==defectType2(i)) then
-!		count=count+1
-!	end if
-!end do
-!if(count==numSpecies) then
+count=0
+do i=1,numSpecies
+	if(defectType1(i)==defectType2(i)) then
+		count=count+1
+	end if
+end do
+if(count==numSpecies) then
 	!we have two defects of the same type, have to modify the defect numbers for a defect to combine with itself
-!	num2=num2-1
-!endif
+	num2=num2-1
+endif
 
 vol=myMesh(cell)%volume
 area=(myMesh(cell)%length)**2d0	!assuming square elements in grain boundary
@@ -3217,23 +3185,23 @@ area=(myMesh(cell)%length)**2d0	!assuming square elements in grain boundary
 if(reactionParameter%functionType==5) then
 
 	reactionRate=Ztemp*omega*(dble(size1)**(1d0/3d0)+dble(size2)**(1d0/3d0))*&
-	        (Diff1+Diff2)*dble(num1)*dble(num2)*atomsize/vol
+	        (Diff1+Diff2)*dble(num1)*dble(num2)*atomSize/vol
     !reactionRate=Ztemp*(omegastar+omega*(dble(size1)**(1d0/3d0)+dble(size2)**(1d0/3d0)))*&
-    !        (Diff1+Diff2)*dble(num1)*dble(num2)*atomsize/vol
+    !        (Diff1+Diff2)*dble(num1)*dble(num2)*atomSize/vol
         
 else if(reactionParameter%functionType==6) then	!spherical clusters other than Cu-Cu clusters
 
 	reactionRate=Ztemp*omega*(dble(size1)**(1d0/3d0)+dble(size2)**(1d0/3d0))*(Diff1+Diff2)*dble(num1)*dble(num2)&
-				 *atomsize/vol
+				 *atomSize/vol
 	!reactionRate=Ztemp*(omegastar+omega*(dble(size1)**(1d0/3d0)+dble(size2)**(1d0/3d0)))*(Diff1+Diff2)*dble(num1)*dble(num2)&
-	!			 *atomsize/vol
+	!			 *atomSize/vol
 
 else if(reactionParameter%functionType==7) then	!For CuV clusters. NOTE that this is the same as function type 6 (identical for now)
 
 	reactionRate=Ztemp*omega*(dble(size1)**(1d0/3d0)+dble(size2)**(1d0/3d0))*(Diff1+Diff2)*dble(num1)*dble(num2)&
-			*atomsize/vol
+			*atomSize/vol
 	!reactionRate=Ztemp*(omegastar+omega*(dble(size1)**(1d0/3d0)+dble(size2)**(1d0/3d0)))*(Diff1+Diff2)*dble(num1)*dble(num2)&
-	!		*atomsize/vol
+	!		*atomSize/vol
 
 else if(reactionParameter%functionType==8) then
 
@@ -3260,23 +3228,23 @@ else if(reactionParameter%functionType==8) then
 		reactionRate=0d0
 	endif
 
-	reactionRate=(omega*dble(size1)**(1d0/3d0)+omega2D*dble(size2)**(1d0/2d0))*Diff1*num1*num2*atomsize/vol+&
+	reactionRate=(omega*dble(size1)**(1d0/3d0)+omega2D*dble(size2)**(1d0/2d0))*Diff1*num1*num2*atomSize/vol+&
 		(Ztemp*(omegacircle1D*dble(size2)**(1d0/2d0)+omega1D*dble(size1)**(1d0/3d0)))**4d0*&
-		Diff2*dble(num2)*dble(num1)**(2d0)*(atomsize/vol)**(2d0)
+		Diff2*dble(num2)*dble(num1)**(2d0)*(atomSize/vol)**(2d0)
 	!reactionRate=Zint*(omegastar+(omega*dble(size1)**(1d0/3d0)+omega2D*dble(size2)**(1d0/2d0)))*&
-	!		Diff1*num1*num2*atomsize/vol+&
+	!		Diff1*num1*num2*atomSize/vol+&
 	!		(Zint*(omegastar1D+omegacircle1D*dble(size2)**(1d0/2d0)+omega1D*dble(size1)**(1d0/3d0)))**4d0*&
-	!				Diff2*dble(num2)*dble(num1)**(2d0)*(atomsize/vol)**(2d0)
+	!				Diff2*dble(num2)*dble(num1)**(2d0)*(atomSize/vol)**(2d0)
 		
 else if(reactionParameter%functionType==9) then
 	
 	reactionRate=(Ztemp*(omegastar1D+omegacircle1D*(dble(size1)**(1d0/2d0)+dble(size2)**(1d0/2d0))))**4d0*&
-		(Diff1*dble(num2)+Diff2*dble(num1))*dble(num1*num2)*(atomsize/vol)**(2d0)
+		(Diff1*dble(num2)+Diff2*dble(num1))*dble(num1*num2)*(atomSize/vol)**(2d0)
 
 else if(reactionParameter%functionType==10) then	!Diffusion rate for 2D defect recombination on the grain boundary
 
-	rad1=(3d0*size1*atomsize/(4d0*pi))**(1d0/3d0)
-	rad2=(3d0*size2*atomsize/(4d0*pi))**(1d0/3d0)
+	rad1=(3d0*size1*atomSize/(4d0*pi))**(1d0/3d0)
+	rad2=(3d0*size2*atomSize/(4d0*pi))**(1d0/3d0)
 	
 	if(num1==0 .OR. num2==0) then
 	
@@ -3392,17 +3360,17 @@ if(reactionParameter%functionType==5) then
 		reactionRate=0d0		!hard-coded: limit size of interstitial He clusters to max 4 (no parameters available for larger clusters)
 	else
 		reactionRate=Ztemp*(omegastar+omega*(dble(size1)**(1d0/3d0)+dble(size2)**(1d0/3d0)))*&
-			(Diff1+Diff2)*dble(num1)*dble(num2)*atomsize/vol
+			(Diff1+Diff2)*dble(num1)*dble(num2)*atomSize/vol
 	endif
 else if(reactionParameter%functionType==6) then	!spherical clusters other than He-He clusters
 
 	reactionRate=Ztemp*(omegastar+omega*(dble(size1)**(1d0/3d0)+dble(size2)**(1d0/3d0)))*(Diff1+Diff2)*dble(num1)*dble(num2)&
-				 *atomsize/vol
+				 *atomSize/vol
 
 else if(reactionParameter%functionType==7) then	!For HeV clusters. NOTE that this is the same as function type 6 (identical for now)
 
 	reactionRate=Ztemp*(omegastar+omega*(dble(size1)**(1d0/3d0)+dble(size2)**(1d0/3d0)))*(Diff1+Diff2)*dble(num1)*dble(num2)&
-				 *atomsize/vol
+				 *atomSize/vol
 
 else if(reactionParameter%functionType==8) then
 
@@ -3430,14 +3398,14 @@ else if(reactionParameter%functionType==8) then
 	endif
 
 	reactionRate=Zint*(omegastar+(omega*dble(size1)**(1d0/3d0)+omega2D*dble(size2)**(1d0/2d0)))*&
-		Diff1*num1*num2*atomsize/vol+&
+		Diff1*num1*num2*atomSize/vol+&
 		(Zint*(omegastar1D+omegacircle1D*dble(size2)**(1d0/2d0)+omega1D*dble(size1)**(1d0/3d0)))**4d0*&
-		Diff2*dble(num2)*dble(num1)**(2d0)*(atomsize/vol)**(2d0)
+		Diff2*dble(num2)*dble(num1)**(2d0)*(atomSize/vol)**(2d0)
 		
 else if(reactionParameter%functionType==9) then
 	
 	reactionRate=(Zint*(omegastar1D+omegacircle1D*(dble(size1)**(1d0/2d0)+dble(size2)**(1d0/2d0))))**4d0*&
-		(Diff1*dble(num2)+Diff2*dble(num1))*dble(num1*num2)*(atomsize/vol)**(2d0)
+		(Diff1*dble(num2)+Diff2*dble(num1))*dble(num1*num2)*(atomSize/vol)**(2d0)
 else
 	write(*,*) 'error clustering function type only admits 5-9'
 	reactionRate=0d0

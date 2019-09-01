@@ -21,7 +21,7 @@ subroutine computeVconcent()
     numVacancy = 0d0
 
     !count the vacancies in fine meshes
-    if(totalDPA > 0d0 .AND. DPARate > 0d0) then
+    if(totalDPA > 0d0 .AND. dpaRate > 0d0) then
         if(implantType=='Cascade' .AND. meshingType=='adaptive') then
             CascadeCurrent=>ActiveCascades
 
@@ -70,11 +70,11 @@ subroutine computeVconcent()
     call MPI_ALLREDUCE(numVacancy,totalVacancy,1,MPI_INTEGER,MPI_SUM,comm,ierr)
 
     if(totalVacancy > 0) then
-        Vconcent = totalVacancy/((myProc%globalCoord(2)-myProc%globalCoord(1))/lattice * &
+        concV = totalVacancy/((myProc%globalCoord(2)-myProc%globalCoord(1))/lattice * &
                 (myProc%globalCoord(4)-myProc%globalCoord(3))/lattice * &
                 (myProc%globalCoord(6)-myProc%globalCoord(5))/lattice * 2)
     else
-        Vconcent = initialCeqv
+        concV = ceqV
     end if
 
 
@@ -104,7 +104,7 @@ subroutine computeSIAconcent()
     numSIA = 0d0
 
     !count the SIAs in fine meshes
-    if(totalDPA > 0d0 .AND. DPARate > 0d0) then
+    if(totalDPA > 0d0 .AND. dpaRate > 0d0) then
         if(implantType=='Cascade' .AND. meshingType=='adaptive') then
             CascadeCurrent=>ActiveCascades
 
@@ -153,11 +153,11 @@ subroutine computeSIAconcent()
     call MPI_ALLREDUCE(numSIA,totalSIA,1,MPI_INTEGER,MPI_SUM,comm,ierr)
 
     if(totalSIA > 0) then
-        SIAconcent = totalSIA/((myProc%globalCoord(2)-myProc%globalCoord(1))/lattice * &
+        concI = totalSIA/((myProc%globalCoord(2)-myProc%globalCoord(1))/lattice * &
                 (myProc%globalCoord(4)-myProc%globalCoord(3))/lattice * &
                 (myProc%globalCoord(6)-myProc%globalCoord(5))/lattice * 2)
     else
-        SIAconcent = initialCeqi
+        concI = ceqI
     end if
 
 end subroutine
@@ -189,9 +189,9 @@ double precision function permanentCv(matNum)
 
     end do
 
-    Kiv = 4*pi/atomsize*reactionRadius*(diffV + diffI)
+    Kiv = 4*pi/atomSize*reactionRadius*(diffV + diffI)
 
     permanentCv = -dislocationDensity*Zint*diffI/(2*Kiv)+&
-            ((dislocationDensity*Zint*diffI/(2*Kiv))**(2d0)+DPARate*Zint*diffI/(Kiv*diffV))**(1d0/2d0)
+            ((dislocationDensity*Zint*diffI/(2*Kiv))**(2d0)+dpaRate*Zint*diffI/(Kiv*diffV))**(1d0/2d0)
 
 end function
