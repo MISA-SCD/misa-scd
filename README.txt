@@ -108,24 +108,18 @@ of 8 output points per simulation.
 A new output file is created for each repetition of the simulation. SRSCD has an option
 to run multiple simulations in a row.
 
-At each output point, information is entered into three output files:
-postpr_x.out
-rawdat_x.out
+At each output point, information is entered into two output files:
 totdat_x.out
+rawdat_x.out
 
 (here, 'x' refers to the simulation number)
 
-postpr_x.out contains user-defined post-processing information on the number and type 
-of defects or reactions in the system
+rawdat_x.out contains a list of defects, total number, number density, concentration, average radius and average size of defects in the whole system.
 
-rawdat_x.out contains a list of all volume elements in the system as well as all defects
-present in each volume element. The current method for identifying defect types is as 
-follows:
-
+The current method for identifying defect types is as  follows:
 NumCu NumV NumSIA NumSIA_immobile NumDefects
 
 For example, the output:
-
 3 2 0 0 5
 
 Indicates that the defect type in this volume element is a He3V2 cluster, and there are 5 

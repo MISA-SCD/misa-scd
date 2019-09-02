@@ -149,7 +149,6 @@ character(len=20) sinkEffSearch			!<(yes or no), used to toggle search for effec
 character(len=20) strainField			!<(yes or no), used to toggle whether we are simulating diffusion in a strain field
 
 !Output  parameters
-character(len=20) postprToggle			!<(yes or no), used to toggle whether we output the postpr.out data file
 character(len=20) totdatToggle			!<(yes or no), used to toggle whether we output the totdat.out data file
 character(len=20) rawdatToggle			!<(yes or no), used to toggle whether we output the rawdat.out data file
 character(len=20) vtkToggle				!<(yes or no), used to toggle whether we want vtk output at each time increment (log scale)

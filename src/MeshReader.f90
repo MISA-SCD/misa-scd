@@ -51,7 +51,7 @@ include 'mpif.h'
 
 integer status(MPI_STATUS_SIZE), procDivision(3), i, j, k, l, dir, matNum
 character*20 readIn, meshType
-character*50 filename, filename2, filename3
+character*50 filename
 logical flag
 double precision length, tempCoord(3)
 integer element,  localElem
@@ -459,7 +459,7 @@ include 'mpif.h'
 
 integer status(MPI_STATUS_SIZE), i, j, k, l, dir, matNum
 character*20 readIn, meshType
-character*50 filename, filename2, filename3
+character*50 filename
 logical flag
 double precision length
 integer localElem, grain
@@ -1574,7 +1574,7 @@ include 'mpif.h'
 
 integer status(MPI_STATUS_SIZE), i, j, k, matNum
 character*20 readIn, meshType
-character*50 filename, filename2, filename3
+character*50 filename
 logical flag
 double precision volumeFaces(3), totalArea, length
 integer elem, localElements(3), localElem,  maxNumNeighbors, globalMaxNeighbors

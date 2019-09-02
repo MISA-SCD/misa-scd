@@ -125,9 +125,6 @@ end				!Tag for the end of the parameters file
 !***************************************************************************************************
 OutputStart
 
-postprToggle    !‘yes’ or ‘no’: toggles output of postpr.txt file
-yes             !If you want to output postpr.txt file, both postprToggle and totdatToggle should be set 'yes'
-
 totdatToggle    !‘yes’ or ‘no’: toggles output of totdat.txt file
 yes             !If you want to output totdat.txt file, both postprToggle and totdatToggle should be set 'yes'
 
@@ -135,9 +132,6 @@ rawdatToggle    !‘yes’ or ‘no’: toggles output of raw data files
 no              !Default 'no'
 
 vtkToggle       !‘yes’ or ‘no’: toggles .vtk file output
-no              !Default 'no'
-
-xyzToggle       !‘yes’ or ‘no’: toggles .xyz file output
 no              !Default 'no'
 
 restartToggle   !‘yes’ or ‘no’: toggles output of a restart file that can be used to restart simulation

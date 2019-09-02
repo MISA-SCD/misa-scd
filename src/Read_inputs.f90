@@ -913,11 +913,9 @@ numGrains			=1
 cascadeReactionLimit=100d0
 
 !Toggles for various output types
-postprToggle		='yes'
 totdatToggle		='yes'
 rawdatToggle		='no'
 vtkToggle			='no'
-xyzToggle			='no'
 outputDebug			='no'
 profileToggle		='no'
 
@@ -1069,15 +1067,9 @@ do while(flag .eqv. .FALSE.)
 		else if(char=='vtkToggle') then
 			flag2=.TRUE.
 			read(81,*) vtkToggle
-		else if(char=='xyzToggle') then
-			flag2=.TRUE.
-			read(81,*) xyzToggle
 		else if(char=='restartToggle') then
 			flag2=.TRUE.
 			read(81,*) outputDebug
-		else if(char=='postprToggle') then
-			flag2=.TRUE.
-			read(81,*) postprToggle
 		else if(char=='totdatToggle') then
 			flag2=.TRUE.
 			read(81,*) totdatToggle

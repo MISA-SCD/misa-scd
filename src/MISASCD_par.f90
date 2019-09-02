@@ -198,28 +198,20 @@ temperature=tempStore	!< Temperature read in (K)
 if(myProc%taskid==MASTER) then
 	filename(1:6)='rawdat'
 	filename2(1:6)='totdat'
-	filename3(1:6)='postpr'
 	!filename4(1:6)='rxnrat'
 	!filename5(1:6)='debugg'
-	filename6(1:6)='defect'
 	write(unit=filename(7:8), fmt='(I2)') sim
 	write(unit=filename2(7:8), fmt='(I2)') sim
-	write(unit=filename3(7:8), fmt='(I2)') sim
 	!write(unit=filename4(7:8), fmt='(I2)') sim
 	!write(unit=filename5(7:8), fmt='(I2)') sim
-	write(unit=filename6(7:8), fmt='(I2)') sim
 	filename(9:12)='.out'
 	filename2(9:12)='.out'
-	filename3(9:12)='.out'
 	!filename4(9:12)='.out'
 	!filename5(9:12)='.log'
-	filename6(9:12)='.xyz'
 	if(rawdatToggle=='yes') open(82, file=filename, action='write', status='Unknown')
 	if(totdatToggle=='yes') open(83, file=filename2, action='write', status='Unknown')
-	if(postprToggle=='yes') open(84, file=filename3, action='write', status='Unknown')
 	!open(85, file=filename4, action='write', status='Unknown')
 	!open(86, file=filename5, action='write', status='Unknown')
-	if(xyzToggle=='yes') open(87, file=filename6, action='write', status='Unknown')
 end if
 
 !filename5(1:6)='debugg'
@@ -720,32 +712,25 @@ do while(elapsedTime < totalTime)
 	if(elapsedTime >= totalTime/10d7*(10d0)**(outputCounter)) then
 !	if(elapsedTime >= totalTime/200d0*(2d0)**(outputCounter)) then
 	! or if(mod(step,100000)==0) then
-	!	call MPI_ALLREDUCE(numImplantEvents,totalImplantEvents, 1, MPI_INTEGER, MPI_SUM, comm, ierr)
-    !    call MPI_ALLREDUCE(numImpAnn,totalImpAnn, 2, MPI_INTEGER, MPI_SUM, comm, ierr)
 		call MPI_REDUCE(numImpAnn,totalImpAnn, 2, MPI_INTEGER, MPI_SUM, 0,comm, ierr)
-		
-	!	DPA=dble(totalImplantEvents)/(((myProc%globalCoord(2)-myProc%globalCoord(1))*(myProc%globalCoord(4)-myProc%globalCoord(3))*&
-	!		(myProc%globalCoord(6)-myProc%globalCoord(5)))/(numDisplacedAtoms*atomSize))
-    !    DPA=dble(totalImpAnn(1))/(((myProc%globalCoord(2)-myProc%globalCoord(1))*(myProc%globalCoord(4)-myProc%globalCoord(3))*&
-    !            (myProc%globalCoord(6)-myProc%globalCoord(5)))/(numDisplacedAtoms*atomSize))
-		
+
 		if(myProc%taskid==MASTER) then
 			DPA=dble(totalImpAnn(1))/(systemVol/(numDisplacedAtoms*atomSize))
 			call cpu_time(time2)
 			write(*,*)
-			write(*,*) 'time', elapsedTime, 'dpa', DPA, 'steps', step, 'Average time step', elapsedTime/dble(step)
+			write(*,*) 'time', elapsedTime, 'DPA', DPA, 'steps', step, 'AverageTimeStep', elapsedTime/dble(step)
 			write(83,*) '*********************************************************************************************'
-			write(83,*) 'elapsedTime', elapsedTime, '  step', step, 'dpa', DPA, 'Average time step', elapsedTime/dble(step)
+			write(83,*) 'time', elapsedTime, 'DPA', DPA, 'steps', step, 'AverageTimeStep', elapsedTime/dble(step)
 
 			if(implantType=='FrenkelPair') then
-				write(*,*) 'Frenkel pairs', totalImpAnn(1), 'computation time', time2-time1
-				write(83,*) 'Frenkel pairs', totalImpAnn(1), 'computation time', time2-time1
+				write(*,*) 'FrenkelPairs', totalImpAnn(1), 'computationTime', time2-time1
+				write(83,*) 'FrenkelPairs', totalImpAnn(1), 'computationTime', time2-time1
 			else if(implantType=='Cascade')	then
-				write(*,*) 'Cascades', totalImpAnn(1), 'computation time', time2-time1
-				write(83,*) 'Cascades', totalImpAnn(1), 'computation time', time2-time1
-			else
-				write(*,*) 'No implantation', totalImpAnn(1), 'computation time', time2-time1
-				write(83,*) 'No implantation', totalImpAnn(1), 'computation time', time2-time1
+				write(*,*) 'Cascades', totalImpAnn(1), 'computationTime', time2-time1
+				write(83,*) 'Cascades', totalImpAnn(1), 'computationTime', time2-time1
+			else	!Thermal aging
+				write(*,*) 'noImplantation', totalImpAnn(1), 'computationTime', time2-time1
+				write(83,*) 'noImplantation', totalImpAnn(1), 'computationTime', time2-time1
 			end if
 
 			!Optional: output fraction of steps that are null events
@@ -757,21 +742,15 @@ do while(elapsedTime < totalTime)
 			write(*,*)
 		end if
 		
-		!Several defect output optionas available, these outputs should be chosen in input file (currently hard coded)
-		
-		if(rawdatToggle=='yes') call outputDefects()
-		!if(sinkEffSearch=='no' .AND. numMaterials .GT. 1) call outputDefectsBoundary(elapsedTime,step)
-		!if(sinkEffSearch=='no' .AND. numMaterials==1) call outputDefectsTotal(elapsedTime, step)
-		if(postprToggle=='yes') then
-			if(totdatToggle=='yes') then
-				call outputDefectsTotal(outputCounter)
-			else
-				write(*,*) 'Error outputing postpr.out but not totdat.out'
-			end if
-		end if
-		if(xyzToggle=='yes') call outputDefectsXYZ()	!write(87,*): defect.xyz
+		!Several defect output optionas available.
+		if(rawdatToggle=='yes') call outputDefectsXYZ()		!write(82,*): rawdat
+		if(totdatToggle=='yes') call outputDefectsTotal()	!write(83,*): totdat.out
+		!if(xyzToggle=='yes') call outputDefectsXYZ()	!write(87,*): defect.xyz
 		if(vtkToggle=='yes') call outputDefectsVTK(outputCounter)	!write(88,*): VTKout.vtk
 		if(outputDebug=='yes') call outputDebugRestart(outputCounter)	!write(88,*): Restart.in
+
+		!if(sinkEffSearch=='no' .AND. numMaterials .GT. 1) call outputDefectsBoundary(elapsedTime,step)
+		!if(sinkEffSearch=='no' .AND. numMaterials==1) call outputDefectsTotal(elapsedTime, step)
 		
 		outputCounter=outputCounter+1
 
@@ -807,35 +786,28 @@ end do
 !Output defects at the end of the implantation loop
 !***********************************************************************
 
-!call MPI_ALLREDUCE(numImplantEvents,totalImplantEvents, 1, MPI_INTEGER, MPI_SUM, comm, ierr)
-!call MPI_ALLREDUCE(numImpAnn, totalImpAnn, 2, MPI_INTEGER, MPI_SUM, comm, ierr)
 call MPI_REDUCE(numImpAnn, totalImpAnn, 2, MPI_INTEGER, MPI_SUM,0, comm, ierr)
-
-!DPA=dble(totalImplantEvents)/(((myProc%globalCoord(2)-myProc%globalCoord(1))*(myProc%globalCoord(4)-myProc%globalCoord(3))*&
-!	(myProc%globalCoord(6)-myProc%globalCoord(5)))/(numDisplacedAtoms*atomSize))
-!DPA=dble(totalImpAnn(1))/(((myProc%globalCoord(2)-myProc%globalCoord(1))*(myProc%globalCoord(4)-myProc%globalCoord(3))*&
-!        (myProc%globalCoord(6)-myProc%globalCoord(5)))/(numDisplacedAtoms*atomSize))
 
 if(myProc%taskid==MASTER) then
 	DPA=dble(totalImpAnn(1))/(systemVol/(numDisplacedAtoms*atomSize))
 	call cpu_time(time2)
 	write(*,*)
 	write(*,*) 'Final  step'
-	write(*,*) 'time', elapsedTime, 'dpa', DPA, 'steps', step, 'Average time step', elapsedTime/dble(step)
+	write(*,*) 'time', elapsedTime, 'DPA', DPA, 'steps', step, 'AverageTimeStep', elapsedTime/dble(step)
 	write(83,*) '*********************************************************************************************'
-	write(83,*) 'elapsedTime', elapsedTime, '  step', step, 'dpa', DPA, 'Average time step', elapsedTime/dble(step)
+	write(83,*) 'elapsedTime', elapsedTime, 'DPA', DPA, 'steps', step, 'AverageTimeStep', elapsedTime/dble(step)
 
 	if(implantType=='FrenkelPair') then
-		write(*,*) 'Frenkel pairs', totalImpAnn(1), 'computation time', time2-time1
-		write(83,*) 'Frenkel pairs', totalImpAnn(1), 'computation time', time2-time1
+		write(*,*) 'FrenkelPairs', totalImpAnn(1), 'computationTime', time2-time1
+		write(83,*) 'FrenkelPairs', totalImpAnn(1), 'computationTime', time2-time1
 
 	else if(implantType=='Cascade')	then
-		write(*,*) 'Cascades', totalImpAnn(1), 'computation time', time2-time1
-		write(83,*) 'Cascades', totalImpAnn(1), 'computation time', time2-time1
+		write(*,*) 'Cascades', totalImpAnn(1), 'computationTime', time2-time1
+		write(83,*) 'Cascades', totalImpAnn(1), 'computationTime', time2-time1
 
 	else
-		write(*,*) 'No implantation', totalImpAnn(1), 'computation time', time2-time1
-		write(83,*) 'No implantation', totalImpAnn(1), 'computation time', time2-time1
+		write(*,*) 'noImplantation', totalImpAnn(1), 'computationTime', time2-time1
+		write(83,*) 'noImplantation', totalImpAnn(1), 'computationTime', time2-time1
 
 	end if
 	write(*,*)
@@ -845,18 +817,12 @@ if(myProc%taskid==MASTER) then
 end if
 
 !Final output
-if(rawdatToggle=='yes') call outputDefects()
-if(postprToggle=='yes') then
-	if(totdatToggle=='yes') then
-		call outputDefectsTotal(outputCounter)
-	else
-		write(*,*) 'Error outputing postpr.out but not totdat.out'
-	end if
-end if
-!call outputDefectsProfile(sim)	!write(99,*): DepthProfile.out
+if(totdatToggle=='yes') call outputDefectsTotal()
+if(rawdatToggle=='yes') call outputDefectsXYZ()
 if(vtkToggle=='yes') call outputDefectsVTK(outputCounter)
 if(outputDebug=='yes') call outputDebugRestart(outputCounter)
 
+!call outputDefectsProfile(sim)	!write(99,*): DepthProfile.out
 
 
 !***********************************************************************************************************************
@@ -1147,24 +1113,17 @@ do annealIter=1,annealSteps	!default value: annealSteps = 1
 		!******************************************
 	
 		if((elapsedTime-totalTime) >= annealTime/dble(annealSteps)*outputCounter) then
-		
-!			call MPI_ALLREDUCE(numImplantEvents,totalImplantEvents, 1, MPI_INTEGER, MPI_SUM, comm, ierr)
-        !    call MPI_ALLREDUCE(numImpAnn,totalImpAnn, 2, MPI_INTEGER, MPI_SUM, comm, ierr)
+
 			call MPI_REDUCE(numImpAnn,totalImpAnn, 2, MPI_INTEGER, MPI_SUM,0,comm, ierr)
-		
-!			DPA=dble(totalImplantEvents)/(((myProc%globalCoord(2)-myProc%globalCoord(1))*(myProc%globalCoord(4)-myProc%globalCoord(3))*&
-!				(myProc%globalCoord(6)-myProc%globalCoord(5)))/(numDisplacedAtoms*atomSize))
-        !    DPA=dble(totalImpAnn(1))/(((myProc%globalCoord(2)-myProc%globalCoord(1))*(myProc%globalCoord(4)-myProc%globalCoord(3))*&
-        !            (myProc%globalCoord(6)-myProc%globalCoord(5)))/(numDisplacedAtoms*atomSize))
-	
+
 			if(myProc%taskid==MASTER) then
 				DPA=dble(totalImpAnn(1))/(((myProc%globalCoord(2)-myProc%globalCoord(1))*(myProc%globalCoord(4)-myProc%globalCoord(3))*&
 						(myProc%globalCoord(6)-myProc%globalCoord(5)))/(numDisplacedAtoms*atomSize))
 				call cpu_time(time2)
 				write(*,*) 'time', elapsedTime, 'anneal time', elapsedTime-totalTime, 'dpa', dpa, 'steps', step
 				write(*,*) 'Cascades/Frenkel pairs', totalImpAnn(1), 'computation time', time2-time1
-				write(84,*) 'time', elapsedTime, 'anneal time', elapsedTime-totalTime, 'dpa', dpa, 'steps', step
-				write(84,*) 'Cascades/Frenkel pairs', totalImpAnn(1), 'computation time', time2-time1
+				write(83,*) 'time', elapsedTime, 'anneal time', elapsedTime-totalTime, 'DPA', dpa, 'steps', step
+				write(83,*) 'Cascades/Frenkel pairs', totalImpAnn(1), 'computation time', time2-time1
 			
 				!Optional: output average number of cascades present per step in local processor
 				!write(*,*) 'Processor ', myProc%taskid, 'Avg. cascades present', dble(TotalCascades)/dble(step)
@@ -1172,31 +1131,23 @@ do annealIter=1,annealSteps	!default value: annealSteps = 1
 			
 				!Optional: output fraction of steps that are null events
 				if(singleElemKMC=='yes') then
-					write(84,*) 'Fraction null steps', dble(nullSteps)/dble(step*numCells)
+					write(83,*) 'Fraction null steps', dble(nullSteps)/dble(step*numCells)
 				else
-					write(84,*) 'Fraction null steps', dble(nullSteps)/dble(step)
+					write(83,*) 'Fraction null steps', dble(nullSteps)/dble(step)
 				end if
 			
-				write(84,*)
+				write(83,*)
 				write(*,*)
 			end if
-		
-			if(rawdatToggle=='yes') call outputDefects()
+
+			if(totdatToggle=='yes') call outputDefectsTotal()
+			if(rawdatToggle=='yes') call outputDefectsXYZ()
+			!if(vtkToggle=='yes') call outputDefectsVTK(outputCounter)
+			if(outputDebug=='yes') call outputDebugRestart(outputCounter)
 			!if(sinkEffSearch=='no' .AND. numMaterials .GT. 1) call outputDefectsBoundary(elapsedTime,step)
 			!if(sinkEffSearch=='no' .AND. numMaterials==1) call outputDefectsTotal(elapsedTime, step)
-			if(postprToggle=='yes') then
-				if(totdatToggle=='yes') then
-					call outputDefectsTotal(outputCounter)
-				else
-					write(*,*) 'Error outputing postpr.out but not totdat.out'
-				end if
-			end if
-			if(xyzToggle=='yes') call outputDefectsXYZ()
-			if(vtkToggle=='yes') call outputDefectsVTK(outputCounter)
-			if(outputDebug=='yes') call outputDebugRestart(outputCounter)
 		
 			outputCounter=outputCounter+1
-
 		end if
 	
 	!Anneal time loop
@@ -1211,14 +1162,7 @@ end do
 !***********************************************************************
 if(annealTime > 0d0) then
 
-!	call MPI_ALLREDUCE(numImplantEvents,totalImplantEvents, 1, MPI_INTEGER, MPI_SUM, comm, ierr)
-!    call MPI_ALLREDUCE(numImpAnn,totalImpAnn, 2, MPI_INTEGER, MPI_SUM, comm, ierr)
 	call MPI_REDUCE(numImpAnn,totalImpAnn, 2, MPI_INTEGER, MPI_SUM, 0, comm, ierr)
-
-!	DPA=dble(totalImplantEvents)/(((myProc%globalCoord(2)-myProc%globalCoord(1))*(myProc%globalCoord(4)-&
-!			myProc%globalCoord(3))*(myProc%globalCoord(6)-myProc%globalCoord(5)))/(numDisplacedAtoms*atomSize))
-!    DPA=dble(totalImpAnn(1))/(((myProc%globalCoord(2)-myProc%globalCoord(1))*(myProc%globalCoord(4)-&
-!            myProc%globalCoord(3))*(myProc%globalCoord(6)-myProc%globalCoord(5)))/(numDisplacedAtoms*atomSize))
 
 	write(*,*) 'Fraction null steps', dble(nullSteps)/dble(step), 'Proc', myProc%taskid
 
@@ -1236,8 +1180,8 @@ if(annealTime > 0d0) then
 			write(*,*) 'time', elapsedTime, 'dpa', dpa, 'steps', step
 			write(*,*) 'Cascades/Frenkel pairs', totalImpAnn(1), 'computation time', time2-time1
 		
-			write(84,*) 'time', elapsedTime, 'dpa', dpa, 'steps', step
-			write(84,*) 'Cascades/Frenkel pairs', totalImpAnn(1), 'computation time', time2-time1
+			write(83,*) 'time', elapsedTime, 'dpa', dpa, 'steps', step
+			write(83,*) 'Cascades/Frenkel pairs', totalImpAnn(1), 'computation time', time2-time1
 		
 			!Optional: output average number of cascades present per step in local processor
 			!write(*,*) 'Processor ', myProc%taskid, 'Avg. cascades present', dble(TotalCascades)/dble(step)
@@ -1245,9 +1189,9 @@ if(annealTime > 0d0) then
 		
 			!Optional: output fraction of steps that are null events
 			if(singleElemKMC=='yes') then
-				write(84,*) 'Fraction null steps', dble(nullSteps)/dble(step*numCells)
+				write(83,*) 'Fraction null steps', dble(nullSteps)/dble(step*numCells)
 			else
-				write(84,*) 'Fraction null steps', dble(nullSteps)/dble(step)
+				write(83,*) 'Fraction null steps', dble(nullSteps)/dble(step)
 			end if
 		
 			!Optional: output sink efficiency of grain boundary
@@ -1257,29 +1201,23 @@ if(annealTime > 0d0) then
 				write(*,*) 'GB V Sink Eff', 1d0-dble(numEmitV)/dble(numTrapV)
 				write(*,*) 'GB SIA Sink Eff', 1d0-dble(numEmitSIA)/dble(numTrapSIA)
 			
-				write(84,*) 'GB_V_Sink_Eff', 1d0-dble(numEmitV)/dble(numTrapV)
-				write(84,*) 'GB_SIA_Sink_Eff', 1d0-dble(numEmitSIA)/dble(numTrapSIA)
+				write(83,*) 'GB_V_Sink_Eff', 1d0-dble(numEmitV)/dble(numTrapV)
+				write(83,*) 'GB_SIA_Sink_Eff', 1d0-dble(numEmitSIA)/dble(numTrapSIA)
 			end if
 		
-			write(84,*)
+			write(83,*)
 			write(*,*)
 	
 		end if
 	end if
 
-	if(rawdatToggle=='yes') call outputDefects()
-!	if(sinkEffSearch=='no' .AND. numMaterials .GT. 1) call outputDefectsBoundary(elapsedTime,step)
-!	if(sinkEffSearch=='no' .AND. numMaterials==1) call outputDefectsTotal(elapsedTime, step)
-	if(postprToggle=='yes') then
-		if(totdatToggle=='yes') then
-			call outputDefectsTotal(outputCounter)
-		else
-			write(*,*) 'Error outputing postpr.out but not totdat.out'
-		end if
-	end if
-	if(xyzToggle=='yes') call outputDefectsXYZ()
+	if(totdatToggle=='yes') call outputDefectsTotal()
+	if(rawdatToggle=='yes') call outputDefectsXYZ()
 	if(vtkToggle=='yes') call outputDefectsVTK(outputCounter)
 	if(outputDebug=='yes') call outputDebugRestart(outputCounter)
+
+!	if(sinkEffSearch=='no' .AND. numMaterials .GT. 1) call outputDefectsBoundary(elapsedTime,step)
+!	if(sinkEffSearch=='no' .AND. numMaterials==1) call outputDefectsTotal(elapsedTime, step)
 
 end if
 
@@ -1301,8 +1239,8 @@ if(myProc%taskid==MASTER) then
 	write(*,*) 'computation time', time2-time1
 	write(*,*) 'total steps', step
 	
-	write(84,*) 'computation time', time2-time1
-	write(84,*) 'total steps', step
+	write(83,*) 'computation time', time2-time1
+	write(83,*) 'total steps', step
 
 	write(*,*) 'Deallocating memory: fine mesh defects and reactions'
 end if
@@ -1327,7 +1265,7 @@ if(myProc%taskid==MASTER) then
 	write(84,*) 'Released all fine mesh defects'
 end if
 
-!call outputDefects()
+!call outputDefectsXYZ()
 !call outputDefectsTotal(elapsedTime, step)
 
 !Final memory cleanup: deallocate defects and reactions in coarse mesh

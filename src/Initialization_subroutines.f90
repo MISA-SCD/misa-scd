@@ -154,7 +154,7 @@ do cell=1,numCells
 		defectCurrent%cellNumber=cell
 
 		do i=1, initialNumV
-			if(VgCellList(i)==myMesh(cell)%globalCell) then
+			if(listVI(i,1)==myMesh(cell)%globalCell) then
 				defectCurrent%num = defectCurrent%num +1
 			end if
 		end do
@@ -186,7 +186,7 @@ do cell=1,numCells
 		defectCurrent%cellNumber=cell
 
 		do i=1, initialNumI
-			if(IgCellList(i)==myMesh(cell)%globalCell) then
+			if(listVI(i,2)==myMesh(cell)%globalCell) then
 				defectCurrent%num = defectCurrent%num +1
 			end if
 		end do
@@ -1106,7 +1106,7 @@ do cell=1,numCells
 					do i=1, initialNumV
 						gCell=myMesh(cell)%globalCell
 						gNeighor=findgNeighborPeriodic(gCell, dir)
-						if(VgCellList(i)==gNeighor) then
+						if(listVI(i,1)==gNeighor) then
 							defectCurrent%num=defectCurrent%num +1
 						end if
 					end do
@@ -1135,7 +1135,7 @@ do cell=1,numCells
 					do i=1, initialNumI
 						gCell=myMesh(cell)%globalCell
 						gNeighor=findgNeighborPeriodic(gCell, dir)
-						if(IgCellList(i)==gNeighor) then
+						if(listVI(i,2)==gNeighor) then
 							defectCurrent%num=defectCurrent%num +1
 						end if
 					end do
@@ -1458,7 +1458,7 @@ use DerivedType
 implicit none
 
 character*20 char, meshType
-character*50 filename, filename2, filename3
+character*50 filename
 logical flag
 
 flag=.FALSE.
