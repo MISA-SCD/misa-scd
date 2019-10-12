@@ -326,11 +326,6 @@ annealIdentify=.FALSE.		!(.TRUE. if in annealing phase, .FALSE. otherwise) used 
 !Initizlize maxRate and tau. rateTau(1)=maxRate, rateTau(2)=tau
 rateTau(1:2)=0d0
 
-!call DEBUGPrintReactionList()		!prints all reaction lists at a given Monte Carlo step
-!write(*,*)
-!write(*,*)
-!call DEBUGPrintDefectList()
-
 !*********************************************************************************************************************
 !*********************************************************************************************************************
 !**																		                                            **
@@ -363,21 +358,19 @@ do while(elapsedTime < totalTime)
 		end do
 		totalRate=rateSingle	!find the maximum totalRate in the local peocessor
 	end if
-	
-!	call MPI_ALLREDUCE(totalRate,maxRate,1,MPI_DOUBLE_PRECISION,MPI_MAX,comm,ierr)
+
 	call MPI_REDUCE(totalRate,maxRate,1,MPI_DOUBLE_PRECISION,MPI_MAX,0,comm,ierr)
 
 	if(myProc%taskid==MASTER) then
 		rateTau(1)=maxRate
 	end if
 
+	!Generate timestep in the master processor and send it to all other processors
 	if(singleElemKMC=='yes') then
 		if(implantScheme=='explicit') then
 			write(*,*) 'Error explicit implantation not implemented for single element kMC'
 		else
-			!Generate timestep in the master processor and send it to all other processors
 			if(myProc%taskid==MASTER) then
-			!	tau=GenerateTimestep()
 				rateTau(2)=GenerateTimestep()
 			end if
 		end if
@@ -387,19 +380,15 @@ do while(elapsedTime < totalTime)
 			if(elapsedTime >= numImpAnn(1)*(numDisplacedAtoms*atomSize)/(totalVolume*dpaRate)) then
 				!Do not generate a timestep in this case; this is an explicit (zero-time) reaction
 				if(myProc%taskid==MASTER) then
-			!		tau=0d0
 					rateTau(2)=0d0
 				end if
 			else
 				if(myProc%taskid==MASTER) then
-				!	tau=GenerateTimestep()
 					rateTau(2)=GenerateTimestep()
 				end if
 			end if
-
 		else if(implantScheme=='MonteCarlo') then
 			if(myProc%taskid==MASTER) then
-			!	tau=GenerateTimestep()
 				rateTau(2)=GenerateTimestep()
 			end if
 		end if
@@ -437,11 +426,6 @@ do while(elapsedTime < totalTime)
 		if(implantScheme=='explicit') then
 			write(*,*) 'Error explicit implantation not implemented for single element kMC'
 		else
-			!Generate timestep in the master processor and send it to all other processors
-		!	if(myProc%taskid==MASTER) then
-		!		tau=GenerateTimestep()
-		!	end if
-			
 			allocate(reactionChoiceList)	!type(reaction). Allocate memory for reactionChoiceList
 			nullify(reactionChoiceList%next)	!set pointer reactionChoiceList%next=NULL
 			reactionChoiceCurrent=>reactionChoiceList	!the first memory of reactionChoiceList hasn't data
@@ -454,18 +438,13 @@ do while(elapsedTime < totalTime)
 				call chooseReactionSingleCell(reactionCurrent, CascadeCurrent, cell)
 
 				!Update defects according to the reaction chosen
-				!write(*,*) 'cell', cell, 'step', step	
-				!call DEBUGPrintReaction(reactionCurrent, step)
-			
 				!************
 				! Optional: count how many steps are null events
 				!************
-			
 				if(.NOT. associated(reactionCurrent)) then
 					nullSteps=nullSteps+1
 				else
 					!Generate list of chosen reactions
-					
 					allocate(reactionChoiceCurrent%next)	!Allocate memory for the next
 					reactionChoiceCurrent=>reactionChoiceCurrent%next	!point to next
 					
@@ -481,44 +460,31 @@ do while(elapsedTime < totalTime)
 					reactionChoiceCurrent%reactionRate=reactionCurrent%reactionRate
 					
 					do i=1,reactionCurrent%numReactants
-					
 						do j=1,numSpecies
 							reactionChoiceCurrent%reactants(j,i)=reactionCurrent%reactants(j,i)
 						end do
-					
 						reactionChoiceCurrent%cellNumber(i)=reactionCurrent%cellNumber(i)
 						reactionChoiceCurrent%taskid(i)=reactionCurrent%taskid(i)
-					
 					end do
 					
 					do i=1,reactionCurrent%numProducts
 						do j=1,numSpecies
 							reactionChoiceCurrent%products(j,i)=reactionCurrent%products(j,i)
 						end do
-						
 						reactionChoiceCurrent%cellNumber(i+reactionCurrent%numReactants) = &
 							reactionCurrent%cellNumber(i+reactionCurrent%numReactants)
 							
 						reactionChoiceCurrent%taskid(i+reactionCurrent%numReactants) = &
 							reactionCurrent%taskid(i+reactionCurrent%numReactants)
-							
 					end do
-					
 					nullify(reactionChoiceCurrent%next)		!set pointer reactionChoiceCurrent%next=NULL
-					
 				end if
-			
-				!call DEBUGPrintDefectUpdate(defectUpdate)
-			
 				!No cascade choices allowed for one KMC domain per element at this point
-			
 			end do
 			
 			reactionChoiceCurrent=>reactionChoiceList%next
 			call updateDefectListMultiple(reactionChoiceCurrent, defectUpdateCurrent, CascadeCurrent)
-			
-			!call DEBUGPrintDefectUpdate(defectUpdate)
-			
+
 			!deallocate memory
 			reactionChoiceCurrent=>reactionChoiceList%next
 			do while(associated(reactionChoiceCurrent))
@@ -532,55 +498,22 @@ do while(elapsedTime < totalTime)
 				reactionChoiceCurrent=>reactionTemp
 			end do
 			deallocate(reactionChoiceList)
-			
 		end if
-	
 	else	!choose a reaction in one volume element
-	
 		!If implantScheme=='explicit', cascade implantation needs to be carried out explicitly
 		if(implantScheme=='explicit') then
-			
-!			if(elapsedTime >= numImplantEvents*(numDisplacedAtoms*atomSize)/(totalVolume*DPARate)) then
             if(elapsedTime >= numImpAnn(1)*(numDisplacedAtoms*atomSize)/(totalVolume*dpaRate)) then
-				
 				!choose a cell in the peocessor to implant cascade
 				call addCascadeExplicit(reactionCurrent)
-				
-				!Do not generate a timestep in this case; this is an explicit (zero-time) reaction
-				
-			!	if(myProc%taskid==MASTER) then
-			!		tau=0d0
-			!	end if
-				
 			else
-
 				!Input:  none
 				!Output: reactionCurrent, CascadeCurrent
 				call chooseReaction(reactionCurrent, CascadeCurrent)
-				
-				!Generate timestep in the master processor and send it to all other processors
-				
-			!	if(myProc%taskid==MASTER) then
-			!		tau=GenerateTimestep()
-			!	end if
-				
 			end if
-			
 		else if(implantScheme=='MonteCarlo') then
-			
 			call chooseReaction(reactionCurrent, CascadeCurrent)
-			!test
-			!call DEBUGPrintReaction(reactionCurrent, step)
-			!Generate timestep in the master processor and send it to all other processors
-			
-		!	if(myProc%taskid==MASTER) then
-		!		tau=GenerateTimestep()
-		!	end if
-		
-		else	
-		
+		else
 			write(*,*) 'error choosing reaction main program'
-		
 		end if
 		
 		!***********************************************************************************************
@@ -588,9 +521,6 @@ do while(elapsedTime < totalTime)
 		!boundaries of other processors and create a list of defects whose reaction rates must be update
 		!in this processor due to defects updated in this processor and in neighboring processors.
 		!***********************************************************************************************
-			
-		!call DEBUGPrintReaction(reactionCurrent, step)
-		!write(*,*) 'tau', tau, 'totalRate', totalRate
 
 		if(.NOT. associated(reactionCurrent)) then
 			nullSteps=nullSteps+1
@@ -600,12 +530,7 @@ do while(elapsedTime < totalTime)
 		!Output: defectUpdateCurrent, CascadeCurrent
 		call updateDefectList(reactionCurrent, defectUpdateCurrent, CascadeCurrent)
 
-		!call DEBUGPrintDefectList(step)
-
-		!call DEBUGPrintDefectUpdate(defectUpdate)
-
 		!If a cascade is chosen, update reaction rates for all defects remaining in coarse mesh element
-
 		if(associated(reactionCurrent)) then
 			if(reactionCurrent%numReactants==-10) then
 
@@ -615,20 +540,12 @@ do while(elapsedTime < totalTime)
 				!Variable tells us whether cascade communication step needs to be carried out
 				!and if so in what volume element in the coarse mesh
 				cascadeCell=reactionCurrent%cellNumber(1)
-				
 			end if
 		end if
-		!Update reaction rates for defects involved in reaction chosen
-	
 	end if
 	
 	!Update elapsed time based on tau, generated timestep. If cascade implant chosen in explicit scheme, tau=0d0
-!	if(myProc%taskid==MASTER) then
-		
-		elapsedTime=elapsedTime+tau
-!	end if
-
-!	call MPI_BCAST(elapsedTime, 1, MPI_DOUBLE_PRECISION, MASTER, comm,ierr)
+	elapsedTime=elapsedTime+tau
 
 !*********************************************************
 !	if(singleElemKMC=='no' .AND. associated(reactionCurrent) .AND. &
@@ -637,26 +554,14 @@ do while(elapsedTime < totalTime)
 !	else
 		call updateReactionList(defectUpdate)
 !	end if
-!	call updateReactionList(defectUpdate)
-	!write(*,*)
-	!write(*,*)
-	!call DEBUGPrintReactionList()		!prints all reaction lists at a given Monte Carlo step
-	!write(*,*)
-	!write(*,*)
-	!call DEBUGPrintDefectList()
 
 	if(totalRate < 0d0) then
 		write(*,*) 'error totalRate less than zero', step
 	end if
-	
-!	call DEBUGPrintDefects(step)
-!	call DEBUGPrintReactionList(step)
-!	call DEBUGCheckForUnadmissible(reactionCurrent, step)
 
 	!If we have chosen an event inside a fine mesh, we check the total reaction rate within that
 	!fine mesh. If the total rate is less than a set value, we assume the cascade is annealed and
 	!release the defects into the coarse mesh.
-
 	if(associated(CascadeCurrent)) then
 		if(totalRateCascade(CascadeCurrent) < cascadeReactionLimit) then
 			
@@ -666,9 +571,7 @@ do while(elapsedTime < totalTime)
 
 			!Release cascade defects into coarse mesh cell and reset the reaction list within that cell
 			call releaseFineMeshDefects(CascadeCurrent)
-
 			call resetReactionListSingleCell(cascadeCell)
-			
 		end if
 	end if
 	
@@ -684,7 +587,6 @@ do while(elapsedTime < totalTime)
 	!!'Cascade' implant type, check total rate when implantation event is choosen
 	!!'FrenkelPair' implant type, check total rate every 1000 steps
 	!*****************************************************************************************
-
 	if(associated(reactionCurrent)) then
 		if(implantType=='Cascade') then
 			if(reactionCurrent%numReactants==-10) then
@@ -701,14 +603,11 @@ do while(elapsedTime < totalTime)
 	! Optional: count how many cascades are present at step i and compile to find avg. number
 	! of cascades present per step
 	!******************************************
-	
 	TotalCascades=TotalCascades+CascadeCount()
 	
 	!********************************************************************************
 	! Output according to outputCounter
 	!********************************************************************************
-
-
 	if(elapsedTime >= totalTime/10d7*(10d0)**(outputCounter)) then
 !	if(elapsedTime >= totalTime/200d0*(2d0)**(outputCounter)) then
 	! or if(mod(step,100000)==0) then
@@ -779,7 +678,6 @@ do while(elapsedTime < totalTime)
 		!endif
 
 	end if
-
 end do
 
 !***********************************************************************

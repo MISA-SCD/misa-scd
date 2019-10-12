@@ -157,19 +157,16 @@ end function
 ! Carries out the communication necessary when a cascade is created or destroyed in an element
 ! that bounds another processor.
 !
-! Step 1: Check to see if cascade was created/destroyed in element that is in the boundary of another
-! processor.
+! Step 1: Check to see if cascade was created/destroyed in element that is in the boundary of another processor.
 !
 ! Step 2: Send message to neighboring processors about whether a cascade was created/destroyed in their
 ! boundaries, and if so the number of defects to recieve in the boundary element
 !
 ! Step 3: Send/recieve boundary element defects (just completely re-write boundary element defects in this step)
 !
-! Step 4: Update reaction rates for all diffusion reactions from elements neighboring the boundary
-!	elements which have been updated
+! Step 4: Update reaction rates for all diffusion reactions from elements neighboring the boundary elements which have been updated
 !
-! Inputs: cascadeCell (integer, 0 if no cascade, otherwise gives number of volume element that cascade
-!	event has occurred in)
+! Inputs: cascadeCell (integer, 0 if no cascade, otherwise gives number of volume element that cascade event has occurred in)
 !
 ! Outputs: none
 !
@@ -184,19 +181,17 @@ implicit none
 include 'mpif.h'
 
 integer cascadeCell
-
 type(defect), pointer :: defectCurrent, defectPrev
 
-integer i, j, k, tag, count, recvDir
-integer cellNumber, bndryCellNumber, numSend, numRecv
+integer i, j, k, dir, count, recvDir
+integer cellNumber, bndryCellNumber, localGrainID, neighborGrainID
 
-integer localGrainID, neighborGrainID
-
-double precision, allocatable :: defectSend(:,:), defectRecv(:,:)
-
-integer status(MPI_STATUS_SIZE)
+!Used for communication between processors
+integer numSend,numSendTemp, numRecv
+!double precision, allocatable :: defectSend(:,:), defectRecv(:,:)
+integer, allocatable :: defectSend(:,:), defectRecv(:,:)
+integer status(MPI_STATUS_SIZE), sendStatus(MPI_STATUS_SIZE),recvStatus(MPI_STATUS_SIZE)
 integer sendRequest, recvRequest
-integer sendStatus(MPI_STATUS_SIZE),recvStatus(MPI_STATUS_SIZE)
 
 interface
 	subroutine findDefectInList(defectCurrent, defectPrev, defectType)
@@ -208,294 +203,168 @@ interface
 	end subroutine
 end interface
 
-! Step 1: Check to see if cascade was created/destroyed in element that is in the boundary of another processor.
+!Fill send buffer
 if(cascadeCell==0) then
-
     numSend=0
     allocate(defectSend(numSpecies+1,numSend))
+else    !cascadeCell /= 0
+    numSend=0
+    defectCurrent=>defectList(cascadeCell)%next
 
-    do i=1,6
+    do dir=1,6
+        if(myMesh(cascadeCell)%neighborProcs(1,dir) /= myProc%taskid .AND. &
+                myMesh(cascadeCell)%neighborProcs(1,dir) /= -1) then
 
-        if(mod(i,2)==0) then
-            recvDir=i-1
-        else
-            recvDir=i+1
-        end if
-
-        if(myProc%procNeighbor(i) /= myProc%taskid) then
-            call MPI_ISEND(defectSend, (numSpecies+1)*numSend, MPI_DOUBLE_PRECISION, myProc%procNeighbor(i), &
-                    900+i, comm, sendRequest, ierr)
-            !call MPI_WAIT(sendRequest, sendStatus, ierr)
-            !call MPI_SEND(defectSend, (numSpecies+1)*numSend, MPI_DOUBLE_PRECISION, myProc%procNeighbor(i), &
-            !        900+i, comm, ierr)
-        end if
-
-        if(myProc%procNeighbor(recvDir) /= myProc%taskid) then
-
-            count=0
-            call MPI_PROBE(myProc%procNeighbor(recvDir), 900+i, comm,status,ierr)
-            call MPI_GET_COUNT(status,MPI_DOUBLE_PRECISION,count,ierr)
-
-            numRecv=count/(numSpecies+1)
-            allocate(defectRecv(numSpecies+1,numRecv))
-
-            !call MPI_IRECV(defectRecv,(numSpecies+1)*numRecv,MPI_DOUBLE_PRECISION,myProc%procNeighbor(recvDir),&
-            !        900+i,comm,recvRequest,ierr)
-            !call MPI_WAIT(recvRequest, recvStatus, ierr)
-            call MPI_RECV(defectRecv,(numSpecies+1)*numRecv,MPI_DOUBLE_PRECISION,myProc%procNeighbor(recvDir),&
-                    900+i,comm,status,ierr)
-
-            if(numRecv /= 0) then
-                !Update my boundary
-                bndryCellNumber=defectRecv(4,1)
-                cellNumber=defectRecv(1,1)
-
-                myBoundary(bndryCellNumber,recvDir)%volume=defectRecv(3,1)
-
-                !remove defects from myBoundary (except for first defect, this is all 0's and is just a placeholder)
-                defectCurrent=>myBoundary(bndryCellNumber,recvDir)%defectList%next
-
-                !delete exiting defects
-                nullify(defectPrev)
-                do while(associated(defectCurrent))
-                    defectPrev=>defectCurrent
-                    defectCurrent=>defectCurrent%next
-                    deallocate(defectPrev%defectType)
-                    deallocate(defectPrev)
-                end do
-
-                !add defects to my boundary
-                defectCurrent=>myBoundary(bndryCellNumber,recvDir)%defectList
-                do j=2,numRecv
-                    nullify(defectCurrent%next)
-                    allocate(defectCurrent%next)
-                    nullify(defectCurrent%next%next)
-                    defectCurrent=>defectCurrent%next
-                    allocate(defectCurrent%defectType(numSpecies))
-                    defectCurrent%cellNumber=bndryCellNumber
-                    defectCurrent%num=defectRecv(numSpecies+1,j)
-
-                    defectCurrent%defectType(:)=defectRecv(1:numSpecies,j)
-                end do
-
-                !*******************
-                !Add Diffusion reactions
-                !*******************
-                defectCurrent=>defectList(cellNumber)
-                do while(associated(defectCurrent))
-                    if (myMesh(cellNumber)%numNeighbors(recvDir)==0) then
-                        write(*,*) 'error myMesh does not have neighbors in this direction'
-                    end if
-
-                    if(polycrystal=='yes') then
-
-                        !Find the grain ID number of the volume element we are in
-                        localGrainID=myMesh(cellNumber)%material
-
-                        !Find the grain ID number of the neighboring volume element
-                        !NOTE: here we don't need to worry about free surfaces, since we are only adding diffusion reactions due to defects that
-                        !have changed on the boundary of this processor (in another processor, not a free surface)
-                        if(myProc%procNeighbor(recvDir)/=myProc%taskid .AND. myProc%procNeighbor(recvDir)/=-1) then
-                            neighborGrainID=myBoundary(myMesh(cellNumber)%neighbors(1,recvDir),recvDir)%material
-                        else
-                            neighborGrainID=myMesh(myMesh(cellNumber)%neighbors(1,recvDir))%material
-                        end if
-
-                        if(localGrainID==neighborGrainID) then
-                            !Allow diffusion between elements in the same grain
-                            call addDiffusionReactions(cellNumber, bndryCellNumber,&
-                                    myProc%taskid, myProc%procNeighbor(recvDir),recvDir,defectCurrent%defectType)
-                        else
-                            !Assume perfect sinks at grain boundaries - treat grain boundaries like free surfaces for now
-                            call addDiffusionReactions(cellNumber, 0, myProc%taskid, -1, recvDir, defectCurrent%defectType)
-                        end if
-                    else
-                        !Add diffusion reactions from this cell to neighboring cells
-                        call addDiffusionReactions(cellNumber, bndryCellNumber,&
-                                myProc%taskid, myProc%procNeighbor(recvDir),recvDir,defectCurrent%defectType)
-                    end if
-                    defectCurrent=>defectCurrent%next
-                end do
-            end if
-            deallocate(defectRecv)
-        end if
-
-        if(myProc%procNeighbor(i) /= myProc%taskid) then
-            call MPI_WAIT(sendRequest, sendStatus, ierr)
+            do while(associated(defectCurrent))
+                numSend=numSend+1
+                defectCurrent=>defectCurrent%next
+            end do
+            exit
         end if
     end do
 
-else    !cascadeCell /= 0
-
-    numSend=0
-	defectCurrent=>defectList(cascadeCell)%next
-
-	outer: do i=1,6
-		do k=1,myMesh(cascadeCell)%numNeighbors(i)
-			if(myMesh(cascadeCell)%neighborProcs(k,i) /= myProc%taskid .AND. &
-					myMesh(cascadeCell)%neighborProcs(k,i) /= -1) then
-
-				do while(associated(defectCurrent))
-                    numSend=numSend+1
-					defectCurrent=>defectCurrent%next
-				end do
-				exit outer
-			end if
-		end do
-	end do outer
-
-	if(numSend /=0 ) then
+    if(numSend /=0 ) then
         numSend=numSend+1
-		allocate(defectSend(numSpecies+1,numSend))
+        allocate(defectSend(numSpecies+1,numSend))
 
-        defectSend(1,1)=0		!myMesh(cascadeCell)%neighbors(k,dir)
-        defectSend(2,1)=0		!numDefects
-        defectSend(3,1)=0d0	!myMesh(cascadeCell)%volume
-        defectSend(4,1)=0		!cascadeCell
-        defectSend(5,1)=0		!useless
+        defectSend(1,1)=0		        !myMesh(cascadeCell)%neighbors(1,dir)
+        defectSend(2,1)=numSend-1		!numDefects
+        defectSend(3,1)=cascadeCell	    !cascadeCell
+        defectSend(4,1)=0		        !useless
+        defectSend(5,1)=0		        !useless
 
-		defectCurrent=>defectList(cascadeCell)%next
+        defectCurrent=>defectList(cascadeCell)%next
 
-		do j=2,numSend
+        do j=2,numSend
             defectSend(1:numSpecies,j)=defectCurrent%defectType(:)
             defectSend(numSpecies+1,j)=defectCurrent%num
 
-			defectCurrent=>defectCurrent%next
-		end do
-	end if
-
-    !Communication
-    do i=1,6
-
-        if(mod(i,2)==0) then
-            recvDir=i-1
-        else
-            recvDir=i+1
-        end if
-
-        do k=1,myMesh(cascadeCell)%numNeighbors(i)
-
-            if(myMesh(cascadeCell)%neighborProcs(k,i) /= myProc%taskid .AND. &
-                    myMesh(cascadeCell)%neighborProcs(k,i) /= -1) then
-
-                defectSend(1,1)=myMesh(cascadeCell)%neighbors(k,i)
-                defectSend(2,1)=count
-                defectSend(3,1)=myMesh(cascadeCell)%volume
-                defectSend(4,1)=cascadeCell
-            else
-                numSend = 0
-            end if
+            defectCurrent=>defectCurrent%next
         end do
+    end if
+end if
 
-        !Send
-        if(myProc%procNeighbor(i) /= myProc%taskid) then
+do dir=1,6
 
-            call MPI_ISEND(defectSend, (numSpecies+1)*numSend, MPI_DOUBLE_PRECISION, myProc%procNeighbor(i), &
-                    900+i, comm, sendRequest, ierr)
-            !call MPI_WAIT(sendRequest, sendStatus, ierr)
-            !call MPI_SEND(defectSend, (numSpecies+1)*numSend, MPI_DOUBLE_PRECISION, myProc%procNeighbor(i), &
-            !        900+i, comm, ierr)
+    if(mod(dir,2)==0) then
+        recvDir=dir-1
+    else
+        recvDir=dir+1
+    end if
+    numSendTemp = numSend
+    if(cascadeCell /= 0) then
+        if(myMesh(cascadeCell)%neighborProcs(1,dir) /= myProc%taskid .AND. &
+                myMesh(cascadeCell)%neighborProcs(1,dir) /= -1 .AND. numSend /=0)  then
+            defectSend(1,1)=myMesh(cascadeCell)%neighbors(1,dir)
+        else
+            numSendTemp = 0
         end if
+    end if
 
-        !Recv
-        if(myProc%procNeighbor(recvDir) /= myProc%taskid) then
+    if(step == 1) then
+        write(*,*) 'proc',myProc%taskid, 'dir', dir, 'numSendTemp', numSendTemp
+    end if
 
-            count=0
-            call MPI_PROBE(myProc%procNeighbor(recvDir), 900+i, comm,status,ierr)
-            call MPI_GET_COUNT(status,MPI_DOUBLE_PRECISION,count,ierr)
+    !Send
+    if(myProc%procNeighbor(dir) /= myProc%taskid) then
+        call MPI_ISEND(defectSend, (numSpecies+1)*numSendTemp, MPI_INTEGER, myProc%procNeighbor(dir), &
+                900+dir, comm, sendRequest, ierr)
+    end if
 
-            numRecv=count/(numSpecies+1)
-            allocate(defectRecv(numSpecies+1,numRecv))
+    if(myProc%procNeighbor(recvDir) /= myProc%taskid) then
 
-            !call MPI_IRECV(defectRecv,(numSpecies+1)*numRecv,MPI_DOUBLE_PRECISION,myProc%procNeighbor(recvDir),&
-            !        900+i,comm,recvRequest,ierr)
-            !call MPI_WAIT(recvRequest, recvStatus, ierr)
-            call MPI_RECV(defectRecv,(numSpecies+1)*numRecv,MPI_DOUBLE_PRECISION,myProc%procNeighbor(recvDir),&
-                    900+i,comm,status,ierr)
+        count=0
+        call MPI_PROBE(myProc%procNeighbor(recvDir), 900+dir, comm,status,ierr)
+        call MPI_GET_COUNT(status,MPI_INTEGER,count,ierr)
 
-            if(numRecv /= 0) then
+        numRecv=count/(numSpecies+1)
+        allocate(defectRecv(numSpecies+1,numRecv))
 
-                bndryCellNumber=defectRecv(4,1)
-                cellNumber=defectRecv(1,1)
+        call MPI_RECV(defectRecv,(numSpecies+1)*numRecv,MPI_INTEGER,myProc%procNeighbor(recvDir),&
+                900+dir,comm,status,ierr)
 
-                myBoundary(bndryCellNumber,recvDir)%volume=defectRecv(3,1)
+        if(numRecv /= 0) then
+            !Update my boundary
+            bndryCellNumber=defectRecv(3,1)
+            cellNumber=defectRecv(1,1)
 
-                !remove defects from myBoundary (except for first defect, this is all 0's and is just a placeholder)
-                defectCurrent=>myBoundary(bndryCellNumber,recvDir)%defectList%next
+            if(meshingType=='adaptive') then
+                myBoundary(bndryCellNumber,recvDir)%volume=myBoundary(bndryCellNumber,recvDir)%volume-&
+                        CascadeElementVol*dble(numCellsCascade)
+            end if
 
-                !delete exiting defects
-                nullify(defectPrev)
-                do while(associated(defectCurrent))
-                    defectPrev=>defectCurrent
-                    defectCurrent=>defectCurrent%next
-                    deallocate(defectPrev%defectType)
-                    deallocate(defectPrev)
-                end do
 
-                !add defects to my boundary
-                defectCurrent=>myBoundary(bndryCellNumber,recvDir)%defectList
+            !remove defects from myBoundary (except for first defect, this is all 0's and is just a placeholder)
+            defectCurrent=>myBoundary(bndryCellNumber,recvDir)%defectList%next
 
-                do j=2,numRecv
-                    nullify(defectCurrent%next)
-                    allocate(defectCurrent%next)
-                    nullify(defectCurrent%next%next)
-                    defectCurrent=>defectCurrent%next
-                    allocate(defectCurrent%defectType(numSpecies))
-                    defectCurrent%cellNumber=bndryCellNumber
-                    defectCurrent%num=defectRecv(numSpecies+1,j)
+            !delete exiting defects
+            nullify(defectPrev)
+            do while(associated(defectCurrent))
+                defectPrev=>defectCurrent
+                defectCurrent=>defectCurrent%next
+                deallocate(defectPrev%defectType)
+                deallocate(defectPrev)
+            end do
 
-                    defectCurrent%defectType(:)=defectRecv(1:numSpecies,j)
-                end do
+            !add defects to my boundary
+            defectCurrent=>myBoundary(bndryCellNumber,recvDir)%defectList
+            do j=2,numRecv
+                nullify(defectCurrent%next)
+                allocate(defectCurrent%next)
+                nullify(defectCurrent%next%next)
+                defectCurrent=>defectCurrent%next
+                allocate(defectCurrent%defectType(numSpecies))
+                defectCurrent%cellNumber=bndryCellNumber
+                defectCurrent%num=defectRecv(numSpecies+1,j)
+                defectCurrent%defectType(:)=defectRecv(1:numSpecies,j)
+            end do
 
-                !*******************
-                !Add Diffusion reactions
-                !*******************
-                defectCurrent=>defectList(cellNumber)
-                do while(associated(defectCurrent))
-                    if (myMesh(cellNumber)%numNeighbors(recvDir)==0) then
-                        write(*,*) 'error myMesh does not have neighbors in this direction'
+            !*******************
+            !Add Diffusion reactions
+            !*******************
+            defectCurrent=>defectList(cellNumber)
+            do while(associated(defectCurrent))
+                if (myMesh(cellNumber)%numNeighbors(recvDir)==0) then
+                    write(*,*) 'error myMesh does not have neighbors in this direction'
+                end if
+
+                if(polycrystal=='yes') then
+
+                    !Find the grain ID number of the volume element we are in
+                    localGrainID=myMesh(cellNumber)%material
+
+                    !Find the grain ID number of the neighboring volume element
+                    !NOTE: here we don't need to worry about free surfaces, since we are only adding diffusion reactions due to defects that
+                    !have changed on the boundary of this processor (in another processor, not a free surface)
+                    if(myProc%procNeighbor(recvDir)/=myProc%taskid .AND. myProc%procNeighbor(recvDir)/=-1) then
+                        neighborGrainID=myBoundary(myMesh(cellNumber)%neighbors(1,recvDir),recvDir)%material
+                    else
+                        neighborGrainID=myMesh(myMesh(cellNumber)%neighbors(1,recvDir))%material
                     end if
 
-                    if(polycrystal=='yes') then
-
-                        !Find the grain ID number of the volume element we are in
-                        localGrainID=myMesh(cellNumber)%material
-
-                        !Find the grain ID number of the neighboring volume element
-                        !NOTE: here we don't need to worry about free surfaces, since we are only adding diffusion reactions due to defects that
-                        !have changed on the boundary of this processor (in another processor, not a free surface)
-                        if(myProc%procNeighbor(recvDir)/=myProc%taskid .AND. myProc%procNeighbor(recvDir)/=-1) then
-                            neighborGrainID=myBoundary(myMesh(cellNumber)%neighbors(1,recvDir),recvDir)%material
-                        else
-                            neighborGrainID=myMesh(myMesh(cellNumber)%neighbors(1,recvDir))%material
-                        end if
-
-                        if(localGrainID==neighborGrainID) then
-                            !Allow diffusion between elements in the same grain
-                            call addDiffusionReactions(cellNumber, bndryCellNumber,&
-                                    myProc%taskid, myProc%procNeighbor(recvDir),recvDir,defectCurrent%defectType)
-                        else
-                            !Assume perfect sinks at grain boundaries - treat grain boundaries like free surfaces for now
-                            call addDiffusionReactions(cellNumber, 0, myProc%taskid, -1, recvDir, defectCurrent%defectType)
-                        end if
-                    else
-                        !Add diffusion reactions from this cell to neighboring cells
+                    if(localGrainID==neighborGrainID) then
+                        !Allow diffusion between elements in the same grain
                         call addDiffusionReactions(cellNumber, bndryCellNumber,&
                                 myProc%taskid, myProc%procNeighbor(recvDir),recvDir,defectCurrent%defectType)
+                    else
+                        !Assume perfect sinks at grain boundaries - treat grain boundaries like free surfaces for now
+                        call addDiffusionReactions(cellNumber, 0, myProc%taskid, -1, recvDir, defectCurrent%defectType)
                     end if
-                    defectCurrent=>defectCurrent%next
-                end do
-
-            end if
-            deallocate(defectRecv)
+                else
+                    !Add diffusion reactions from this cell to neighboring cells
+                    call addDiffusionReactions(cellNumber, bndryCellNumber,&
+                            myProc%taskid, myProc%procNeighbor(recvDir),recvDir,defectCurrent%defectType)
+                end if
+                defectCurrent=>defectCurrent%next
+            end do
         end if
+        deallocate(defectRecv)
+    end if
 
-        if(myProc%procNeighbor(i) /= myProc%taskid) then
-            call MPI_WAIT(sendRequest, sendStatus, ierr)
-        end if
-
-    end do
-end if
+    if(myProc%procNeighbor(dir) /= myProc%taskid) then
+        call MPI_WAIT(sendRequest, sendStatus, ierr)
+    end if
+end do
 
 end subroutine
 

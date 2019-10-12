@@ -466,7 +466,7 @@ if(myProc%taskid==MASTER) then
 		else if(defectCurrentList%defectType(4) /= 0) then
 
 			if(defectCurrentList%defectType(4) > minLoop) then
-				numSIA=numSIA+defectCurrentList%defectType(3)*defectCurrentList%num
+				numSIA=numSIA+defectCurrentList%defectType(4)*defectCurrentList%num
 				numLoop=numLoop+defectCurrentList%num
 			end if
 

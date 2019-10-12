@@ -350,9 +350,9 @@ implicit none
 include 'mpif.h'
 
 type(reaction), pointer :: reactionCurrent
-type(defect), pointer :: defectCurrent, defectPrev, defectTemp, defectStoreList, defectStore, defectStorePrev
+type(defect), pointer :: defectCurrent, defectPrev, defectTemp, defectStoreList, defectStore, defectStorePrev, defectTest
 type(cascadeDefect), pointer :: cascadeDefectTemp
-type(defectUpdateTracker), pointer :: defectUpdate, defectUpdateCurrent
+type(defectUpdateTracker), pointer :: defectUpdateCurrent
 type(cascade), pointer :: CascadeCurrent, CascadePrev
 type(cascadeEvent), pointer :: cascadeTemp
 
@@ -360,6 +360,8 @@ type(cascadeEvent), pointer :: cascadeTemp
 double precision coordinatesTemp(3)
 integer cellNumber, mixingEvents, mixingTemp
 logical combineBoolean, isCombined
+!Used for cascade recombination
+double precision r1, atemp
 
 integer i, j, k, l, m, same, products(numSpecies), product2(numSpecies), totalLocalRecv
 double precision diffusionRandom
@@ -370,33 +372,26 @@ integer count
 integer findCellWithCoordinatesFineMesh, chooseRandomCell
 logical cascadeMixingCheck
 
-!Used for cascade recombination
-double precision r1, atemp
-
 !Used for communication between processors
-!defect update counters
 integer numUpdateSend(6), numUpdateRecv(6)	!the number of defects being sent to (recived from) each processor neighbor
 integer numLocalRecv, numBndryRecv			!the number of (loceal/bndry) defects being recieved from each proc neighbor
 
 !NOTE: this final step could be eliminated by keeping the global mesh in each local processor
 !(thus each element could be identified as being part of the local mesh of one proc and the boundary of any other procs)
 integer numUpdateFinal(6), numUpdateFinalRecv(6)	!number of defects being sent/recieved in final update step
+integer recvDir
 
 !create buffers of information to send to neighboring elements (Contains local defects and boundary defects)
 integer, allocatable :: firstSend(:,:,:)
 integer, allocatable :: firstRecv(:,:,:)
-
 integer, allocatable :: finalSend(:,:,:)	!Only contains local defects
 integer, allocatable :: finalBufferRecv(:,:)
 
 integer status(MPI_STATUS_SIZE)
 integer sendFirstStatus(MPI_STATUS_SIZE), recvFirstStatus(MPI_STATUS_SIZE)
 integer sendFinalStatus(MPI_STATUS_SIZE), recvFinalStatus(MPI_STATUS_SIZE)
-
 integer sendFirstRequest(6), recvFirstRequest(6)
 integer sendFinalRequest(6), recvFinalRequest(6)
-
-integer recvDir
 
 interface
 	subroutine findDefectInList(defectCurrent, defectPrev, products)
@@ -419,14 +414,13 @@ interface
 	end subroutine
 end interface
 
-!initialize the trackers of number of defects to update
-do i=1,6
-	numUpdateSend(i)=0
-	numUpdateRecv(i)=0
-	numUpdateFinal(i)=0
-	numUpdateFinalRecv(i)=0
-end do
+!initialize arraies
+numUpdateSend=0
+numUpdateRecv=0
+numUpdateFinal=0
+numUpdateFinalRecv=0
 
+!initialize variables
 totalLocalRecv=0
 mixingEvents=0
 
@@ -472,16 +466,44 @@ if(.NOT. associated(reactionCurrent)) then
 !associated(reactionCurrent)	!if we have chosen an event
 else
 
-	allocate(firstSend(numSpecies+3,reactionCurrent%numReactants+reactionCurrent%numProducts,6))
 	!***********************************************************************************************
 	!Cascade chosen
 	!
 	!Initialization of fine mesh: randomly select defects from the coarse mesh into the fine mesh.
 	!***********************************************************************************************
 
-	if(reactionCurrent%numReactants==-10) then 
-		
-		if(meshingType=='adaptive') then
+	if(reactionCurrent%numReactants==-10) then
+
+        !Communication common defect
+        allocate(firstSend(numSpecies+3,0,6))
+
+        do i=1,6
+            if(mod(i,2)==0) then
+                recvDir=i-1
+            else
+                recvDir=i+1
+            end if
+
+            !Send
+            if(myProc%procNeighbor(i) /= myProc%taskid) then
+                call MPI_ISEND(firstSend,0,MPI_INTEGER,myProc%procNeighbor(i),200+i ,comm,sendFirstRequest(i),ierr)
+            end if
+
+            !Recv
+            if(myProc%procNeighbor(recvDir) /= myProc%taskid) then
+                count=0
+                call MPI_PROBE(myProc%procNeighbor(recvDir), 200+i,comm,status,ierr)
+                call MPI_GET_COUNT(status,MPI_INTEGER,count,ierr)
+
+                numUpdateRecv(recvDir) = count/(numSpecies+3)
+
+                call MPI_IRECV(firstRecv(1,1,recvDir),(numSpecies+3)*numUpdateRecv(recvDir),MPI_INTEGER,&
+                        myProc%procNeighbor(recvDir),200+i ,comm,recvFirstRequest(recvDir),ierr)
+            end if
+        end do
+
+        !Update cascades
+        if(meshingType=='adaptive') then
 			
 			!**************************************************
             !> choose a cascade
@@ -512,7 +534,6 @@ else
 				end do
 				CascadeCurrent=>ActiveCascades
                 CascadeCurrent%cascadeID=numImpAnn(1)
-				!write(*,*) 'initialized ActiveCascades'
 			else	!cascade fine meshe are already in the system
 				j=1
 				do while(associated(CascadeCurrent))
@@ -520,7 +541,6 @@ else
 					CascadeCurrent=>CascadeCurrent%next
 					j=j+1
 				end do
-				!write(*,*) 'initializing cascade', j
 				allocate(CascadeCurrent)
 				nullify(CascadeCurrent%next)
 				nullify(CascadeCurrent%localDefects)
@@ -532,7 +552,6 @@ else
 				do j=1,numCellsCascade
 					CascadeCurrent%totalRate(j)=0d0
 				end do
-!				CascadeCurrent%cascadeID=numImplantEvents
                 CascadeCurrent%cascadeID=numImpAnn(1)
 			end if
 			
@@ -549,7 +568,6 @@ else
 			!If we add too many cascades to a coarse mesh element, the volume inside can become negative. If this 
 			!happens, output an error message. (Only a danger in the case of very high DPA rates and
 			!small coarse mesh elements)
-			
 			if(myMesh(cascadeCurrent%cellNumber)%volume <= 0d0) then
 				write(*,*) 'Error negative coarse mesh volume'
 			end if
@@ -558,12 +576,10 @@ else
 			!initialize defect list and reaction list in CascadeCurrent. This includes defects
 			!placed in the fine mesh from the coarse mesh.
 			!*******************************************************************
-			
 			call initializeFineMesh(CascadeCurrent)
 
 			!***************************************************************************************
 			!Recombination step:
-			!
 			!Here, we are taking the defects in the initialized fine mesh and combining them with
 			!the defects in the cascade according to a probability given by the cascade volume
 			!divided by the total fine mesh volume.
@@ -596,7 +612,6 @@ else
 
 			!Step 1:
 			do i=1, cascadeTemp%numDefectsTotal
-				
 				!**************************************************************
 				!Make sure coordinates of all defects in cascade are within fine mesh, using periodic BC's
 				!**************************************************************
@@ -626,7 +641,6 @@ else
 				
 				!Create list of defects that need to be added to fine mesh (after casacade-fine mesh
 				!mixing has been taken into account)
-				
 				allocate(defectStore%next)
 				defectStore=>defectStore%next
 				allocate(defectStore%defectType(numSpecies))
@@ -664,7 +678,7 @@ else
 						
 							if(combineBoolean .eqv. .TRUE.) then
 								mixingTemp=mixingTemp+1
-							endif
+							end if
 						end do
 					end if
 					
@@ -681,10 +695,9 @@ else
 						!Move defectStore through defectStoreList until defect chosen for recombination
 						do i=1,cascadeTemp%numDefectsTotal
 							atemp=atemp+1d0/dble(cascadeTemp%numDefectsTotal)
-							
 							if(atemp > r1) then
 								exit
-							endif
+							end if
 							defectStorePrev=>defectStore
 							defectStore=>defectStore%next
 						end do
@@ -692,7 +705,6 @@ else
 						if( .NOT. associated(defectStore)) then
 							write(*,*) 'Error DefectStore not associated in cascade mixing'
 						else
-
 						    !***********************************************************************
 						    !Hard coded: use defect combination rules to combine defectStore and defecTemp
 						    !These rules have been transported to a separate subroutine
@@ -1138,7 +1150,6 @@ else
 					
 				endif
 				defectStore=>defectStore%next
-			
 			end do
 			
 			!Final step: set up defectUpdate for all defects in the cell
@@ -1194,7 +1205,17 @@ else
 			
 		else
 			write(*,*) 'error meshingType'
-		endif
+		end if
+
+        !if(step == 1 .AND. myProc%taskid == 0) then
+        !    write(*,*) 'step', step, 'proc', myProc%taskid, 'cellNumber', reactionCurrent%cellNumber(1)
+        !    defectTest=>defectList(reactionCurrent%cellNumber(1))
+        !    do while(associated(defectTest))
+        !        write(*,*) defectTest%defectType, defectTest%num, defectTest%cellNumber
+        !        defectTest=>defectTest%next
+        !    end do
+        !end if
+
 
 	!***********************************************************************************************
 	!Defect update for reactions within the fine mesh.
@@ -1205,6 +1226,7 @@ else
 		
 	else if(associated(CascadeCurrent)) then    !Reactions in the fine mesh
 
+        allocate(firstSend(numSpecies+3,reactionCurrent%numProducts,6))
         !***********************************************************************
         !Here, I will assume cubic cells. If a defect migrates from one cell to another,
         !the defect will be given a percent chance of removal from the system
@@ -1493,7 +1515,7 @@ else
 	!***********************************************************************************************
 
 	else	!Reactions in the coarse mesh
-
+        allocate(firstSend(numSpecies+3,reactionCurrent%numReactants+reactionCurrent%numProducts,6))
 		!First update local buffer if needed
 		do i=1, reactionCurrent%numReactants
 
@@ -2216,8 +2238,14 @@ do i=1,6
             if(firstRecv(numSpecies+2,j,i) == -1) then
                 write(*,*) 'defectCurrent not associated'
                 write(*,*) 'error in defectUpdate negative defect numbers'
-                write(*,*) 'proc', myProc%taskid, 'dir', i, 'neighbor proc', myProc%procNeighbor(i)
+                write(*,*) 'j',j,'proc', myProc%taskid, 'dir', i, 'neighbor proc', myProc%procNeighbor(i)
                 write(*,*) (firstRecv(k,j,i),k=1,numSpecies+3)
+                !write(*,*) 'step',step
+                !defectTest=>myBoundary(firstRecv(numSpecies+1,j,i),i)%defectList
+                !do while(associated(defectTest))
+                !    write(*,*) defectTest%defectType, defectTest%num, defectTest%cellNumber
+                !    defectTest=>defectTest%next
+                !end do
                 call MPI_ABORT(comm,ierr)
             else
 
