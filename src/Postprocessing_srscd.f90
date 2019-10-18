@@ -166,6 +166,7 @@ include 'mpif.h'
 integer i, j, k, status(MPI_STATUS_SIZE)
 integer products(numSpecies), same
 type(defect), pointer :: defectCurrent, defectPrevList, defectCurrentList, outputDefectList
+type(cascade), pointer :: cascadeCurrent
 integer, allocatable :: defectsRecv(:,:)
 integer, allocatable :: defectsSend(:,:)
 integer numDefectsSend
@@ -210,7 +211,7 @@ outputDefectList%num=0
 
 allocate(numDefectsRecv(myProc%numtasks))
 
-!Count defects
+!Count defects in coarse mesh
 numDefectsSend=0
 do i=1,numCells
 
@@ -255,7 +256,7 @@ do i=1,numCells
 					!if inserted defect is in the middle of the list, point it to the next item in the list
 					defectPrevList%next=>defectCurrentList
 					numDefectsSend=numDefectsSend+1
-				endif
+				end if
 			else if(associated(defectPrevList)) then
 
 				!add a defect to the end of the list
@@ -274,13 +275,79 @@ do i=1,numCells
 				numDefectsSend=numDefectsSend+1
 			else
 				write(*,*) 'error tried to insert defect at beginning of output defect list'
-			endif
+			end if
 			defectCurrent=>defectCurrent%next
 		end do
-
 	end if
-
 end do
+
+!Count defects in fine mesh
+if(meshingType=='adaptive') then
+	cascadeCurrent=>ActiveCascades
+	do while(associated(cascadeCurrent))
+		do i=1,numCellsCascade
+			defectCurrent=>cascadeCurrent%localDefects(i)%next
+			do while(associated(defectCurrent))
+
+				nullify(defectPrevList)
+				defectCurrentList=>outputDefectList
+				call findDefectInList(defectCurrentList, defectPrevList, defectCurrent%defectType)
+
+				!Next update defects
+				if(associated(defectCurrentList)) then !if we aren't at the end of the list
+					same=0
+					do j=1,numSpecies
+						if(defectCurrentList%defectType(j)==defectCurrent%defectType(j)) then
+							same=same+1
+						end if
+					end do
+
+					if(same == numSpecies) then
+						!if the defect is already present in the list
+						defectCurrentList%num=defectCurrentList%num+defectCurrent%num
+					else    !add a defect to the middle of the list
+						!if the defect is to be inserted in the list
+						nullify(defectPrevList%next)
+						allocate(defectPrevList%next)
+						nullify(defectPrevList%next%next)
+						defectPrevList=>defectPrevList%next
+						allocate(defectPrevList%defectType(numSpecies))
+						defectPrevList%cellNumber=0	!no need for cell numbers in outputDefectList
+						defectPrevList%num=defectCurrent%num
+
+						do j=1,numSpecies
+							defectPrevList%defectType(j)=defectCurrent%defectType(j)
+						end do
+
+						!if inserted defect is in the middle of the list, point it to the next item in the list
+						defectPrevList%next=>defectCurrentList
+						numDefectsSend=numDefectsSend+1
+					end if
+				else if(associated(defectPrevList)) then
+
+					!add a defect to the end of the list
+					nullify(defectPrevList%next)
+					allocate(defectPrevList%next)
+					nullify(defectPrevList%next%next)
+					defectPrevList=>defectPrevList%next
+					allocate(defectPrevList%defectType(numSpecies))
+					defectPrevList%cellNumber=0 !no need for cell numbers in outputDefectList
+					defectPrevList%num=defectCurrent%num
+
+					do j=1,numSpecies
+						defectPrevList%defectType(j)=defectCurrent%defectType(j)
+					end do
+					numDefectsSend=numDefectsSend+1
+				else
+					write(*,*) 'error tried to insert defect at beginning of output defect list'
+				endif
+
+				defectCurrent=>defectCurrent%next
+			end do
+		end do
+		cascadeCurrent=>cascadeCurrent%next
+	end do
+end if
 
 call MPI_GATHER(numDefectsSend,1,MPI_INTEGER,numDefectsRecv,1,MPI_INTEGER,MASTER,comm,ierr)
 
@@ -299,11 +366,10 @@ if(myProc%taskid /= MASTER) then
 		defectCurrentList=>defectCurrentList%next
 		if(i==numDefectsSend .AND. associated(defectCurrentList)) then
 			write(*,*) 'error outputDefectList size does not match numDefectsSend'
-		endif
+		end if
 	end do
 	call MPI_SEND(defectsSend, (numSpecies+1)*numDefectsSend, MPI_INTEGER, MASTER, 400, comm, ierr)
 	deallocate(defectsSend)
-
 else	!MASTER
 
 	!Recv defects from other processors
@@ -334,7 +400,6 @@ else	!MASTER
 					!if the defect is already present in the list
 					defectCurrentList%num=defectCurrentList%num+defectsRecv(numSpecies+1,j)
 				else
-
 					!if the defect is to be inserted in the list
 					nullify(defectPrevList%next)
 					allocate(defectPrevList%next)
@@ -351,7 +416,6 @@ else	!MASTER
 					defectPrevList%next=>defectCurrentList
 				endif
 			else if(associated(defectPrevList)) then
-
 				!add a defect to the end of the list
 				nullify(defectPrevList%next)
 				allocate(defectPrevList%next)
