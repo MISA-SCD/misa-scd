@@ -212,25 +212,34 @@ else
 endif
 
 if(implantType=='FrenkelPair') then
-	
-	!Do nothing, no fine mesh in Frenkel pair implantation.
+
+	do reac=1,numImplantReac(matNum)
+		if(ImplantReactions(reac,matNum)%numReactants==0 .AND. ImplantReactions(reac,matNum)%numProducts==2) then
+			exit	!we have found FrenkelPair implantation
+		end if
+	end do
+
+	!Update the total reaction rate by subtracting the old reaction rate and adding the new one
+	totalRate=totalRate-reactionList(cell)%reactionRate
+	totalRateVol(cell)=totalRateVol(cell)-reactionList(cell)%reactionRate
+
+	reactionList(cell)%reactionRate=findReactionRate(cell, ImplantReactions(reac,matNum))
+
+	!Update total reaction rate for entire processor and for this volume element
+	totalRate=totalRate+reactionList(cell)%reactionRate
+	totalRateVol(cell)=totalRateVol(cell)+reactionList(cell)%reactionRate
 
 else if(implantType=='Cascade') then
 
 	!update reaction rates with cascade implantation. The rate should be given by a function
 	!findReactionRate which has as parameters passed to it the cell that this rate is occuring in 
 	!and the parameters of the reaction rate as read in from the file (type reactionParameters)
-	
-	!Part 1: Cascade implantation rate
-	
+
 	!search ImplantList for cascade reactions
 	do reac=1,numImplantReac(matNum)
 		if(ImplantReactions(reac,matNum)%numReactants==-10 .AND. ImplantReactions(reac,matNum)%numProducts==0) then
-			
-			!we have found cascade implantation
-			exit
-		
-		endif
+			exit	!we have found cascade implantation
+		end if
 	end do
 	
 	!Update the total reaction rate by subtracting the old reaction rate and adding the new one
@@ -257,10 +266,8 @@ else if(implantType=='Cascade') then
 	nullify(reactionList(cell)%next)
 
 else
-
 	write(*,*) 'error unknown implantation type'
-
-endif
+end if
 
 end subroutine
 
@@ -282,9 +289,7 @@ implicit none
 
 type(defect), pointer :: defectCurrent, defectUpdate
 type(cascade), pointer :: cascadeCurrent
-integer numElements, numNeighbors, i, j, k, dir, count, defectTemp(numSpecies), tracker
-integer findNumDefectBoundary, findNumDefect
-logical flag
+integer numElements, numNeighbors, i, j, k, dir, count, defectTemp(numSpecies)
 integer cell
 integer localGrainID, neighborGrainID
 
@@ -298,7 +303,6 @@ if(annealIdentify .eqv. .FALSE.) then
 end if
 
 defectUpdate=>defectList(cell)
-
 do while(associated(defectUpdate))
 	
 	do i=1,numSpecies
@@ -321,63 +325,49 @@ do while(associated(defectUpdate))
 		
 		if (myMesh(cell)%numNeighbors(j)==0) then
 			write(*,*) 'error myMesh does not have neighbors in this direction'
-		endif
-		
-		do k=1,myMesh(cell)%numNeighbors(j)
+		end if
 
-			!Add diffusion reactions from this cell to neighbors and from neighbors to this cell		
-			if(polycrystal=='yes') then
-			
-				!Find the grain ID number of the volume element we are in
-				localGrainID=myMesh(cell)%material
-				
-				!Find the grain ID number of the neighboring volume element
-				if(myMesh(cell)%neighborProcs(k,j) /= myProc%taskid .AND. &
-					myMesh(cell)%neighborProcs(k,j) /= -1) then
-				
-					neighborGrainID=myBoundary(myMesh(cell)%neighbors(k,j),j)%material
-				else if(myMesh(cell)%neighborProcs(k,j) == -1) then
-					neighborGrainID=localGrainID
-				else
-					neighborGrainID=myMesh(myMesh(cell)%neighbors(k,j))%material
-				end if
-				
-				if(localGrainID==neighborGrainID) then
-				
-					!Allow diffusion between elements in the same grain
-					call addDiffusionReactions(cell, myMesh(cell)%neighbors(k,j),&
-						myProc%taskid, myMesh(cell)%neighborProcs(k,j),j,defectTemp)
-				
-				else
-				
-					!Assume perfect sinks at grain boundaries - treat grain boundaries like free surfaces for now
-					call addDiffusionReactions(cell, 0, myProc%taskid, -1, j, defectTemp)													
-				
-				end if
+		!Add diffusion reactions from this cell to neighbors and from neighbors to this cell
+		if(polycrystal=='yes') then
 
+			!Find the grain ID number of the volume element we are in
+			localGrainID=myMesh(cell)%material
+
+			!Find the grain ID number of the neighboring volume element
+			if(myMesh(cell)%neighborProcs(1,j) /= myProc%taskid .AND. &
+					myMesh(cell)%neighborProcs(1,j) /= -1) then
+
+				neighborGrainID=myBoundary(myMesh(cell)%neighbors(1,j),j)%material
+			else if(myMesh(cell)%neighborProcs(1,j) == -1) then
+				neighborGrainID=localGrainID
 			else
-			
-				call addDiffusionReactions(cell, myMesh(cell)%neighbors(k,j), myProc%taskid, &
-					myMesh(cell)%neighborProcs(k,j), j, defectTemp)
-			
+				neighborGrainID=myMesh(myMesh(cell)%neighbors(1,j))%material
 			end if
-				
-			!Add diffusion reactions from the neighboring cell into this one
-			if(myMesh(cell)%neighborProcs(k,j)==myProc%taskid) then
-				if(polycrystal=='yes' .AND. myMesh(myMesh(cell)%neighbors(k,j))%material == myMesh(cell)%material) then
-					
-					call addDiffusionReactions(myMesh(cell)%neighbors(k,j), cell, myProc%taskid, &
-						myProc%taskid, j, defectTemp)
-						
-				else if(polycrystal=='no') then
-				
-					call addDiffusionReactions(myMesh(cell)%neighbors(k,j), cell, myProc%taskid, &
-						myProc%taskid, j, defectTemp)
-				
-				end if
+
+			if(localGrainID==neighborGrainID) then
+
+				!Allow diffusion between elements in the same grain
+				call addDiffusionReactions(cell, myMesh(cell)%neighbors(1,j),&
+						myProc%taskid, myMesh(cell)%neighborProcs(1,j),j,defectTemp)
+			else
+				!Assume perfect sinks at grain boundaries - treat grain boundaries like free surfaces for now
+				call addDiffusionReactions(cell, 0, myProc%taskid, -1, j, defectTemp)
 			end if
-		end do
-		
+		else
+			call addDiffusionReactions(cell, myMesh(cell)%neighbors(1,j), myProc%taskid, &
+					myMesh(cell)%neighborProcs(1,j), j, defectTemp)
+		end if
+
+		!Add diffusion reactions from the neighboring cell into this one
+	!	if(myMesh(cell)%neighborProcs(1,j)==myProc%taskid) then
+	!		if(polycrystal=='yes' .AND. myMesh(myMesh(cell)%neighbors(1,j))%material == myMesh(cell)%material) then
+	!			call addDiffusionReactions(myMesh(cell)%neighbors(1,j), cell, myProc%taskid, &
+	!					myProc%taskid, j, defectTemp)
+	!		else if(polycrystal=='no') then
+	!			call addDiffusionReactions(myMesh(cell)%neighbors(1,j), cell, myProc%taskid, &
+	!					myProc%taskid, j, defectTemp)
+	!		end if
+	!	end if
 	end do
 
 	!***********************************************************************************
@@ -399,19 +389,12 @@ do while(associated(defectUpdate))
 	CascadeCurrent=>ActiveCascades
 	
 	do while(associated(CascadeCurrent))
-
 		if(CascadeCurrent%cellNumber==cell) then
-
 			call addDiffusionCoarseToFine(cell, myProc%taskid, CascadeCurrent, defectTemp)
-		
-		endif
-		
+		end if
 		CascadeCurrent=>CascadeCurrent%next
-		
 	end do
-
 	defectUpdate=>defectUpdate%next
-	
 end do
 
 end subroutine

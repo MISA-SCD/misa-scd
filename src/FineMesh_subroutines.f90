@@ -23,7 +23,6 @@ use DerivedType
 implicit none
 
 !Data structures used:
-
 type(cascade), pointer :: CascadeCurrent
 type(defect), pointer :: defectCurrentCoarse, defectCurrentFine, defectPrevCoarse
 type(defect), pointer :: defectCurrent, defectPrev
@@ -55,7 +54,6 @@ do i=1,numCellsCascade
 		
 		!Point defectCurrentCoarse at the correct place in the coarse element defect list to 
 		!implant defectCurrentFine
-		
 		call findDefectInList(defectCurrentCoarse, defectPrevCoarse, defectCurrentFine%defectType)
 		
 		if(associated(defectCurrentCoarse)) then
@@ -71,7 +69,6 @@ do i=1,numCellsCascade
 			
 			!case 1: this defect already exists in the coarse mesh
 			if(count==numSpecies) then
-				
 				!Add the fine mesh defects to the coarse mesh defects
 				defectCurrentCoarse%num=defectCurrentCoarse%num+defectCurrentFine%num
 			
@@ -79,49 +76,52 @@ do i=1,numCellsCascade
 			else if(associated(defectPrevCoarse)) then
 				
 				!Create a new defect in the coarse mesh between defectPrevCoarse and defectCurrentCoarse
-				
 				nullify(defectPrevCoarse%next)
 				allocate(defectPrevCoarse%next)
+				nullify(defectPrevCoarse%next%next)
 				defectPrevCoarse=>defectPrevCoarse%next
 				allocate(defectPrevCoarse%defectType(numSpecies))
-				defectPrevCoarse%next=>defectCurrentCoarse
-				
 				do j=1,numSpecies
 					defectPrevCoarse%defectType(j)=defectCurrentFine%defectType(j)
 				end do
-				
 				defectPrevCoarse%num=defectCurrentFine%num
 				defectPrevCoarse%cellNumber=CascadeCurrent%cellNumber
+				defectPrevCoarse%next=>defectCurrentCoarse
 			
 			else
-			
 				write(*,*) 'Error adding fine mesh to coarse mesh, associated'
-			
-			endif
+			end if
 		
 		!case 3: we are at the end of the coarse list
 		else if(associated(defectPrevCoarse)) then
 			
 			!Create a new defect in the coarse mesh at the end of the list
-			
-			allocate(defectCurrentCoarse)
-			allocate(defectCurrentCoarse%defectType(numSpecies))
-			defectPrevCoarse%next=>defectCurrentCoarse
-			nullify(defectCurrentCoarse%next)
-			
+			nullify(defectPrevCoarse%next)
+			allocate(defectPrevCoarse%next)
+			nullify(defectPrevCoarse%next%next)
+			defectPrevCoarse=>defectPrevCoarse%next
+			allocate(defectPrevCoarse%defectType(numSpecies))
 			do j=1,numSpecies
-				defectCurrentCoarse%defectType(j)=defectCurrentFine%defectType(j)
+				defectPrevCoarse%defectType(j)=defectCurrentFine%defectType(j)
 			end do
+			defectPrevCoarse%num=defectCurrentFine%num
+			defectPrevCoarse%cellNumber=CascadeCurrent%cellNumber
+
 			
-			defectCurrentCoarse%num=defectCurrentFine%num
-			defectCurrentCoarse%cellNumber=CascadeCurrent%cellNumber
+			!allocate(defectCurrentCoarse)
+			!allocate(defectCurrentCoarse%defectType(numSpecies))
+			!defectPrevCoarse%next=>defectCurrentCoarse
+			!nullify(defectCurrentCoarse%next)
+			!do j=1,numSpecies
+			!	defectCurrentCoarse%defectType(j)=defectCurrentFine%defectType(j)
+			!end do
+			!defectCurrentCoarse%num=defectCurrentFine%num
+			!defectCurrentCoarse%cellNumber=CascadeCurrent%cellNumber
 			
 		!NOTE: we do not need to address the case of inserting a defect at
 		!the beginning of the list because the first item in the masterlist
 		!is never deleted (1He).
-		
 		else
-		
 			write(*,*) 'Error adding fine mesh to coarse mesh'
 		
 		endif
@@ -162,7 +162,9 @@ if(associated(CascadeCurrent%prev) .AND. associated(CascadeCurrent%next)) then
 			totalRate=totalRate-reactionPrev%reactionRate
 			
 			deallocate(reactionPrev%reactants)
-			deallocate(reactionPrev%products)
+			if(allocated(reactionPrev%products)) then
+				deallocate(reactionPrev%products)
+			end if
 			deallocate(reactionPrev%cellNumber)
 			deallocate(reactionPrev%taskid)
 			deallocate(reactionPrev)
@@ -202,7 +204,9 @@ else if(associated(CascadeCurrent%prev)) then
 			totalRate=totalRate-reactionPrev%reactionRate
 			
 			deallocate(reactionPrev%reactants)
-			deallocate(reactionPrev%products)
+			if(allocated(reactionPrev%products)) then
+				deallocate(reactionPrev%products)
+			end if
 			deallocate(reactionPrev%cellNumber)
 			deallocate(reactionPrev%taskid)
 			deallocate(reactionPrev)
@@ -243,7 +247,9 @@ else if(associated(CascadeCurrent%next)) then
 			totalRate=totalRate-reactionPrev%reactionRate
 			
 			deallocate(reactionPrev%reactants)
-			deallocate(reactionPrev%products)
+			if(allocated(reactionPrev%products)) then
+				deallocate(reactionPrev%products)
+			end if
 			deallocate(reactionPrev%cellNumber)
 			deallocate(reactionPrev%taskid)
 			deallocate(reactionPrev)
@@ -283,7 +289,9 @@ else
 			totalRate=totalRate-reactionPrev%reactionRate
 			
 			deallocate(reactionPrev%reactants)
-			deallocate(reactionPrev%products)
+			if(allocated(reactionPrev%products)) then
+				deallocate(reactionPrev%products)
+			end if
 			deallocate(reactionPrev%cellNumber)
 			deallocate(reactionPrev%taskid)
 			deallocate(reactionPrev)

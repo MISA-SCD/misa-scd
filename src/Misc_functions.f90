@@ -65,7 +65,6 @@ type(reaction), pointer :: reactionCurrent
 type(cascade), pointer :: cascadeCurrent
 
 CascadeCurrent=>ActiveCascades
-
 rate=0d0
 
 !Compute total rate of all reactions in the coarse mesh
@@ -82,8 +81,7 @@ do i=1,numCells
 	if(dabs(totalRateVol(i)-rateCell) > 1d0) then
 		write(*,*) 'Error: total rate differs significantly from expected in cell', i
 		write(*,*) 'TotalRateVol', totalRateVol(i), 'expected value', rateCell
-	endif
-	
+	end if
 	totalRateVol(i)=rateCell			!Also updating the total rate within each volume element
 end do
 
@@ -94,9 +92,7 @@ do while(associated(CascadeCurrent))
 
 	do i=1,numCellsCascade
 		rateCascade=0d0
-	
 		reactionCurrent=>CascadeCurrent%reactionList(i)
-		
 		do while(associated(reactionCurrent))
 			rate=rate+reactionCurrent%reactionRate
 			rateCascade=rateCascade+reactionCurrent%reactionRate			
@@ -107,12 +103,9 @@ do while(associated(CascadeCurrent))
 			write(*,*) 'Error: total rate differs significantly from expected in cascade', &
 				CascadeCurrent%cascadeID
 			write(*,*) 'TotalRateCascade', CascadeCurrent%totalRate(i), 'Expected Value', rateCascade
-		endif
-	
+		end if
 		CascadeCurrent%totalRate(i)=rateCascade
-
 	end do
-	
 	CascadeCurrent=>CascadeCurrent%next
 end do
 
@@ -122,8 +115,8 @@ end do
 !		write(*,*) 'TotalRate correct', totalRate
 !	else
 !		write(*,*) 'TotalRate incorrect ', 'totalRate=', totalRate, 'actual total rate=', rate
-!	endif
-!endif
+!	end if
+!end if
 
 TotalRateCheck=rate
 
@@ -149,7 +142,7 @@ type(cascade), pointer :: CascadeCurrent
 integer i
 double precision rateSum
 
-rateSum=0
+rateSum=0d0
 
 do i=1,numCellsCascade
 

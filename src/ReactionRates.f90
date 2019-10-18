@@ -44,7 +44,7 @@ implicit none
 
 integer cell, defectType(numSpecies), matNum
 integer i, j, k, count, numReactants, numProducts, storeTemp
-type(reaction), pointer :: reactionCurrent, reactionPrev
+type(reaction), pointer :: reactionUpdate, reactionPrev
 integer, allocatable :: reactants(:,:), products(:,:)
 double precision reactionRate, totalRateCheck
 logical isLegal
@@ -55,6 +55,7 @@ logical isLegal
 
 !In the case of polycrystal simulations, myMesh(cell)%material is the grain ID, not the material number. Therefore
 !we must set all values of matNum=1 in this case (only one material type in polycrystal simulations).
+nullify(reactionUpdate)
 if(numMaterials==1) then
 	matNum=1
 else
@@ -84,19 +85,15 @@ do i=1, numDissocReac(matNum)
 	end do
 	
 	if(count==numSpecies) then	!this defect type is accepted for this dissociation reaction
-		!point reactionCurrent at the reaction and reactionPrev at the reaction before it
-		!(if reaction does not already exist, reactionCurrent is unallocated and reactionPrev points
+		!point reactionUpdate at the reaction and reactionPrev at the reaction before it
+		!(if reaction does not already exist, reactionUpdate is unallocated and reactionPrev points
 		!to the end of the list)
 		
 		!Create temporary arrays with the defect types associated with this reaction (dissociation)
 		do j=1,numSpecies
-			
 			reactants(j,1)=defectType(j)
-			
 			products(j,2)=DissocReactions(i,matNum)%products(j,1)
-			
 			products(j,1)=reactants(j,1)-products(j,2)
-
 		end do
 		
 		!************************************************************************************
@@ -122,9 +119,10 @@ do i=1, numDissocReac(matNum)
 			products(3,1)=products(4,1)
 			products(4,1)=0
 		end if
-		
-		reactionCurrent=>reactionList(cell)
-		call findReactionInList(reactionCurrent, reactionPrev, cell, reactants, products, numReactants, numProducts)
+
+        nullify(reactionPrev)
+		reactionUpdate=>reactionList(cell)
+		call findReactionInList(reactionUpdate, reactionPrev, cell, reactants, products, numReactants, numProducts)
 		
 		!*************************************************************************************
 		!HARD CODED: if CSIA or large He clusters left over, need to disallow this reaction
@@ -133,8 +131,7 @@ do i=1, numDissocReac(matNum)
 		
 		call checkReactionLegality(numProducts, products, isLegal)
 		
-		!find the reaction rate. 
-		
+		!find the reaction rate.
 		if(isLegal .eqv. .TRUE.) then
 			reactionRate=findReactionRateDissoc(defectType, products, cell, DissocReactions(i,matNum))
 		else
@@ -142,60 +139,80 @@ do i=1, numDissocReac(matNum)
 		endif
 		
 		!if reactionRate==0 and reaction already exists, then delete it. Subtract from totalRate.
-		if(associated(reactionCurrent) .AND. reactionRate==0d0) then
+		if(associated(reactionUpdate) .AND. reactionRate==0d0) then
 			
 			!Update total rate (entire processor and this volume element)
-			totalRate=totalRate-reactionCurrent%reactionRate
-			totalRateVol(cell)=totalRateVol(cell)-reactionCurrent%reactionRate
-			
-			!deleting reactionCurrent
-			reactionPrev%next=>reactionCurrent%next
-			deallocate(reactionCurrent%reactants)
-			deallocate(reactionCurrent%products)
-			deallocate(reactionCurrent%cellNumber)
-			deallocate(reactionCurrent%taskid)
-			nullify(reactionCurrent%next)
-			deallocate(reactionCurrent)
+			totalRate=totalRate-reactionUpdate%reactionRate
+			totalRateVol(cell)=totalRateVol(cell)-reactionUpdate%reactionRate
+
+			if(associated(reactionUpdate%next)) then	!in the middle
+				!deleting reactionUpdate
+				reactionPrev%next=>reactionUpdate%next
+				deallocate(reactionUpdate%reactants)
+				deallocate(reactionUpdate%products)
+				deallocate(reactionUpdate%cellNumber)
+				deallocate(reactionUpdate%taskid)
+				deallocate(reactionUpdate)
+				nullify(reactionUpdate)
+			else
+				!deleting reactionUpdate
+				deallocate(reactionUpdate%reactants)
+				deallocate(reactionUpdate%products)
+				deallocate(reactionUpdate%cellNumber)
+				deallocate(reactionUpdate%taskid)
+				deallocate(reactionUpdate)
+				nullify(reactionUpdate)
+				nullify(reactionPrev%next)
+			end if
+
+			!deleting reactionUpdate
+		!	reactionPrev%next=>reactionUpdate%next
+		!	deallocate(reactionUpdate%reactants)
+		!	deallocate(reactionUpdate%products)
+		!	deallocate(reactionUpdate%cellNumber)
+		!	deallocate(reactionUpdate%taskid)
+		!	nullify(reactionUpdate%next)
+		!	deallocate(reactionUpdate)
 		
 		!if reactionRate .NE. 0 and reaction doesn't exist, then create it. Add to totalRate
-		else if(.NOT. associated(reactionCurrent) .AND. reactionRate /= 0d0) then
+		else if(.NOT. associated(reactionUpdate) .AND. reactionRate /= 0d0) then
 			
 			!Update total rate (entire processor and this volume element)
 			totalRate=totalRate+reactionRate
 			totalRateVol(cell)=totalRateVol(cell)+reactionRate
 
-			allocate(reactionCurrent)
-			reactionCurrent%numReactants=1
-			reactionCurrent%numProducts=2
-			allocate(reactionCurrent%reactants(numSpecies,reactionCurrent%numReactants))
-			allocate(reactionCurrent%products(numSpecies,reactionCurrent%numProducts))
-			allocate(reactionCurrent%cellNumber(reactionCurrent%numReactants+reactionCurrent%numProducts))
-			allocate(reactionCurrent%taskid(reactionCurrent%numReactants+reactionCurrent%numProducts))
-			nullify(reactionCurrent%next)
-			reactionPrev%next=>reactionCurrent
-
-			reactionCurrent%reactants(:,1)=reactants(:,1)
-			reactionCurrent%products(:,1)=products(:,1)
-			reactionCurrent%products(:,2)=products(:,2)
-
-			do j=1,reactionCurrent%numReactants+reactionCurrent%numProducts
-				reactionCurrent%cellNumber(j)=cell
-				reactionCurrent%taskid(j)=myProc%taskid
+			allocate(reactionUpdate)
+			reactionUpdate%numReactants=1
+			reactionUpdate%numProducts=2
+			allocate(reactionUpdate%reactants(numSpecies,reactionUpdate%numReactants))
+			allocate(reactionUpdate%products(numSpecies,reactionUpdate%numProducts))
+			allocate(reactionUpdate%cellNumber(reactionUpdate%numReactants+reactionUpdate%numProducts))
+			allocate(reactionUpdate%taskid(reactionUpdate%numReactants+reactionUpdate%numProducts))
+			nullify(reactionUpdate%next)
+			reactionPrev%next=>reactionUpdate
+			do j=1, numSpecies
+				reactionUpdate%reactants(j,1)=reactants(j,1)
+				reactionUpdate%products(j,1)=products(j,1)
+				reactionUpdate%products(j,2)=products(j,2)
 			end do
-			reactionCurrent%reactionRate=reactionRate
+			do j=1,reactionUpdate%numReactants+reactionUpdate%numProducts
+				reactionUpdate%cellNumber(j)=cell
+				reactionUpdate%taskid(j)=myProc%taskid
+			end do
+			reactionUpdate%reactionRate=reactionRate
 			
 		!if reactionRate==0 adn reaction doesn't exist, do nothing
-		else if(.NOT. associated(reactionCurrent) .AND. reactionRate==0d0) then
+		else if(.NOT. associated(reactionUpdate) .AND. reactionRate==0d0) then
 			!do nothing
 		!if reactionRate .NE. 0 and reaction exists, update the reaction rate. Add/subtract to totalRate
-		else if(associated(reactionCurrent) .AND. reactionRate /= 0d0) then
+		else if(associated(reactionUpdate) .AND. reactionRate /= 0d0) then
 		
 			!Update total rate (entire processor and this volume element)
-			totalRate=totalRate-reactionCurrent%reactionRate+reactionRate
-			totalRateVol(cell)=totalRateVol(cell)-reactionCurrent%reactionRate+reactionRate
+			totalRate=totalRate-reactionUpdate%reactionRate+reactionRate
+			totalRateVol(cell)=totalRateVol(cell)-reactionUpdate%reactionRate+reactionRate
 			
 			!update reaction rate
-			reactionCurrent%reactionRate=reactionRate
+			reactionUpdate%reactionRate=reactionRate
 		
 		else
 			write(*,*) 'error updating reaction list - dissociation'
@@ -206,12 +223,12 @@ do i=1, numDissocReac(matNum)
 end do
 
 !Sink reactions
-
 numReactants=1
 numProducts=0
 deallocate(reactants)
 deallocate(products)
 allocate(reactants(numSpecies,numReactants))
+allocate(products(numSpecies,numProducts))
 
 do i=1, numSinkReac(matNum)
 	count=0
@@ -230,17 +247,18 @@ do i=1, numSinkReac(matNum)
 	end do
 	
 	if(count==numSpecies) then	!this defect type is accepted for this dissociation reaction
-		!point reactionCurrent at the reaction and reactionPrev at the reaction before it
-		!(if reaction does not already exist, reactionCurrent is unallocated and reactionPrev points
+		!point reactionUpdate at the reaction and reactionPrev at the reaction before it
+		!(if reaction does not already exist, reactionUpdate is unallocated and reactionPrev points
 		!to the end of the list)
 		
 		!Create temporary arrays with the defect types associated with this reaction (sinks)
 		do j=1,numSpecies
 			reactants(j,1)=defectType(j)
 		end do
-		
-		reactionCurrent=>reactionList(cell)
-		call findReactionInList(reactionCurrent, reactionPrev, cell, reactants, products, numReactants, numProducts)
+
+        nullify(reactionPrev)
+		reactionUpdate=>reactionList(cell)
+		call findReactionInList(reactionUpdate, reactionPrev, cell, reactants, products, numReactants, numProducts)
 		
 		!find the reaction rate. HARD CODED: if CuSIA or large He clusters left over, need to disallow this reaction
 		call checkReactionLegality(numProducts, products, isLegal)
@@ -252,60 +270,85 @@ do i=1, numSinkReac(matNum)
 		endif
 		
 		!if reactionRate==0 and reaction already exists, then delete it. Subtract from totalRate.
-		if(associated(reactionCurrent) .AND. reactionRate==0d0) then
+		if(associated(reactionUpdate) .AND. reactionRate==0d0) then
 			
 			!Update total rate (entire processor and this volume element)
-			totalRate=totalRate-reactionCurrent%reactionRate
-			totalRateVol(cell)=totalRateVol(cell)-reactionCurrent%reactionRate
+			totalRate=totalRate-reactionUpdate%reactionRate
+			totalRateVol(cell)=totalRateVol(cell)-reactionUpdate%reactionRate
+
+			if(associated(reactionUpdate%next)) then
+				!deleting reactionUpdate
+				reactionPrev%next=>reactionUpdate%next
+				deallocate(reactionUpdate%reactants)
+				if(allocated(reactionUpdate%products)) then
+					deallocate(reactionUpdate%products)
+				end if
+
+				deallocate(reactionUpdate%cellNumber)
+				deallocate(reactionUpdate%taskid)
+				deallocate(reactionUpdate)
+				nullify(reactionUpdate)
+			else
+				deallocate(reactionUpdate%reactants)
+				if(allocated(reactionUpdate%products)) then
+					deallocate(reactionUpdate%products)
+				end if
+				deallocate(reactionUpdate%cellNumber)
+				deallocate(reactionUpdate%taskid)
+				deallocate(reactionUpdate)
+				nullify(reactionUpdate)
+				nullify(reactionPrev%next)
+			end if
 			
-			!deleting reactionCurrent
-			reactionPrev%next=>reactionCurrent%next
-			deallocate(reactionCurrent%reactants)
-			if(allocated(reactionCurrent%products)) then
-				deallocate(reactionCurrent%products)
-			endif
-			deallocate(reactionCurrent%cellNumber)
-			deallocate(reactionCurrent%taskid)
-			nullify(reactionCurrent%next)
-			deallocate(reactionCurrent)
+			!deleting reactionUpdate
+		!	reactionPrev%next=>reactionUpdate%next
+		!	deallocate(reactionUpdate%reactants)
+		!	if(allocated(reactionUpdate%products)) then
+		!		deallocate(reactionUpdate%products)
+		!	endif
+		!	deallocate(reactionUpdate%cellNumber)
+		!	deallocate(reactionUpdate%taskid)
+		!	nullify(reactionUpdate%next)
+		!	deallocate(reactionUpdate)
 		
 		!if reactionRate .NE. 0 and reaction doesn't exist, then create it. Add to totalRate
-		else if(.NOT. associated(reactionCurrent) .AND. reactionRate /= 0d0) then
+		else if(.NOT. associated(reactionUpdate) .AND. reactionRate /= 0d0) then
 			
 			!Update total rate (entire processor and this volume element)
 			totalRate=totalRate+reactionRate
 			totalRateVol(cell)=totalRateVol(cell)+reactionRate
 			
 			!creating new reaction
-			allocate(reactionCurrent)
-			reactionCurrent%numReactants=1
-			reactionCurrent%numProducts=0
-			allocate(reactionCurrent%reactants(numSpecies,reactionCurrent%numReactants))
-			allocate(reactionCurrent%cellNumber(reactionCurrent%numReactants))
-			allocate(reactionCurrent%taskid(reactionCurrent%numReactants))
-			nullify(reactionCurrent%next)
-			reactionPrev%next=>reactionCurrent
+			allocate(reactionUpdate)
+			reactionUpdate%numReactants=1
+			reactionUpdate%numProducts=0
+			allocate(reactionUpdate%reactants(numSpecies,reactionUpdate%numReactants))
+			allocate(reactionUpdate%cellNumber(reactionUpdate%numReactants))
+			allocate(reactionUpdate%taskid(reactionUpdate%numReactants))
+			nullify(reactionUpdate%next)
+			reactionPrev%next=>reactionUpdate
 
-			reactionCurrent%reactants(:,1)=reactants(:,1)
-
-			do j=1,reactionCurrent%numReactants
-				reactionCurrent%cellNumber(j)=cell
-				reactionCurrent%taskid(j)=myProc%taskid
+			do j=1, numSpecies
+				reactionUpdate%reactants(j,1)=reactants(j,1)
 			end do
-			reactionCurrent%reactionRate=reactionRate
+			do j=1,reactionUpdate%numReactants
+				reactionUpdate%cellNumber(j)=cell
+				reactionUpdate%taskid(j)=myProc%taskid
+			end do
+			reactionUpdate%reactionRate=reactionRate
 			
 		!if reactionRate==0 adn reaction doesn't exist, do nothing
-		else if(.NOT. associated(reactionCurrent) .AND. reactionRate==0d0) then
+		else if(.NOT. associated(reactionUpdate) .AND. reactionRate==0d0) then
 			!do nothing
 		!if reactionRate .NE. 0 and reaction exists, update the reaction rate. Add/subtract to totalRate
-		else if(associated(reactionCurrent) .AND. reactionRate /= 0d0) then
+		else if(associated(reactionUpdate) .AND. reactionRate /= 0d0) then
 		
 			!Update total rate (entire processor and this volume element)
-			totalRate=totalRate-reactionCurrent%reactionRate+reactionRate
-			totalRateVol(cell)=totalRateVol(cell)-reactionCurrent%reactionRate+reactionRate
+			totalRate=totalRate-reactionUpdate%reactionRate+reactionRate
+			totalRateVol(cell)=totalRateVol(cell)-reactionUpdate%reactionRate+reactionRate
 			
 			!update reaction rate
-			reactionCurrent%reactionRate=reactionRate
+			reactionUpdate%reactionRate=reactionRate
 		
 		else
 			write(*,*) 'error updating reaction list - sinks'
@@ -322,15 +365,12 @@ end do
 numReactants=1
 numProducts=1
 deallocate(reactants)
-if(allocated(products)) then
-	deallocate(products)
-endif
+deallocate(products)
 allocate(reactants(numSpecies,numReactants))
 allocate(products(numSpecies,numProducts))
 
 do i=1, numImpurityReac(matNum)
 	count=0
-	
 	!Check if the defect type is accepted by this impurity reaction
 	do j=1,numSpecies
 		if(defectType(j) == 0 .AND. ImpurityReactions(i,matNum)%reactants(j,1) == 0) then
@@ -344,8 +384,8 @@ do i=1, numImpurityReac(matNum)
 		endif
 	end do
 	if(count==numSpecies) then	!this defect type is accepted for this dissociation reaction
-		!point reactionCurrent at the reaction and reactionPrev at the reaction before it
-		!(if reaction does not already exist, reactionCurrent is unallocated and reactionPrev points
+		!point reactionUpdate at the reaction and reactionPrev at the reaction before it
+		!(if reaction does not already exist, reactionUpdate is unallocated and reactionPrev points
 		!to the end of the list)
 		
 		!Create temporary arrays with the defect types associated with this reaction (impurities)
@@ -365,9 +405,10 @@ do i=1, numImpurityReac(matNum)
 				products(j,1)=0
 			endif
 		end do
-		
-		reactionCurrent=>reactionList(cell)
-		call findReactionInList(reactionCurrent, reactionPrev, cell, reactants, products, numReactants, numProducts)
+
+        nullify(reactionPrev)
+		reactionUpdate=>reactionList(cell)
+		call findReactionInList(reactionUpdate, reactionPrev, cell, reactants, products, numReactants, numProducts)
 		
 		!find the reaction rate. HARD CODED: if CuSIA or large He clusters left over, need to disallow this reaction
 		call checkReactionLegality(numProducts, products, isLegal)
@@ -379,68 +420,84 @@ do i=1, numImpurityReac(matNum)
 		endif
 				
 		!if reactionRate==0 and reaction already exists, then delete it. Subtract from totalRate.
-		if(associated(reactionCurrent) .AND. reactionRate==0d0) then
+		if(associated(reactionUpdate) .AND. reactionRate==0d0) then
 			
 			!Update total rate (entire processor and this volume element)
-			totalRate=totalRate-reactionCurrent%reactionRate
-			totalRateVol(cell)=totalRateVol(cell)-reactionCurrent%reactionRate
+			totalRate=totalRate-reactionUpdate%reactionRate
+			totalRateVol(cell)=totalRateVol(cell)-reactionUpdate%reactionRate
+
+			if(associated(reactionUpdate%next)) then
+				!deleting reactionUpdate
+				reactionPrev%next=>reactionUpdate%next
+				deallocate(reactionUpdate%reactants)
+				deallocate(reactionUpdate%products)
+				deallocate(reactionUpdate%cellNumber)
+				deallocate(reactionUpdate%taskid)
+				deallocate(reactionUpdate)
+				nullify(reactionUpdate)
+			else
+				deallocate(reactionUpdate%reactants)
+				deallocate(reactionUpdate%products)
+				deallocate(reactionUpdate%cellNumber)
+				deallocate(reactionUpdate%taskid)
+				deallocate(reactionUpdate)
+				nullify(reactionUpdate)
+				nullify(reactionPrev%next)
+			end if
 			
-			!deleting reactionCurrent
-			reactionPrev%next=>reactionCurrent%next
-			deallocate(reactionCurrent%reactants)
-			deallocate(reactionCurrent%products)
-			deallocate(reactionCurrent%cellNumber)
-			deallocate(reactionCurrent%taskid)
-			nullify(reactionCurrent%next)
-			deallocate(reactionCurrent)
+			!deleting reactionUpdate
+		!	reactionPrev%next=>reactionUpdate%next
+		!	deallocate(reactionUpdate%reactants)
+		!	deallocate(reactionUpdate%products)
+		!	deallocate(reactionUpdate%cellNumber)
+		!	deallocate(reactionUpdate%taskid)
+		!	nullify(reactionUpdate%next)
+		!	deallocate(reactionUpdate)
 		
 		!if reactionRate .NE. 0 and reaction doesn't exist, then create it. Add to totalRate
-		else if(.NOT. associated(reactionCurrent) .AND. reactionRate /= 0d0) then
+		else if(.NOT. associated(reactionUpdate) .AND. reactionRate /= 0d0) then
 			
 			!Update total rate (entire processor and this volume element)
 			totalRate=totalRate+reactionRate
 			totalRateVol(cell)=totalRateVol(cell)+reactionRate
 			
 			!creating new reaction
-			allocate(reactionCurrent)
-			reactionCurrent%numReactants=1
-			reactionCurrent%numProducts=1
-			allocate(reactionCurrent%reactants(numSpecies,reactionCurrent%numReactants))
-			allocate(reactionCurrent%products(numSpecies,reactionCurrent%numProducts))
-			allocate(reactionCurrent%cellNumber(reactionCurrent%numReactants+reactionCurrent%numProducts))
-			allocate(reactionCurrent%taskid(reactionCurrent%numReactants+reactionCurrent%numProducts))
-			nullify(reactionCurrent%next)
-			reactionPrev%next=>reactionCurrent
-
-			reactionCurrent%reactants(:,1)=reactants(:,1)
-			reactionCurrent%products(:,1)=products(:,1)
-
-			do j=1,reactionCurrent%numReactants+reactionCurrent%numProducts
-				reactionCurrent%cellNumber(j)=cell
-				reactionCurrent%taskid(j)=myProc%taskid
+			allocate(reactionUpdate)
+			reactionUpdate%numReactants=1
+			reactionUpdate%numProducts=1
+			allocate(reactionUpdate%reactants(numSpecies,reactionUpdate%numReactants))
+			allocate(reactionUpdate%products(numSpecies,reactionUpdate%numProducts))
+			allocate(reactionUpdate%cellNumber(reactionUpdate%numReactants+reactionUpdate%numProducts))
+			allocate(reactionUpdate%taskid(reactionUpdate%numReactants+reactionUpdate%numProducts))
+			nullify(reactionUpdate%next)
+			reactionPrev%next=>reactionUpdate
+			do j=1, numSpecies
+				reactionUpdate%reactants(j,1)=reactants(j,1)
+				reactionUpdate%products(j,1)=products(j,1)
 			end do
-			reactionCurrent%reactionRate=reactionRate
+			do j=1,reactionUpdate%numReactants+reactionUpdate%numProducts
+				reactionUpdate%cellNumber(j)=cell
+				reactionUpdate%taskid(j)=myProc%taskid
+			end do
+			reactionUpdate%reactionRate=reactionRate
 			
 		!if reactionRate==0 adn reaction doesn't exist, do nothing
-		else if(.NOT. associated(reactionCurrent) .AND. reactionRate==0d0) then
+		else if(.NOT. associated(reactionUpdate) .AND. reactionRate==0d0) then
 			!do nothing
 		!if reactionRate .NE. 0 and reaction exists, update the reaction rate. Add/subtract to totalRate
-		else if(associated(reactionCurrent) .AND. reactionRate /= 0d0) then
+		else if(associated(reactionUpdate) .AND. reactionRate /= 0d0) then
 			
 			!Update total rate (entire processor and this volume element)
-			totalRate=totalRate-reactionCurrent%reactionRate+reactionRate
-			totalRateVol(cell)=totalRateVol(cell)-reactionCurrent%reactionRate+reactionRate
+			totalRate=totalRate-reactionUpdate%reactionRate+reactionRate
+			totalRateVol(cell)=totalRateVol(cell)-reactionUpdate%reactionRate+reactionRate
 			
 			!update reaction rate
-			reactionCurrent%reactionRate=reactionRate
-		
+			reactionUpdate%reactionRate=reactionRate
 		else
 			write(*,*) 'error updating reaction list - sinks'
-		endif
-
+		end if
 		exit
-
-	endif
+	end if
 end do
 
 end subroutine
@@ -477,11 +534,12 @@ integer cascadeID, cell, defectType(numSpecies)
 type(cascade), pointer :: CascadeCurrent
 
 integer i, j, count, numReactants, numProducts, storeTemp, matNum
-type(reaction), pointer :: reactionCurrent, reactionPrev
+type(reaction), pointer :: reactionUpdate, reactionPrev
 integer, allocatable :: reactants(:,:), products(:,:)
 double precision reactionRate, totalRateCheck
 logical isLegal
 
+nullify(reactionUpdate)
 !CascadeCurrent pointer should be pointing at the cascade whose ID matches the ID number passed into this subroutine
 CascadeCurrent=>ActiveCascades
 
@@ -529,16 +587,17 @@ do i=1, numDissocReac(matNum)
 	end do
 		
 	if(count==numSpecies) then	!this defect type is accepted for this dissociation reaction
-		!point reactionCurrent at the reaction and reactionPrev at the reaction before it
-		!(if reaction does not already exist, reactionCurrent is unallocated and reactionPrev points
+		!point reactionUpdate at the reaction and reactionPrev at the reaction before it
+		!(if reaction does not already exist, reactionUpdate is unallocated and reactionPrev points
 		!to the end of the list)
 		
 		!Create temporary arrays with the defect types associated with this reaction (dissociation)
+		do j=1, numSpecies
+			reactants(j,1)=defectType(j)
 
-        reactants(:,1)=defectType(:)
-			
-        products(:,2)=DissocReactions(i,matNum)%products(:,1)
-        products(:,1)=reactants(:,1)-products(:,2)
+			products(j,2)=DissocReactions(i,matNum)%products(j,1)
+			products(j,1)=reactants(j,1)-products(j,2)
+		end do
 
         !************************************************************************************
         !Dissociation of mobile defects from sessile SIA clusters
@@ -563,9 +622,10 @@ do i=1, numDissocReac(matNum)
 			products(3,1)=products(4,1)
 			products(4,1)=0
 		endif
-				
-		reactionCurrent=>CascadeCurrent%reactionList(cell)
-		call findReactionInList(reactionCurrent, reactionPrev, cell, reactants, products, numReactants, numProducts)
+
+        nullify(reactionPrev)
+		reactionUpdate=>CascadeCurrent%reactionList(cell)
+		call findReactionInList(reactionUpdate, reactionPrev, cell, reactants, products, numReactants, numProducts)
 		
 		!find the reaction rate. HARD CODED: if HeSIA or large He clusters left over, need to disallow this reaction
 		call checkReactionLegality(numProducts, products, isLegal)
@@ -577,61 +637,81 @@ do i=1, numDissocReac(matNum)
 		endif
 				
 		!if reactionRate==0 and reaction already exists, then delete it. Subtract from totalRate.
-		if(associated(reactionCurrent) .AND. reactionRate==0d0) then
+		if(associated(reactionUpdate) .AND. reactionRate==0d0) then
 			
 			!Update total rate (entire processor)
-			totalRate=totalRate-reactionCurrent%reactionRate
-			CascadeCurrent%totalRate(cell)=CascadeCurrent%totalRate(cell)-reactionCurrent%reactionRate
+			totalRate=totalRate-reactionUpdate%reactionRate
+			CascadeCurrent%totalRate(cell)=CascadeCurrent%totalRate(cell)-reactionUpdate%reactionRate
+
+            if(associated(reactionUpdate%next)) then
+                !deleting reactionUpdate
+                reactionPrev%next=>reactionUpdate%next
+                deallocate(reactionUpdate%reactants)
+                deallocate(reactionUpdate%products)
+                deallocate(reactionUpdate%cellNumber)
+                deallocate(reactionUpdate%taskid)
+                deallocate(reactionUpdate)
+                nullify(reactionUpdate)
+            else
+                !deleting reactionUpdate
+                deallocate(reactionUpdate%reactants)
+                deallocate(reactionUpdate%products)
+                deallocate(reactionUpdate%cellNumber)
+                deallocate(reactionUpdate%taskid)
+                deallocate(reactionUpdate)
+                nullify(reactionUpdate)
+                nullify(reactionPrev%next)
+            end if
 			
-			!deleting reactionCurrent
-			reactionPrev%next=>reactionCurrent%next
-			deallocate(reactionCurrent%reactants)
-			deallocate(reactionCurrent%products)
-			deallocate(reactionCurrent%cellNumber)
-			deallocate(reactionCurrent%taskid)
-			nullify(reactionCurrent%next)
-			deallocate(reactionCurrent)
+			!deleting reactionUpdate
+		!	reactionPrev%next=>reactionUpdate%next
+		!	deallocate(reactionUpdate%reactants)
+		!	deallocate(reactionUpdate%products)
+		!	deallocate(reactionUpdate%cellNumber)
+		!	deallocate(reactionUpdate%taskid)
+		!	nullify(reactionUpdate%next)
+		!	deallocate(reactionUpdate)
 		
 		!if reactionRate .NE. 0 and reaction doesn't exist, then create it. Add to totalRate
-		else if(.NOT. associated(reactionCurrent) .AND. reactionRate /= 0d0) then
+		else if(.NOT. associated(reactionUpdate) .AND. reactionRate /= 0d0) then
 			
 			!Update total rate (entire processor)
 			totalRate=totalRate+reactionRate
 			CascadeCurrent%totalRate(cell)=CascadeCurrent%totalRate(cell)+reactionRate
 			
 			!creating new reaction
-			allocate(reactionCurrent)
-			reactionCurrent%numReactants=1
-			reactionCurrent%numProducts=2
-			allocate(reactionCurrent%reactants(numSpecies,reactionCurrent%numReactants))
-			allocate(reactionCurrent%products(numSpecies,reactionCurrent%numProducts))
-			allocate(reactionCurrent%cellNumber(reactionCurrent%numReactants+reactionCurrent%numProducts))
-			allocate(reactionCurrent%taskid(reactionCurrent%numReactants+reactionCurrent%numProducts))
-			nullify(reactionCurrent%next)
-			reactionPrev%next=>reactionCurrent
-
-            reactionCurrent%reactants(:,1)=reactants(:,1)
-            reactionCurrent%products(:,1)=products(:,1)
-            reactionCurrent%products(:,2)=products(:,2)
-
-			do j=1,reactionCurrent%numReactants+reactionCurrent%numProducts
-				reactionCurrent%cellNumber(j)=cell
-				reactionCurrent%taskid(j)=myProc%taskid
+			allocate(reactionUpdate)
+			reactionUpdate%numReactants=1
+			reactionUpdate%numProducts=2
+			allocate(reactionUpdate%reactants(numSpecies,reactionUpdate%numReactants))
+			allocate(reactionUpdate%products(numSpecies,reactionUpdate%numProducts))
+			allocate(reactionUpdate%cellNumber(reactionUpdate%numReactants+reactionUpdate%numProducts))
+			allocate(reactionUpdate%taskid(reactionUpdate%numReactants+reactionUpdate%numProducts))
+			nullify(reactionUpdate%next)
+			reactionPrev%next=>reactionUpdate
+			do j=1, numSpecies
+				reactionUpdate%reactants(j,1)=reactants(j,1)
+				reactionUpdate%products(j,1)=products(j,1)
+				reactionUpdate%products(j,2)=products(j,2)
 			end do
-			reactionCurrent%reactionRate=reactionRate
+			do j=1,reactionUpdate%numReactants+reactionUpdate%numProducts
+				reactionUpdate%cellNumber(j)=cell
+				reactionUpdate%taskid(j)=myProc%taskid
+			end do
+			reactionUpdate%reactionRate=reactionRate
 			
 		!if reactionRate==0 adn reaction doesn't exist, do nothing
-		else if(.NOT. associated(reactionCurrent) .AND. reactionRate==0d0) then
+		else if(.NOT. associated(reactionUpdate) .AND. reactionRate==0d0) then
 			!do nothing
 		!if reactionRate .NE. 0 and reaction exists, update the reaction rate. Add/subtract to totalRate
-		else if(associated(reactionCurrent) .AND. reactionRate /= 0d0) then
+		else if(associated(reactionUpdate) .AND. reactionRate /= 0d0) then
 			
 			!Update total rate (entire processor)
-			totalRate=totalRate-reactionCurrent%reactionRate+reactionRate
-			CascadeCurrent%totalRate(cell)=CascadeCurrent%totalRate(cell)-reactionCurrent%reactionRate+reactionRate
+			totalRate=totalRate-reactionUpdate%reactionRate+reactionRate
+			CascadeCurrent%totalRate(cell)=CascadeCurrent%totalRate(cell)-reactionUpdate%reactionRate+reactionRate
 			
 			!update reaction rate
-			reactionCurrent%reactionRate=reactionRate
+			reactionUpdate%reactionRate=reactionRate
 		
 		else
 			write(*,*) 'error updating reaction list - dissociation'
@@ -643,7 +723,6 @@ do i=1, numDissocReac(matNum)
 end do
 
 !Sink reactions
-
 numReactants=1
 numProducts=0
 deallocate(reactants)
@@ -667,16 +746,18 @@ do i=1, numSinkReac(matNum)
 	end do
 	
 	if(count==numSpecies) then	!this defect type is accepted for this dissociation reaction
-		!point reactionCurrent at the reaction and reactionPrev at the reaction before it
-		!(if reaction does not already exist, reactionCurrent is unallocated and reactionPrev points
+		!point reactionUpdate at the reaction and reactionPrev at the reaction before it
+		!(if reaction does not already exist, reactionUpdate is unallocated and reactionPrev points
 		!to the end of the list)
 		
 		!Create temporary arrays with the defect types associated with this reaction (sinks)
+		do j=1, numSpecies
+			reactants(j,1)=defectType(j)
+		end do
 
-        reactants(:,1)=defectType(:)
-
-		reactionCurrent=>CascadeCurrent%reactionList(cell)
-		call findReactionInList(reactionCurrent, reactionPrev, cell, reactants, products, numReactants, numProducts)
+        nullify(reactionPrev)
+		reactionUpdate=>CascadeCurrent%reactionList(cell)
+		call findReactionInList(reactionUpdate, reactionPrev, cell, reactants, products, numReactants, numProducts)
 		
 		!find the reaction rate. HARD CODED: if HeSIA or large He clusters left over, need to disallow this reaction
 		call checkReactionLegality(numProducts, products, isLegal)
@@ -688,60 +769,85 @@ do i=1, numSinkReac(matNum)
 		endif
 		
 		!if reactionRate==0 and reaction already exists, then delete it. Subtract from totalRate.
-		if(associated(reactionCurrent) .AND. reactionRate==0d0) then
+		if(associated(reactionUpdate) .AND. reactionRate==0d0) then
 			
 			!Update total rate (entire processor)
-			totalRate=totalRate-reactionCurrent%reactionRate
-			CascadeCurrent%totalRate(cell)=CascadeCurrent%totalRate(cell)-reactionCurrent%reactionRate
+			totalRate=totalRate-reactionUpdate%reactionRate
+			CascadeCurrent%totalRate(cell)=CascadeCurrent%totalRate(cell)-reactionUpdate%reactionRate
+
+            if(associated(reactionUpdate%next)) then
+                !deleting reactionUpdate
+                reactionPrev%next=>reactionUpdate%next
+                deallocate(reactionUpdate%reactants)
+                if(allocated(reactionUpdate%products)) then
+                    deallocate(reactionUpdate%products)
+                endif
+                deallocate(reactionUpdate%cellNumber)
+                deallocate(reactionUpdate%taskid)
+                deallocate(reactionUpdate)
+                nullify(reactionUpdate)
+            else
+                !deleting reactionUpdate
+                deallocate(reactionUpdate%reactants)
+                if(allocated(reactionUpdate%products)) then
+                    deallocate(reactionUpdate%products)
+                endif
+                deallocate(reactionUpdate%cellNumber)
+                deallocate(reactionUpdate%taskid)
+                deallocate(reactionUpdate)
+                nullify(reactionUpdate)
+                nullify(reactionPrev%next)
+            end if
 			
-			!deleting reactionCurrent
-			reactionPrev%next=>reactionCurrent%next
-			deallocate(reactionCurrent%reactants)
-			if(allocated(reactionCurrent%products)) then
-				deallocate(reactionCurrent%products)
-			endif
-			deallocate(reactionCurrent%cellNumber)
-			deallocate(reactionCurrent%taskid)
-			nullify(reactionCurrent%next)
-			deallocate(reactionCurrent)
+			!deleting reactionUpdate
+		!	reactionPrev%next=>reactionUpdate%next
+		!	deallocate(reactionUpdate%reactants)
+		!	if(allocated(reactionUpdate%products)) then
+		!		deallocate(reactionUpdate%products)
+		!	endif
+		!	deallocate(reactionUpdate%cellNumber)
+		!	deallocate(reactionUpdate%taskid)
+		!	nullify(reactionUpdate%next)
+		!	deallocate(reactionUpdate)
 		
 		!if reactionRate .NE. 0 and reaction doesn't exist, then create it. Add to totalRate
-		else if(.NOT. associated(reactionCurrent) .AND. reactionRate /= 0d0) then
+		else if(.NOT. associated(reactionUpdate) .AND. reactionRate /= 0d0) then
 			
 			!Update total rate (entire processor)
 			totalRate=totalRate+reactionRate
 			CascadeCurrent%totalRate(cell)=CascadeCurrent%totalRate(cell)+reactionRate
 			
 			!creating new reaction
-			allocate(reactionCurrent)
-			reactionCurrent%numReactants=1
-			reactionCurrent%numProducts=0
-			allocate(reactionCurrent%reactants(numSpecies,reactionCurrent%numReactants))
-			allocate(reactionCurrent%cellNumber(reactionCurrent%numReactants))
-			allocate(reactionCurrent%taskid(reactionCurrent%numReactants))
-			nullify(reactionCurrent%next)
-			reactionPrev%next=>reactionCurrent
+			allocate(reactionUpdate)
+			reactionUpdate%numReactants=1
+			reactionUpdate%numProducts=0
+			allocate(reactionUpdate%reactants(numSpecies,reactionUpdate%numReactants))
+			allocate(reactionUpdate%cellNumber(reactionUpdate%numReactants))
+			allocate(reactionUpdate%taskid(reactionUpdate%numReactants))
+			nullify(reactionUpdate%next)
+			reactionPrev%next=>reactionUpdate
 
-            reactionCurrent%reactants(:,1)=reactants(:,1)
-
-			do j=1,reactionCurrent%numReactants
-				reactionCurrent%cellNumber(j)=cell
-				reactionCurrent%taskid(j)=myProc%taskid
+			do j=1, numSpecies
+				reactionUpdate%reactants(j,1)=reactants(j,1)
 			end do
-			reactionCurrent%reactionRate=reactionRate
+			do j=1,reactionUpdate%numReactants
+				reactionUpdate%cellNumber(j)=cell
+				reactionUpdate%taskid(j)=myProc%taskid
+			end do
+			reactionUpdate%reactionRate=reactionRate
 			
 		!if reactionRate==0 adn reaction doesn't exist, do nothing
-		else if(.NOT. associated(reactionCurrent) .AND. reactionRate==0d0) then
+		else if(.NOT. associated(reactionUpdate) .AND. reactionRate==0d0) then
 			!do nothing
 		!if reactionRate .NE. 0 and reaction exists, update the reaction rate. Add/subtract to totalRate
-		else if(associated(reactionCurrent) .AND. reactionRate /= 0d0) then
+		else if(associated(reactionUpdate) .AND. reactionRate /= 0d0) then
 			
 			!Update total rate (entire processor)
-			totalRate=totalRate-reactionCurrent%reactionRate+reactionRate
-			CascadeCurrent%totalRate(cell)=CascadeCurrent%totalRate(cell)-reactionCurrent%reactionRate+reactionRate
+			totalRate=totalRate-reactionUpdate%reactionRate+reactionRate
+			CascadeCurrent%totalRate(cell)=CascadeCurrent%totalRate(cell)-reactionUpdate%reactionRate+reactionRate
 			
 			!update reaction rate
-			reactionCurrent%reactionRate=reactionRate
+			reactionUpdate%reactionRate=reactionRate
 		
 		else
 			write(*,*) 'error updating reaction list - sinks'
@@ -754,7 +860,6 @@ do i=1, numSinkReac(matNum)
 end do
 
 !Impurity reactions
-
 numReactants=1
 numProducts=1
 deallocate(reactants)
@@ -781,8 +886,8 @@ do i=1, numImpurityReac(matNum)
 	end do
 	
 	if(count==numSpecies) then	!this defect type is accepted for this dissociation reaction
-		!point reactionCurrent at the reaction and reactionPrev at the reaction before it
-		!(if reaction does not already exist, reactionCurrent is unallocated and reactionPrev points
+		!point reactionUpdate at the reaction and reactionPrev at the reaction before it
+		!(if reaction does not already exist, reactionUpdate is unallocated and reactionPrev points
 		!to the end of the list)
 		
 		!Create temporary arrays with the defect types associated with this reaction (impurities)
@@ -792,7 +897,7 @@ do i=1, numImpurityReac(matNum)
 			reactants(j,1)=defectType(j)
 			if(reactants(j,1) /= 0) then
 				storeTemp=reactants(j,1)
-			endif
+			end if
 		end do
 		
 		do j=1,numSpecies
@@ -802,9 +907,10 @@ do i=1, numImpurityReac(matNum)
 				products(j,1)=0
 			endif
 		end do
-		
-		reactionCurrent=>CascadeCurrent%reactionList(cell)
-		call findReactionInList(reactionCurrent, reactionPrev, cell, reactants, products, numReactants, numProducts)
+
+        nullify(reactionPrev)
+		reactionUpdate=>CascadeCurrent%reactionList(cell)
+		call findReactionInList(reactionUpdate, reactionPrev, cell, reactants, products, numReactants, numProducts)
 		
 		!find the reaction rate. HARD CODED: if HeSIA or large He clusters left over, need to disallow this reaction
 		call checkReactionLegality(numProducts, products, isLegal)
@@ -816,60 +922,80 @@ do i=1, numImpurityReac(matNum)
 		endif
 		
 		!if reactionRate==0 and reaction already exists, then delete it. Subtract from totalRate.
-		if(associated(reactionCurrent) .AND. reactionRate==0d0) then
+		if(associated(reactionUpdate) .AND. reactionRate==0d0) then
 			
 			!Update total rate (entire processor)
-			totalRate=totalRate-reactionCurrent%reactionRate
-			CascadeCurrent%totalRate(cell)=CascadeCurrent%totalRate(cell)-reactionCurrent%reactionRate
+			totalRate=totalRate-reactionUpdate%reactionRate
+			CascadeCurrent%totalRate(cell)=CascadeCurrent%totalRate(cell)-reactionUpdate%reactionRate
+
+            if(associated(reactionUpdate%next)) then
+                !deleting reactionUpdate
+                reactionPrev%next=>reactionUpdate%next
+                deallocate(reactionUpdate%reactants)
+                deallocate(reactionUpdate%products)
+                deallocate(reactionUpdate%cellNumber)
+                deallocate(reactionUpdate%taskid)
+                deallocate(reactionUpdate)
+                nullify(reactionUpdate)
+            else
+                !deleting reactionUpdate
+                deallocate(reactionUpdate%reactants)
+                deallocate(reactionUpdate%products)
+                deallocate(reactionUpdate%cellNumber)
+                deallocate(reactionUpdate%taskid)
+                deallocate(reactionUpdate)
+                nullify(reactionUpdate)
+                nullify(reactionPrev%next)
+            end if
 			
-			!deleting reactionCurrent
-			reactionPrev%next=>reactionCurrent%next
-			deallocate(reactionCurrent%reactants)
-			deallocate(reactionCurrent%products)
-			deallocate(reactionCurrent%cellNumber)
-			deallocate(reactionCurrent%taskid)
-			nullify(reactionCurrent%next)
-			deallocate(reactionCurrent)
+			!deleting reactionUpdate
+		!	reactionPrev%next=>reactionUpdate%next
+		!	deallocate(reactionUpdate%reactants)
+		!	deallocate(reactionUpdate%products)
+		!	deallocate(reactionUpdate%cellNumber)
+		!	deallocate(reactionUpdate%taskid)
+		!	nullify(reactionUpdate%next)
+		!	deallocate(reactionUpdate)
 		
 		!if reactionRate .NE. 0 and reaction doesn't exist, then create it. Add to totalRate
-		else if(.NOT. associated(reactionCurrent) .AND. reactionRate /= 0d0) then
+		else if(.NOT. associated(reactionUpdate) .AND. reactionRate /= 0d0) then
 			
 			!Update total rate (entire processor)
 			totalRate=totalRate+reactionRate
 			CascadeCurrent%totalRate(cell)=CascadeCurrent%totalRate(cell)+reactionRate
 			
 			!creating new reaction
-			allocate(reactionCurrent)
-			reactionCurrent%numReactants=1
-			reactionCurrent%numProducts=1
-			allocate(reactionCurrent%reactants(numSpecies,reactionCurrent%numReactants))
-			allocate(reactionCurrent%products(numSpecies,reactionCurrent%numProducts))
-			allocate(reactionCurrent%cellNumber(reactionCurrent%numReactants+reactionCurrent%numProducts))
-			allocate(reactionCurrent%taskid(reactionCurrent%numReactants+reactionCurrent%numProducts))
-			nullify(reactionCurrent%next)
-			reactionPrev%next=>reactionCurrent
-
-            reactionCurrent%reactants(:,1)=reactants(:,1)
-            reactionCurrent%products(:,1)=products(:,1)
-
-			do j=1,reactionCurrent%numReactants+reactionCurrent%numProducts
-				reactionCurrent%cellNumber(j)=cell
-				reactionCurrent%taskid(j)=myProc%taskid
+			allocate(reactionUpdate)
+			reactionUpdate%numReactants=1
+			reactionUpdate%numProducts=1
+			allocate(reactionUpdate%reactants(numSpecies,reactionUpdate%numReactants))
+			allocate(reactionUpdate%products(numSpecies,reactionUpdate%numProducts))
+			allocate(reactionUpdate%cellNumber(reactionUpdate%numReactants+reactionUpdate%numProducts))
+			allocate(reactionUpdate%taskid(reactionUpdate%numReactants+reactionUpdate%numProducts))
+			nullify(reactionUpdate%next)
+			reactionPrev%next=>reactionUpdate
+			do j=1, numSpecies
+				reactionUpdate%reactants(j,1)=reactants(j,1)
+				reactionUpdate%products(j,1)=products(j,1)
 			end do
-			reactionCurrent%reactionRate=reactionRate
+			do j=1,reactionUpdate%numReactants+reactionUpdate%numProducts
+				reactionUpdate%cellNumber(j)=cell
+				reactionUpdate%taskid(j)=myProc%taskid
+			end do
+			reactionUpdate%reactionRate=reactionRate
 			
 		!if reactionRate==0 adn reaction doesn't exist, do nothing
-		else if(.NOT. associated(reactionCurrent) .AND. reactionRate==0d0) then
+		else if(.NOT. associated(reactionUpdate) .AND. reactionRate==0d0) then
 			!do nothing
 		!if reactionRate .NE. 0 and reaction exists, update the reaction rate. Add/subtract to totalRate
-		else if(associated(reactionCurrent) .AND. reactionRate /= 0d0) then
+		else if(associated(reactionUpdate) .AND. reactionRate /= 0d0) then
 			
 			!Update total rate (entire processor)
-			totalRate=totalRate-reactionCurrent%reactionRate+reactionRate
-			CascadeCurrent%totalRate(cell)=CascadeCurrent%totalRate(cell)-reactionCurrent%reactionRate+reactionRate
+			totalRate=totalRate-reactionUpdate%reactionRate+reactionRate
+			CascadeCurrent%totalRate(cell)=CascadeCurrent%totalRate(cell)-reactionUpdate%reactionRate+reactionRate
 			
 			!update reaction rate
-			reactionCurrent%reactionRate=reactionRate
+			reactionUpdate%reactionRate=reactionRate
 		
 		else
 			write(*,*) 'error updating reaction list - sinks'
@@ -912,14 +1038,13 @@ use DerivedType
 implicit none
 
 integer cell, defectType1(numSpecies), defectType2(numSpecies), matNum
-type(reaction), pointer :: reactionCurrent, reactionPrev
-integer i, j, count, numReactants, numProducts
+type(reaction), pointer :: reactionUpdate, reactionPrev
+integer i, j, count, count2, numReactants, numProducts
 integer, allocatable :: reactants(:,:), products(:,:)
 double precision reactionRate
 logical isLegal, isLegalTemp
 
-integer findNumDefect
-
+nullify(reactionUpdate)
 !Clustering reactions. NOTE: the number of reactants and number of products, as well as the form 
 !of the products given the reactants, is hard-coded into this section. This type of hard-coding is
 !carried out in each section in this module, and is seen here as unavoidable.
@@ -933,19 +1058,20 @@ else
 endif
 isLegalTemp =.TRUE.
 
+numReactants=2
+numProducts=1
+allocate(reactants(numSpecies,numReactants))
 do i=1, numClusterReac(matNum)
 
     !*******************************************************
     !defectType1 = ClusterReactions(i,matNum)%reactants(1,:)
     !defectType2 = ClusterReactions(i,matNum)%reactants(2,:)
     !*******************************************************
-	
 	count=0
 	
 	!Check if the defect type is accepted by this dissociation reaction
 	!NOTE: we must check if defectType1 matches with ClusterReactions%reactants(1) and reactants(2)
 	!and vice versa with defectType2. We only want to make one reaction rate per pair of reactants.
-	
 	do j=1,numSpecies
 		if(defectType1(j)==0 .AND. ClusterReactions(i,matNum)%reactants(j,1)==0) then
 			if(defectType2(j)==0 .AND. ClusterReactions(i,matNum)%reactants(j,2)==0) then
@@ -983,11 +1109,10 @@ do i=1, numClusterReac(matNum)
 	
 	if(count==numSpecies) then	!this defect pair is accepted for this clustering reaction
 	
-		numReactants=2
-		allocate(reactants(numSpecies,numReactants))
+		!numReactants=2
+		!allocate(reactants(numSpecies,numReactants))
 		
 		!CuV+SIA:
-
         if(defectType1(1)/=0 .AND. defectType1(2)/=0 .AND.  defectType2(3)>defectType1(2)) then
             numProducts=2
             allocate(products(numSpecies,numProducts))
@@ -1042,7 +1167,7 @@ do i=1, numClusterReac(matNum)
 				reactants(j,2)=defectType2(j)
 				products(j,1)=reactants(j,1)+reactants(j,2)
 			end do
-		endif
+		end if
 		
 		!*******************************************************************************************
 		!Hard-coded: defect combination rules
@@ -1117,27 +1242,26 @@ do i=1, numClusterReac(matNum)
 		end if
 
 		!Total Annihilation
-		count=0
+		count2=0
 		do j=1,numSpecies
 			if(products(j,1)==0) then
-				count=count+1
+				count2=count2+1
 			endif
 		end do
-		if(count==numSpecies) then
+		if(count2==numSpecies) then
 			!we have completely annihilated the defects
-			numProducts=0
 			deallocate(products)
+			numProducts=0
 			allocate(products(numSpecies,numProducts))
 		end if
 		
-		!findReactionInList points reactionCurrent at the reaction if it already exists. If not, reactionCurrent
+		!findReactionInList points reactionUpdate at the reaction if it already exists. If not, reactionUpdate
 		!points to nothing and reactionPrev points to the end of the list.
 		!NOTE: if order of reactants is backwards, we might not recognize that we have already added
 		!this reaction. Thus we could double-add reactions. Will fix later.
-		
-		reactionCurrent=>reactionList(cell)
-		nullify(reactionPrev)
-		call findReactionInListMultiple(reactionCurrent, reactionPrev, cell, reactants, products, numReactants, numProducts)
+        nullify(reactionPrev)
+		reactionUpdate=>reactionList(cell)
+		call findReactionInListMultiple(reactionUpdate, reactionPrev, cell, reactants, products, numReactants, numProducts)
 		
 		!find the reaction rate. HARD CODED: if CuSIA left over, need to disallow this reaction
 		call checkReactionLegality(numProducts, products, isLegal)
@@ -1149,66 +1273,91 @@ do i=1, numClusterReac(matNum)
 		endif
 		
 		!if reactionRate==0 and reaction already exists, then delete it. Subtract from totalRate.
-		if(associated(reactionCurrent) .AND. reactionRate==0d0) then
+		if(associated(reactionUpdate) .AND. reactionRate==0d0) then
 			
 			!Update total rate (entire processor and this volume element)
-			totalRate=totalRate-reactionCurrent%reactionRate
-			totalRateVol(cell)=totalRateVol(cell)-reactionCurrent%reactionRate
+			totalRate=totalRate-reactionUpdate%reactionRate
+			totalRateVol(cell)=totalRateVol(cell)-reactionUpdate%reactionRate
 
-			!deleting reactionCurrent
-			reactionPrev%next=>reactionCurrent%next
-			deallocate(reactionCurrent%reactants)
-			deallocate(reactionCurrent%products)
-			deallocate(reactionCurrent%cellNumber)
-			deallocate(reactionCurrent%taskid)
-			nullify(reactionCurrent%next)
-			deallocate(reactionCurrent)
+			if(associated(reactionUpdate%next)) then	!in the middle
+				!deleting reactionUpdate
+				reactionPrev%next=>reactionUpdate%next
+				deallocate(reactionUpdate%reactants)
+				deallocate(reactionUpdate%products)
+				deallocate(reactionUpdate%cellNumber)
+				deallocate(reactionUpdate%taskid)
+				deallocate(reactionUpdate)
+				nullify(reactionUpdate)
+			else
+				!deleting reactionUpdate
+				deallocate(reactionUpdate%reactants)
+				deallocate(reactionUpdate%products)
+				deallocate(reactionUpdate%cellNumber)
+				deallocate(reactionUpdate%taskid)
+				deallocate(reactionUpdate)
+				nullify(reactionUpdate)
+				nullify(reactionPrev%next)
+
+			end if
+
+			!deleting reactionUpdate
+		!	reactionPrev%next=>reactionUpdate%next
+		!	deallocate(reactionUpdate%reactants)
+		!	deallocate(reactionUpdate%products)
+		!	deallocate(reactionUpdate%cellNumber)
+		!	deallocate(reactionUpdate%taskid)
+		!	nullify(reactionUpdate%next)
+		!	deallocate(reactionUpdate)
 		
 		!if reactionRate .NE. 0 and reaction doesn't exist, then create it. Add to totalRate
-		else if(.NOT. associated(reactionCurrent) .AND. reactionRate /= 0d0) then
+		else if(.NOT. associated(reactionUpdate) .AND. reactionRate /= 0d0) then
 			
 			!Update total rate (entire processor and this volume element)
 			totalRate=totalRate+reactionRate
 			totalRateVol(cell)=totalRateVol(cell)+reactionRate
 			
 			!creating new reaction
-			allocate(reactionCurrent)
-			reactionCurrent%numReactants=2
-			reactionCurrent%numProducts=numProducts
-			allocate(reactionCurrent%reactants(numSpecies,reactionCurrent%numReactants))
-			allocate(reactionCurrent%products(numSpecies,reactionCurrent%numProducts))
-			allocate(reactionCurrent%cellNumber(reactionCurrent%numReactants+reactionCurrent%numProducts))
-			allocate(reactionCurrent%taskid(reactionCurrent%numReactants+reactionCurrent%numProducts))
-			nullify(reactionCurrent%next)
-			reactionPrev%next=>reactionCurrent
+			allocate(reactionUpdate)
+			reactionUpdate%numReactants=2
+			reactionUpdate%numProducts=numProducts
+			allocate(reactionUpdate%reactants(numSpecies,reactionUpdate%numReactants))
+			allocate(reactionUpdate%products(numSpecies,reactionUpdate%numProducts))
+			allocate(reactionUpdate%cellNumber(reactionUpdate%numReactants+reactionUpdate%numProducts))
+			allocate(reactionUpdate%taskid(reactionUpdate%numReactants+reactionUpdate%numProducts))
+			nullify(reactionUpdate%next)
+			reactionPrev%next=>reactionUpdate
+			do j=1, numSpecies
+				reactionUpdate%reactants(j,1)=reactants(j,1)
+				reactionUpdate%reactants(j,2)=reactants(j,2)
+			end do
 
-            reactionCurrent%reactants(:,1)=reactants(:,1)
-            reactionCurrent%reactants(:,2)=reactants(:,2)
             if(numProducts==1) then
-                reactionCurrent%products(:,1)=products(:,1)
+                reactionUpdate%products=products
             else if(numProducts==2) then
-                reactionCurrent%products(:,1)=products(:,1)
-                reactionCurrent%products(:,2)=products(:,2)
+				do j=1, numSpecies
+					reactionUpdate%products(j,1)=products(j,1)
+					reactionUpdate%products(j,2)=products(j,2)
+				end do
             end if
 
-			do j=1,reactionCurrent%numReactants+reactionCurrent%numProducts
-				reactionCurrent%cellNumber(j)=cell
-				reactionCurrent%taskid(j)=myProc%taskid
+			do j=1,reactionUpdate%numReactants+reactionUpdate%numProducts
+				reactionUpdate%cellNumber(j)=cell
+				reactionUpdate%taskid(j)=myProc%taskid
 			end do
-			reactionCurrent%reactionRate=reactionRate
+			reactionUpdate%reactionRate=reactionRate
 			
 		!if reactionRate==0 adn reaction doesn't exist, do nothing
-		else if(.NOT. associated(reactionCurrent) .AND. reactionRate==0d0) then
+		else if(.NOT. associated(reactionUpdate) .AND. reactionRate==0d0) then
 			!do nothing
 		!if reactionRate .NE. 0 and reaction exists, update the reaction rate. Add/subtract to totalRate
-		else if(associated(reactionCurrent) .AND. reactionRate /= 0d0) then
+		else if(associated(reactionUpdate) .AND. reactionRate /= 0d0) then
 			
 			!Update total rate (entire processor and this volume element)
-			totalRate=totalRate-reactionCurrent%reactionRate+reactionRate
-			totalRateVol(cell)=totalRateVol(cell)-reactionCurrent%reactionRate+reactionRate
+			totalRate=totalRate-reactionUpdate%reactionRate+reactionRate
+			totalRateVol(cell)=totalRateVol(cell)-reactionUpdate%reactionRate+reactionRate
 			
 			!update reaction rate
-			reactionCurrent%reactionRate=reactionRate
+			reactionUpdate%reactionRate=reactionRate
 		
 		else
 			write(*,*) 'error updating reaction list - clustering'
@@ -1268,8 +1417,8 @@ do i=1, numClusterReac(matNum)
 	
 	if(count==numSpecies) then	!this defect pair is accepted for this clustering reaction
 		
-		numReactants=2
-		allocate(reactants(numSpecies,numReactants))
+		!numReactants=2
+		!allocate(reactants(numSpecies,numReactants))
 
         !SIA+CuV:
         if(defectType2(1)/=0 .AND. defectType2(2)/=0 .AND.  defectType1(3)>defectType2(2)) then
@@ -1323,11 +1472,11 @@ do i=1, numClusterReac(matNum)
 			!Create temporary arrays with the defect types associated with this reaction (clustering)
 			!NOTE: reverse the order of reactants and products so that the reaction is the same
 			!(so that findreactioninlistmultiple correctly identifies the reaction)
-
-            reactants(:,2)=defectType1(:)
-            reactants(:,1)=defectType2(:)
-            products(:,1)=reactants(:,1)+reactants(:,2)
-
+			do j=1, numSpecies
+				reactants(j,2)=defectType1(j)
+				reactants(j,1)=defectType2(j)
+				products(j,1)=reactants(j,1)+reactants(j,2)
+			end do
 		end if
 		
 		!*******************************************************************************************
@@ -1400,26 +1549,26 @@ do i=1, numClusterReac(matNum)
 		end if
 
 		!Total Annihilation
-		count=0
+		count2=0
 		do j=1,numSpecies
 			if(products(j,1)==0) then
-				count=count+1
+				count2=count2+1
 			endif
 		end do
-		if(count==numSpecies) then
+		if(count2==numSpecies) then
 			!we have completely annihilated the defects
 			numProducts=0
 			deallocate(products)
 			allocate(products(numSpecies,numProducts))
 		endif
 		
-		!findReactionInList points reactionCurrent at the reaction if it already exists. If not, reactionCurrent
+		!findReactionInList points reactionUpdate at the reaction if it already exists. If not, reactionUpdate
 		!points to nothing and reactionPrev points to the end of the list.
 		!NOTE: if order of reactants is backwards, we might not recognize that we have already added
 		!this reaction. Thus we could double-add reactions. Will fix later.
-		
-		reactionCurrent=>reactionList(cell)
-		call findReactionInListMultiple(reactionCurrent, reactionPrev, cell, reactants, products, numReactants, numProducts)
+        nullify(reactionPrev)
+		reactionUpdate=>reactionList(cell)
+		call findReactionInListMultiple(reactionUpdate, reactionPrev, cell, reactants, products, numReactants, numProducts)
 		
 		!find the reaction rate. HARD CODED: if HeSIA left over, need to disallow this reaction
 		call checkReactionLegality(numProducts, products, isLegal)
@@ -1431,66 +1580,90 @@ do i=1, numClusterReac(matNum)
 		endif
 				
 		!if reactionRate==0 and reaction already exists, then delete it. Subtract from totalRate.
-		if(associated(reactionCurrent) .AND. reactionRate==0d0) then
+		if(associated(reactionUpdate) .AND. reactionRate==0d0) then
 			
 			!Update total rate (entire processor and this volume element)
-			totalRate=totalRate-reactionCurrent%reactionRate
-			totalRateVol(cell)=totalRateVol(cell)-reactionCurrent%reactionRate
+			totalRate=totalRate-reactionUpdate%reactionRate
+			totalRateVol(cell)=totalRateVol(cell)-reactionUpdate%reactionRate
 
-			!deleting reactionCurrent
-			reactionPrev%next=>reactionCurrent%next
-			deallocate(reactionCurrent%reactants)
-			deallocate(reactionCurrent%products)
-			deallocate(reactionCurrent%cellNumber)
-			deallocate(reactionCurrent%taskid)
-			nullify(reactionCurrent%next)
-			deallocate(reactionCurrent)
+			if(associated(reactionUpdate%next)) then	!in the middle
+				!deleting reactionUpdate
+				reactionPrev%next=>reactionUpdate%next
+				deallocate(reactionUpdate%reactants)
+				deallocate(reactionUpdate%products)
+				deallocate(reactionUpdate%cellNumber)
+				deallocate(reactionUpdate%taskid)
+				deallocate(reactionUpdate)
+				nullify(reactionUpdate)
+			else
+				!deleting reactionUpdate
+				deallocate(reactionUpdate%reactants)
+				deallocate(reactionUpdate%products)
+				deallocate(reactionUpdate%cellNumber)
+				deallocate(reactionUpdate%taskid)
+				deallocate(reactionUpdate)
+				nullify(reactionUpdate)
+				nullify(reactionPrev%next)
+			end if
+
+			!deleting reactionUpdate
+		!	reactionPrev%next=>reactionUpdate%next
+		!	deallocate(reactionUpdate%reactants)
+		!	deallocate(reactionUpdate%products)
+		!	deallocate(reactionUpdate%cellNumber)
+		!	deallocate(reactionUpdate%taskid)
+		!	nullify(reactionUpdate%next)
+		!	deallocate(reactionUpdate)
 		
 		!if reactionRate .NE. 0 and reaction doesn't exist, then create it. Add to totalRate
-		else if(.NOT. associated(reactionCurrent) .AND. reactionRate /= 0d0) then
+		else if(.NOT. associated(reactionUpdate) .AND. reactionRate /= 0d0) then
 			
 			!Update total rate (entire processor and this volume element)
 			totalRate=totalRate+reactionRate
 			totalRateVol(cell)=totalRateVol(cell)+reactionRate
 			
 			!creating new reaction
-			allocate(reactionCurrent)
-			reactionCurrent%numReactants=2
-			reactionCurrent%numProducts=numProducts
-			allocate(reactionCurrent%reactants(numSpecies,reactionCurrent%numReactants))
-			allocate(reactionCurrent%products(numSpecies,reactionCurrent%numProducts))
-			allocate(reactionCurrent%cellNumber(reactionCurrent%numReactants+reactionCurrent%numProducts))
-			allocate(reactionCurrent%taskid(reactionCurrent%numReactants+reactionCurrent%numProducts))
-			nullify(reactionCurrent%next)
-			reactionPrev%next=>reactionCurrent
+			allocate(reactionUpdate)
+			reactionUpdate%numReactants=2
+			reactionUpdate%numProducts=numProducts
+			allocate(reactionUpdate%reactants(numSpecies,reactionUpdate%numReactants))
+			allocate(reactionUpdate%products(numSpecies,reactionUpdate%numProducts))
+			allocate(reactionUpdate%cellNumber(reactionUpdate%numReactants+reactionUpdate%numProducts))
+			allocate(reactionUpdate%taskid(reactionUpdate%numReactants+reactionUpdate%numProducts))
+			nullify(reactionUpdate%next)
+			reactionPrev%next=>reactionUpdate
+			do j=1, numSpecies
+				reactionUpdate%reactants(j,1)=reactants(j,1)
+				reactionUpdate%reactants(j,2)=reactants(j,2)
+			end do
 
-            reactionCurrent%reactants(:,1)=reactants(:,1)
-            reactionCurrent%reactants(:,2)=reactants(:,2)
             if(numProducts==1) then
-                reactionCurrent%products(:,1)=products(:,1)
+                reactionUpdate%products=products
             else if(numProducts==2) then
-                reactionCurrent%products(:,1)=products(:,1)
-                reactionCurrent%products(:,2)=products(:,2)
+				do j=1, numSpecies
+					reactionUpdate%products(j,1)=products(j,1)
+					reactionUpdate%products(j,2)=products(j,2)
+				end do
             end if
 
-			do j=1,reactionCurrent%numReactants+reactionCurrent%numProducts
-				reactionCurrent%cellNumber(j)=cell
-				reactionCurrent%taskid(j)=myProc%taskid
+			do j=1,reactionUpdate%numReactants+reactionUpdate%numProducts
+				reactionUpdate%cellNumber(j)=cell
+				reactionUpdate%taskid(j)=myProc%taskid
 			end do
-			reactionCurrent%reactionRate=reactionRate
+			reactionUpdate%reactionRate=reactionRate
 			
 		!if reactionRate==0 adn reaction doesn't exist, do nothing
-		else if(.NOT. associated(reactionCurrent) .AND. reactionRate==0d0) then
+		else if(.NOT. associated(reactionUpdate) .AND. reactionRate==0d0) then
 			!do nothing
 		!if reactionRate .NE. 0 and reaction exists, update the reaction rate. Add/subtract to totalRate
-		else if(associated(reactionCurrent) .AND. reactionRate /= 0d0) then
+		else if(associated(reactionUpdate) .AND. reactionRate /= 0d0) then
 			
 			!Update total rate (entire processor and this volume element)
-			totalRate=totalRate-reactionCurrent%reactionRate+reactionRate
-			totalRateVol(cell)=totalRateVol(cell)-reactionCurrent%reactionRate+reactionRate
+			totalRate=totalRate-reactionUpdate%reactionRate+reactionRate
+			totalRateVol(cell)=totalRateVol(cell)-reactionUpdate%reactionRate+reactionRate
 			
 			!update reaction rate
-			reactionCurrent%reactionRate=reactionRate
+			reactionUpdate%reactionRate=reactionRate
 		
 		else
 			write(*,*) 'error updating reaction list - clustering'
@@ -1540,12 +1713,13 @@ implicit none
 
 integer cell, defectType1(numSpecies), defectType2(numSpecies), cascadeID, matNum
 type(cascade), pointer :: CascadeCurrent
-type(reaction), pointer :: reactionCurrent, reactionPrev
+type(reaction), pointer :: reactionUpdate, reactionPrev
 integer i, j, count, numReactants, numProducts
 integer, allocatable :: reactants(:,:), products(:,:)
 double precision reactionrate
 logical isLegal
 
+nullify(reactionUpdate)
 !CascadeCurrent pointer should be pointing at the cascade whose ID matches the ID number passed into this 
 !subroutine
 CascadeCurrent=>ActiveCascades
@@ -1570,7 +1744,9 @@ endif
 !Clustering reactions. NOTE: the number of reactants and number of products, as well as the form 
 !of the products given the reactants, is hard-coded into this section. This type of hard-coding is
 !carried out in each section in this module, and is seen here as unavoidable.
-
+numReactants=2
+numProducts=1
+allocate(reactants(numSpecies,numReactants))
 do i=1, numClusterReac(matNum)
 
     !*******************************************************
@@ -1621,8 +1797,8 @@ do i=1, numClusterReac(matNum)
 	
 	if(count==numSpecies) then	!this defect pair is accepted for this clustering reaction
 		
-		numReactants=2
-		allocate(reactants(numSpecies,numReactants))
+		!numReactants=2
+		!allocate(reactants(numSpecies,numReactants))
 
         !CuV+SIA:
         if(defectType1(1)/=0 .AND. defectType1(2)/=0 .AND.  defectType2(3)>defectType1(2)) then
@@ -1675,12 +1851,12 @@ do i=1, numClusterReac(matNum)
 			allocate(products(numSpecies,numProducts))
 			
 			!Create temporary arrays with the defect types associated with this reaction (clustering)
-
-            reactants(:,1)=defectType1(:)
-            reactants(:,2)=defectType2(:)
-            products(:,1)=reactants(:,1)+reactants(:,2)
-
-		endif
+			do j=1, numSpecies
+				reactants(j,1)=defectType1(j)
+				reactants(j,2)=defectType2(j)
+				products(j,1)=reactants(j,1)+reactants(j,2)
+			end do
+		end if
 		
 		!*******************************************************************************************
 		!Hard-coded: defect combination rules
@@ -1765,13 +1941,14 @@ do i=1, numClusterReac(matNum)
 			allocate(products(numSpecies,numProducts))
 		endif
 		
-		!findReactionInList points reactionCurrent at the reaction if it already exists. If not, reactionCurrent
+		!findReactionInList points reactionUpdate at the reaction if it already exists. If not, reactionUpdate
 		!points to nothing and reactionPrev points to the end of the list.
 		!NOTE: if order of reactants is backwards, we might not recognize that we have already added
 		!this reaction. Thus we could double-add reactions. Will fix later.
 
-		reactionCurrent=>CascadeCurrent%reactionList(cell)
-		call findReactionInListMultiple(reactionCurrent, reactionPrev, cell, reactants, products, numReactants, numProducts)
+        nullify(reactionPrev)
+		reactionUpdate=>CascadeCurrent%reactionList(cell)
+		call findReactionInListMultiple(reactionUpdate, reactionPrev, cell, reactants, products, numReactants, numProducts)
 		
 		!find the reaction rate
 		call checkReactionLegality(numProducts, products, isLegal)
@@ -1783,61 +1960,84 @@ do i=1, numClusterReac(matNum)
 		endif
 		
 		!if reactionRate==0 and reaction already exists, then delete it. Subtract from totalRate.
-		if(associated(reactionCurrent) .AND. reactionRate==0d0) then
-			totalRate=totalRate-reactionCurrent%reactionRate
-			CascadeCurrent%totalRate(cell)=CascadeCurrent%totalRate(cell)-reactionCurrent%reactionRate
+		if(associated(reactionUpdate) .AND. reactionRate==0d0) then
+			totalRate=totalRate-reactionUpdate%reactionRate
+			CascadeCurrent%totalRate(cell)=CascadeCurrent%totalRate(cell)-reactionUpdate%reactionRate
+
+            if(associated(reactionUpdate%next)) then
+                !deleting reactionUpdate
+                reactionPrev%next=>reactionUpdate%next
+                deallocate(reactionUpdate%reactants)
+                deallocate(reactionUpdate%products)
+                deallocate(reactionUpdate%cellNumber)
+                deallocate(reactionUpdate%taskid)
+                deallocate(reactionUpdate)
+                nullify(reactionUpdate)
+            else
+                deallocate(reactionUpdate%reactants)
+                deallocate(reactionUpdate%products)
+                deallocate(reactionUpdate%cellNumber)
+                deallocate(reactionUpdate%taskid)
+                deallocate(reactionUpdate)
+                nullify(reactionUpdate)
+                nullify(reactionPrev%next)
+            end if
 			
-			!deleting reactionCurrent
-			reactionPrev%next=>reactionCurrent%next
-			deallocate(reactionCurrent%reactants)
-			deallocate(reactionCurrent%products)
-			deallocate(reactionCurrent%cellNumber)
-			deallocate(reactionCurrent%taskid)
-			nullify(reactionCurrent%next)
-			deallocate(reactionCurrent)
+			!deleting reactionUpdate
+		!	reactionPrev%next=>reactionUpdate%next
+		!	deallocate(reactionUpdate%reactants)
+		!	deallocate(reactionUpdate%products)
+		!	deallocate(reactionUpdate%cellNumber)
+		!	deallocate(reactionUpdate%taskid)
+		!	nullify(reactionUpdate%next)
+		!	deallocate(reactionUpdate)
 		
 		!if reactionRate .NE. 0 and reaction doesn't exist, then create it. Add to totalRate
-		else if(.NOT. associated(reactionCurrent) .AND. reactionRate /= 0d0) then
+		else if(.NOT. associated(reactionUpdate) .AND. reactionRate /= 0d0) then
 			totalRate=totalRate+reactionRate
 			CascadeCurrent%totalRate(cell)=CascadeCurrent%totalRate(cell)+reactionRate
 			
 			!creating new reaction
-			allocate(reactionCurrent)
-			reactionCurrent%numReactants=2
-			reactionCurrent%numProducts=numProducts
-			allocate(reactionCurrent%reactants(numSpecies,reactionCurrent%numReactants))
-			allocate(reactionCurrent%products(numSpecies,reactionCurrent%numProducts))
-			allocate(reactionCurrent%cellNumber(reactionCurrent%numReactants+reactionCurrent%numProducts))
-			allocate(reactionCurrent%taskid(reactionCurrent%numReactants+reactionCurrent%numProducts))
-			nullify(reactionCurrent%next)
-			reactionPrev%next=>reactionCurrent
+			allocate(reactionUpdate)
+			reactionUpdate%numReactants=2
+			reactionUpdate%numProducts=numProducts
+			allocate(reactionUpdate%reactants(numSpecies,reactionUpdate%numReactants))
+			allocate(reactionUpdate%products(numSpecies,reactionUpdate%numProducts))
+			allocate(reactionUpdate%cellNumber(reactionUpdate%numReactants+reactionUpdate%numProducts))
+			allocate(reactionUpdate%taskid(reactionUpdate%numReactants+reactionUpdate%numProducts))
+			nullify(reactionUpdate%next)
+			reactionPrev%next=>reactionUpdate
+			do j=1, numSpecies
+				reactionUpdate%reactants(j,1)=reactants(j,1)
+				reactionUpdate%reactants(j,2)=reactants(j,2)
+			end do
 
-            reactionCurrent%reactants(:,1)=reactants(:,1)
-            reactionCurrent%reactants(:,2)=reactants(:,2)
             if(numProducts==1) then
-                reactionCurrent%products(:,1)=products(:,1)
+                reactionUpdate%products=products
             else if(numProducts==2) then
-                reactionCurrent%products(:,1)=products(:,1)
-                reactionCurrent%products(:,2)=products(:,2)
+				do j=1, numSpecies
+					reactionUpdate%products(j,1)=products(j,1)
+					reactionUpdate%products(j,2)=products(j,2)
+				end do
             end if
 
-			do j=1,reactionCurrent%numReactants+reactionCurrent%numProducts
-				reactionCurrent%cellNumber(j)=cell
-				reactionCurrent%taskid(j)=myProc%taskid
+			do j=1,reactionUpdate%numReactants+reactionUpdate%numProducts
+				reactionUpdate%cellNumber(j)=cell
+				reactionUpdate%taskid(j)=myProc%taskid
 			end do
-			reactionCurrent%reactionRate=reactionRate
+			reactionUpdate%reactionRate=reactionRate
 			
 		!if reactionRate==0 adn reaction doesn't exist, do nothing
-		else if(.NOT. associated(reactionCurrent) .AND. reactionRate==0d0) then
+		else if(.NOT. associated(reactionUpdate) .AND. reactionRate==0d0) then
 			!do nothing
 		!if reactionRate .NE. 0 and reaction exists, update the reaction rate. Add/subtract to totalRate
-		else if(associated(reactionCurrent) .AND. reactionRate /= 0d0) then
+		else if(associated(reactionUpdate) .AND. reactionRate /= 0d0) then
 			!update totalRate
-			totalRate=totalRate-reactionCurrent%reactionRate+reactionRate
-			CascadeCurrent%totalRate(cell)=CascadeCurrent%totalRate(cell)-reactionCurrent%reactionRate+reactionRate
+			totalRate=totalRate-reactionUpdate%reactionRate+reactionRate
+			CascadeCurrent%totalRate(cell)=CascadeCurrent%totalRate(cell)-reactionUpdate%reactionRate+reactionRate
 			
 			!update reaction rate
-			reactionCurrent%reactionRate=reactionRate
+			reactionUpdate%reactionRate=reactionRate
 		
 		else
 			write(*,*) 'error updating reaction list - clustering'
@@ -1896,8 +2096,8 @@ do i=1, numClusterReac(matNum)
 	
 	if(count==numSpecies) then	!this defect pair is accepted for this clustering reaction
 		
-		numReactants=2
-		allocate(reactants(numSpecies,numReactants))
+		!numReactants=2
+		!allocate(reactants(numSpecies,numReactants))
 
         !SIA+CuV
         if(defectType2(1)/=0 .AND. defectType2(2)/=0 .AND.  defectType1(3)>defectType2(2)) then
@@ -1949,11 +2149,11 @@ do i=1, numClusterReac(matNum)
 			allocate(products(numSpecies,numProducts))
 			
 			!Create temporary arrays with the defect types associated with this reaction (clustering)
-
-            reactants(:,2)=defectType1(:)
-            reactants(:,1)=defectType2(:)
-            products(:,1)=reactants(:,1)+reactants(:,2)
-
+			do j=1, numSpecies
+				reactants(j,2)=defectType1(j)
+				reactants(j,1)=defectType2(j)
+				products(j,1)=reactants(j,1)+reactants(j,2)
+			end do
 		endif
 		
 		!*******************************************************************************************
@@ -2039,13 +2239,13 @@ do i=1, numClusterReac(matNum)
 			allocate(products(numSpecies,numProducts))
 		endif
 		
-		!findReactionInList points reactionCurrent at the reaction if it already exists. If not, reactionCurrent
+		!findReactionInList points reactionUpdate at the reaction if it already exists. If not, reactionUpdate
 		!points to nothing and reactionPrev points to the end of the list.
 		!NOTE: if order of reactants is backwards, we might not recognize that we have already added
 		!this reaction. Thus we could double-add reactions. Will fix later.
-		
-		reactionCurrent=>CascadeCurrent%reactionList(cell)
-		call findReactionInListMultiple(reactionCurrent, reactionPrev, cell, reactants, products, numReactants, numProducts)
+        nullify(reactionPrev)
+		reactionUpdate=>CascadeCurrent%reactionList(cell)
+		call findReactionInListMultiple(reactionUpdate, reactionPrev, cell, reactants, products, numReactants, numProducts)
 		
 		!find the reaction rate
 		call checkReactionLegality(numProducts, products, isLegal)
@@ -2057,61 +2257,84 @@ do i=1, numClusterReac(matNum)
 		endif
 		
 		!if reactionRate==0 and reaction already exists, then delete it. Subtract from totalRate.
-		if(associated(reactionCurrent) .AND. reactionRate==0d0) then
-			totalRate=totalRate-reactionCurrent%reactionRate
-			CascadeCurrent%totalRate(cell)=CascadeCurrent%totalRate(cell)-reactionCurrent%reactionRate
+		if(associated(reactionUpdate) .AND. reactionRate==0d0) then
+			totalRate=totalRate-reactionUpdate%reactionRate
+			CascadeCurrent%totalRate(cell)=CascadeCurrent%totalRate(cell)-reactionUpdate%reactionRate
+
+            if(associated(reactionUpdate%next)) then
+                !deleting reactionUpdate
+                reactionPrev%next=>reactionUpdate%next
+                deallocate(reactionUpdate%reactants)
+                deallocate(reactionUpdate%products)
+                deallocate(reactionUpdate%cellNumber)
+                deallocate(reactionUpdate%taskid)
+                deallocate(reactionUpdate)
+                nullify(reactionUpdate)
+            else
+                deallocate(reactionUpdate%reactants)
+                deallocate(reactionUpdate%products)
+                deallocate(reactionUpdate%cellNumber)
+                deallocate(reactionUpdate%taskid)
+                deallocate(reactionUpdate)
+                nullify(reactionUpdate)
+                nullify(reactionPrev%next)
+            end if
 			
-			!deleting reactionCurrent
-			reactionPrev%next=>reactionCurrent%next
-			deallocate(reactionCurrent%reactants)
-			deallocate(reactionCurrent%products)
-			deallocate(reactionCurrent%cellNumber)
-			deallocate(reactionCurrent%taskid)
-			nullify(reactionCurrent%next)
-			deallocate(reactionCurrent)
+			!deleting reactionUpdate
+		!	reactionPrev%next=>reactionUpdate%next
+		!	deallocate(reactionUpdate%reactants)
+		!	deallocate(reactionUpdate%products)
+		!	deallocate(reactionUpdate%cellNumber)
+		!	deallocate(reactionUpdate%taskid)
+		!	nullify(reactionUpdate%next)
+		!	deallocate(reactionUpdate)
 		
 		!if reactionRate .NE. 0 and reaction doesn't exist, then create it. Add to totalRate
-		else if(.NOT. associated(reactionCurrent) .AND. reactionRate /= 0d0) then
+		else if(.NOT. associated(reactionUpdate) .AND. reactionRate /= 0d0) then
 			totalRate=totalRate+reactionRate
 			CascadeCurrent%totalRate(cell)=CascadeCurrent%totalRate(cell)+reactionRate
 			
 			!creating new reaction
-			allocate(reactionCurrent)
-			reactionCurrent%numReactants=2
-			reactionCurrent%numProducts=numProducts
-			allocate(reactionCurrent%reactants(numSpecies,reactionCurrent%numReactants))
-			allocate(reactionCurrent%products(numSpecies,reactionCurrent%numProducts))
-			allocate(reactionCurrent%cellNumber(reactionCurrent%numReactants+reactionCurrent%numProducts))
-			allocate(reactionCurrent%taskid(reactionCurrent%numReactants+reactionCurrent%numProducts))
-			nullify(reactionCurrent%next)
-			reactionPrev%next=>reactionCurrent
+			allocate(reactionUpdate)
+			reactionUpdate%numReactants=2
+			reactionUpdate%numProducts=numProducts
+			allocate(reactionUpdate%reactants(numSpecies,reactionUpdate%numReactants))
+			allocate(reactionUpdate%products(numSpecies,reactionUpdate%numProducts))
+			allocate(reactionUpdate%cellNumber(reactionUpdate%numReactants+reactionUpdate%numProducts))
+			allocate(reactionUpdate%taskid(reactionUpdate%numReactants+reactionUpdate%numProducts))
+			nullify(reactionUpdate%next)
+			reactionPrev%next=>reactionUpdate
+			do j=1, numSpecies
+				reactionUpdate%reactants(j,1)=reactants(j,1)
+				reactionUpdate%reactants(j,2)=reactants(j,2)
+			end do
 
-            reactionCurrent%reactants(:,1)=reactants(:,1)
-            reactionCurrent%reactants(:,2)=reactants(:,2)
             if(numProducts==1) then
-                reactionCurrent%products(:,1)=products(:,1)
+                reactionUpdate%products=products
             else if(numProducts==2) then
-                reactionCurrent%products(:,1)=products(:,1)
-                reactionCurrent%products(:,2)=products(:,2)
+				do j=1, numSpecies
+					reactionUpdate%products(j,1)=products(j,1)
+					reactionUpdate%products(j,2)=products(j,2)
+				end do
             end if
 
-			do j=1,reactionCurrent%numReactants+reactionCurrent%numProducts
-				reactionCurrent%cellNumber(j)=cell
-				reactionCurrent%taskid(j)=myProc%taskid
+			do j=1,reactionUpdate%numReactants+reactionUpdate%numProducts
+				reactionUpdate%cellNumber(j)=cell
+				reactionUpdate%taskid(j)=myProc%taskid
 			end do
-			reactionCurrent%reactionRate=reactionRate
+			reactionUpdate%reactionRate=reactionRate
 			
 		!if reactionRate==0 adn reaction doesn't exist, do nothing
-		else if(.NOT. associated(reactionCurrent) .AND. reactionRate==0d0) then
+		else if(.NOT. associated(reactionUpdate) .AND. reactionRate==0d0) then
 			!do nothing
 		!if reactionRate .NE. 0 and reaction exists, update the reaction rate. Add/subtract to totalRate
-		else if(associated(reactionCurrent) .AND. reactionRate /= 0d0) then
+		else if(associated(reactionUpdate) .AND. reactionRate /= 0d0) then
 			!update totalRate
-			totalRate=totalRate-reactionCurrent%reactionRate+reactionRate
-			CascadeCurrent%totalRate(cell)=CascadeCurrent%totalRate(cell)-reactionCurrent%reactionRate+reactionRate
+			totalRate=totalRate-reactionUpdate%reactionRate+reactionRate
+			CascadeCurrent%totalRate(cell)=CascadeCurrent%totalRate(cell)-reactionUpdate%reactionRate+reactionRate
 			
 			!update reaction rate
-			reactionCurrent%reactionRate=reactionRate
+			reactionUpdate%reactionRate=reactionRate
 		
 		else
 			write(*,*) 'error updating reaction list - clustering'
@@ -2159,11 +2382,12 @@ use DerivedType
 implicit none
 
 integer cell1, cell2, proc1, proc2, defectType(numSpecies), dir, matNum
-integer numReactants, numProducts, i, j, k, l, count, neighbor, neighborProc
+integer numReactants, numProducts, i, j, count
 integer, allocatable :: reactants(:,:), products(:,:)
-type(reaction), pointer :: reactionCurrent, reactionPrev
+type(reaction), pointer :: reactionUpdate, reactionPrev
 double precision reactionRate
 
+nullify(reactionUpdate)
 !In the case of polycrystal simulations, myMesh(cell)%material is the grain ID, not the material number. Therefore
 !we must set all values of matNum=1 in this case (only one material type in polycrystal simulations).
 if(numMaterials==1) then
@@ -2194,93 +2418,109 @@ do i=1, numDiffReac(matNum)
 	end do
 	
 	if(count==numSpecies) then	!this defect type is accepted for this diffusion reaction
-		!point reactionCurrent at the reaction and reactionPrev at the reaction before it
-		!(if reaction does not already exist, reactionCurrent is unallocated and reactionPrev points
+		!point reactionUpdate at the reaction and reactionPrev at the reaction before it
+		!(if reaction does not already exist, reactionUpdate is unallocated and reactionPrev points
 		!to the end of the list)
 		
 		!Create temporary arrays with the defect types associated with this reaction (dissociation)
+		do j=1, numSpecies
+			reactants(j,1)=defectType(j)
+			products(j,1)=defectType(j)
+		end do
 
-        reactants(:,1)=defectType(:)
-        products(:,1)=defectType(:)
+		!reactionUpdate=>reactionList(cell1)
+		!nullify(reactionPrev)
 
-
-		reactionCurrent=>reactionList(cell1)
-		nullify(reactionPrev)
-		
-		!find the reaction in the reaction list (INCLUDING DIFFUSION DIRECTIONS)		
-		call findReactionInListDiff(reactionCurrent, reactionPrev, reactants, cell1, cell2, proc1, proc2)
+		!find the reaction in the reaction list (INCLUDING DIFFUSION DIRECTIONS)
+        nullify(reactionPrev)
+		reactionUpdate=>reactionList(cell1)
+		call findReactionInListDiff(reactionUpdate, reactionPrev, reactants, cell1, cell2, proc1, proc2)
 
 		reactionRate=findReactionRateDiff(defectType, cell1, proc1, cell2, proc2, dir, DiffReactions(i,matNum))
 
-!		if(myProc%taskid==3) then
-!			write(*,*) 'cell1', cell1, 'cell2', cell2, 'proc1', proc1, 'proc2', proc2, 'dir', dir, 'rate', reactionRate
-!		endif
-		
 		!if reactionRate==0 and reaction already exists, then delete it. Subtract from totalRate.
-		if(associated(reactionCurrent) .AND. reactionRate==0d0) then
+		if(associated(reactionUpdate) .AND. reactionRate==0d0) then
 			
 			!Update total rate (entire processor and this volume element)
-			totalRate=totalRate-reactionCurrent%reactionRate
-			totalRateVol(cell1)=totalRateVol(cell1)-reactionCurrent%reactionRate
+			totalRate=totalRate-reactionUpdate%reactionRate
+			totalRateVol(cell1)=totalRateVol(cell1)-reactionUpdate%reactionRate
+
+			if(associated(reactionUpdate%next)) then	!in the middle
+				!deleting reactionUpdate
+				reactionPrev%next=>reactionUpdate%next
+				deallocate(reactionUpdate%reactants)
+				deallocate(reactionUpdate%products)
+				deallocate(reactionUpdate%cellNumber)
+				deallocate(reactionUpdate%taskid)
+				deallocate(reactionUpdate)
+				nullify(reactionUpdate)
+			else
+				deallocate(reactionUpdate%reactants)
+				deallocate(reactionUpdate%products)
+				deallocate(reactionUpdate%cellNumber)
+				deallocate(reactionUpdate%taskid)
+				deallocate(reactionUpdate)
+				nullify(reactionUpdate)
+				nullify(reactionPrev%next)
+			end if
 			
-			!deleting reactionCurrent
-			reactionPrev%next=>reactionCurrent%next
-			deallocate(reactionCurrent%reactants)
-			deallocate(reactionCurrent%products)
-			deallocate(reactionCurrent%cellNumber)
-			deallocate(reactionCurrent%taskid)
-			nullify(reactionCurrent%next)
-			deallocate(reactionCurrent)
+			!deleting reactionUpdate
+		!	reactionPrev%next=>reactionUpdate%next
+		!	deallocate(reactionUpdate%reactants)
+		!	deallocate(reactionUpdate%products)
+		!	deallocate(reactionUpdate%cellNumber)
+		!	deallocate(reactionUpdate%taskid)
+		!	nullify(reactionUpdate%next)
+		!	deallocate(reactionUpdate)
 			
 		
 		!if reactionRate .NE. 0 and reaction doesn't exist, then create it. Add to totalRate
-		else if(.NOT. associated(reactionCurrent) .AND. reactionRate /= 0d0) then
+		else if(.NOT. associated(reactionUpdate) .AND. reactionRate /= 0d0) then
 			
 			!Update total rate (entire processor and this volume element)
 			totalRate=totalRate+reactionRate
 			totalRateVol(cell1)=totalRateVol(cell1)+reactionRate
 			
 			!creating new reaction
-			allocate(reactionCurrent)
-			reactionCurrent%numReactants=1
-			reactionCurrent%numProducts=1
-			allocate(reactionCurrent%reactants(numSpecies,reactionCurrent%numReactants))
-			allocate(reactionCurrent%products(numSpecies,reactionCurrent%numProducts))
-			allocate(reactionCurrent%cellNumber(reactionCurrent%numReactants+reactionCurrent%numProducts))
-			allocate(reactionCurrent%taskid(reactionCurrent%numReactants+reactionCurrent%numProducts))
-			nullify(reactionCurrent%next)
-			reactionPrev%next=>reactionCurrent
-
-            reactionCurrent%reactants(:,1)=reactants(:,1)
-            reactionCurrent%products(:,1)=products(:,1)
-
-			reactionCurrent%cellNumber(1)=cell1
-			reactionCurrent%taskid(1)=proc1
-			reactionCurrent%cellNumber(2)=cell2
-			reactionCurrent%taskid(2)=proc2
+			allocate(reactionUpdate)
+			reactionUpdate%numReactants=1
+			reactionUpdate%numProducts=1
+			allocate(reactionUpdate%reactants(numSpecies,reactionUpdate%numReactants))
+			allocate(reactionUpdate%products(numSpecies,reactionUpdate%numProducts))
+			allocate(reactionUpdate%cellNumber(reactionUpdate%numReactants+reactionUpdate%numProducts))
+			allocate(reactionUpdate%taskid(reactionUpdate%numReactants+reactionUpdate%numProducts))
+			nullify(reactionUpdate%next)
+			reactionPrev%next=>reactionUpdate
+			!do j=1, numSpecies
+			!	reactionUpdate%reactants(j,1)=reactants(j,1)
+			!	reactionUpdate%products(j,1)=products(j,1)
+			!end do
+			reactionUpdate%reactants=reactants
+			reactionUpdate%products=products
+			reactionUpdate%cellNumber(1)=cell1
+			reactionUpdate%taskid(1)=proc1
+			reactionUpdate%cellNumber(2)=cell2
+			reactionUpdate%taskid(2)=proc2
 			
-			reactionCurrent%reactionRate=reactionRate
+			reactionUpdate%reactionRate=reactionRate
 
-			
 		!if reactionRate==0 and reaction doesn't exist, do nothing
-		else if(.NOT. associated(reactionCurrent) .AND. reactionRate==0d0) then
+		else if(.NOT. associated(reactionUpdate) .AND. reactionRate==0d0) then
 			!do nothing
 		!if reactionRate .NE. 0 and reaction exists, update the reaction rate. Add/subtract to totalRate
-		else if(associated(reactionCurrent) .AND. reactionRate /= 0d0) then
+		else if(associated(reactionUpdate) .AND. reactionRate /= 0d0) then
 			
 			!Update total rate (entire processor and this volume element)
-			totalRate=totalRate-reactionCurrent%reactionRate+reactionRate
-			totalRateVol(cell1)=totalRateVol(cell1)-reactionCurrent%reactionRate+reactionRate
+			totalRate=totalRate-reactionUpdate%reactionRate+reactionRate
+			totalRateVol(cell1)=totalRateVol(cell1)-reactionUpdate%reactionRate+reactionRate
 			
 			!update reaction rate
-			reactionCurrent%reactionRate=reactionRate
+			reactionUpdate%reactionRate=reactionRate
 		
 		else
 			write(*,*) 'error updating reaction list - diffusion'
-		endif
-
+		end if
         exit
-
 	end if
 end do
 
@@ -2315,9 +2555,9 @@ implicit none
 
 integer cell, proc, defectType(numSpecies), matNum
 type(cascade), pointer :: CascadeCurrent
-integer numReactants, numProducts, i, j, k, l, count, numDefectsFine
+integer numReactants, numProducts, i, j, count, numDefectsFine
 integer, allocatable :: reactants(:,:), products(:,:)
-type(reaction), pointer :: reactionCurrent, reactionPrev
+type(reaction), pointer :: reactionUpdate, reactionPrev
 double precision reactionRate
 
 interface
@@ -2328,6 +2568,7 @@ interface
 	end function
 end interface
 
+nullify(reactionUpdate)
 !In the case of polycrystal simulations, myMesh(cell)%material is the grain ID, not the material number. Therefore
 !we must set all values of matNum=1 in this case (only one material type in polycrystal simulations).
 if(numMaterials==1) then
@@ -2360,22 +2601,21 @@ do i=1, numDiffReac(matNum)
 	if(count==numSpecies) then	
 		!this defect type is accepted for this dissociation reaction
 		
-		!point reactionCurrent at the reaction and reactionPrev at the reaction before it
-		!(if reaction does not already exist, reactionCurrent is unallocated and reactionPrev points
+		!point reactionUpdate at the reaction and reactionPrev at the reaction before it
+		!(if reaction does not already exist, reactionUpdate is unallocated and reactionPrev points
 		!to the end of the list)
 		
 		!Create temporary arrays with the defect types associated with this reaction (dissociation)
+		do j=1, numSpecies
+			reactants(j,1)=defectType(j)
+			products(j,1)=defectType(j)
+		end do
 
-        reactants(:,1)=defectType(:)
-        products(:,1)=defectType(:)
-
-
-		reactionCurrent=>reactionList(cell)
-		nullify(reactionPrev)
-		
 		!find the reaction in the reaction list. NOTE: -CascadeCurrent%cascadeID is used in place of cell2
 		!to identify that this is a reaction from the coarse mesh to the fine mesh into this cascade.
-		call findReactionInListDiff(reactionCurrent, reactionPrev, reactants, cell, -CascadeCurrent%cascadeID, proc, proc)
+		nullify(reactionPrev)
+        reactionUpdate=>reactionList(cell)
+		call findReactionInListDiff(reactionUpdate, reactionPrev, reactants, cell, -CascadeCurrent%cascadeID, proc, proc)
 		
 		!Find the total number of defects of type defectType in the fine mesh (all cells)
 		numDefectsFine=findNumDefectTotalFine(defectType, CascadeCurrent)
@@ -2386,67 +2626,87 @@ do i=1, numDiffReac(matNum)
 		!Here, we update reactionList by either creating a new reaction or updating the current reaction
 		
 		!if reactionRate==0 and reaction already exists, then delete it. Subtract from totalRate.
-		if(associated(reactionCurrent) .AND. reactionRate==0d0) then
+		if(associated(reactionUpdate) .AND. reactionRate==0d0) then
 			
 			!Update total rate (entire processor and this volume element)
-			totalRate=totalRate-reactionCurrent%reactionRate
-			totalRateVol(cell)=totalRateVol(cell)-reactionCurrent%reactionRate
+			totalRate=totalRate-reactionUpdate%reactionRate
+			totalRateVol(cell)=totalRateVol(cell)-reactionUpdate%reactionRate
+
+            if(associated(reactionUpdate%next)) then
+                !deleting reactionUpdate
+                reactionPrev%next=>reactionUpdate%next
+                deallocate(reactionUpdate%reactants)
+                deallocate(reactionUpdate%products)
+                deallocate(reactionUpdate%cellNumber)
+                deallocate(reactionUpdate%taskid)
+                deallocate(reactionUpdate)
+                nullify(reactionUpdate)
+            else
+                deallocate(reactionUpdate%reactants)
+                deallocate(reactionUpdate%products)
+                deallocate(reactionUpdate%cellNumber)
+                deallocate(reactionUpdate%taskid)
+                deallocate(reactionUpdate)
+                nullify(reactionUpdate)
+                nullify(reactionPrev%next)
+            end if
 			
-			!deleting reactionCurrent
-			reactionPrev%next=>reactionCurrent%next
-			deallocate(reactionCurrent%reactants)
-			deallocate(reactionCurrent%products)
-			deallocate(reactionCurrent%cellNumber)
-			deallocate(reactionCurrent%taskid)
-			nullify(reactionCurrent%next)
-			deallocate(reactionCurrent)
-			
-		
+			!deleting reactionUpdate
+		!	reactionPrev%next=>reactionUpdate%next
+		!	deallocate(reactionUpdate%reactants)
+		!	deallocate(reactionUpdate%products)
+		!	deallocate(reactionUpdate%cellNumber)
+		!	deallocate(reactionUpdate%taskid)
+		!	nullify(reactionUpdate%next)
+		!	deallocate(reactionUpdate)
+
 		!if reactionRate .NE. 0 and reaction doesn't exist, then create it. Add to totalRate
-		else if(.NOT. associated(reactionCurrent) .AND. reactionRate /= 0d0) then
+		else if(.NOT. associated(reactionUpdate) .AND. reactionRate /= 0d0) then
 			
 			!Update total rate (entire processor and this volume element)
 			totalRate=totalRate+reactionRate
 			totalRateVol(cell)=totalRateVol(cell)+reactionRate
 			
 			!creating new reaction
-			allocate(reactionCurrent)
-			reactionCurrent%numReactants=1
-			reactionCurrent%numProducts=1
-			allocate(reactionCurrent%reactants(numSpecies,reactionCurrent%numReactants))
-			allocate(reactionCurrent%products(numSpecies,reactionCurrent%numProducts))
-			allocate(reactionCurrent%cellNumber(reactionCurrent%numReactants+reactionCurrent%numProducts))
-			allocate(reactionCurrent%taskid(reactionCurrent%numReactants+reactionCurrent%numProducts))
-			nullify(reactionCurrent%next)
-			reactionPrev%next=>reactionCurrent
-
-            reactionCurrent%reactants(:,1)=reactants(:,1)
-            reactionCurrent%products(:,1)=products(:,1)
-
-			reactionCurrent%cellNumber(1)=cell
-			reactionCurrent%taskid(1)=proc
+			allocate(reactionUpdate)
+			reactionUpdate%numReactants=1
+			reactionUpdate%numProducts=1
+			allocate(reactionUpdate%reactants(numSpecies,reactionUpdate%numReactants))
+			allocate(reactionUpdate%products(numSpecies,reactionUpdate%numProducts))
+			allocate(reactionUpdate%cellNumber(reactionUpdate%numReactants+reactionUpdate%numProducts))
+			allocate(reactionUpdate%taskid(reactionUpdate%numReactants+reactionUpdate%numProducts))
+			nullify(reactionUpdate%next)
+			reactionPrev%next=>reactionUpdate
+			!do j=1, numSpecies
+			!	reactionUpdate%reactants(j,1)=reactants(j,1)
+			!	reactionUpdate%products(j,1)=products(j,1)
+			!end do
+			reactionUpdate%reactants=reactants
+			reactionUpdate%products=products
+			reactionUpdate%cellNumber(1)=cell
+			reactionUpdate%taskid(1)=proc
 			
 			!In coarse-to-fine reactions, the cascade ID number is stored as a negative value in the
 			!cell number of the diffusion product (negative is signal that coarse-to-fine reaction
 			!is occurring)
-			reactionCurrent%cellNumber(2)=-CascadeCurrent%cascadeID
-			reactionCurrent%taskid(2)=proc
+			reactionUpdate%cellNumber(2)=-CascadeCurrent%cascadeID
+			reactionUpdate%taskid(2)=proc
 			
-			reactionCurrent%reactionRate=reactionRate
+			reactionUpdate%reactionRate=reactionRate
 			
 		!if reactionRate==0 and reaction doesn't exist, do nothing
-		else if(.NOT. associated(reactionCurrent) .AND. reactionRate==0d0) then
+		else if(.NOT. associated(reactionUpdate) .AND. reactionRate==0d0) then
 			!do nothing
 		
 		!if reactionRate .NE. 0 and reaction exists, update the reaction rate. Add/subtract to totalRate
-		else if(associated(reactionCurrent) .AND. reactionRate /= 0d0) then
+		else if(associated(reactionUpdate) .AND. reactionRate /= 0d0) then
 			
 			!Update total rate (entire processor and this volume element)
-			totalRate=totalRate-reactionCurrent%reactionRate+reactionRate
-			totalRateVol(cell)=totalRateVol(cell)-reactionCurrent%reactionRate+reactionRate
+			totalRate=totalRate-reactionUpdate%reactionRate+reactionRate
+			totalRateVol(cell)=totalRateVol(cell)-reactionUpdate%reactionRate+reactionRate
 			
 			!update reaction rate
-			reactionCurrent%reactionRate=reactionRate
+			reactionUpdate%reactionRate=reactionRate
 		
 		else
 			write(*,*) 'error updating reaction list - diffusion'
@@ -2491,24 +2751,21 @@ implicit none
 
 integer cascadeID, cell1, cell2, proc1, proc2, dir, defectType(numSpecies), matNum
 type(cascade), pointer :: CascadeCurrent
-integer numReactants, numProducts, i, j, k, l, count, neighbor, neighborProc
+integer numReactants, numProducts, i, j, count
 integer, allocatable :: reactants(:,:), products(:,:)
-type(reaction), pointer :: reactionCurrent, reactionPrev
+type(reaction), pointer :: reactionUpdate, reactionPrev
 double precision reactionRate
 
-!CascadeCurrent pointer should be pointing at the cascade whose ID matches the ID number passed into this 
-!subroutine
+!CascadeCurrent pointer should be pointing at the cascade whose ID matches the ID number passed into this subroutine
 CascadeCurrent=>ActiveCascades
-
 do while(associated(CascadeCurrent))
-
 	if(CascadeCurrent%cascadeID==cascadeID) then
 		exit
 	endif
-	
 	CascadeCurrent=>CascadeCurrent%next
 end do
 
+nullify(reactionUpdate)
 !In the case of polycrystal simulations, myMesh(cell)%material is the grain ID, not the material number. Therefore
 !we must set all values of matNum=1 in this case (only one material type in polycrystal simulations).
 if(numMaterials==1) then
@@ -2533,85 +2790,105 @@ do i=1, numDiffReac(matNum)
 			if(defectType(j) >= DiffReactions(i,matNum)%min(j)) then
 				if((defectType(j) <= DiffReactions(i,matNum)%max(j)) .OR. DiffReactions(i,matNum)%max(j)==-1) then
 					count=count+1
-				endif
-			endif
+				end if
+			end if
 		endif
 	end do
 
 	if(count==numSpecies) then	!this defect type is accepted for this dissociation reaction
-		!point reactionCurrent at the reaction and reactionPrev at the reaction before it
-		!(if reaction does not already exist, reactionCurrent is unallocated and reactionPrev points
+		!point reactionUpdate at the reaction and reactionPrev at the reaction before it
+		!(if reaction does not already exist, reactionUpdate is unallocated and reactionPrev points
 		!to the end of the list)
 		
 		!Create temporary arrays with the defect types associated with this reaction (diffusion)
-
-        reactants(:,1)=defectType(:)
-        products(:,1)=defectType(:)
-
+		do j=1,numSpecies
+			reactants(j,1)=defectType(j)
+			products(j,1)=defectType(j)
+		end do
 
 		!find the reaction in the reaction list (INCLUDING DIFFUSION DIRECTIONS)
-		reactionCurrent=>CascadeCurrent%reactionList(cell1)
+		reactionUpdate=>CascadeCurrent%reactionList(cell1)
 		nullify(reactionPrev)
-		
-		call findReactionInListDiff(reactionCurrent, reactionPrev, reactants, cell1, cell2, proc1, proc2)
+		call findReactionInListDiff(reactionUpdate, reactionPrev, reactants, cell1, cell2, proc1, proc2)
 		
 		reactionRate=findReactionRateDiffFine(CascadeCurrent, defectType, cell1, proc1, cell2, proc2, dir, DiffReactions(i,matNum))
 
 		!if reactionRate==0 and reaction already exists, then delete it. Subtract from totalRate.
-		if(associated(reactionCurrent) .AND. reactionRate==0d0) then
+		if(associated(reactionUpdate) .AND. reactionRate==0d0) then
 			
-			totalRate=totalRate-reactionCurrent%reactionRate
-			CascadeCurrent%totalRate(cell1)=CascadeCurrent%totalRate(cell1)-reactionCurrent%reactionRate
+			totalRate=totalRate-reactionUpdate%reactionRate
+			CascadeCurrent%totalRate(cell1)=CascadeCurrent%totalRate(cell1)-reactionUpdate%reactionRate
+
+            if(associated(reactionUpdate%next)) then
+                !deleting reactionUpdate
+                reactionPrev%next=>reactionUpdate%next
+                deallocate(reactionUpdate%reactants)
+                deallocate(reactionUpdate%products)
+                deallocate(reactionUpdate%cellNumber)
+                deallocate(reactionUpdate%taskid)
+                deallocate(reactionUpdate)
+                nullify(reactionUpdate)
+            else
+                deallocate(reactionUpdate%reactants)
+                deallocate(reactionUpdate%products)
+                deallocate(reactionUpdate%cellNumber)
+                deallocate(reactionUpdate%taskid)
+                deallocate(reactionUpdate)
+                nullify(reactionUpdate)
+                nullify(reactionPrev%next)
+            end if
 			
-			!deleting reactionCurrent
-			reactionPrev%next=>reactionCurrent%next
-			deallocate(reactionCurrent%reactants)
-			deallocate(reactionCurrent%products)
-			deallocate(reactionCurrent%cellNumber)
-			deallocate(reactionCurrent%taskid)
-			nullify(reactionCurrent%next)
-			deallocate(reactionCurrent)
+			!deleting reactionUpdate
+		!	reactionPrev%next=>reactionUpdate%next
+		!	deallocate(reactionUpdate%reactants)
+		!	deallocate(reactionUpdate%products)
+		!	deallocate(reactionUpdate%cellNumber)
+		!	deallocate(reactionUpdate%taskid)
+		!	nullify(reactionUpdate%next)
+		!	deallocate(reactionUpdate)
 			
 		
 		!if reactionRate .NE. 0 and reaction doesn't exist, then create it. Add to totalRate
-		else if(.NOT. associated(reactionCurrent) .AND. reactionRate /= 0d0) then
+		else if(.NOT. associated(reactionUpdate) .AND. reactionRate /= 0d0) then
 			
 			totalRate=totalRate+reactionRate
 			CascadeCurrent%totalRate(cell1)=CascadeCurrent%totalRate(cell1)+reactionRate
 			
 			!creating new reaction
-			allocate(reactionCurrent)
-			reactionCurrent%numReactants=1
-			reactionCurrent%numProducts=1
-			allocate(reactionCurrent%reactants(numSpecies,reactionCurrent%numReactants))
-			allocate(reactionCurrent%products(numSpecies,reactionCurrent%numProducts))
-			allocate(reactionCurrent%cellNumber(reactionCurrent%numReactants+reactionCurrent%numProducts))
-			allocate(reactionCurrent%taskid(reactionCurrent%numReactants+reactionCurrent%numProducts))
-			nullify(reactionCurrent%next)
-			reactionPrev%next=>reactionCurrent
-
-            reactionCurrent%reactants(:,1)=reactants(:,1)
-            reactionCurrent%products(:,1)=products(:,1)
-
-			reactionCurrent%cellNumber(1)=cell1
-			reactionCurrent%taskid(1)=proc1
-			reactionCurrent%cellNumber(2)=cell2
-			reactionCurrent%taskid(2)=proc2
+			allocate(reactionUpdate)
+			reactionUpdate%numReactants=1
+			reactionUpdate%numProducts=1
+			allocate(reactionUpdate%reactants(numSpecies,reactionUpdate%numReactants))
+			allocate(reactionUpdate%products(numSpecies,reactionUpdate%numProducts))
+			allocate(reactionUpdate%cellNumber(reactionUpdate%numReactants+reactionUpdate%numProducts))
+			allocate(reactionUpdate%taskid(reactionUpdate%numReactants+reactionUpdate%numProducts))
+			nullify(reactionUpdate%next)
+			reactionPrev%next=>reactionUpdate
+			!do j=1, numSpecies
+			!	reactionUpdate%reactants(j,1)=reactants(j,1)
+			!	reactionUpdate%products(j,1)=products(j,1)
+			!end do
+			reactionUpdate%reactants=reactants
+			reactionUpdate%products=products
+			reactionUpdate%cellNumber(1)=cell1
+			reactionUpdate%taskid(1)=proc1
+			reactionUpdate%cellNumber(2)=cell2
+			reactionUpdate%taskid(2)=proc2
 			
-			reactionCurrent%reactionRate=reactionRate
+			reactionUpdate%reactionRate=reactionRate
 
 		!if reactionRate==0 and reaction doesn't exist, do nothing
-		else if(.NOT. associated(reactionCurrent) .AND. reactionRate==0d0) then
+		else if(.NOT. associated(reactionUpdate) .AND. reactionRate==0d0) then
 			!do nothing
 		!if reactionRate .NE. 0 and reaction exists, update the reaction rate. Add/subtract to totalRate
-		else if(associated(reactionCurrent) .AND. reactionRate /= 0d0) then
+		else if(associated(reactionUpdate) .AND. reactionRate /= 0d0) then
 			
 			!update totalRate
-			totalRate=totalRate-reactionCurrent%reactionRate+reactionRate
-			CascadeCurrent%totalRate(cell1)=CascadeCurrent%totalRate(cell1)-reactionCurrent%reactionRate+reactionRate
+			totalRate=totalRate-reactionUpdate%reactionRate+reactionRate
+			CascadeCurrent%totalRate(cell1)=CascadeCurrent%totalRate(cell1)-reactionUpdate%reactionRate+reactionRate
 			
 			!update reaction rate
-			reactionCurrent%reactionRate=reactionRate
+			reactionUpdate%reactionRate=reactionRate
 		
 		else
 			write(*,*) 'error updating reaction list - diffusion'
@@ -2653,7 +2930,7 @@ integer n, numClusters
 if(reactionParameter%functionType==10) then	!Frenkel pair implantation
 	
 	!This is the rate of Frenkel pair implantation events inside a cell with given volume (easy to calculate)
-	volume=(myMesh(cell)%length)**3d0
+	volume=myMesh(cell)%volume
 	
 	if(implantDist=='Uniform') then
 		findReactionRate=volume*dpaRate/atomSize
@@ -2670,7 +2947,7 @@ if(reactionParameter%functionType==10) then	!Frenkel pair implantation
 else if(reactionParameter%functionType==11) then	!cascade implantation
 	
 	!This is the rate of cascade implantation events inside a cell with a given volume
-	volume=(myMesh(cell)%length)**3d0
+	volume=myMesh(cell)%volume
 	
 	if(implantDist=='Uniform') then
 		findReactionRate=volume*dpaRate/(numDisplacedAtoms*atomSize)
@@ -3794,12 +4071,12 @@ if(reactionParameter%functionType==2) then
 	
 	num1=findNumDefectFine(CascadeCurrent, defectType,cell1)
 
+	!Diffuse from fine mesh to free surface
 	if(proc2==-1) then	
 	
 		write(*,*) 'error free surface diffusion from inside fine mesh'
 	
-		!free surface
-	
+		!fine-to-freeSurface diffusion
 		areaShared=area1
 		reactionRate=Diff*areaShared*(dble(num1)/Vol1)/length1
 		if(reactionRate > 0d0) then
@@ -3807,19 +4084,13 @@ if(reactionParameter%functionType==2) then
 		else
 			findReactionRateDiffFine=0d0
 		endif
-	
+	!fine-to-coarse diffusion
 	else if(cell2==0) then 
-	
-	!diffusion from fine mesh to coarse mesh
 
 		!Find information on defects and volume element size in coarse mesh element containing this cascade
-
 		coarseCell=CascadeCurrent%cellNumber
-
         length=myMesh(coarseCell)%length
-		
 		coarseVolume=myMesh(coarseCell)%volume
-			
 		num2=findNumDefect(defectType, coarseCell)
 
 		!***********************************************************************
@@ -3831,12 +4102,10 @@ if(reactionParameter%functionType==2) then
 		!Note: assuming cubic cascade meshes here (used numxCascade for all
 		!diffusion directions)
 		!***********************************************************************
-		
 		fineToCoarseLength=(length-numxCascade*fineLength)&
 			/(dlog((length-(numxCascade-1)*fineLength)**2d0/(fineLength**2d0)))
 			
 		!Reaction Rate using the average diffusion distance
-		
 		reactionRate=Diff*(fineLength**2d0)*&
 			(dble(num1)/Vol1-dble(num2)/coarseVolume)/(fineToCoarseLength)
 		
@@ -3844,14 +4113,11 @@ if(reactionParameter%functionType==2) then
 			findReactionRateDiffFine=reactionRate
 		else
 			findReactionRateDiffFine=0d0
-		endif
+		end if
+	!fine-to-fine diffusion
+	else
 
-	else	
-	
-	!cell-to-cell diffusion
-	
-	!Find various parameters needed for reaction rate
-
+		!Find various parameters needed for reaction rate
 		if(proc2==proc1) then
 			length2=fineLength
 		else
@@ -3879,13 +4145,13 @@ if(reactionParameter%functionType==2) then
 			findReactionRateDiffFine=reactionRate
 		else
 			findReactionRateDiffFine=0d0
-		endif
+		end if
 
-	endif
+	end if
 else
 	write(*,*) 'error find reaction rate diffusion'
 	findReactionRateDiffFine=0d0
-endif
+end if
 
 end function
 
@@ -3893,43 +4159,43 @@ end function
 !***************************************************************************************************
 ! subroutine findReactionInList
 !
-! points reactionCurrent at the reaction in coarse or fine mesh with matching reactants and products in cell
-! If reaction is not present, reactionCurrent is not associated and reactionPrev points to the end
+! points reactionUpdate at the reaction in coarse or fine mesh with matching reactants and products in cell
+! If reaction is not present, reactionUpdate is not associated and reactionPrev points to the end
 ! of the list.
 !
 ! Inputs: cell, reactants(:,:), products(:,:), numReactants, numProducts
-! Outputs: reactionCurrent, reactionPrev (pointers)
+! Outputs: reactionUpdate, reactionPrev (pointers)
 !***************************************************************************************************
 
-subroutine findReactionInList(reactionCurrent, reactionPrev, cell, reactants, products, numReactants, numProducts)
+subroutine findReactionInList(reactionUpdate, reactionPrev, cell, reactants, products, numReactants, numProducts)
 use mod_constants
 use DerivedType
 implicit none
 
-type(reaction), pointer :: reactionCurrent, reactionPrev
+type(reaction), pointer :: reactionUpdate, reactionPrev
 integer, allocatable :: reactants(:,:), products(:,:)
 integer numReactants, numProducts, count(numReactants+numProducts), i, j, cell
 logical flag
 
-do while(associated(reactionCurrent))
+do while(associated(reactionUpdate))
 	
-	if(reactionCurrent%numReactants==numReactants .AND. reactionCurrent%numProducts==numProducts) then
+	if(reactionUpdate%numReactants==numReactants .AND. reactionUpdate%numProducts==numProducts) then
 		
 		do i=1,numReactants
 			count(i)=0
 			do j=1,numSpecies
-				if(reactionCurrent%reactants(j,i)==reactants(j,i)) then
+				if(reactionUpdate%reactants(j,i)==reactants(j,i)) then
 					count(i)=count(i)+1
-				endif
+				end if
 			end do
 		end do
 		
 		do i=1,numProducts
 			count(i+numReactants)=0
 			do j=1,numSpecies
-				if(reactionCurrent%products(j,i)==products(j,i)) then
+				if(reactionUpdate%products(j,i)==products(j,i)) then
 					count(i+numReactants)=count(i+numReactants)+1
-				endif
+				end if
 			end do
 		end do
 		
@@ -3937,59 +4203,54 @@ do while(associated(reactionCurrent))
 		do i=1,numReactants+numProducts
 			if(count(i) /= numSpecies) then
 				flag=.TRUE.
-			endif
+				exit
+			end if
 		end do
 		
 		if(flag .EQV. .FALSE.) then	!we have found the reaction
 			exit
-		endif
+		end if
 	end if
 	
-	reactionPrev=>reactionCurrent
-	reactionCurrent=>reactionCurrent%next
+	reactionPrev=>reactionUpdate
+	reactionUpdate=>reactionUpdate%next
 end do
 	
 end subroutine
 
-
 !***************************************************************************************************
-!This subroutine will point reactionCurrent at the correct diffusion reaction in the reaction 
-!list. 
-!***************************************************************************************************
-
 !>Subroutine find Reaction In List (diffusion)
 !!
-!!Points reactionCurrent at the correct diffusion reaction in coarse or fine mesh with matching reactants and products in cells
-!!If reaction is not present, reactionCurrent is not associated and reactionPrev points to the end
-!!of the list.
+!!Points reactionUpdate at the correct diffusion reaction in coarse or fine mesh with matching reactants and products in cells
+!!If reaction is not present, reactionUpdate is not associated and reactionPrev points to the end of the list.
 !!
 !!Inputs: cells, processors, reactants(:,:)
-!!Outputs: reactionCurrent, reactionPrev (pointers)
-
-subroutine findReactionInListDiff(reactionCurrent, reactionPrev, reactants, cell1, cell2, proc1, proc2)
+!!Outputs: reactionUpdate, reactionPrev (pointers)
+!***************************************************************************************************
+subroutine findReactionInListDiff(reactionUpdate, reactionPrev, reactants, cell1, cell2, proc1, proc2)
 use mod_constants
 use DerivedType
 implicit none
 
-type(reaction), pointer :: reactionCurrent, reactionPrev
+type(reaction), pointer :: reactionUpdate, reactionPrev
 integer, allocatable :: reactants(:,:)
 integer cell1, cell2, proc1, proc2, i, j, count(2)
 logical flag
 
-do while(associated(reactionCurrent))
-	if(reactionCurrent%numReactants==1 .AND. reactionCurrent%numProducts==1) then
-		if(reactionCurrent%cellNumber(1)==cell1 .AND. reactionCurrent%cellNumber(2)==cell2) then
-			if(reactionCurrent%taskid(1)==proc1 .AND. reactionCurrent%taskid(2)==proc2) then
+do while(associated(reactionUpdate))
+	if(reactionUpdate%numReactants==1 .AND. reactionUpdate%numProducts==1) then
+		if(reactionUpdate%cellNumber(1)==cell1 .AND. reactionUpdate%cellNumber(2)==cell2) then
+			if(reactionUpdate%taskid(1)==proc1 .AND. reactionUpdate%taskid(2)==proc2) then
 				count(1)=0
 				do j=1,numSpecies
-					if(reactionCurrent%reactants(j,1)==reactants(j,1)) then
+					if(reactionUpdate%reactants(j,1)==reactants(j,1)) then
 						count(1)=count(1)+1
 					endif
 				end do
 		
 				count(2)=0
 				do j=1,numSpecies
-					if(reactionCurrent%products(j,1)==reactants(j,1)) then
+					if(reactionUpdate%products(j,1)==reactants(j,1)) then
 						count(2)=count(2)+1
 					endif
 				end do
@@ -3998,70 +4259,71 @@ do while(associated(reactionCurrent))
 				do i=1,2
 					if(count(i) /= numSpecies) then
 						flag=.TRUE.
-					endif
+						exit
+					end if
 				end do
 				
 				if(flag .EQV. .FALSE.) then	!we have found the reaction
 					exit
-				endif
-			endif
-		endif
+				end if
+			end if
+		end if
 	end if
-	reactionPrev=>reactionCurrent
-	reactionCurrent=>reactionCurrent%next
+	reactionPrev=>reactionUpdate
+	reactionUpdate=>reactionUpdate%next
 end do
 
 end subroutine
 
 
 !***************************************************************************************************
-!This subroutine will point reactionCurrent at the correct clustering reaction in the reaction 
+!This subroutine will point reactionUpdate at the correct clustering reaction in the reaction
 !list. If it is not present, this subroutine will point to the end of the list.
 !***************************************************************************************************
 
 !>Subroutine find Reaction In List Multiple (clustering)
 !!
-!!Points reactionCurrent at the clustering reaction in the coarse or fine mesh with matching reactants and products in cell
-!!If reaction is not present, reactionCurrent is not associated and reactionPrev points to the end
+!!Points reactionUpdate at the clustering reaction in the coarse or fine mesh with matching reactants and products in cell
+!!If reaction is not present, reactionUpdate is not associated and reactionPrev points to the end
 !!of the list.
 !!
 !!Inputs: cell, reactants(:,:), products(:,:), numReactants, numProducts
-!!Outputs: reactionCurrent, reactionPrev (pointers)
+!!Outputs: reactionUpdate, reactionPrev (pointers)
 
-subroutine findReactionInListMultiple(reactionCurrent, reactionPrev, cell, reactants, products, numReactants, numProducts)
+subroutine findReactionInListMultiple(reactionUpdate, reactionPrev, cell, reactants, products, numReactants, numProducts)
 use mod_constants
 use DerivedType
 implicit none
 
-type(reaction), pointer :: reactionCurrent, reactionPrev
+type(reaction), pointer :: reactionUpdate, reactionPrev
 integer, allocatable :: reactants(:,:), products(:,:)
 integer numReactants, numProducts, count(numReactants+numProducts), i, j, cell
 logical flag
 
-do while(associated(reactionCurrent))
+do while(associated(reactionUpdate))
 	
 	!Currently set up only for clustering reactions
-	if(reactionCurrent%numReactants==2 .AND. reactionCurrent%numProducts==numProducts) then
+	if(reactionUpdate%numReactants==numReactants .AND. reactionUpdate%numProducts==numProducts) then
 		
-		!check if the reactants are the same as the reactionCurrent reactants
+		!check if the reactants are the same as the reactionUpdate reactants
 		count(1)=0
 		count(2)=0
 		do j=1,numSpecies
-			if(reactionCurrent%reactants(j,1)==reactants(j,1)) then
+			if(reactionUpdate%reactants(j,1)==reactants(j,1)) then
 				count(1)=count(1)+1
 			endif
-			if(ReactionCurrent%reactants(j,2)==reactants(j,2)) then
+			if(reactionUpdate%reactants(j,2)==reactants(j,2)) then
 				count(2)=count(2)+1
 			endif
 		end do
-		
-		!check if the products are the same as the reactionCurrent products
+
+		!check if the products are the same as the reactionUpdate products
 		do i=1,numProducts
 			count(i+numReactants)=0
 			do j=1,numSpecies
-				if(reactionCurrent%products(j,i)==products(j,i)) then
+				if(reactionUpdate%products(j,i)==products(j,i)) then
 					count(i+numReactants)=count(i+numReactants)+1
-				endif
+				end if
 			end do
 		end do
 		
@@ -4069,7 +4331,8 @@ do while(associated(reactionCurrent))
 		do i=1,numReactants+numProducts
 			if(count(i) /= numSpecies) then
 				flag=.TRUE.
-			endif
+				exit
+			end if
 		end do
 		
 		if(flag .EQV. .FALSE.) then	!we have found the reaction
@@ -4081,23 +4344,23 @@ do while(associated(reactionCurrent))
 		!reactants being in the wrong order. Thus we switch the indexes in the reactants comparison
 		!step.
 		!*************
-		!check if the reactants are the same as the reactionCurrent reactants
+		!check if the reactants are the same as the reactionUpdate reactants
 		count(1)=0
 		count(2)=0
 		do j=1,numSpecies
-			if(reactionCurrent%reactants(j,2)==reactants(j,1)) then
+			if(reactionUpdate%reactants(j,2)==reactants(j,1)) then
 				count(1)=count(1)+1
 			endif
-			if(reactionCurrent%reactants(j,1)==reactants(j,2)) then
+			if(reactionUpdate%reactants(j,1)==reactants(j,2)) then
 				count(2)=count(2)+1
 			endif
 		end do
 		
-		!check if the products are the same as the reactionCurrent products
+		!check if the products are the same as the reactionUpdate products
 		do i=1,numProducts
 			count(i+numReactants)=0
 			do j=1,numSpecies
-				if(reactionCurrent%products(j,i)==products(j,i)) then
+				if(reactionUpdate%products(j,i)==products(j,i)) then
 					count(i+numReactants)=count(i+numReactants)+1
 				endif
 			end do
@@ -4107,6 +4370,7 @@ do while(associated(reactionCurrent))
 		do i=1,numReactants+numProducts
 			if(count(i) /= numSpecies) then
 				flag=.TRUE.
+				exit
 			endif
 		end do
 		
@@ -4115,8 +4379,8 @@ do while(associated(reactionCurrent))
 		endif
 	end if
 	
-	reactionPrev=>reactionCurrent
-	reactionCurrent=>reactionCurrent%next
+	reactionPrev=>reactionUpdate
+	reactionUpdate=>reactionUpdate%next
 end do
 	
 end subroutine
@@ -4252,7 +4516,6 @@ logical isLegal
 isLegal=.TRUE.
 
 !Check for Cu+SIA
-
 do i=1,numProducts
 
     if(products(1,i) /= 0 .AND. products(3,i) /= 0) then

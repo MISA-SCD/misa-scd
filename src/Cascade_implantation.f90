@@ -173,7 +173,7 @@ end function
 ! Actions: see above, sends/recieves information on boundary updates and updates reaction lists.
 !***************************************************************************************************
 
-subroutine cascadeUpdateStep(cascadeCell)
+subroutine cascadeUpdateStep(releaseToggle, cascadeCell)
 use DerivedType
 use mod_constants
 use ReactionRates
@@ -181,6 +181,7 @@ implicit none
 include 'mpif.h'
 
 integer cascadeCell
+logical releaseToggle
 type(defect), pointer :: defectCurrent, defectPrev
 
 integer i, j, k, dir, count, recvDir
@@ -188,7 +189,6 @@ integer cellNumber, bndryCellNumber, localGrainID, neighborGrainID
 
 !Used for communication between processors
 integer numSend,numSendTemp, numRecv
-!double precision, allocatable :: defectSend(:,:), defectRecv(:,:)
 integer, allocatable :: defectSend(:,:), defectRecv(:,:)
 integer status(MPI_STATUS_SIZE), sendStatus(MPI_STATUS_SIZE),recvStatus(MPI_STATUS_SIZE)
 integer sendRequest, recvRequest
@@ -207,7 +207,7 @@ end interface
 if(cascadeCell==0) then
     numSend=0
     allocate(defectSend(numSpecies+1,numSend))
-else    !cascadeCell /= 0
+else    !cascadeCell /= 0: Implant a new cascade or release an existing  cascade
     numSend=0
     defectCurrent=>defectList(cascadeCell)%next
 
@@ -230,8 +230,20 @@ else    !cascadeCell /= 0
         defectSend(1,1)=0		        !myMesh(cascadeCell)%neighbors(1,dir)
         defectSend(2,1)=numSend-1		!numDefects
         defectSend(3,1)=cascadeCell	    !cascadeCell
-        defectSend(4,1)=0		        !useless
+        defectSend(4,1)=0		        !volume +/- CascadeElementVol*numCellsCascade
         defectSend(5,1)=0		        !useless
+
+        if(releaseToggle .EQV. .TRUE.) then
+            defectSend(4,1)=1		        !volume + CascadeElementVol*numCellsCascade
+        else
+            defectSend(4,1)=-1		        !volume - CascadeElementVol*numCellsCascade
+        end if
+
+        !defectSend(1,1)=0		        !myMesh(cascadeCell)%neighbors(1,dir)
+        !defectSend(2,1)=numSend-1		!numDefects
+        !defectSend(3,1)=cascadeCell	    !cascadeCell
+        !defectSend(4,1)=0		        !useless
+        !defectSend(5,1)=0		        !useless
 
         defectCurrent=>defectList(cascadeCell)%next
 
@@ -261,10 +273,6 @@ do dir=1,6
         end if
     end if
 
-    if(step == 1) then
-        write(*,*) 'proc',myProc%taskid, 'dir', dir, 'numSendTemp', numSendTemp
-    end if
-
     !Send
     if(myProc%procNeighbor(dir) /= myProc%taskid) then
         call MPI_ISEND(defectSend, (numSpecies+1)*numSendTemp, MPI_INTEGER, myProc%procNeighbor(dir), &
@@ -289,8 +297,13 @@ do dir=1,6
             cellNumber=defectRecv(1,1)
 
             if(meshingType=='adaptive') then
-                myBoundary(bndryCellNumber,recvDir)%volume=myBoundary(bndryCellNumber,recvDir)%volume-&
-                        CascadeElementVol*dble(numCellsCascade)
+                if(defectRecv(4,1)==-1) then
+                    myBoundary(bndryCellNumber,recvDir)%volume=myBoundary(bndryCellNumber,recvDir)%volume-&
+                            CascadeElementVol*dble(numCellsCascade)
+                else if(defectRecv(4,1)==1) then
+                    myBoundary(bndryCellNumber,recvDir)%volume=myBoundary(bndryCellNumber,recvDir)%volume+&
+                            CascadeElementVol*dble(numCellsCascade)
+                end if
             end if
 
 

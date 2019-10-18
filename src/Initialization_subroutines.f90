@@ -440,12 +440,12 @@ do cell=1,numCells
 			allocate(reactionCurrent%products(numSpecies,reactionCurrent%numProducts))
 			allocate(reactionCurrent%cellNumber(reactionCurrent%numReactants + reactionCurrent%numProducts))
 			allocate(reactionCurrent%taskid(reactionCurrent%numReactants + reactionCurrent%numProducts))
+			do j=1, numSpecies
+				reactionCurrent%reactants(j,1)=ClusterReactions(reac,matNum)%reactants(j,1)
+				reactionCurrent%reactants(j,2)=ClusterReactions(reac,matNum)%reactants(j,2)
 
-			reactionCurrent%reactants(:,1)=ClusterReactions(reac,matNum)%reactants(:,1)
-			reactionCurrent%reactants(:,2)=ClusterReactions(reac,matNum)%reactants(:,2)
-
-			reactionCurrent%products(:,1)=ClusterReactions(reac,matNum)%products(:,1)
-
+				reactionCurrent%products(j,1)=ClusterReactions(reac,matNum)%products(j,1)
+			end do
 			do i=1,reactionCurrent%numReactants+reactionCurrent%numProducts
 				reactionCurrent%cellNumber(i)=cell
 				reactionCurrent%taskid(i)=myMesh(cell)%proc
@@ -506,12 +506,12 @@ do cell=1,numCells
 				allocate(reactionCurrent%products(numSpecies,reactionCurrent%numProducts))
 				allocate(reactionCurrent%cellNumber(reactionCurrent%numReactants+reactionCurrent%numProducts))
 				allocate(reactionCurrent%taskid(reactionCurrent%numReactants+reactionCurrent%numProducts))
+				do j=1, numSpecies
+					reactionCurrent%reactants(j,1)=ClusterReactions(reac,matNum)%reactants(j,1)
+					reactionCurrent%reactants(j,2)=ClusterReactions(reac,matNum)%reactants(j,2)
 
-				reactionCurrent%reactants(:,1)=ClusterReactions(reac,matNum)%reactants(:,1)
-				reactionCurrent%reactants(:,2)=ClusterReactions(reac,matNum)%reactants(:,2)
-
-				reactionCurrent%products(:,1)=ClusterReactions(reac,matNum)%products(:,1)
-
+					reactionCurrent%products(j,1)=ClusterReactions(reac,matNum)%products(j,1)
+				end do
 				do i=1,reactionCurrent%numReactants+reactionCurrent%numProducts
 					reactionCurrent%cellNumber(i)=cell
 					reactionCurrent%taskid(i)=myMesh(cell)%proc
@@ -554,11 +554,10 @@ do cell=1,numCells
 				allocate(reactionCurrent%products(numSpecies,reactionCurrent%numProducts))
 				allocate(reactionCurrent%cellNumber(reactionCurrent%numReactants + reactionCurrent%numProducts))
 				allocate(reactionCurrent%taskid(reactionCurrent%numReactants + reactionCurrent%numProducts))
-
-
-				reactionCurrent%reactants(:,1)=DiffReactions(reac,matNum)%reactants(:,1)
-				reactionCurrent%products(:,1)=DiffReactions(reac,matNum)%products(:,1)
-
+				do j=1, numSpecies
+					reactionCurrent%reactants(j,1)=DiffReactions(reac,matNum)%reactants(j,1)
+					reactionCurrent%products(j,1)=DiffReactions(reac,matNum)%products(j,1)
+				end do
 				reactionCurrent%cellNumber(1)=cell
 				reactionCurrent%cellNumber(2)=myMesh(cell)%neighbors(1,dir)
 				reactionCurrent%taskid(1)=myMesh(cell)%proc
@@ -639,13 +638,11 @@ do cell=1,numCells
 				allocate(reactionCurrent%products(numSpecies,reactionCurrent%numProducts))
 				allocate(reactionCurrent%cellNumber(reactionCurrent%numReactants+reactionCurrent%numProducts))
 				allocate(reactionCurrent%taskid(reactionCurrent%numReactants+reactionCurrent%numProducts))
-
-
-
-				reactionCurrent%reactants(:,1)=ClusterReactions(reac,matNum)%reactants(:,1)
-				reactionCurrent%reactants(:,2)=ClusterReactions(reac,matNum)%reactants(:,2)
-				reactionCurrent%products(:,1)=ClusterReactions(reac,matNum)%products(:,1)
-
+				do j=1, numSpecies
+					reactionCurrent%reactants(j,1)=ClusterReactions(reac,matNum)%reactants(j,1)
+					reactionCurrent%reactants(j,2)=ClusterReactions(reac,matNum)%reactants(j,2)
+					reactionCurrent%products(j,1)=ClusterReactions(reac,matNum)%products(j,1)
+				end do
 				do i=1,reactionCurrent%numReactants+reactionCurrent%numProducts
 					reactionCurrent%cellNumber(i)=cell
 					reactionCurrent%taskid(i)=myMesh(cell)%proc
@@ -706,10 +703,10 @@ do cell=1,numCells
 				allocate(reactionCurrent%products(numSpecies,reactionCurrent%numProducts))
 				allocate(reactionCurrent%cellNumber(reactionCurrent%numReactants+reactionCurrent%numProducts))
 				allocate(reactionCurrent%taskid(reactionCurrent%numReactants+reactionCurrent%numProducts))
-
-				reactionCurrent%reactants(:,1)=DiffReactions(reac,matNum)%reactants(:,1)
-				reactionCurrent%products(:,1)=DiffReactions(reac,matNum)%products(:,1)
-
+				do j=1, numSpecies
+					reactionCurrent%reactants(j,1)=DiffReactions(reac,matNum)%reactants(j,1)
+					reactionCurrent%products(j,1)=DiffReactions(reac,matNum)%products(j,1)
+				end do
 				reactionCurrent%cellNumber(1)=cell
 				reactionCurrent%cellNumber(2)=myMesh(cell)%neighbors(1,dir)
 				reactionCurrent%taskid(1)=myMesh(cell)%proc
@@ -790,12 +787,11 @@ do cell=1,numCells
 				allocate(reactionCurrent%products(numSpecies,reactionCurrent%numProducts))
 				allocate(reactionCurrent%cellNumber(reactionCurrent%numReactants+reactionCurrent%numProducts))
 				allocate(reactionCurrent%taskid(reactionCurrent%numReactants+reactionCurrent%numProducts))
-
-
-				reactionCurrent%reactants(:,1)=ClusterReactions(reac,matNum)%reactants(:,1)
-				reactionCurrent%reactants(:,2)=ClusterReactions(reac,matNum)%reactants(:,2)
-				reactionCurrent%products(:,1)=ClusterReactions(reac,matNum)%products(:,1)
-
+				do j=1, numSpecies
+					reactionCurrent%reactants(j,1)=ClusterReactions(reac,matNum)%reactants(j,1)
+					reactionCurrent%reactants(j,2)=ClusterReactions(reac,matNum)%reactants(j,2)
+					reactionCurrent%products(j,1)=ClusterReactions(reac,matNum)%products(j,1)
+				end do
 				if(pointDefectToggle=='yes') then
 					if(reactionCurrent%products(3,1) > max3DInt) then
 						reactionCurrent%products(4,1) = reactionCurrent%products(3,1)
@@ -851,10 +847,10 @@ do cell=1,numCells
 			allocate(reactionCurrent%reactants(numSpecies,reactionCurrent%numReactants))
 			allocate(reactionCurrent%cellNumber(reactionCurrent%numReactants))
 			allocate(reactionCurrent%taskid(reactionCurrent%numReactants))
-
-			reactionCurrent%reactants(:,1)=ClusterReactions(reac,matNum)%reactants(:,1)
-			reactionCurrent%reactants(:,2)=ClusterReactions(reac,matNum)%reactants(:,2)
-
+			do j=1, numSpecies
+				reactionCurrent%reactants(j,1)=ClusterReactions(reac,matNum)%reactants(j,1)
+				reactionCurrent%reactants(j,2)=ClusterReactions(reac,matNum)%reactants(j,2)
+			end do
 			do i=1,reactionCurrent%numReactants
 				reactionCurrent%cellNumber(i)=cell
 				reactionCurrent%taskid(i)=myMesh(cell)%proc

@@ -11,36 +11,37 @@
 !***************************************************************************************************
 
 program MISASCD
-use DerivedType			!variable classes for MISASCD
-use MeshReader			!module created for reading in mesh
-use mod_constants		!module containing all global variables
-use randdp				!module for double precision random number generation
+use DerivedType			!<variable classes for MISASCD
+use MeshReader			!<module created for reading in mesh
+use mod_constants		!<module containing all global variables
+use randdp				!<module for double precision random number generation
 implicit none
 include 'mpif.h'
 
-type(defect), pointer :: defectCurrent									!used to find defects
-type(defectUpdateTracker), pointer :: defectUpdate, defectUpdateCurrent !used to update reactions
-type(reaction), pointer :: reactionCurrent								!used to find reactions
-type(reaction), pointer :: reactionChoiceList, reactionChoiceCurrent	!used to create a list of chosen reactions (for one KMC domain per volume element case)
+type(defect), pointer :: defectCurrent									!<used to find defects
+type(defectUpdateTracker), pointer :: defectUpdate, defectUpdateCurrent !<used to update reactions
+type(reaction), pointer :: reactionCurrent								!<used to find reactions
+type(reaction), pointer :: reactionChoiceList, reactionChoiceCurrent	!<used to create a list of chosen reactions (for one KMC domain per volume element case)
 type(reaction), pointer :: reactionTemp
-type(cascade), pointer :: CascadeCurrent								!used to find defects/reactions in fine mesh
+type(cascade), pointer :: CascadeCurrent								!<used to find defects/reactions in fine mesh
 
 double precision  GenerateTimestep, TotalRateCheck, rateSingle, tau
 integer status(MPI_STATUS_SIZE), sim, outputCounter, nullSteps
 integer cascadeCell, i, j, cell
 real time1, time2
+logical releaseToggle, impCascadeToggle
 
 integer CascadeCount, TotalCascades !<Used to count the number of cascades present in the simulation
 
 character(12) filename, filename2, filename3, filename4, filename5, filename6
 
 !***********************************************************************
-!7.2.2015 Adding an iterative search for sink efficiency. Variables below:
+!<7.2.2015 Adding an iterative search for sink efficiency. Variables below:
 !***********************************************************************
 double precision, allocatable :: conc_v_store(:), conc_i_store(:)
 logical alpha_v_search, alpha_i_search, searchToggle
 double precision conc_v_avg, conc_v_stdev, conc_i_avg, conc_i_stdev
-double precision computeVConc, computeIConc	!subroutines in postprocessing file
+double precision computeVConc, computeIConc	!<subroutines in postprocessing file
 double precision alpha_v_prev, alpha_i_prev
 double precision conc_v_prev, conc_i_prev
 double precision alpha_temp
@@ -127,9 +128,10 @@ call cpu_time(time1)
 
 open(81, file='parameters.txt',action='read', status='old')
 
-periods(1:3) = .true.
-
-!Initialize MPI interface
+!***********************************************************************
+!<Initialize MPI interface
+!***********************************************************************
+periods = .true.
 call MPI_INIT(ierr)
 call MPI_COMM_SIZE(MPI_COMM_WORLD, myProc%numtasks, ierr)		!read number of processors
 call MPI_DIMS_CREATE(myProc%numtasks,3,dims, ierr)
@@ -145,23 +147,25 @@ if(myProc%taskid==MASTER) then
     write(*,*) 'proc division', dims
 end if
 
+!***********************************************************************
 !Initialize input parameters
+!***********************************************************************
 call initializeMesh()			!open Mesh_xx.txt file and carry out parallel mesh initialization routine
 call selectMaterialInputs()		!open material input files (Fe_Defects.txt) and read all relevant data (migration and binding energies, etc)
 call readCascadeList()			!input cascade list (Fe_Cascades.txt) from file to cascadeList (global variable)
 call readImplantData()			!input (1-dimensional) non-uniform defect implantation info (DPA rates, He implant rates)
 call readParameters()			!read simulation parameters (DPA rate, temperature, etc)
 
-!Create fine mesh connectivity
+!<Create fine mesh connectivity
 allocate(cascadeConnectivity(6, numCellsCascade))	!< numCellsCascade=numxFine*numyFine*numzFine
 call createCascadeConnectivity()
 
 !***********************************************************************
-!7.2.2015 Creating iterative search for sink efficiency, looping here
+!<7.2.2015 Creating iterative search for sink efficiency, looping here
 !***********************************************************************
 searchToggle=.TRUE.
 
-!Begin by searching for alpha_i, then switch to alpha_v
+!<Begin by searching for alpha_i, then switch to alpha_v
 alpha_i_search=.TRUE.
 alpha_v_search=.FALSE.
 
@@ -185,16 +189,18 @@ do while(searchToggle .eqv. .TRUE.)
 !do 502 while(alpha_i_search .eqv. .TRUE.)
 
 !***********************************************************************
-!For running multiple simulations, initialize the defects, reactions,
-!boundary, etc. and loop here.
+!For running multiple simulations, initialize the defects, reactions, boundary, etc. and loop here.
 !***********************************************************************
 !< begin the outer loop
 do sim=1,numSims
 
 !Reset the temperature to tempStore at the beginning of each simulation
 temperature=tempStore	!< Temperature read in (K)
+if(myProc%taskid==MASTER) then
+	write(*,*) 'Initializing trial', sim, 'proc', myProc%taskid, 'temperature', temperature
+end if
 
-!Initialize output files
+!<Initialize output files
 if(myProc%taskid==MASTER) then
 	filename(1:6)='rawdat'
 	filename2(1:6)='totdat'
@@ -213,44 +219,26 @@ if(myProc%taskid==MASTER) then
 	!open(85, file=filename4, action='write', status='Unknown')
 	!open(86, file=filename5, action='write', status='Unknown')
 end if
-
 !filename5(1:6)='debugg'
 !write(unit=filename5(7:8), fmt='(I2)') myProc%taskid
 !filename5(9:12)='.log'
 !open(86, file=filename5, action='write', status='Unknown')
 
-if(myProc%taskid==MASTER) then
-	write(*,*) 'Initializing trial', sim, 'proc', myProc%taskid, 'temperature', temperature
-end if
-
-!NEXT STEPS:
-!3. Choose Reaction
-!4. Carry out reaction (update defect)->note all relevant defects that have been changed
-!5. Update reaction lists->use defects deleted and defects added (reactants and products) to update relevant reactions
-!	(first, delete all reactions associated with the REACTANTS AND PRODUCTS in the cell and all DIFFUSION reactions associated with
-!	reactants in neighboring cells. Then add all reaction rates associated with REACTANTS AND PRODUCTS in the cell and diffusion 
-!	reactions in neighboring cells.)
-!6. Calculate total reaction rate and communicate using MPI_GATHER the total reaction rate.
-!7. Repeat 2-6
-
-!*******
-!Initializing reaction lists and defect lists
-!*******
-
-!Here we initialize the random number generators on each processor with a different seed. This 
-!is done by creating random integers on the master processor and sending them to the slaves as
-!random number seeds.
-
-call initializeRandomSeeds()		!set unique random number seeds in each processor
-allocate(defectList(numCells))		!Create list of defects - array
-allocate(reactionList(numCells))	!Create list of reactions - array
-allocate(totalRateVol(numCells))	!Create array of total rates in each volume element
-call initializeVIdefect()			!2019.05.30 Add
-call initializeDefectList()			!initialize defects within myMesh
-call initializeBoundaryDefectList()	!initialize defects on boundary of myMesh (in other procs)
-call initializeReactionList()		!initialize reactions within myMesh
-call initializeTotalRate()			!initialize totalRate and maxRate using reactionList(:)
-call initializeDebugRestart()		!input defects into coarse mesh from restart file (for debugging)
+!***********************************************************************
+!<Initialize random number: initialize the random number generators on each processor with a different seed. This
+!<is done by creating random integers on the master processor and sending them to the slaves as random number seeds.
+!<Initialize defectList, reactionList, boundaryDefectList, totalRate.
+!***********************************************************************
+call initializeRandomSeeds()		!<set unique random number seeds in each processor
+allocate(defectList(numCells))		!<Create list of defects - array
+allocate(reactionList(numCells))	!<Create list of reactions - array
+allocate(totalRateVol(numCells))	!<Create array of total rates in each volume element
+call initializeVIdefect()			!<initialize point defects in the whole system
+call initializeDefectList()			!<initialize defects within myMesh
+call initializeBoundaryDefectList()	!<initialize defects on boundary of myMesh (in other procs)
+call initializeReactionList()		!<initialize reactions within myMesh
+call initializeTotalRate()			!<initialize totalRate and maxRate using reactionList(:)
+call initializeDebugRestart()		!<input defects into coarse mesh from restart file (for debugging)
 
 if(myProc%taskid==MASTER) then
 	write(*,*) 'CuEverMesh', numCuCell
@@ -260,71 +248,63 @@ if(myProc%taskid==MASTER) then
 	write(*,*) 'Equilibrium concentration of SIA', ceqI
 end if
 
-!******************************************************************
-!Initialize Counters
-!******************************************************************
+!***********************************************************************
+!<Restart from a reset file.
+!<If we are restarting from a reset file, then we have to start wtih a nonzero dpa and
+!<at a nonzero time. All of the 'old' implant events are tracked in the master processor.
+!***********************************************************************
+if(debugToggle=='yes') then
 
-if(debugToggle=='yes') then		!inpput parameter
-	
-	!If we are restarting from a reset file, then we have to start wtih a
-	!nonzero dpa and at a nonzero time. All of the 'old' implant events
-	!and He implant events are tracked in the master processor.
-	
 	if(myProc%taskid==MASTER) then
-        numImpAnn(1) = numImplantEventsReset			!numImplantEventsReset is read in from debug restart file
+        numImpAnn(1) = numImplantEventsReset	!<numImplantEventsReset is read in from debug restart file
 	else
         numImpAnn(1) = 0
 	end if
 	numImpAnn(2)=0
 	elapsedTime	= elapsedTimeReset
-	!Reset the reactions within this cell and diffusion to neighboring
-	!cells in the same processor
+
+	!Reset the reactions within this cell and diffusion to neighboring cells in the same processor
 	do i=1,numCells
 		call resetReactionListSingleCell(i)
 	end do
 
-	!Create the boundary defects in this processor and send boundary
-	!defects to neighboring processor. Update reactions for diffusion
-	!into boundary (into other processors)
-	
-	!NOTE: this will crash if the number of cells in a neighboring processor
-	!is not the same as in the local processor. Easy fix, but putting
-	!off until later.
-	
+	!Create the boundary defects in this processor and send boundary defects to neighboring processor.
+	!Update reactions for diffusion into boundary (into other processors)
+	!NOTE: this will crash if the number of cells in a neighboring processor is not the same as in the local processor.
+	!Easy fix, but putting off until later.
 	do i=1,numCells
 		call cascadeUpdateStep(i)
 	end do
 	
 	write(*,*) 'Processor', myProc%taskid, 'Defect lists and reaction lists initialized'
-	
 else
     numImpAnn(1)=0     	!<Postprocessing: number of Frenkel pairs / cascades (local)
     numImpAnn(2)=0     	!<Postprocessing: number of annihilation reactions carried out
-	elapsedTime=0d0		!The simulation time that has passed
+	elapsedTime=0d0		!<The simulation time that has passed
 	
-	numTrapSIA=0	!<Postprocessing: number of SIAs trapped on grain boundary
-	numTrapV=0		!<Postprocessing: number of vacancies trapped on grain boundary
-	numEmitSIA=0	!<Postprocessing: number of SIAs emitted from grain boundary
-	numEmitV=0		!<Postprocessing: number of vacancies emitted from grain boundary
+	numTrapSIA=0		!<Postprocessing: number of SIAs trapped on grain boundary
+	numTrapV=0			!<Postprocessing: number of vacancies trapped on grain boundary
+	numEmitSIA=0		!<Postprocessing: number of SIAs emitted from grain boundary
+	numEmitV=0			!<Postprocessing: number of vacancies emitted from grain boundary
 end if
 
-step=0
-nullSteps=0		!Record the number of steps in which an empty event was selected
-
-!Initialize totalTime
+!<Initialize totalTime
 if(totalDPA > 0d0 .AND. dpaRate > 0d0) then
 	totalTime=totalDPA/dpaRate	!simulation time
 else
 	totalTime = agingTime
 end if
 
+!<Initialize Counters
+step=0
+nullSteps=0		!Record the number of steps in which an empty event was selected
 TotalCascades=0
 outputCounter=0
 nullify(ActiveCascades)		! pointer ActiveCascades=NULL
 annealIdentify=.FALSE.		!(.TRUE. if in annealing phase, .FALSE. otherwise) used to determine how to reset reaction rates (should we include implantation or not)
 
-!Initizlize maxRate and tau. rateTau(1)=maxRate, rateTau(2)=tau
-rateTau(1:2)=0d0
+!<Initizlize maxRate and tau. rateTau(1)=maxRate, rateTau(2)=tau
+rateTau=0d0
 
 !*********************************************************************************************************************
 !*********************************************************************************************************************
@@ -334,18 +314,28 @@ rateTau(1:2)=0d0
 !**																													**
 !*********************************************************************************************************************
 !*********************************************************************************************************************
+!<KMC LOOP:
+!<1. Calculate total reaction rate and time increment.
+!<2, Choose a reaction
+!<3. Carry out reaction (update defect)->note all relevant defects that have been changed
+!<4. Update reaction lists->use defects deleted and defects added (reactants and products) to update relevant reactions
+!<	(first, delete all reactions associated with the REACTANTS AND PRODUCTS in the cell and all DIFFUSION reactions associated with
+!<	reactants in neighboring cells. Then add all reaction rates associated with REACTANTS AND PRODUCTS in the cell and diffusion
+!<	reactions in neighboring cells.)
+!<5. Repeat 1-4.
 
 do while(elapsedTime < totalTime)
-!do while(step <= 0)
+!do while(step < 20)
 	
 	step=step+1
         
-	!Logical variable tells us whether cascade communication step needs to be carried out
-	!(0=no cascade, nonzero=number of volume element where cascade event has happened)
+	!<Logical variable tells us whether cascade communication step needs to be carried out
+	!<(0=no cascade, nonzero=number of volume element where cascade event has happened)
 	cascadeCell=0
+	impCascadeToggle= .FALSE.
 	
-	!If we are choosing one reaction per volume element, find the max reaction rate in the volume elements
-	!(we don't need to do this otherwise, totalRate is automatically updated each time a reaction is carried out)
+	!<If we are choosing one reaction per volume element, find the max reaction rate in the volume elements
+	!<(we don't need to do this otherwise, totalRate is automatically updated each time a reaction is carried out)
 	if(singleElemKMC=='yes') then
 		if(meshingType=='adaptive') then
 			write(*,*) 'Error adaptive meshing not allowed for single element kMC'
@@ -356,16 +346,17 @@ do while(elapsedTime < totalTime)
 				rateSingle=totalRateVol(cell)
 			end if
 		end do
-		totalRate=rateSingle	!find the maximum totalRate in the local peocessor
+		totalRate=rateSingle	!<find the maximum totalRate in the local peocessor
 	end if
 
+	!<find the maximum totalRate in all processors
 	call MPI_REDUCE(totalRate,maxRate,1,MPI_DOUBLE_PRECISION,MPI_MAX,0,comm,ierr)
 
 	if(myProc%taskid==MASTER) then
 		rateTau(1)=maxRate
 	end if
 
-	!Generate timestep in the master processor and send it to all other processors
+	!<Generate timestep in the master processor and send it to all other processors
 	if(singleElemKMC=='yes') then
 		if(implantScheme=='explicit') then
 			write(*,*) 'Error explicit implantation not implemented for single element kMC'
@@ -375,10 +366,10 @@ do while(elapsedTime < totalTime)
 			end if
 		end if
 	else
-		!If implantScheme=='explicit', cascade implantation needs to be carried out explicitly
+		!<If implantScheme=='explicit', cascade implantation needs to be carried out explicitly
 		if(implantScheme=='explicit') then
 			if(elapsedTime >= numImpAnn(1)*(numDisplacedAtoms*atomSize)/(totalVolume*dpaRate)) then
-				!Do not generate a timestep in this case; this is an explicit (zero-time) reaction
+				!<Do not generate a timestep in this case; this is an explicit (zero-time) reaction
 				if(myProc%taskid==MASTER) then
 					rateTau(2)=0d0
 				end if
@@ -396,8 +387,8 @@ do while(elapsedTime < totalTime)
 
 	call MPI_BCAST(rateTau, 2, MPI_DOUBLE_PRECISION, MASTER, comm,ierr)
 
-	maxRate=rateTau(1)	!update maxRate
-	tau=rateTau(2)		!update time step
+	maxRate=rateTau(1)	!<update maxRate of the processor
+	tau=rateTau(2)		!<update time step of the processor
 
 !*************************************************************************
 !	if(mod(step,10)==0) then
@@ -408,20 +399,21 @@ do while(elapsedTime < totalTime)
 	
 	!***********************************************************************************************
 	!Choose from reactions in reactionList(:) (local to this processor). Null events possible.
-	!
 	!If explicit implant scheme has been chosen, implant cascades when elapsed time has passed 
 	!a threshold, and do not iterate timestep when doing so.
 	!***********************************************************************************************
-	
-	allocate(defectUpdate)	!Allocate memory for defectUpdate
+
+	!<Initialize defectUpdate. defectUpdate is used to store updated defects
+	allocate(defectUpdate)
 	allocate(defectUpdate%defectType(numSpecies))
 	do i=1,numSpecies
-		defectUpdate%defectType(i)=0	!Initialize
+		defectUpdate%defectType(i)=0
 	end do
-	nullify(defectUpdate%next)	!defectUpdate%next=NULL
-	defectUpdateCurrent=>defectUpdate	!set defectUpdateCurrent point to the defect to be updated
-	
-	if(singleElemKMC=='yes') then	!choose a reaction in each volume element
+	nullify(defectUpdate%next)
+	defectUpdateCurrent=>defectUpdate
+
+	!<choose a reaction in each volume element
+	if(singleElemKMC=='yes') then
 	
 		if(implantScheme=='explicit') then
 			write(*,*) 'Error explicit implantation not implemented for single element kMC'
@@ -499,15 +491,13 @@ do while(elapsedTime < totalTime)
 			end do
 			deallocate(reactionChoiceList)
 		end if
-	else	!choose a reaction in one volume element
-		!If implantScheme=='explicit', cascade implantation needs to be carried out explicitly
+	else	!<choose a reaction in one volume element
+		!<If implantScheme=='explicit', cascade implantation needs to be carried out explicitly
 		if(implantScheme=='explicit') then
             if(elapsedTime >= numImpAnn(1)*(numDisplacedAtoms*atomSize)/(totalVolume*dpaRate)) then
-				!choose a cell in the peocessor to implant cascade
+				!<choose a cell in the peocessor to implant cascade
 				call addCascadeExplicit(reactionCurrent)
 			else
-				!Input:  none
-				!Output: reactionCurrent, CascadeCurrent
 				call chooseReaction(reactionCurrent, CascadeCurrent)
 			end if
 		else if(implantScheme=='MonteCarlo') then
@@ -521,16 +511,13 @@ do while(elapsedTime < totalTime)
 		!boundaries of other processors and create a list of defects whose reaction rates must be update
 		!in this processor due to defects updated in this processor and in neighboring processors.
 		!***********************************************************************************************
-
 		if(.NOT. associated(reactionCurrent)) then
 			nullSteps=nullSteps+1
 		end if
 
-		!Input: reactionCurrent
-		!Output: defectUpdateCurrent, CascadeCurrent
 		call updateDefectList(reactionCurrent, defectUpdateCurrent, CascadeCurrent)
 
-		!If a cascade is chosen, update reaction rates for all defects remaining in coarse mesh element
+		!<If a cascade is chosen, update reaction rates for all defects remaining in coarse mesh element
 		if(associated(reactionCurrent)) then
 			if(reactionCurrent%numReactants==-10) then
 
@@ -540,20 +527,15 @@ do while(elapsedTime < totalTime)
 				!Variable tells us whether cascade communication step needs to be carried out
 				!and if so in what volume element in the coarse mesh
 				cascadeCell=reactionCurrent%cellNumber(1)
+				impCascadeToggle=.TRUE.
 			end if
 		end if
 	end if
-	
-	!Update elapsed time based on tau, generated timestep. If cascade implant chosen in explicit scheme, tau=0d0
+
+	!<Update elapsed time based on tau, generated timestep. If cascade implant chosen in explicit scheme, tau=0d0
 	elapsedTime=elapsedTime+tau
 
-!*********************************************************
-!	if(singleElemKMC=='no' .AND. associated(reactionCurrent) .AND. &
-!			reactionCurrent%numReactants==-10 .AND. meshingType=='nonAdaptive') then
-		!do nothing
-!	else
-		call updateReactionList(defectUpdate)
-!	end if
+	call updateReactionList(defectUpdate)
 
 	if(totalRate < 0d0) then
 		write(*,*) 'error totalRate less than zero', step
@@ -562,12 +544,14 @@ do while(elapsedTime < totalTime)
 	!If we have chosen an event inside a fine mesh, we check the total reaction rate within that
 	!fine mesh. If the total rate is less than a set value, we assume the cascade is annealed and
 	!release the defects into the coarse mesh.
+	releaseToggle = .FALSE.
 	if(associated(CascadeCurrent)) then
 		if(totalRateCascade(CascadeCurrent) < cascadeReactionLimit) then
 			
 			!Record the coarse mesh cell number of cascade (it is destroyed in releaseFineMeshDefects)
 			!Used to reset reaction list and to tell cascadeUpdateStep whether a cascade event has occurred
 			cascadeCell=CascadeCurrent%cellNumber
+			releaseToggle=.TRUE.
 
 			!Release cascade defects into coarse mesh cell and reset the reaction list within that cell
 			call releaseFineMeshDefects(CascadeCurrent)
@@ -579,7 +563,8 @@ do while(elapsedTime < totalTime)
 	!Tell neighbors whether a cascade has occurred in a cell that is a boundary of a neighbor.
 	!If so, update boundary mesh (send defects to boundary mesh) and update all diffusion reaction rates.
 	if(implantType=='Cascade') then
-		call cascadeUpdateStep(cascadeCell)
+		!call cascadeUpdateStep(cascadeCell)
+		call cascadeUpdateStep(releaseToggle, cascadeCell)
 	end if
 
 	!****************************************************************************************
@@ -589,7 +574,8 @@ do while(elapsedTime < totalTime)
 	!*****************************************************************************************
 	if(associated(reactionCurrent)) then
 		if(implantType=='Cascade') then
-			if(reactionCurrent%numReactants==-10) then
+			!if(reactionCurrent%numReactants==-10) then
+			if(impCascadeToggle .EQV. .TRUE.) then	!implanted a cascade
 				totalRate=TotalRateCheck()
 			end if
 		else if(implantType=='FrenkelPair') then
@@ -598,10 +584,9 @@ do while(elapsedTime < totalTime)
 			end if
 		end if
 	end if
-	
+
 	!******************************************
-	! Optional: count how many cascades are present at step i and compile to find avg. number
-	! of cascades present per step
+	! Optional: count how many cascades are present at step i and compile to find avg. number of cascades present per step
 	!******************************************
 	TotalCascades=TotalCascades+CascadeCount()
 	
@@ -653,6 +638,8 @@ do while(elapsedTime < totalTime)
 		
 		outputCounter=outputCounter+1
 
+		!call MPI_BARRIER(comm，ierr)
+
 		!***************************************************************************************
 		! Adding debugging section, used to find errors in code that occur rarely
 		!
@@ -660,9 +647,7 @@ do while(elapsedTime < totalTime)
 		! save memory. The debug file contains written outputs at major locations in the code,
 		! in order to see where the code is hanging.
 		!***************************************************************************************
-
 		!if(myProc%taskid==MASTER) then
-
 		!	!Close and re-open write file (gets rid of old write data)
 		!	close(86)
 		!	open(86, file=filename5, action='write', status='Unknown')
@@ -683,7 +668,6 @@ end do
 !***********************************************************************
 !Output defects at the end of the implantation loop
 !***********************************************************************
-
 call MPI_REDUCE(numImpAnn, totalImpAnn, 2, MPI_INTEGER, MPI_SUM,0, comm, ierr)
 
 if(myProc%taskid==MASTER) then
@@ -698,18 +682,14 @@ if(myProc%taskid==MASTER) then
 	if(implantType=='FrenkelPair') then
 		write(*,*) 'FrenkelPairs', totalImpAnn(1), 'computationTime', time2-time1
 		write(83,*) 'FrenkelPairs', totalImpAnn(1), 'computationTime', time2-time1
-
 	else if(implantType=='Cascade')	then
 		write(*,*) 'Cascades', totalImpAnn(1), 'computationTime', time2-time1
 		write(83,*) 'Cascades', totalImpAnn(1), 'computationTime', time2-time1
-
 	else
 		write(*,*) 'noImplantation', totalImpAnn(1), 'computationTime', time2-time1
 		write(83,*) 'noImplantation', totalImpAnn(1), 'computationTime', time2-time1
-
 	end if
 	write(*,*)
-
 	write(82,*) 'Final  step'
 	write(83,*) 'Final  step'
 end if
@@ -719,9 +699,7 @@ if(totdatToggle=='yes') call outputDefectsTotal()
 if(rawdatToggle=='yes') call outputDefectsXYZ()
 if(vtkToggle=='yes') call outputDefectsVTK(outputCounter)
 if(outputDebug=='yes') call outputDebugRestart(outputCounter)
-
 !call outputDefectsProfile(sim)	!write(99,*): DepthProfile.out
-
 
 !***********************************************************************************************************************
 !***********************************************************************************************************************
@@ -755,15 +733,10 @@ end if
 !carry out annealing in multiple steps if desired. Each step increases temperature.
 do annealIter=1,annealSteps	!default value: annealSteps = 1
 
-
 	if(annealType=='mult') then
-	
 		temperature=annealTemp*annealTempInc**dble(annealIter-1)
-
 	else if(annealType=='add') then
-
 		temperature=annealTemp+dble(annealIter-1)*annealTempInc
-
 	else
 		write(*,*) 'error unknown anneal type'
 	end if
@@ -853,7 +826,6 @@ do annealIter=1,annealSteps	!default value: annealSteps = 1
 		!***********************************************************************************************
 		!Choose from reactions in in reactionList(:) (local to this processor). Null events possible.
 		!***********************************************************************************************
-	
 		allocate(defectUpdate)
 		allocate(defectUpdate%defectType(numSpecies))
 		do i=1,numSpecies
@@ -865,9 +837,7 @@ do annealIter=1,annealSteps	!default value: annealSteps = 1
 		if(singleElemKMC=='yes') then	!choose a reaction in each volume element
 	
 			if(implantScheme=='explicit') then
-		
 				write(*,*) 'Error explicit implantation not implemented for single element kMC'
-			
 			else
 				!Generate timestep in the master processor and send it to all other processors
 				if(myProc%taskid==MASTER) then
@@ -884,14 +854,9 @@ do annealIter=1,annealSteps	!default value: annealSteps = 1
 					!Choose reactions here
 					call chooseReactionSingleCell(reactionCurrent, CascadeCurrent, cell)
 
-					!Update defects according to the reaction chosen
-					
-					!call DEBUGPrintReaction(reactionCurrent, step)
-			
 					!************
 					! Optional: count how many steps are null events
 					!************
-			
 					if(.NOT. associated(reactionCurrent)) then
 						nullSteps=nullSteps+1
 					end if
@@ -903,19 +868,14 @@ do annealIter=1,annealSteps	!default value: annealSteps = 1
 					end if
 			
 					call updateDefectList(reactionCurrent, defectUpdateCurrent, CascadeCurrent)
-			
-					!call DEBUGPrintDefectUpdate(defectUpdate)
-			
-				end do
 
+				end do
 			end if
-	
 		else	!choose a reaction in one volume element
 		
 			call chooseReaction(reactionCurrent, CascadeCurrent)
 		
 			!Generate timestep in the master processor and send it to all other processors
-		
 			if(myProc%taskid==MASTER) then
 				tau=GenerateTimestep()
 				if(elapsedTime-totalTime+tau > annealTime/dble(annealSteps)*outputCounter) then
@@ -929,16 +889,12 @@ do annealIter=1,annealSteps	!default value: annealSteps = 1
 			!boundaries of other processors and create a list of defects whose reaction rates must be update
 			!in this processor due to defects updated in this processor and in neighboring processors.
 			!***********************************************************************************************
-	
-			!call DEBUGPrintReaction(reactionCurrent, step)
-	
+
 			!************
 			! Optional: count how many steps are null events
 			!************
-		
 			if(.NOT. associated(reactionCurrent)) then
 				nullSteps=nullSteps+1
-				!write(*,*) 'null step', myProc%taskid
 			end if
 	
 			call updateDefectList(reactionCurrent, defectUpdateCurrent, CascadeCurrent)
@@ -952,27 +908,14 @@ do annealIter=1,annealSteps	!default value: annealSteps = 1
 		end if
 	
 		!Update elapsed time based on tau, generated timestep. If cascade implant chosen in explicit scheme, tau=0d0
-	!	if(myProc%taskid==MASTER) then
-		
-			elapsedTime=elapsedTime+tau
-	!	end if
-
-	!	call MPI_BCAST(elapsedTime, 1, MPI_DOUBLE_PRECISION, MASTER, comm,ierr)
-		!***********************************************************************************
-		!call DEBUGPrintDefectUpdate(defectUpdate)
+		elapsedTime=elapsedTime+tau
 
 		!Update reaction rates for defects involved in reaction chosen
-	
 		call updateReactionList(defectUpdate)
-	
-!		call DEBUGPrintDefects(step)
-!		call DEBUGPrintReactionList(step)
-!		call DEBUGCheckForUnadmissible(reactionCurrent, step)
-	
+
 		!If we have chosen an event inside a fine mesh, we check the total reaction rate within that
 		!fine mesh. If the total rate is less than a set value, we assume the cascade is annealed and
 		!release the defects into the coarse mesh.
-	
 		if(associated(CascadeCurrent)) then
 			if(totalRateCascade(CascadeCurrent) < cascadeReactionLimit) then
 			
@@ -982,19 +925,17 @@ do annealIter=1,annealSteps	!default value: annealSteps = 1
 
 				!Release cascade defects into coarse mesh cell and reset the reaction list within that cell
 				call releaseFineMeshDefects(CascadeCurrent)
-
 				call resetReactionListSingleCell(cascadeCell)
-			
 			end if
 		end if
 		
 		!Cascade communication step:
 		!Tell neighbors whether a cascade has occurred in a cell that is a boundary of a neighbor.
 		!If so, update boundary mesh (send defects to boundary mesh) and update all diffusion reaction rates.
-		call cascadeUpdateStep(cascadeCell)
+		releaseToggle=.TRUE.
+		call cascadeUpdateStep(releaseToggle,cascadeCell)
 		
 		!Update the totalRate in order to avoid any truncation error every 1000 steps (this value can be modified)
-	
 		if(mod(step,1000)==0) then
 			totalRate=TotalRateCheck()
 		end if
@@ -1003,13 +944,11 @@ do annealIter=1,annealSteps	!default value: annealSteps = 1
 		! Optional: count how many cascades are present at step i and compile to find avg. number
 		! of cascades present per step
 		!******************************************
-	
 		TotalCascades=TotalCascades+CascadeCount()
 	
 		!******************************************
 		! Output
 		!******************************************
-	
 		if((elapsedTime-totalTime) >= annealTime/dble(annealSteps)*outputCounter) then
 
 			call MPI_REDUCE(numImpAnn,totalImpAnn, 2, MPI_INTEGER, MPI_SUM,0,comm, ierr)
@@ -1047,12 +986,9 @@ do annealIter=1,annealSteps	!default value: annealSteps = 1
 		
 			outputCounter=outputCounter+1
 		end if
-	
-	!Anneal time loop
-	end do
+	end do	!Anneal time loop
 
-!Multiple anneal steps loop
-end do
+end do	!Multiple anneal steps loop
 
 
 !***********************************************************************
@@ -1113,7 +1049,6 @@ if(annealTime > 0d0) then
 	if(rawdatToggle=='yes') call outputDefectsXYZ()
 	if(vtkToggle=='yes') call outputDefectsVTK(outputCounter)
 	if(outputDebug=='yes') call outputDebugRestart(outputCounter)
-
 !	if(sinkEffSearch=='no' .AND. numMaterials .GT. 1) call outputDefectsBoundary(elapsedTime,step)
 !	if(sinkEffSearch=='no' .AND. numMaterials==1) call outputDefectsTotal(elapsedTime, step)
 
@@ -1127,19 +1062,15 @@ if(sinkEffSearch=='yes') conc_i_store(sim)=computeIConc()
 
 !***********************************************************************
 !Final step: release all cascades into coarse mesh
-!
 !(deallocate all extra memory here)
 !***********************************************************************
-
 call cpu_time(time2)
 
 if(myProc%taskid==MASTER) then
 	write(*,*) 'computation time', time2-time1
 	write(*,*) 'total steps', step
-	
 	write(83,*) 'computation time', time2-time1
 	write(83,*) 'total steps', step
-
 	write(*,*) 'Deallocating memory: fine mesh defects and reactions'
 end if
 
@@ -1152,9 +1083,7 @@ do while(associated(ActiveCascades))
 
 	!Release cascade defects into coarse mesh cell and reset the reaction list within that cell
 	call releaseFineMeshDefects(CascadeCurrent)
-
 	call resetReactionListSingleCell(cascadeCell)
-	
 end do
 
 if(myProc%taskid==MASTER) then
@@ -1167,17 +1096,13 @@ end if
 !call outputDefectsTotal(elapsedTime, step)
 
 !Final memory cleanup: deallocate defects and reactions in coarse mesh
-
 if(myProc%taskid==MASTER) then
 	write(*,*) 'Deallocating memory: coarse mesh defects and reactions'
 end if
 
 call deallocateDefectList()
-
 call deallocateReactionList()
-
 call deallocateBoundarydefectList()
-
 deallocate(totalRateVol)
 
 if(myProc%taskid==MASTER) then
@@ -1342,7 +1267,6 @@ if(alpha_i_search .eqv. .TRUE.) then
 
 end if !if(alpha_i_search .eqv. .TRUE.) then
 
-
 if(alpha_v_search .eqv. .TRUE.) then
 
 	if(sinkEffSearch=='no') then
@@ -1460,8 +1384,6 @@ if(myProc%taskid==MASTER) then
 end if
 
 call deallocateMaterialInput()
-
-!write(*,*) 'Finalizing processor', myProc%taskid
 
 close(81)
 
