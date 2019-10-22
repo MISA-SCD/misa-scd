@@ -30,7 +30,7 @@ numMaterials
 
 !Tell computer the location of the material input file(s)
 materialFile
-'../../inputs/Fe_Defects_noCu.txt'
+'../../inputs/Fe_Defects.txt'
 
 !Type of implantation ('Cascade' for cascades, 'FrenkelPair' for Frenkel pairs)
 implantType
@@ -39,7 +39,7 @@ Cascade
 !Toggle Monte Carlo cascade introduction vs explicit cascade introduction (for better weak scaling)
 !('MonteCarlo' for MC cascade implantation, 'explicit' for explicit cascade implantation)
 implantScheme
-MonteCarlo
+explicit
 
 !Tell computer the location of the cascade input file
 cascadeFile
@@ -68,25 +68,25 @@ implantFile
 start			!begin parameters
 
 temperature		!Temperature, in K
-454d0
+373d0
 
 CuContent       !Initial content of Cu in iron
 0d0
 
 annealTemp
-454d0			!Annealing temperature, in K
+373d0			!Annealing temperature, in K
 				
 dpaRate			! NOTE: if the implant profile is non-uniform, this should be the AVERAGE DPA rate.
-1.5d-4
+1.0d-4
 
 atomSize
-2.3d-2 		!(Fe) 			8.79d-3 		!(Cu)		! atomsize (nm^3)
+1.182d-2 		!(Fe) 			8.79d-3 		!(Cu)		! atomsize (nm^3)
 
 burgers
-0.204d0 		!(Fe) 			.36d0 			!(Cu)		! dislocation loop burgers vector (lattice constant) (nm)
+0.287d0 		!(Fe) 			.36d0 			!(Cu)		! dislocation loop burgers vector (lattice constant) (nm)
 
 totalDPA
-1.5d-2			! total DPA in simulation 1
+1.0d-2			! total DPA in simulation 1
 
 annealTime
 0d0				! total anneal time (s)
@@ -95,19 +95,19 @@ grainBoundaries	!Toggle whether we are going to include the effect of grain boun
 no
 
 pointDefect     !Toggle whether point defects are allowed to move only
-yes
+no
 
 grainSize
-300d0			! Mean free path for interstitial clusters to travel before removal (nm)
+3300d0			! Mean free path for interstitial clusters to travel before removal (nm)
 
 dislocDensity
-1d-6			! dislocation density (nm^-2)
+1d-5			! dislocation density (nm^-2)
 
 impurityConc
 30d-6			! carbon impurity concentration (atomic fraction)
 
 max3DInt
-1				!maximum size for SIA defect to diffuse in 3D
+4				!maximum size for SIA defect to diffuse in 3D
 
 cascadeVolume
 1000d0			!volume of cascade (nm^3) - used for cascade-defect interactions
@@ -138,16 +138,16 @@ profileToggle   !‘yes’ or ‘no’: toggles output of damage profile as a fu
 no              !Default 'no'
 
 minCuCluster    !Only n>minCuCluster nCu clusters are used for calculating the average cluster radius and number density
-5
+10
 
 minVoid         !Only n>minVoidn nV clusters are used for calculating the average cluster radius and number density
-5
+10
 
 minLoop         !Only n>minLoop nSIA clusters are used for calculating the average cluster radius and number density
-5
+10
 
 minCuV          !Only (n+m)>minLoop nCumV clusters are used for calculating the average cluster radius and number density
-5
+10
 
 end            !Tag for the end of the Output parameters file
 

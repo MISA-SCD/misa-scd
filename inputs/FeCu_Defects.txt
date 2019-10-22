@@ -100,7 +100,7 @@ nmin	2	nmax	4
 nmin	0	nmax	0
 nmin	0	nmax	0
 nmin	0	nmax	0
-fType	5	param	0				!functional form type 5 (used for mobile Cu_n)
+fType	4	param	0				!functional form type 5 (used for mobile Cu_n)
 
 1	0	0	0			!nCu    immobile
 nmin	5	nmax	-1
@@ -505,7 +505,7 @@ mmin	1	mmax	-1
 nmin	0	nmax	0
 nmin	0	nmax	0
 nmin	0	nmax	0
-5							!reactionRate form 5 (He-He clustering reaction rate includes limit on He cluster size)
+6							!reactionRate form 5 (He-He clustering reaction rate includes limit on He cluster size)
 
 1	0	0	0		0	1	0	0		!Cu-V
 nmin	1	nmax	-1
@@ -541,7 +541,7 @@ lmin	1	lmax	-1
 nmin	0	nmax	0
 nmin	0	nmax	0
 nmin	0	nmax	0
-7							!reactionRate form 7 - for HeV clusters - use V number for volume of defect
+6							!reactionRate form 7 - for HeV clusters - use V number for volume of defect
 
 1	1	0	0		0	1	0	0		!CuV-V
 nmin	1	nmax	-1
@@ -553,7 +553,7 @@ nmin	0	nmax	0
 lmin	1	lmax	-1
 nmin	0	nmax	0
 nmin	0	nmax	0
-7							!reactionRate form 7 - for HeV Clusters - use V number for volume of defect
+6							!reactionRate form 7 - for HeV Clusters - use V number for volume of defect
 
 1	1	0	0		1	1	0	0		!CuV-CuV
 nmin	1	nmax	-1
@@ -565,7 +565,7 @@ lmin	1	lmax	-1
 omin	1	omax	-1
 nmin	0	nmax	0
 nmin	0	nmax	0
-7							!reactionRate form 7 - for HeV Clusters - use V number for volume of defect
+6							!reactionRate form 7 - for HeV Clusters - use V number for volume of defect
 
 0	1	0	0		0	0	1	0		!V-SIA_mobile (annihilation)
 nmin	0	nmax	0
@@ -589,7 +589,7 @@ nmin	0	nmax	0
 nmin	0	nmax	0
 mmin	5	mmax	-1
 nmin	0	nmax	0
-8							!reactionRate form 8 - for 1D circular - 3D spherical interactions
+7							!reactionRate form 8 - for 1D circular - 3D spherical interactions
 
 0	1	0	0		0	0	0	1		!V-SIA_sessile (annihilation) (loop)
 nmin	0	nmax	0
@@ -601,7 +601,7 @@ nmin	0	nmax	0
 nmin	0	nmax	0
 nmin	0	nmax	0
 mmin	5	mmax	-1
-8							!reactionRate form 8 - for 1D circular - 3D spherical interactions
+7							!reactionRate form 8 - for 1D circular - 3D spherical interactions
 
 1	1	0	0		0	0	1	0		!CuV-SIA_mobile (disallow reactions that leave He-SIA clusters)
 nmin	1	nmax	-1
@@ -613,7 +613,7 @@ nmin	0	nmax	0
 nmin	0	nmax	0
 lmin	1	lmax	4
 nmin	0	nmax	0
-7							!reactionRate form 7 - for HeV clusters - use V number for volume of defects
+6							!reactionRate form 7 - for HeV clusters - use V number for volume of defects
 
 1	1	0	0		0	0	1	0		!CuV-SIA_mobile (disallow reactions that leave He-SIA clusters)
 nmin	1	nmax	-1
@@ -625,7 +625,7 @@ nmin	0	nmax	0
 nmin	0	nmax	0
 lmin	5	lmax	-1
 nmin	0	nmax	0
-8							!reactionRate form 8 - for 1D circular - 3D spherical interactions
+7							!reactionRate form 8 - for 1D circular - 3D spherical interactions
 
 1	1	0	0		0	0	0	1		!CuV-SIA_sessile (dissalow reactions that leave He-SIA clusters)
 nmin	1	nmax	-1
@@ -637,7 +637,7 @@ nmin	0	nmax	0
 nmin	0	nmax	0
 nmin	0	nmax	0
 lmin	5	lmax	-1
-8							!reactionRate form 8 - for 1D circular - 3D spherical interactions
+7							!reactionRate form 8 - for 1D circular - 3D spherical interactions
 
 0	0	1	0		0	0	1	0		!small SIA_mobile clusters
 nmin	0	nmax	0

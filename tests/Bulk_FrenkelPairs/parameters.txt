@@ -138,16 +138,16 @@ profileToggle   !‘yes’ or ‘no’: toggles output of damage profile as a fu
 no              !Default 'no'
 
 minCuCluster    !Only n>minCuCluster nCu clusters are used for calculating the average cluster radius and number density
-5
+10
 
 minVoid         !Only n>minVoidn nV clusters are used for calculating the average cluster radius and number density
-5
+10
 
 minLoop         !Only n>minLoop nSIA clusters are used for calculating the average cluster radius and number density
-5
+10
 
 minCuV          !Only (n+m)>minLoop nCumV clusters are used for calculating the average cluster radius and number density
-5
+10
 
 end            !Tag for the end of the Output parameters file
 

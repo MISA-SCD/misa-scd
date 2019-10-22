@@ -206,7 +206,7 @@ nmin	0	nmax	0
 nmin	0	nmax	0
 nmin	0	nmax	0
 mmin	2	mmax	-1
-8							!reactionRate form 8 - for 1D circular - 3D spherical interactions
+7							!reactionRate form 8 - for 1D circular - 3D spherical interactions
 
 0	0	1	0		0	0	1	0		!small SIA_mobile clusters (3D-3D)
 nmin	0	nmax	0

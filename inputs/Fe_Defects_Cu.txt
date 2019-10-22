@@ -398,7 +398,7 @@ mmin	1	mmax	-1
 nmin	0	nmax	0
 nmin	0	nmax	0
 nmin	0	nmax	0
-5							!reactionRate form 5 (He-He clustering reaction rate includes limit on He cluster size)
+6							!reactionRate form 5 (He-He clustering reaction rate includes limit on He cluster size)
 
 1	0	0	0		0	1	0	0		!Cu-V
 nmin	1	nmax	-1
@@ -434,7 +434,7 @@ lmin	1	lmax	-1
 nmin	0	nmax	0
 nmin	0	nmax	0
 nmin	0	nmax	0
-7							!reactionRate form 7 - for HeV clusters - use V number for volume of defect
+6							!reactionRate form 7 - for HeV clusters - use V number for volume of defect
 
 1	1	0	0		0	1	0	0		!CuV-V
 nmin	1	nmax	-1
@@ -446,7 +446,7 @@ nmin	0	nmax	0
 lmin	1	lmax	-1
 nmin	0	nmax	0
 nmin	0	nmax	0
-7							!reactionRate form 7 - for HeV Clusters - use V number for volume of defect
+6							!reactionRate form 7 - for HeV Clusters - use V number for volume of defect
 
 1	1	0	0		1	1	0	0		!CuV-CuV
 nmin	1	nmax	-1
@@ -458,9 +458,9 @@ lmin	1	lmax	-1
 omin	1	omax	-1
 nmin	0	nmax	0
 nmin	0	nmax	0
-7							!reactionRate form 7 - for HeV Clusters - use V number for volume of defect
+6							!reactionRate form 7 - for HeV Clusters - use V number for volume of defect
 
-0	1	0	0		0	0	1	0		!V-SIA_mobile (annihilation)
+0	1	0	0		0	0	1	0		!V-SIA_mobile (annihilation) 3D SIA
 nmin	0	nmax	0
 nmin	1	nmax	-1
 nmin	0	nmax	0
@@ -472,7 +472,7 @@ mmin	1	mmax	1
 nmin	0	nmax	0
 6							!reactionRate form 6 - for spherical clusters
 
-0	1	0	0		0	0	0	1		!V-SIA_sessile (annihilation) (loop)
+0	1	0	0		0	0	0	1		!V-SIA_sessile (annihilation) (loop) 1D SIA
 nmin	0	nmax	0
 nmin	1	nmax	-1
 nmin	0	nmax	0
@@ -482,9 +482,9 @@ nmin	0	nmax	0
 nmin	0	nmax	0
 nmin	0	nmax	0
 mmin	2	mmax	-1
-8							!reactionRate form 8 - for 1D circular - 3D spherical interactions
+7							!reactionRate form 8 - for 1D circular - 3D spherical interactions
 
-1	1	0	0		0	0	1	0		!CuV-SIA_mobile (disallow reactions that leave He-SIA clusters)
+1	1	0	0		0	0	1	0		!CuV-SIA_mobile (annihilation) 3D SIA
 nmin	1	nmax	-1
 mmin	1	mmax	-1
 nmin	0	nmax	0
@@ -494,9 +494,9 @@ nmin	0	nmax	0
 nmin	0	nmax	0
 lmin	1	lmax	1
 nmin	0	nmax	0
-7							!reactionRate form 7 - for HeV clusters - use V number for volume of defects
+6							!reactionRate form 7 - for HeV clusters - use V number for volume of defects
 
-1	1	0	0		0	0	0	1		!CuV-SIA_sessile (dissalow reactions that leave He-SIA clusters)
+1	1	0	0		0	0	0	1		!CuV-SIA_sessile (annihilation) 1D SIA
 nmin	1	nmax	-1
 mmin	1	mmax	-1
 nmin	0	nmax	0
@@ -506,9 +506,9 @@ nmin	0	nmax	0
 nmin	0	nmax	0
 nmin	0	nmax	0
 lmin	2	lmax	-1
-8							!reactionRate form 8 - for 1D circular - 3D spherical interactions
+7							!reactionRate form 8 - for 1D circular - 3D spherical interactions
 
-0	0	1	0		0	0	1	0		!small SIA_mobile clusters
+0	0	1	0		0	0	1	0		!small SIA_mobile clusters 3D-3D
 nmin	0	nmax	0
 nmin	0	nmax	0
 nmin	1	nmax	1

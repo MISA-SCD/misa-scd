@@ -188,7 +188,6 @@ end subroutine
 !!NOTE: to increase computation speed, choose an element first and then choose a reaction
 !!within that element.
 !*****************************************************************************************
-
 subroutine chooseReactionSingleCell(reactionCurrent, CascadeCurrent, cell)
 use DerivedType
 use mod_constants
@@ -201,10 +200,6 @@ type(defect), pointer :: defectTemp
 double precision r2, atemp, atemp_cell, r2timesa
 integer i, j, cell
 double precision totalRateCells
-
-!***************************************************************************************************
-!Choose from reactions within the local mesh, including null event, according to kMC algorithm
-!***************************************************************************************************
 
 atemp=0d0
 atemp_cell=0d0
@@ -253,13 +248,10 @@ else
 	!add to DPA and to numImplantEvents if we have an implantation event
 	if(implantType=='FrenkelPair') then
 		if(reactionCurrent%numProducts==2 .AND. reactionCurrent%numReactants==0) then
-			!Frenkel pair implantation
-!			numImplantEvents=numImplantEvents+1		!LOCAL number of implantation events. Total DPA calculated out using MPI_ALLREDUCE
-            numImpAnn(1)=numImpAnn(1)+1
+            numImpAnn(1)=numImpAnn(1)+1	!LOCAL number of implantation events.
 		end if
 	else if(implantType=='Cascade') then
 		if(reactionCurrent%numReactants==-10 .AND. reactionCurrent%numProducts==0) then !Cascade implantation
-!			numImplantEvents=numImplantEvents+1
             numImpAnn(1)=numImpAnn(1)+1
 		end if
 	else
@@ -269,28 +261,24 @@ else
 	!for post processing: count annihilation reactions (hard coded)
 	if(reactionCurrent%numReactants==2) then	!clustering reaction
 		if(reactionCurrent%reactants(2,1) /= 0 .AND. reactionCurrent%reactants(3,2) /= 0) then	!V+SIA_mobile
-			
-!			numAnnihilate=numAnnihilate+min(reactionCurrent%reactants(2,1),reactionCurrent%reactants(3,2))
+
             numImpAnn(2)=numImpAnn(2)+min(reactionCurrent%reactants(2,1),reactionCurrent%reactants(3,2))
 		
 		else if(reactionCurrent%reactants(2,1) /= 0 .AND. reactionCurrent%reactants(4,2) /= 0) then	!V+SIA_sessile
-		
-!			numAnnihilate=numAnnihilate+min(reactionCurrent%reactants(2,1),reactionCurrent%reactants(4,2))
+
             numImpAnn(2)=numImpAnn(2)+min(reactionCurrent%reactants(2,1),reactionCurrent%reactants(4,2))
 		
 		else if(reactionCurrent%reactants(3,1) /= 0 .AND. reactionCurrent%reactants(2,2) /= 0) then	!SIA_mobile+V
-		
-!			numAnnihilate=numAnnihilate+min(reactionCurrent%reactants(3,1),reactionCurrent%reactants(2,2))
+
             numImpAnn(2)=numImpAnn(2)+min(reactionCurrent%reactants(3,1),reactionCurrent%reactants(2,2))
 		
 		else if(reactionCurrent%reactants(4,1) /= 0 .AND. reactionCurrent%reactants(2,2) /= 0) then !SIA_sessile+V
-		
-!			numAnnihilate=numAnnihilate+min(reactionCurrent%reactants(4,1),reactionCurrent%reactants(2,2))
+
             numImpAnn(2)=numImpAnn(2)+min(reactionCurrent%reactants(4,1),reactionCurrent%reactants(2,2))
 		
-		endif
-	endif
-endif
+		end if
+	end if
+end if
 
 end subroutine
 
@@ -306,9 +294,7 @@ end subroutine
 !
 !Input: reactionCurrent
 !Output: defectUpdateCurrent, CascadeCurrent
-!*****************************************************************************************
-
-!***************************************************************************************************
+!
 !06/04/2014: Discovered bug in updateDefectList: if two reactions send the same defect to the same cell,
 !the defect numbers will not both add correctly because defectCurrentUpdate%num is used for the
 !defect number, which means that it does not recognize whether another defect has just been added
@@ -1210,7 +1196,6 @@ else
         if(grainBoundaryToggle=='yes') then
 
             !we have toggled the use of grain boundaries to remove defects from system
-
             if(reactionCurrent%numReactants==1 .and. reactionCurrent%numProducts==1) then
                 diffusionRandom=dprand()
 
@@ -1237,18 +1222,13 @@ else
 
 							!neighboring element not in this proc
 							numUpdateSend(j)=numUpdateSend(j)+1
-
-							!species
 							do l=1,numSpecies
 								firstSend(l,numUpdateSend(j),j)=reactionCurrent%products(l,i)
 							end do
-
 							!cell number in local mesh
 							firstSend(numSpecies+1,numUpdateSend(j),j)=cascadeCurrent%cellNumber
-
 							!number of defects to be increased by 1
 							firstSend(numSpecies+2,numUpdateSend(j),j)=1
-
 							!cell number of neighbor (in different proc)
 							firstSend(numSpecies+3,numUpdateSend(j),j)=myMesh(cascadeCurrent%cellNumber)%neighbors(1,j)
 						end if
@@ -1314,7 +1294,7 @@ else
 				do j=1,numSpecies
 					if(defectCurrent%defectType(j)==reactionCurrent%reactants(j,i)) then
 						same=same+1
-					endif
+					end if
 				end do
 				if(same==numSpecies) then
 					exit
@@ -1322,9 +1302,7 @@ else
 				defectPrev=>defectCurrent
 				defectCurrent=>defectCurrent%next
 			end do
-			
-			!No need to update local buffer - cascade is always totally contained within the coarse mesh (one processor)
-			
+
 			!If reactant defect is not in the list, then we have chosen a reaction that shouldn't exist
 			if(associated(defectCurrent) .EQV. .FALSE.) then
 				write(*,*) 'Tried to delete defect that wasnt there fine'
@@ -1390,15 +1368,12 @@ else
 				
 					allocate(defectUpdateCurrent%next)
 					defectUpdateCurrent=>defectUpdateCurrent%next
+                    nullify(defectUpdateCurrent%next)
 					defectUpdateCurrent%proc=reactionCurrent%taskid(i+reactionCurrent%numReactants)
-					allocate(defectUpdateCurrent%defectType(numSpecies))
-					
-					nullify(defectUpdateCurrent%next)
 					defectUpdateCurrent%num=1		!used for updating reaction lists
 					defectUpdateCurrent%dir=0		!tells updateReactionList that we are not in a boundary mesh
 					defectUpdateCurrent%neighbor=0	!not pointed at a different proc
-					
-					nullify(defectPrev)
+                    allocate(defectUpdateCurrent%defectType(numSpecies))
 					do j=1,numSpecies
 						products(j)=reactionCurrent%products(j,i)
 						defectUpdateCurrent%defectType(j)=reactionCurrent%products(j,i)
@@ -1424,7 +1399,7 @@ else
 	
 					! this subroutine will move defectCurrent to the place in the list where reactionCurrent%products(i,x) exists OR, if it doesn't exist,
 					! defectPrev will point to the defect before the insertion place and defectCurrent will point to the defect after insertion
-	
+                    nullify(defectPrev)
 					call findDefectInList(defectCurrent, defectPrev, products)
 
 					!*********************************************
@@ -1432,11 +1407,10 @@ else
 					!*********************************************
 					if(associated(defectCurrent)) then !if we aren't at the end of the list
 						same=0
-						
 						do j=1,numSpecies
 							if(defectCurrent%defectType(j)==products(j)) then
 								same=same+1
-							endif
+							end if
 						end do
 						
 						if(same==numSpecies) then
@@ -1472,7 +1446,6 @@ else
 						do j=1,numSpecies
 							defectPrev%defectType(j)=reactionCurrent%products(j,i)
 						end do
-
 					end if
 				end if
 			end do
@@ -1486,7 +1459,6 @@ else
 	! For defect changes in the boundary of other processors or in the boundary of this processor,
 	! local and boundary buffers are created for communication with other processors.
 	!***********************************************************************************************
-
 	else	!Reactions in the coarse mesh
         allocate(firstSend(numSpecies+3,reactionCurrent%numReactants+reactionCurrent%numProducts,6))
 		!First update local buffer if needed
@@ -2176,7 +2148,6 @@ do i=1,6
             if(same==numSpecies) then	!if the defect is already present in the list
                 defectCurrent%num=defectCurrent%num+firstRecv(numSpecies+2,j,i) !this will be +/- 1 only
 
-                !2019.05.26 Debug: if the defect of this type is at the end of the defectList
                 !if there is one defect of this type and it is in the middle of the defectList
                 if(defectCurrent%num==0 .AND. associated(defectCurrent%next) .AND. associated(defectPrev)) then
                     !delete this defect from the list in myBoundary
@@ -2328,7 +2299,6 @@ do i=1,6
         !*****************************************************
         !Prep for step 4: check to see if element updated has more than one neighbor proc
         !*****************************************************
-
         do k=1,6
 
 			!if a neighbor of this element is not in this proc or in the proc that just communicated with it
@@ -3793,17 +3763,17 @@ do while(associated(defectUpdateCurrent))
 				!
 				!NOTE: don't need to switch j (direction) here even though diffusion is in opposite
 				!direction because dir is only used when diffusing into/out of neighbor processor
-				if(myMesh(defectUpdateCurrent%cellNumber)%neighborProcs(1,j)==myProc%taskid) then
+			!	if(myMesh(defectUpdateCurrent%cellNumber)%neighborProcs(1,j)==myProc%taskid) then
 					!Don't need to do this for diffusion between different grains
-					if(polycrystal=='yes' .AND. myMesh(myMesh(defectUpdateCurrent%cellNumber)%neighbors(1,j))%material &
-							== myMesh(defectUpdateCurrent%cellNumber)%material) then
-						call addDiffusionReactions(myMesh(defectUpdateCurrent%cellNumber)%neighbors(1,j), defectUpdateCurrent%cellNumber, &
-								myProc%taskid, myProc%taskid, j, defectTemp)
-					else if(polycrystal=='no') then	!2015.05.20 Noticed that this wasn't here, probably was a bug. Fixed?
-						call addDiffusionReactions(myMesh(defectUpdateCurrent%cellNumber)%neighbors(1,j), defectUpdateCurrent%cellNumber, &
-								myProc%taskid, myProc%taskid, j, defectTemp)
-					end if
-				end if
+			!		if(polycrystal=='yes' .AND. myMesh(myMesh(defectUpdateCurrent%cellNumber)%neighbors(1,j))%material &
+			!				== myMesh(defectUpdateCurrent%cellNumber)%material) then
+			!			call addDiffusionReactions(myMesh(defectUpdateCurrent%cellNumber)%neighbors(1,j), defectUpdateCurrent%cellNumber, &
+			!					myProc%taskid, myProc%taskid, j, defectTemp)
+			!		else if(polycrystal=='no') then	!2015.05.20 Noticed that this wasn't here, probably was a bug. Fixed?
+			!			call addDiffusionReactions(myMesh(defectUpdateCurrent%cellNumber)%neighbors(1,j), defectUpdateCurrent%cellNumber, &
+			!					myProc%taskid, myProc%taskid, j, defectTemp)
+			!		end if
+			!	end if
 			end do
 			
 			!***********************************************************************************
@@ -3830,7 +3800,7 @@ do while(associated(defectUpdateCurrent))
 
 					call addDiffusionCoarseToFine(defectUpdateCurrent%cellNumber, myProc%taskid, CascadeCurrent, defectTemp)
 				
-				endif
+				end if
 				
 				CascadeCurrent=>CascadeCurrent%next
 				
@@ -3838,19 +3808,16 @@ do while(associated(defectUpdateCurrent))
 
 		!*******************************************************************************************
 		! DefectUpdateCurrent%cascadeNumber .NE. 0 means that the defect that has been updated is inside a cascade.
-		! 
-		! Therefore we update all relevant reactions within the correct cascade's fine mes
+		! Therefore we update all relevant reactions within the correct cascade's fine mesh
 		!*******************************************************************************************
 		else
 			!Point CascadeCurrent at the cascade associated with the chosen reaction
 			CascadeCurrent=>ActiveCascades
 			
 			do while(associated(CascadeCurrent))
-				
 				if(CascadeCurrent%cascadeID==defectUpdateCurrent%cascadeNumber) then
 					exit
-				endif
-			
+				end if
 				CascadeCurrent=>CascadeCurrent%next
 			end do
 
@@ -3867,14 +3834,10 @@ do while(associated(defectUpdateCurrent))
 			defectCurrent=>CascadeCurrent%localDefects(defectUpdateCurrent%cellNumber)
 			do while(associated(defectCurrent))
 				if(defectCurrent%num /= 0) then
-				
 					call addMultiDefectReactionsFine(defectUpdateCurrent%cascadeNumber, defectUpdateCurrent%cellNumber,&
 						defectTemp, defectCurrent%defectType)
-				
 				end if
-					
 				defectCurrent=>defectCurrent%next
-				
 			end do
 
 			!See above for explanation of this section
@@ -3896,10 +3859,10 @@ do while(associated(defectUpdateCurrent))
 					cascadeConnectivity(j, defectUpdateCurrent%cellNumber),myProc%taskid, myProc%taskid,j,defectTemp)
 
 				!Add diffusion reactions from neighboring cells into this cell. (both directions)
-			!	if(cascadeConnectivity(j, defectUpdateCurrent%cellNumber) /= 0) then
-			!		call addDiffusionReactionsFine(defectUpdateCurrent%cascadeNumber, cascadeConnectivity(j, defectUpdateCurrent%cellNumber), &
-			!			defectUpdateCurrent%cellNumber,myProc%taskid, myProc%taskid,j,defectTemp)
-			!	end if
+				if(cascadeConnectivity(j, defectUpdateCurrent%cellNumber) /= 0) then
+					call addDiffusionReactionsFine(defectUpdateCurrent%cascadeNumber, cascadeConnectivity(j, defectUpdateCurrent%cellNumber), &
+						defectUpdateCurrent%cellNumber,myProc%taskid, myProc%taskid,j,defectTemp)
+				end if
 
 			end do
 		end if

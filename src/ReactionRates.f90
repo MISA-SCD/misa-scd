@@ -60,14 +60,13 @@ if(numMaterials==1) then
 	matNum=1
 else
 	matNum=myMesh(cell)%material
-endif
+end if
 
+!Dissociation reactions
 numReactants=1
 numProducts=2
 allocate(reactants(numSpecies,numReactants))
 allocate(products(numSpecies,numProducts))
-
-!Dissociation reactions
 do i=1, numDissocReac(matNum)
 	count=0
 	
@@ -76,50 +75,40 @@ do i=1, numDissocReac(matNum)
 		if(defectType(j) == 0 .AND. DissocReactions(i,matNum)%reactants(j,1) == 0) then
 			count=count+1
 		else if(defectType(j) /= 0 .AND. DissocReactions(i,matNum)%reactants(j,1) /= 0) then
-			if(defectType(j) >= DissocReactions(i,matNum)%min(j)) then
-				if((defectType(j) <= DissocReactions(i,matNum)%max(j)) .OR. DissocReactions(i,matNum)%max(j)==-1) then
-					count=count+1
-				end if
+			if(defectType(j) >= DissocReactions(i,matNum)%min(j) .AND. &
+                    ((defectType(j) <= DissocReactions(i,matNum)%max(j)) .OR. DissocReactions(i,matNum)%max(j)==-1)) then
+                count=count+1
 			end if
 		end if
 	end do
 	
 	if(count==numSpecies) then	!this defect type is accepted for this dissociation reaction
-		!point reactionUpdate at the reaction and reactionPrev at the reaction before it
-		!(if reaction does not already exist, reactionUpdate is unallocated and reactionPrev points
-		!to the end of the list)
-		
+
 		!Create temporary arrays with the defect types associated with this reaction (dissociation)
 		do j=1,numSpecies
 			reactants(j,1)=defectType(j)
-			products(j,2)=DissocReactions(i,matNum)%products(j,1)
+			products(j,2)=DissocReactions(i,matNum)%products(j,1)   !point defects
 			products(j,1)=reactants(j,1)-products(j,2)
 		end do
-		
-		!************************************************************************************
+
 		!Dissociation of mobile defects from sessile SIA clusters
-		!************************************************************************************
-		
-		if(products(3,1) < 0) then	!dissociation of mobile defects from sessile SIA clusters
-			if(products(1,1) /= 0 .AND. products(2,1) /= 0) then	!Kick-out mechanism. Cu_V dissociates a SIA_m
-				products(3,1)=0
-				products(2,1)=products(2,1)+products(3,2)
-			else    !dissociation of SIA_m from sessile SIA clusters
+		if(products(3,1) < 0) then
+		!	if(products(1,1) /= 0 .AND. products(2,1) /= 0) then	!Kick-out mechanism. Cu_V dissociates a SIA_m
+		!		products(3,1)=0
+		!		products(2,1)=products(2,1)+products(3,2)
+		!	else    !dissociation of SIA_m from sessile SIA clusters
 				products(3,1)=0
 				products(4,1)=products(4,1)-products(3,2)
-			end if
+		!	end if
 		end if
-		
-		!**********************************************************
-		!Mobilize SIA clusters that decrease in size below max3Dint
-		!**********************************************************
-
 		!sessile cluster becomes mobile when it shrinks below max3DInt
 		if(products(4,1) /= 0 .AND. products(4,1) <= max3DInt) then
 			products(3,1)=products(4,1)
 			products(4,1)=0
 		end if
 
+        !point reactionUpdate at the reaction and reactionPrev at the reaction before it
+        !(if reaction does not already exist, reactionUpdate is unallocated and reactionPrev points to the end of the list)
         nullify(reactionPrev)
 		reactionUpdate=>reactionList(cell)
 		call findReactionInList(reactionUpdate, reactionPrev, cell, reactants, products, numReactants, numProducts)
@@ -2915,7 +2904,6 @@ end subroutine
 !! of a volume element, using a local DPA rate and helium implantation rate read in from an 
 !! input file.
 !***************************************************************************************************
-
 double precision function findReactionRate(cell, reactionParameter)
 use mod_constants
 use DerivedType
@@ -2928,57 +2916,41 @@ double precision Diff, Eb, volume, DPARateLocal, HeImplantRateLocal, zCoord
 integer n, numClusters
 
 if(reactionParameter%functionType==10) then	!Frenkel pair implantation
-	
-	!This is the rate of Frenkel pair implantation events inside a cell with given volume (easy to calculate)
+
 	volume=myMesh(cell)%volume
 	
 	if(implantDist=='Uniform') then
 		findReactionRate=volume*dpaRate/atomSize
 	else if(implantDist=='NonUniform') then
-		
 		zCoord=myMesh(cell)%coordinates(3)
 		DPARateLocal=findDPARateLocal(zCoord)
 		findReactionRate=volume*DPARateLocal/atomSize
-		
 	else
 		write(*,*) 'Error implant distribution not recognized'
 	endif
 	
-else if(reactionParameter%functionType==11) then	!cascade implantation
-	
-	!This is the rate of cascade implantation events inside a cell with a given volume
+else if(reactionParameter%functionType==11) then	!Cascade implantation
+
 	volume=myMesh(cell)%volume
 	
 	if(implantDist=='Uniform') then
 		findReactionRate=volume*dpaRate/(numDisplacedAtoms*atomSize)
 	else if(implantDist=='NonUniform') then
-		
 		zCoord=myMesh(cell)%coordinates(3)
 		DPARateLocal=findDPARateLocal(zCoord)
 		findReactionRate=volume*DPARateLocal/(numDisplacedAtoms*atomSize)
-		
 	else
 		write(*,*) 'Error implant distribution not recognized'
 	end if
 
 else if(ReactionParameter%functionType==13) then	!Frenkel-Pair implantation disallowed in grain boundaries
-
 	findReactionRate=0d0
-	
 else
 	write(*,*) 'error function type', ReactionParameter%functionType
-endif
+end if
 
 end function
 
-!***************************************************************************************************
-!This function will return the reaction rate of a function of type given by reactionParameter and
-!with reactant given by defectType in cell of myMesh.
-!
-!reactionParameter%functionType tells the function which functional form to look up to find the 
-!reaction rate. The information in this function is mostly hard-coded material-specific information.
-!This was seen as inevitable for this program, and this is where the majority of changes should
-!occur if we choose to change material parameters.
 !***************************************************************************************************
 !> Function find reaction rate impurity - finds reaction rate for trapping of SIA loops by impurities (Carbon).
 !
@@ -2993,7 +2965,7 @@ end function
 !
 ! We have also added the reaction rate for sessile clusters to become mobile again using a
 ! binding energy in this subroutine. The binding energy is read in from an input file.
-
+!***************************************************************************************************
 double precision function findReactionRateImpurity(defectType, cell, reactionParameter)
 use mod_constants
 use DerivedType
@@ -3014,42 +2986,40 @@ else
 	grainNum=myMesh(cell)%material
 endif
 
-if(reactionParameter%functionType==3) then
-
-	num=findNumDefect(defectType,cell)		!number of clusters of this type
-	Diff=findDiffusivity(matNum,defectType)		!diffusivity of clusters of this type
-	size=findDefectSize(defectType)
+!if(reactionParameter%functionType==3) then
+!	num=findNumDefect(defectType,cell)		!number of clusters of this type
+!	Diff=findDiffusivity(matNum,defectType)		!diffusivity of clusters of this type
+!	size=findDefectSize(defectType)
 	
-	reactionRate=(omegastar+omega*(dble(size)**(1d0/3d0)))*&
-			(Diff)*dble(num)*impurityDensity
+!	reactionRate=(omegastar+omega*(dble(size)**(1d0/3d0)))*(Diff)*dble(num)*impurityDensity
 
-else if(reactionParameter%functionType==4) then
+!else if(reactionParameter%functionType==4) then	!impurityTrapping
+if(reactionParameter%functionType==4) then	!impurityTrapping
 	Diff=findDiffusivity(matNum,defectType)
 	num=findNumDefect(defectType,cell)
 	size=findDefectSize(defectType)
 	
 	reactionRate=(omegastar1D+omegacircle1D*dble(size)**(1d0/2d0)+omega1D)**4d0*&
 		Diff*dble(num)*(impurityDensity**2d0)
-		
-else if(reactionParameter%functiontype==5) then
+
+!else if(reactionParameter%functiontype==5) then
 	
 	!To Do: create reaction rate for sessile clusters becoming mobile again due to a binding energy.
-	do i=1,numSpecies
-		if(i==3) then
-			productType(i)=defectType(4)
-		else if(i==4) then
-			productType(i)=defectType(3)
-		else
-			productType(i)=defectType(i)
-		endif
-	end do
+!	do i=1,numSpecies
+!		if(i==3) then
+!			productType(i)=defectType(4)
+!		else if(i==4) then
+!			productType(i)=defectType(3)
+!		else
+!			productType(i)=defectType(i)
+!		end if
+!	end do
 	
-	num=findNumDefect(defectType,cell)
-	Eb=findBinding(matNum,defectType,productType)
-	Diff=findDiffusivity(matNum,productType)
+!	num=findNumDefect(defectType,cell)
+!	Eb=findBinding(matNum,defectType,productType)
+!	Diff=findDiffusivity(matNum,productType)
 	
-	reactionRate=omega*Diff*dexp(-Eb/(kboltzmann*temperature))*dble(num)
-
+!	reactionRate=omega*Diff*dexp(-Eb/(kboltzmann*temperature))*dble(num)
 else
 	write(*,*) 'error impurity trapping function type only admits 3 or 4'
 	reactionRate=0d0
@@ -3059,14 +3029,6 @@ findReactionRateImpurity=reactionRate
 
 end function
 
-!***************************************************************************************************
-!function findReactionRateImpurityFine
-!
-!Finds reaction rates for defect clustering with impurities (used here for mobile SIA+impurity -> 
-!sessile SIA reactions).
-!
-!Inputs: defectType(numSpecies), cell, reactionParameter (read from file), CascadeCurrent
-!Output: reactionRate
 !***************************************************************************************************
 
 !> Function find reaction rate impurity fine - finds reaction rate for trapping of SIA loops by impurities (Carbon) inside a fine mesh (Cascade).
@@ -3084,7 +3046,7 @@ end function
 !!
 !! We have also added the reaction rate for sessile clusters to become mobile again using a 
 !! binding energy in this subroutine. The binding energy is read in from an input file.
-
+!***************************************************************************************************
 double precision function findReactionRateImpurityFine(CascadeCurrent, defectType, cell, reactionParameter)
 use mod_constants
 use DerivedType
@@ -3114,17 +3076,17 @@ else
 	grainNum=myMesh(CascadeCurrent%cellNumber)%material
 endif
 
-if(reactionParameter%functionType==3) then
+!if(reactionParameter%functionType==3) then
 
-	num=findNumDefectFine(CascadeCurrent,defectType,cell)		!number of clusters of this type
-	Diff=findDiffusivity(matNum,defectType)							!diffusivity of clusters of this type
-	size=findDefectSize(defectType)
+!	num=findNumDefectFine(CascadeCurrent,defectType,cell)		!number of clusters of this type
+!	Diff=findDiffusivity(matNum,defectType)							!diffusivity of clusters of this type
+!	size=findDefectSize(defectType)
 	
-	reactionRate=(omegastar+omega*(dble(size)**(1d0/3d0)))*&
-			(Diff)*dble(num)*impurityDensity
+!	reactionRate=(omegastar+omega*(dble(size)**(1d0/3d0)))*&
+!			(Diff)*dble(num)*impurityDensity
 
-else if(reactionParameter%functionType==4) then
-
+!else if(reactionParameter%functionType==4) then		!impurityTrapping
+if(reactionParameter%functionType==4) then		!impurityTrapping
 	Diff=findDiffusivity(matNum,defectType)
 	num=findNumDefectFine(CascadeCurrent,defectType,cell)
 	size=findDefectSize(defectType)
@@ -3132,24 +3094,24 @@ else if(reactionParameter%functionType==4) then
 	reactionRate=(omegastar1D+omegacircle1D*dble(size)**(1d0/2d0)+omega1D)**4d0*&
 		Diff*dble(num)*(impurityDensity**2d0)
 
-else if(reactionParameter%functiontype==5) then
+!else if(reactionParameter%functiontype==5) then
 	
 	!To Do: create reaction rate for sessile clusters becoming mobile again due to a binding energy.
-	do i=1,numSpecies
-		if(i==3) then
-			productType(i)=defectType(4)
-		else if(i==4) then
-			productType(i)=defectType(3)
-		else
-			productType(i)=defectType(i)
-		endif
-	end do
+!	do i=1,numSpecies
+!		if(i==3) then
+!			productType(i)=defectType(4)
+!		else if(i==4) then
+!			productType(i)=defectType(3)
+!		else
+!			productType(i)=defectType(i)
+!		end if
+!	end do
 	
-	num=findNumDefectFine(CascadeCurrent,defectType,cell)
-	Eb=findBinding(matNum,defectType,productType)
-	Diff=findDiffusivity(matNum,productType)
+!	num=findNumDefectFine(CascadeCurrent,defectType,cell)
+!	Eb=findBinding(matNum,defectType,productType)
+!	Diff=findDiffusivity(matNum,productType)
 	
-	reactionRate=omega*Diff*dexp(-Eb/(kboltzmann*temperature))*dble(num)
+!	reactionRate=omega*Diff*dexp(-Eb/(kboltzmann*temperature))*dble(num)
 	
 else
 	write(*,*) 'error impurity trapping function type only admits 3 or 4'
@@ -3191,36 +3153,28 @@ endif
 
 !dissociation
 if(reactionParameter%functionType==1) then
-	!dissocation reactions
 
-	Diff=findDiffusivity(matNum,products(:,2))			!diffusivity of the defect dissociating from the cluster
-
+	Diff=findDiffusivity(matNum,products(:,2))	!diffusivity of the defect dissociating from the cluster
 	num=findNumDefect(defectType,cell)			!number of clusters
-
 	size=findDefectSize(defectType)				!Hard-coded, rules for determining which species governs the defect size
-
 	Eb=findBinding(matNum,defectType,products(:,2))
-
-	reactionRate=omega*dble(size)**(4d0/3d0)*Diff*dexp(-Eb/(kboltzmann*temperature))*dble(num)
+	if(defectType(3)>max3DInt .OR. defectType(4)/=0) then	!1D SIA
+		reactionRate=omega2D*dble(size)**(1d0/2d0)*Diff*dexp(-Eb/(kboltzmann*temperature))*dble(num)
+	else	!3D defects
+		reactionRate=omega*dble(size)**(1d0/3d0)*Diff*dexp(-Eb/(kboltzmann*temperature))*dble(num)
+	end if
+!	reactionRate=omega*dble(size)**(4d0/3d0)*Diff*dexp(-Eb/(kboltzmann*temperature))*dble(num)
 	
 else
 	write(*,*) 'error dissociation function type only admits 1'
 	reactionRate=0d0
-endif
+end if
 
 findReactionRateDissoc=reactionRate
 
 end function
 
 !***************************************************************************************************
-!function findReactionRateDissocFine
-!
-!finds reaction rate for dissociation reactions inside fine mesh.
-!
-!Inputs: CascadeCurrent, defectType(numSpecies), products(:,:), cell, reactionParameter (read from file)
-!Output: reactionRate
-!***************************************************************************************************
-
 !> Function find reaction rate dissociation - finds reaction rate for point defects to dissociate from clusters in the fine mesh (cascade)
 !!
 !! Inputs: cell ID, reaction parameters (input from file), defect type (array size numSpecies), dissociating defect type, cascade derived type
@@ -3230,7 +3184,7 @@ end function
 !! function type associated with it, that function type is assigned in the input file.
 !!
 !! Cascade derived type is used to find the number of defects in the volume element (it is required in a later subroutine)
-
+!***************************************************************************************************
 double precision function findReactionRateDissocFine(CascadeCurrent, defectType, products, cell, reactionParameter)
 use mod_constants
 use DerivedType
@@ -3264,18 +3218,17 @@ endif
 if(reactionParameter%functionType==1) then
 
 	!dissocation reactions
-	Diff=findDiffusivity(matNum,products(:,2))								!diffusivity of the defect dissociating from the cluster
-
+	Diff=findDiffusivity(matNum,products(:,2))						!diffusivity of the defect dissociating from the cluster
 	defectTemp=>CascadeCurrent%localDefects(cell)
-
 	num=findNumDefectFine(CascadeCurrent, defectType,cell)			!number of clusters
-
 	size=findDefectSize(defectType)									!Hard-coded, rules for determining which species governs the defect size
-
-	Eb=findBinding(matNum,defectType,products(:,2))						!binding energy of single defect to cluster
-
-	
-	reactionRate=omega*dble(size)**(4d0/3d0)*Diff*dexp(-Eb/(kboltzmann*temperature))*dble(num)
+	Eb=findBinding(matNum,defectType,products(:,2))					!binding energy of single defect to cluster
+	if(defectType(3)>max3DInt .OR. defectType(4)/=0) then
+		reactionRate=omega2D*dble(size)**(1d0/2d0)*Diff*dexp(-Eb/(kboltzmann*temperature))*dble(num)
+	else
+		reactionRate=omega*dble(size)**(1d0/3d0)*Diff*dexp(-Eb/(kboltzmann*temperature))*dble(num)
+	end if
+!	reactionRate=omega*dble(size)**(4d0/3d0)*Diff*dexp(-Eb/(kboltzmann*temperature))*dble(num)
 else
 	write(*,*) 'error dissociation function type only admits 1'
 	reactionRate=0d0
@@ -3285,6 +3238,7 @@ findReactionRateDissocFine=reactionRate
 
 end function
 
+!***************************************************************************************************
 !> Function find reaction rate sink - finds reaction rate for defects to get absorbed at sinks (typically matrix dislocations)
 !!
 !! Inputs: cell ID, reaction parameters (input from file), defect type (array size numSpecies)
@@ -3292,7 +3246,7 @@ end function
 !! Calculates reaction rates for capture of a defect by a sink. Have the possibility to create
 !! an arbitrary number of unique formulas for computing reaction rates. Each formula has a
 !! function type associated with it, that function type is assigned in the input file.
-
+!***************************************************************************************************
 double precision function findReactionRateSink(defectType, cell, reactionParameter)
 use mod_constants
 use DerivedType
@@ -3313,16 +3267,16 @@ else
 endif
 
 !sink reaction function type=3
-if(reactionParameter%functionType==3) then
+if(reactionParameter%functionType==3) then	!sinkRemoval
 	
 	num=findNumDefect(defectType,cell)		!number of clusters of this type
 	Diff=findDiffusivity(matNum,defectType)		!diffusivity of clusters of this type
 	
-	if(defectType(3) /= 0) then !interstitial defect
+	if(defectType(3) /= 0) then !SIA_m
 		reactionRate=Zint*dislocationDensity*diff*dble(num)
-	else	!vacancy defect
-		reactionRate=Zv*dislocationDensity*diff*dble(num)
-	endif
+	else	!other defect
+		reactionRate=dislocationDensity*diff*dble(num)
+	end if
 else
 	write(*,*) 'error sink function type only admits 3'
 	reactionRate=0d0
@@ -3332,16 +3286,7 @@ findReactionRateSink=reactionRate
 
 end function
 
-
 !***************************************************************************************************
-!function findReactionRateSinkFine
-!
-!finds reaction rate for trapping of defects at sinks inside fine mesh.
-!
-!Inputs: CascadeCurrent, defectType(numSpecies), cell, reactionParameter (read from file)
-!Output: reactionRate
-!***************************************************************************************************
-
 !> Function find reaction rate sink fine - finds reaction rate for defects to get absorbed at sinks (typically matrix dislocations) in the fine mesh (cascade)
 !!
 !! Inputs: cell ID, reaction parameters (input from file), defect type (array size numSpecies), cascade derived type
@@ -3349,7 +3294,7 @@ end function
 !! Calculates reaction rates for capture of a defect by a sink in the fine mesh (in a cascade). Have the possibility to create
 !! an arbitrary number of unique formulas for computing reaction rates. Each formula has a
 !! function type associated with it, that function type is assigned in the input file.
-
+!***************************************************************************************************
 double precision function findReactionRateSinkFine(CascadeCurrent, defectType, cell, reactionParameter)
 use mod_constants
 use DerivedType
@@ -3378,25 +3323,26 @@ else
 endif
 
 !sink reaction function type=3
-if(reactionParameter%functionType==3) then
+if(reactionParameter%functionType==3) then	!sinkRemoval
 	
 	num=findNumDefectFine(CascadeCurrent, defectType,cell)		!number of clusters of this type
 	Diff=findDiffusivity(matNum,defectType)							!diffusivity of clusters of this type
 	
-	if(defectType(3) /= 0) then !interstitial defect
+	if(defectType(3) /= 0) then !SIA_m
 		reactionRate=Zint*dislocationDensity*diff*dble(num)
 	else
 		reactionRate=dislocationDensity*diff*dble(num)
-	endif
+	end if
 else
 	write(*,*) 'error sink function type only admits 3'
 	reactionRate=0d0
-endif
+end if
 
 findReactionRateSinkFine=reactionRate
 
 end function
 
+!***************************************************************************************************
 !> Function find reaction rate multiple - finds reaction rate for defect clustering
 !!
 !! Inputs: cell ID, reaction parameters (input from file), 2 defect types (array size numSpecies)
@@ -3407,7 +3353,7 @@ end function
 !!
 !! Several different hard-coded reaction rates are used here, according to the various 
 !! reaction rates for clustering between defects depending on their geometry and diffusivity
-
+!***************************************************************************************************
 double precision function findReactionRateMultiple(defectType1, defectType2, cell, reactionParameter)
 use mod_constants
 use DerivedType
@@ -3436,15 +3382,6 @@ Diff2=findDiffusivity(matNum,defectType2)
 num1=findNumDefect(defectType1,cell)
 num2=findNumDefect(defectType2,cell)
 
-!Hard-coded: sink strength bias for SIAs
-if(defectType1(3) /= 0 .OR. defectType1(4) /= 0) then
-	Ztemp=1.2d0
-else if(defectType2(3) /= 0 .OR. defectType2(4) /= 0) then
-	Ztemp=1.2d0
-else
-	Ztemp=1.0d0
-endif
-
 count=0
 do i=1,numSpecies
 	if(defectType1(i)==defectType2(i)) then
@@ -3459,34 +3396,58 @@ endif
 vol=myMesh(cell)%volume
 area=(myMesh(cell)%length)**2d0	!assuming square elements in grain boundary
 
-if(reactionParameter%functionType==5) then
+!if(reactionParameter%functionType==5) then	!Cu+Cu
 
-	reactionRate=Ztemp*omega*(dble(size1)**(1d0/3d0)+dble(size2)**(1d0/3d0))*&
-	        (Diff1+Diff2)*dble(num1)*dble(num2)*atomSize/vol
+!	reactionRate=omega*(dble(size1)**(1d0/3d0)+dble(size2)**(1d0/3d0))*&
+!	        (Diff1+Diff2)*dble(num1)*dble(num2)*atomSize/vol
     !reactionRate=Ztemp*(omegastar+omega*(dble(size1)**(1d0/3d0)+dble(size2)**(1d0/3d0)))*&
     !        (Diff1+Diff2)*dble(num1)*dble(num2)*atomSize/vol
         
-else if(reactionParameter%functionType==6) then	!spherical clusters other than Cu-Cu clusters
+if(reactionParameter%functionType==6) then	!3D-3D
 
-	reactionRate=Ztemp*omega*(dble(size1)**(1d0/3d0)+dble(size2)**(1d0/3d0))*(Diff1+Diff2)*dble(num1)*dble(num2)&
-				 *atomSize/vol
+	if((defectType1(3)>0 .AND. defectType1(3) <= max3DInt) .AND. &
+			(defectType2(3)>0 .AND. defectType2(3) <= max3DInt)) then	!3D+3D: 3D(SIA) + 3D(SIA)
+		reactionRate=Zint*omega*(dble(size1)**(1d0/3d0)+dble(size2)**(1d0/3d0))*(Diff1+Diff2)*dble(num1)*dble(num2)&
+				*atomSize/vol
+	else
+		reactionRate=omega*(dble(size1)**(1d0/3d0)+dble(size2)**(1d0/3d0))*(Diff1+Diff2)*dble(num1)*dble(num2)&
+				*atomSize/vol
+	end if
 	!reactionRate=Ztemp*(omegastar+omega*(dble(size1)**(1d0/3d0)+dble(size2)**(1d0/3d0)))*(Diff1+Diff2)*dble(num1)*dble(num2)&
 	!			 *atomSize/vol
 
-else if(reactionParameter%functionType==7) then	!For CuV clusters. NOTE that this is the same as function type 6 (identical for now)
+else if(reactionParameter%functionType==7) then	!3D-1D: Cu/V/CuV + 1D(SIA)
 
-	reactionRate=Ztemp*omega*(dble(size1)**(1d0/3d0)+dble(size2)**(1d0/3d0))*(Diff1+Diff2)*dble(num1)*dble(num2)&
-			*atomSize/vol
-	!reactionRate=Ztemp*(omegastar+omega*(dble(size1)**(1d0/3d0)+dble(size2)**(1d0/3d0)))*(Diff1+Diff2)*dble(num1)*dble(num2)&
+	!reactionRate=omega*(dble(size1)**(1d0/3d0)+dble(size2)**(1d0/3d0))*(Diff1+Diff2)*dble(num1)*dble(num2)&
 	!		*atomSize/vol
+	if(defectType1(3) > max3DInt .OR. defectType1(4) > max3DInt) then
 
-else if(reactionParameter%functionType==8) then
+		!if the first defect is the 1D diffusing loop, we have to switch the order of the parameters in order to have the correct reaction rate.
+		size1=findDefectSize(defectType2)
+		size2=findDefectSize(defectType1)
+		Diff1=findDiffusivity(matNum,defectType2)
+		Diff2=findDiffusivity(matNum,defectType1)
+		num1=findNumDefect(defectType2,cell)
+		num2=findNumDefect(defectType1,cell)
+
+	else if(defectType2(3) > max3DInt .OR. defectType2(4) > max3DInt) then
+		!do nothing, this is the same as the default at the beginning of this subroutine
+	else
+		write(*,*) 'error finding 3D-1D reaction rates for non-SIA loops'
+		write(*,*) 'defect type 1', defectType1
+		write(*,*) 'defect type 2', defectType2
+		reactionRate=0d0
+	end if
+
+	reactionRate=(omega*dble(size1)**(1d0/3d0)+omega2D*dble(size2)**(1d0/2d0))*Diff1*dble(num1)*dble(num2)*atomSize/vol+&
+			(omegacircle1D*dble(size2)**(1d0/2d0)+omega1D*dble(size1)**(1d0/3d0))**4d0*&
+					Diff2*dble(num2)*dble(num1)**(2d0)*(atomSize/vol)**(2d0)
+
+else if(reactionParameter%functionType==8) then	!3D-1D: 3D(SIA) + 1D(SIA)
 
 	if(defectType1(3) > max3DInt .OR. defectType1(4) > max3DInt) then
 		
-		!if the first defect is the 1-D diffusing loop, we have to switch the order of the parameters
-		!in order to have the correct reaction rate.
-		
+		!if the first defect is the 1-D diffusing loop, we have to switch the order of the parameters in order to have the correct reaction rate.
 		size1=findDefectSize(defectType2)
 		size2=findDefectSize(defectType1)
 		Diff1=findDiffusivity(matNum,defectType2)
@@ -3495,50 +3456,43 @@ else if(reactionParameter%functionType==8) then
 		num2=findNumDefect(defectType1,cell)
 		
 	else if(defectType2(3) > max3DInt .OR. defectType2(4) > max3DInt) then
-		
 		!do nothing, this is the same as the default at the beginning of this subroutine
-		
 	else
 		write(*,*) 'error finding 3D-1D reaction rates for non-SIA loops'
 		write(*,*) 'defect type 1', defectType1
 		write(*,*) 'defect type 2', defectType2
 		reactionRate=0d0
-	endif
+	end if
 
-	reactionRate=(omega*dble(size1)**(1d0/3d0)+omega2D*dble(size2)**(1d0/2d0))*Diff1*num1*num2*atomSize/vol+&
-		(Ztemp*(omegacircle1D*dble(size2)**(1d0/2d0)+omega1D*dble(size1)**(1d0/3d0)))**4d0*&
+	reactionRate=(omega*dble(size1)**(1d0/3d0)+omega2D*dble(size2)**(1d0/2d0))*Diff1*dble(num1)*dble(num2)*atomSize/vol+&
+		(Zint*(omegacircle1D*dble(size2)**(1d0/2d0)+omega1D*dble(size1)**(1d0/3d0)))**4d0*&
 		Diff2*dble(num2)*dble(num1)**(2d0)*(atomSize/vol)**(2d0)
 	!reactionRate=Zint*(omegastar+(omega*dble(size1)**(1d0/3d0)+omega2D*dble(size2)**(1d0/2d0)))*&
 	!		Diff1*num1*num2*atomSize/vol+&
 	!		(Zint*(omegastar1D+omegacircle1D*dble(size2)**(1d0/2d0)+omega1D*dble(size1)**(1d0/3d0)))**4d0*&
 	!				Diff2*dble(num2)*dble(num1)**(2d0)*(atomSize/vol)**(2d0)
 		
-else if(reactionParameter%functionType==9) then
+else if(reactionParameter%functionType==9) then	!1D-1D: 1D(SIA) + 1D(SIA)
 	
-	reactionRate=(Ztemp*(omegastar1D+omegacircle1D*(dble(size1)**(1d0/2d0)+dble(size2)**(1d0/2d0))))**4d0*&
+	reactionRate=(Zint*omegacircle1D*(dble(size1)**(1d0/2d0)+dble(size2)**(1d0/2d0)))**4d0*&
 		(Diff1*dble(num2)+Diff2*dble(num1))*dble(num1*num2)*(atomSize/vol)**(2d0)
 
-else if(reactionParameter%functionType==10) then	!Diffusion rate for 2D defect recombination on the grain boundary
+!else if(reactionParameter%functionType==10) then	!Diffusion rate for 2D defect recombination on the grain boundary
 
-	rad1=(3d0*size1*atomSize/(4d0*pi))**(1d0/3d0)
-	rad2=(3d0*size2*atomSize/(4d0*pi))**(1d0/3d0)
+!	rad1=(3d0*size1*atomSize/(4d0*pi))**(1d0/3d0)
+!	rad2=(3d0*size2*atomSize/(4d0*pi))**(1d0/3d0)
 	
-	if(num1==0 .OR. num2==0) then
-	
-		reactionRate=0d0
-		
-	else
-	
-		reactionRate=(4d0*pi*dble(num1)*dble(num2)/area)*&
-						(Diff1/(2d0*dlog(dsqrt(area/(pi*num2))*(1d0/(rad1+rad2)))-1d0)+&
-						 Diff2/(2d0*dlog(dsqrt(area/(pi*num1))*(1d0/(rad1+rad2)))-1d0))
-	end if
+!	if(num1==0 .OR. num2==0) then
+!		reactionRate=0d0
+!	else
+!		reactionRate=(4d0*pi*dble(num1)*dble(num2)/area)*&
+!						(Diff1/(2d0*dlog(dsqrt(area/(pi*num2))*(1d0/(rad1+rad2)))-1d0)+&
+!						 Diff2/(2d0*dlog(dsqrt(area/(pi*num1))*(1d0/(rad1+rad2)))-1d0))
+!	end if
 
-	if(reactionRate < 0d0) then
-
-		reactionRate=0d0
-	endif
-
+!	if(reactionRate < 0d0) then
+!		reactionRate=0d0
+!	end if
 else
 	write(*,*) 'error clustering function type only admits 5-9'
 	reactionRate=0d0
@@ -3547,16 +3501,7 @@ endif
 findReactionRateMultiple=reactionRate
 end function
 
-
 !***************************************************************************************************
-!function findReactionRateMultipleFine
-!
-!finds reaction rate for defect clustering (which takes two defects to occur).
-!
-!Inputs: CascadeCurrent, defectType1(numSpecies), defectType2(numSpecies), cell, reactionParameter (read from file)
-!Output: reactionRate
-!***************************************************************************************************
-
 !> Function find reaction rate multiple fine - finds reaction rate for defect clustering in the fine mesh (Cascade)
 !!
 !! Inputs: cell ID, reaction parameters (input from file), 2 defect types (array size numSpecies), cascade derived type
@@ -3567,7 +3512,7 @@ end function
 !!
 !! Several different hard-coded reaction rates are used here, according to the various 
 !! reaction rates for clustering between defects depending on their geometry and diffusivity
-
+!***************************************************************************************************
 double precision function findReactionRateMultipleFine(CascadeCurrent, defectType1, defectType2, cell, reactionParameter)
 use mod_constants
 use DerivedType
@@ -3612,50 +3557,69 @@ else if(defectType2(3) /= 0 .OR. defectType2(4) /= 0) then
 	Ztemp=1.2d0
 else
 	Ztemp=1.0d0
-endif
+end if
 
 !Adjust the number of defects in the reaction if both reactants are of the same type
 
 count=0
-
 do i=1,numSpecies
 	if(defectType1(i)==defectType2(i)) then
 		count=count+1
 	end if
 end do
-
 if(count==numSpecies) then
 	!we have two defects of the same type, have to modify the defect numbers for a defect to combine with itself
 	num2=num2-1
-endif
+end if
 
 !list of clustering reaction functional forms
+if(reactionParameter%functionType==6) then	!3D-3D
 
-if(reactionParameter%functionType==5) then
-	
-	if(size1+size2 > 4) then	!He-He reactions
-		reactionRate=0d0		!hard-coded: limit size of interstitial He clusters to max 4 (no parameters available for larger clusters)
+	if((defectType1(3)>0 .AND. defectType1(3) <= max3DInt) .AND. &
+			(defectType2(3)>0 .AND. defectType2(3) <= max3DInt)) then	!3D-3D: 3D(SIA) + 3D(SIA)
+		reactionRate=Zint*omega*(dble(size1)**(1d0/3d0)+dble(size2)**(1d0/3d0))*(Diff1+Diff2)*dble(num1)*dble(num2)&
+				*atomSize/vol
 	else
-		reactionRate=Ztemp*(omegastar+omega*(dble(size1)**(1d0/3d0)+dble(size2)**(1d0/3d0)))*&
-			(Diff1+Diff2)*dble(num1)*dble(num2)*atomSize/vol
+		reactionRate=omega*(dble(size1)**(1d0/3d0)+dble(size2)**(1d0/3d0))*(Diff1+Diff2)*dble(num1)*dble(num2)&
+				*atomSize/vol
+	end if
+
+	!reactionRate=Ztemp*(omegastar+omega*(dble(size1)**(1d0/3d0)+dble(size2)**(1d0/3d0)))*(Diff1+Diff2)*dble(num1)*dble(num2)&
+	!			 *atomSize/vol
+
+else if(reactionParameter%functionType==7) then	!3D-1D: Cu/V/CuV + 1D(SIA)
+
+	!reactionRate=Ztemp*(omegastar+omega*(dble(size1)**(1d0/3d0)+dble(size2)**(1d0/3d0)))*(Diff1+Diff2)*dble(num1)*dble(num2)&
+	!			 *atomSize/vol
+	if(defectType1(3) > max3DInt .OR. defectType1(4) > max3DInt) then
+
+		!if the first defect is the 1-D diffusing loop, we have to switch the order of the parameters in order to have the correct reaction rate.
+		size1=findDefectSize(defectType2)
+		size2=findDefectSize(defectType1)
+		Diff1=findDiffusivity(matNum,defectType2)
+		Diff2=findDiffusivity(matNum,defectType1)
+		num1=findNumDefectFine(CascadeCurrent, defectType2,cell)
+		num2=findNumDefectFine(CascadeCurrent, defectType1,cell)
+
+	else if(defectType2(3) > max3DInt .OR. defectType2(4) > max3DInt) then
+		!do nothing, this is the same as the default at the beginning of this subroutine
+	else
+		write(*,*) 'error finding 3D-1D reaction rates for non-SIA loops'
+		write(*,*) 'defect type 1', defectType1
+		write(*,*) 'defect type 2', defectType2
+		reactionRate=0d0
 	endif
-else if(reactionParameter%functionType==6) then	!spherical clusters other than He-He clusters
 
-	reactionRate=Ztemp*(omegastar+omega*(dble(size1)**(1d0/3d0)+dble(size2)**(1d0/3d0)))*(Diff1+Diff2)*dble(num1)*dble(num2)&
-				 *atomSize/vol
+	reactionRate=(omega*dble(size1)**(1d0/3d0)+omega2D*dble(size2)**(1d0/2d0))*Diff1*dble(num1*num2)*atomSize/vol+&
+			(omegacircle1D*dble(size2)**(1d0/2d0)+omega1D*dble(size1)**(1d0/3d0))**4d0*&
+					Diff2*dble(num2)*dble(num1)**(2d0)*(atomSize/vol)**(2d0)
 
-else if(reactionParameter%functionType==7) then	!For HeV clusters. NOTE that this is the same as function type 6 (identical for now)
 
-	reactionRate=Ztemp*(omegastar+omega*(dble(size1)**(1d0/3d0)+dble(size2)**(1d0/3d0)))*(Diff1+Diff2)*dble(num1)*dble(num2)&
-				 *atomSize/vol
-
-else if(reactionParameter%functionType==8) then
+else if(reactionParameter%functionType==8) then	!3D-1D: 3D(SIA) + 1D(SIA)
 
 	if(defectType1(3) > max3DInt .OR. defectType1(4) > max3DInt) then
 		
-		!if the first defect is the 1-D diffusing loop, we have to switch the order of the parameters
-		!in order to have the correct reaction rate.
-		
+		!if the first defect is the 1-D diffusing loop, we have to switch the order of the parameters in order to have the correct reaction rate.
 		size1=findDefectSize(defectType2)
 		size2=findDefectSize(defectType1)
 		Diff1=findDiffusivity(matNum,defectType2)
@@ -3664,9 +3628,7 @@ else if(reactionParameter%functionType==8) then
 		num2=findNumDefectFine(CascadeCurrent, defectType1,cell)
 		
 	else if(defectType2(3) > max3DInt .OR. defectType2(4) > max3DInt) then
-		
 		!do nothing, this is the same as the default at the beginning of this subroutine
-		
 	else
 		write(*,*) 'error finding 3D-1D reaction rates for non-SIA loops'
 		write(*,*) 'defect type 1', defectType1
@@ -3674,14 +3636,13 @@ else if(reactionParameter%functionType==8) then
 		reactionRate=0d0
 	endif
 
-	reactionRate=Zint*(omegastar+(omega*dble(size1)**(1d0/3d0)+omega2D*dble(size2)**(1d0/2d0)))*&
-		Diff1*num1*num2*atomSize/vol+&
-		(Zint*(omegastar1D+omegacircle1D*dble(size2)**(1d0/2d0)+omega1D*dble(size1)**(1d0/3d0)))**4d0*&
+	reactionRate=(omega*dble(size1)**(1d0/3d0)+omega2D*dble(size2)**(1d0/2d0))*Diff1*dble(num1*num2)*atomSize/vol+&
+		(Zint*(omegacircle1D*dble(size2)**(1d0/2d0)+omega1D*dble(size1)**(1d0/3d0)))**4d0*&
 		Diff2*dble(num2)*dble(num1)**(2d0)*(atomSize/vol)**(2d0)
 		
-else if(reactionParameter%functionType==9) then
+else if(reactionParameter%functionType==9) then	!1D-1D: 1D(SIA) + 1D(SIA)
 	
-	reactionRate=(Zint*(omegastar1D+omegacircle1D*(dble(size1)**(1d0/2d0)+dble(size2)**(1d0/2d0))))**4d0*&
+	reactionRate=(Zint*omegacircle1D*(dble(size1)**(1d0/2d0)+dble(size2)**(1d0/2d0)))**4d0*&
 		(Diff1*dble(num2)+Diff2*dble(num1))*dble(num1*num2)*(atomSize/vol)**(2d0)
 else
 	write(*,*) 'error clustering function type only admits 5-9'
@@ -3691,13 +3652,14 @@ endif
 findReactionRateMultipleFine=reactionRate
 end function
 
+!***************************************************************************************************
 !> Function find reaction rate diffusion - finds reaction rate for defect diffusion between elements
 !!
 !! Inputs: cell IDs, processor IDs, diffusion direction, reaction parameters (input from file), defect type (array size numSpecies)
 !!
 !! Calculates reaction rates for diffusion between volume elements. Using the finite-volume
 !! version of Fick's law to find rates (using first derivative).
-
+!***************************************************************************************************
 double precision function findReactionRateDiff(defectType, cell1, proc1, cell2, proc2, dir, reactionParameter)
 use mod_constants
 use DerivedType
@@ -3725,9 +3687,9 @@ else
 end if
 grainNum=myMesh(cell1)%material
 
-if(reactionParameter%functionType==2) then
+if(reactionParameter%functionType==2) then	!3D diffusion
 
-	Diff=findDiffusivity(matNum,defectType)		!function in MaterialInput
+	Diff=findDiffusivity(matNum,defectType)
 	length1=myMesh(cell1)%length
 	area1=length1**2d0
 	Vol1=myMesh(cell1)%volume
@@ -3747,31 +3709,29 @@ if(reactionParameter%functionType==2) then
 			findReactionRateDiff=reactionRate
 		else
 			findReactionRateDiff=0d0
-		endif
+		end if
 	else	!cell-to-cell diffusion
 		!Find various parameters needed for reaction rate
-		
 		if(proc2==proc1) then
 			matNeighbor=myMesh(cell2)%material
 			length2=myMesh(cell2)%length
 			Vol2=myMesh(cell2)%volume
 			strainE2=findStrainEnergy(defectType, cell2)
-		else
+		else	!proc2 /= proc1
 			matNeighbor=myBoundary(cell2,dir)%material
 			length2=myBoundary(cell2,dir)%length
 			Vol2=myBoundary(cell2,dir)%volume
 			strainE2=findStrainEnergyBoundary(defectType, cell2, dir)
-		endif
+		end if
 		
 		area2=length2**2d0
-		
 		!The area of the shared interface between the volume elements is the minimum of the two volume 
 		!elements' face areas (assuming cubic elements, nonuniform)
 		if(area1 > area2) then
 			areaShared=area2
 		else
 			areaShared=area1
-		endif
+		end if
 		
 		if(grainNum==matNeighbor) then
 			if(proc2==proc1) then
@@ -3783,7 +3743,6 @@ if(reactionParameter%functionType==2) then
 			alpha=1d0
 			
 		else
-			
 			if(numMaterials > 1) then
 				!Sink efficiencies (Default set at 1)
 				if(defectType(2) /= 0d0) then
@@ -3796,9 +3755,8 @@ if(reactionParameter%functionType==2) then
 			else
 				alpha=1d0
 			end if
-
 			num2=0	!If we are diffusing between two material types, assume perfect sink
-		endif
+		end if
 		
 		if(strainField=='yes') then
 			if(strainE1 /= 0d0) then
@@ -3867,53 +3825,40 @@ elseif(reactionParameter%functionType==3) then	!2D diffusion on a plane (rather 
 				findReactionRateDiff=reactionRate
 			else
 				findReactionRateDiff=0d0
-			endif
-		
+			end if
 		else
-		
 			findReactionRateDiff = 0d0	!Don't let 2D diffusion occur between different material types
-			
-		endif
-		
-	endif
+		end if
+	end if
 
-elseif(reactionParameter%functionType==4) then	!Dissociation from grain boundary into bulk volume element
+else if(reactionParameter%functionType==4) then	!Dissociation from grain boundary into bulk volume element
 	!(treated as a diffusion reaction because we are moving between two volume elements, but the rate is given by a dissociation rate)
-	
 	if(proc2==proc1) then
 		matNeighbor=myMesh(cell2)%material
 	else
 		matNeighbor=myBoundary(cell2,dir)%material
-	endif
+	end if
 	
 	if(grainNum==matNeighbor) then
-	
 		findReactionRateDiff=0d0		!no dissociation from grain boundary to itself
-		
 	else
 		
 		!5/31/2015: Diff should be the diffusivity of the defect type IN THE BULK, not on the GB. Therefore,
 		!use matNeighbor as input for findDiffusivity instead of matNum.
-		
 		Diff=findDiffusivity(matNeighbor, defectType)		!diffusivity of the defect dissociating from the GB (in the bulk)
 		!Diff=findDiffusivity(matNum,defectType)			!diffusivity of the defect dissociating from the cluster
 	
 		num1=findNumDefect(defectType,cell1)			!number of clusters
-		
 		size=1										!not breaking up a cluster, but releasing from grain boundary
-		
 		Eb=findBinding(matNum,defectType,defectType)	!binding energy of defect to grain boundary
-	
 		reactionRate=omega*dble(size)**(4d0/3d0)*Diff*dexp(-Eb/(kboltzmann*temperature))*dble(num1)
 		
 		if(reactionRate > 0d0) then
 			findReactionRateDiff=reactionRate
 		else
 			findReactionRateDiff=0d0
-		endif
-		
-	endif
-
+		end if
+	end if
 else
 	write(*,*) 'error find reaction rate diffusion'
 	findReactionRateDiff=0d0
@@ -3922,17 +3867,6 @@ endif
 end function
 
 !***************************************************************************************************
-! function findReactionRateCoarseToFine
-!
-! finds reaction rate for defect diffusion from coarse mesh to fine mesh. Assumes diffusion into 
-! entire fine mesh, not a single cell in the fine mesh.
-! 
-! Inputs: defectType(numSpecies): identification of the defect type, cell: coarse mesh volume element
-! number, proc: coarse and fine mesh processor number, numDefectsFine: total number of defects of this
-! type in the fine mesh (already calculated), reactionParameter: read from file, contains info on 
-! this diffusion reaction.
-!***************************************************************************************************
-
 !> Function find reaction rate diffusion coarse to fine - finds reaction rate for defect diffusion between a coarse mesh element and a fine (cascade) mesh
 !!
 !! Inputs: cell ID, processor ID, reaction parameters (input from file), defect type (array size numSpecies), number of defects of this type in the fine mesh already
@@ -3940,7 +3874,7 @@ end function
 !! Calculates reaction rates for diffusion between volume elements. Using the finite-volume
 !! version of Fick's law to find rates (using first derivative), with a modified diffusion 
 !! distance according to the formula in Dunn et al. (Computational Materials Science 2015)
-
+!***************************************************************************************************
 double precision function findReactionRateCoarseToFine(defectType, cell, proc, numDefectsFine, reactionParameter)
 use mod_constants
 use DerivedType
@@ -3961,52 +3895,32 @@ else
 	grainNum=myMesh(cell)%material
 endif
 
-if(reactionParameter%functionType==2) then
-	
-	!coarse-to-fine mesh diffusion
-	!Find various parameters needed for reaction rate
-	
-	!Length of coarse mesh element
-	length1=myMesh(cell)%length
+if(reactionParameter%functionType==2) then	!3D diffusion
 
-	!*************************************************************************************************
+	length1=myMesh(cell)%length			!Length of coarse mesh element
+
 	!Effective length used for diffusion from coarse to fine mesh (assuming fine mesh randomly located
 	!within the coarse mesh element, see supporting documents for derivation)
-	!
-	!NOTE: assuming cubic fine mesh (numxCascade=numyCascade=numzCascade). Can re-derive for non-cubic
-	!fine meshes.
-	!*************************************************************************************************
-
+	!NOTE: assuming cubic fine mesh (numxCascade=numyCascade=numzCascade). Can re-derive for non-cubic fine meshes.
 	CoarseToFineLength=(length1-numxCascade*fineLength)/(dlog(length1**2d0/(numxCascade*fineLength)**2d0))
-	
-	!Diffusivity taken from MaterialInput
-	Diff=findDiffusivity(matNum,defectType)		
-	
-	!Volume of coarse mesh element
-	Vol1=myMesh(cell)%volume
-	
-	!Number of defects in coarse mesh element and fine mesh (entire mesh)
-	num1=findNumDefect(defectType,cell)
-	num2=numDefectsFine
+
+	Diff=findDiffusivity(matNum,defectType)
+	Vol1=myMesh(cell)%volume			!Volume of coarse mesh element
+	num1=findNumDefect(defectType,cell)	!Number of defects in coarse mesh element
+	num2=numDefectsFine					!Number of defects in fine mesh (entire mesh)
 	
 	!Area of surface of fine mesh (entire surface)
-	areaShared=2d0*(numxCascade*numyCascade+numxCascade*numzCascade+numyCascade*numzCascade)*fineLength**2d0	
-	
+	areaShared=2d0*(numxCascade*numyCascade+numxCascade*numzCascade+numyCascade*numzCascade)*fineLength**2d0
 	!Volume of fine mesh (entire volume)
 	Vol2=numxCascade*numyCascade*numzCascade*cascadeElementVol
-	
-	!************************************************
-	!Reaction rate formula using the effective length
-	!************************************************
-	
+
 	reactionRate=Diff*areaShared*(dble(num1)/Vol1-dble(num2)/Vol2)/(CoarseToFineLength)
 
 	if(reactionRate > 0d0) then
 		findReactionRateCoarseToFine=reactionRate
 	else
 		findReactionRateCoarseToFine=0d0
-	endif
-
+	end if
 else
 	write(*,*) 'error find reaction rate diffusion coarse to fine'
 	findReactionRateCoarseToFine=0d0
@@ -4015,15 +3929,6 @@ endif
 end function
 
 !***************************************************************************************************
-!function findReactionRateDiffFine
-!
-!finds reaction rate for defect diffusion from cell to cell (inside fine mesh). Includes reaction
-!rate for diffusion from fine mesh to coarse mesh (if applicable).
-!
-!Inputs: CascadeCurrent, defectType(numSpecies), cell1, cell2, proc1, proc2, dir, reactionParameter (read from file)
-!Output: reactionRate
-!***************************************************************************************************
-
 !> Function find reaction rate diffusion fine - finds reaction rate for defect diffusion between elements in the fine mesh (inside a cascade)
 !!
 !! Inputs: cell IDs, processor IDs, diffusion direction, reaction parameters (input from file), defect type (array size numSpecies), cascade derived type
@@ -4031,7 +3936,7 @@ end function
 !! Calculates reaction rates for diffusion between volume elements. Using the finite-volume
 !! version of Fick's law to find rates (using first derivative). Includes rate for diffusion
 !! from fine mesh to coarse mesh.
-
+!***************************************************************************************************
 double precision function findReactionRateDiffFine(CascadeCurrent, defectType, cell1, proc1, cell2, proc2, dir, reactionParameter)
 use mod_constants
 use DerivedType
@@ -4061,47 +3966,37 @@ else
 	grainNum=myMesh(CascadeCurrent%cellNumber)%material
 endif
 
-if(reactionParameter%functionType==2) then
+if(reactionParameter%functionType==2) then	!3D diffusion
 
 	Diff=findDiffusivity(matNum,defectType)		!function in MaterialInput
 	
 	length1=fineLength
 	area1=length1**2d0
 	Vol1=cascadeElementVol
-	
 	num1=findNumDefectFine(CascadeCurrent, defectType,cell1)
 
-	!Diffuse from fine mesh to free surface
-	if(proc2==-1) then	
+	if(proc2==-1) then	!Diffuse from fine mesh to free surface
 	
 		write(*,*) 'error free surface diffusion from inside fine mesh'
-	
-		!fine-to-freeSurface diffusion
 		areaShared=area1
 		reactionRate=Diff*areaShared*(dble(num1)/Vol1)/length1
 		if(reactionRate > 0d0) then
 			findReactionRateDiffFine=reactionRate
 		else
 			findReactionRateDiffFine=0d0
-		endif
-	!fine-to-coarse diffusion
-	else if(cell2==0) then 
+		end if
+
+	else if(cell2==0) then	!fine-to-coarse diffusion
 
 		!Find information on defects and volume element size in coarse mesh element containing this cascade
-		coarseCell=CascadeCurrent%cellNumber
-        length=myMesh(coarseCell)%length
-		coarseVolume=myMesh(coarseCell)%volume
-		num2=findNumDefect(defectType, coarseCell)
+		coarseCell=CascadeCurrent%cellNumber	!cell number of coarse mesh element
+        length=myMesh(coarseCell)%length		!Length of coarse mesh element
+		coarseVolume=myMesh(coarseCell)%volume	!Volume of coarse mesh element
+		num2=findNumDefect(defectType, coarseCell)	!Number of defects in coarse mesh element
 
-		!***********************************************************************
-		!average diffusion distance from cascade element to coarse mesh element
-		!(assuming cubic cascade mesh and coarse mesh element)
-		!
+		!average diffusion distance from cascade element to coarse mesh element (assuming cubic cascade mesh and coarse mesh element)
 		!See supporting documentation for derivation of this formula
-		!
-		!Note: assuming cubic cascade meshes here (used numxCascade for all
-		!diffusion directions)
-		!***********************************************************************
+		!Note: assuming cubic cascade meshes here (used numxCascade for all diffusion directions)
 		fineToCoarseLength=(length-numxCascade*fineLength)&
 			/(dlog((length-(numxCascade-1)*fineLength)**2d0/(fineLength**2d0)))
 			
@@ -4114,15 +4009,14 @@ if(reactionParameter%functionType==2) then
 		else
 			findReactionRateDiffFine=0d0
 		end if
-	!fine-to-fine diffusion
-	else
+	else	!fine-to-fine diffusion
 
 		!Find various parameters needed for reaction rate
 		if(proc2==proc1) then
 			length2=fineLength
 		else
 			write(*,*) 'error proc-to-proc diffusion inside fine mesh'
-		endif
+		end if
 		area2=length2**2d0
 		Vol2=cascadeElementVol
 		
@@ -4132,7 +4026,7 @@ if(reactionParameter%functionType==2) then
 			areaShared=area2
 		else
 			areaShared=area1
-		endif
+		end if
 
 		if(proc2==proc1) then
 			num2=findNumDefectFine(CascadeCurrent, defectType,cell2)
@@ -4146,7 +4040,6 @@ if(reactionParameter%functionType==2) then
 		else
 			findReactionRateDiffFine=0d0
 		end if
-
 	end if
 else
 	write(*,*) 'error find reaction rate diffusion'
@@ -4166,7 +4059,6 @@ end function
 ! Inputs: cell, reactants(:,:), products(:,:), numReactants, numProducts
 ! Outputs: reactionUpdate, reactionPrev (pointers)
 !***************************************************************************************************
-
 subroutine findReactionInList(reactionUpdate, reactionPrev, cell, reactants, products, numReactants, numProducts)
 use mod_constants
 use DerivedType
@@ -4497,13 +4389,11 @@ end subroutine
 ! Subroutine checkReactionLegality
 !
 ! This subroutine looks at the products of a combination reaction and checks to see if the reaction
-! is allowed (using hard-coded information). If not, the subroutine returns a value of .FALSE. to 
-! isLegal.
+! is allowed (using hard-coded information). If not, the subroutine returns a value of .FALSE. to isLegal.
 !
 ! Inputs: numProducts, products(numProducts, numSpecies)
 ! Output: isLegal (boolean variable)
 !***************************************************************************************************
-
 subroutine checkReactionLegality(numProducts, products, isLegal)
 use mod_constants
 use DerivedType
@@ -4517,15 +4407,9 @@ isLegal=.TRUE.
 
 !Check for Cu+SIA
 do i=1,numProducts
-
-    if(products(1,i) /= 0 .AND. products(3,i) /= 0) then
+    if(products(1,i)/=0 .AND. (products(3,i)/=0 .OR. products(4,i)/=0)) then
         isLegal=.FALSE.
     end if
-		
-    if(products(1,i) /= 0 .AND. products(4,i) /= 0) then
-        isLegal=.FALSE.
-    end if
-
 end do
 
 !Check for CuV kick-out
@@ -4554,7 +4438,6 @@ end subroutine
 ! Input: zCoord, the z-coordinate of the center of the mesh element we are looking for
 ! Output: the DPA rate at that point in the non-uniform implantation profile, based on the input file
 !***************************************************************************************************
-
 !>Function find DPA Rate Local (zCoord)
 !!
 !!This function finds the DPA rate in a non-uniform implantation profile given a z-coordinate of the
@@ -4563,7 +4446,7 @@ end subroutine
 !!
 !!Input: zCoord, the z-coordinate of the center of the mesh element we are looking for
 !!Output: the DPA rate at that point in the non-uniform implantation profile, based on the input file
-
+!***************************************************************************************************
 double precision function findDPARateLocal(zCoord)
 use DerivedType
 use mod_constants

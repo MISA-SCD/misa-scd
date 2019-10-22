@@ -78,13 +78,13 @@ if(i==numSingleDiff(matNum)+1) then	!did not find defect in single defect list
 			Diff=DiffusivityCompute(defectType, DiffFunc(i,matNum)%functionType, DiffFunc(i,matNum)%numParam,&
 				DiffFunc(i,matNum)%parameters, matNum)
 				exit
-		endif
+		end if
 	end do
 	if(i==numFuncDiff(matNum)+1) then
 
 		Diff=0d0
-	endif
-endif
+	end if
+end if
 
 findDiffusivity=Diff
 end function
@@ -114,22 +114,17 @@ double precision diffusivityCu
 !This function computes diffusivity using functional form and parameters given in the input file
 !***************************************************************************************************
 
-if(functionType==1) then
-	!used for immobile defects
+if(functionType==1) then	!used for immobile defects
 	Diff=0d0
-else if(functionType==2) then
-	!used for constant functions
+else if(functionType==2) then	!used for constant functions
 	Diff=parameters(1)
-else if(functionType==3) then
-	!Mobile defect diffusivity
+else if(functionType==3) then	!Mobile defect diffusivity
 	D0=parameters(1)+parameters(2)/dble(DefectType(3))**(parameters(3))
 	Em=parameters(4)+parameters(5)/dble(DefectType(3))**(parameters(6))
-	
 	Diff=D0*dexp(-Em/(kboltzmann*temperature))
-else if(functionType==5) then
+else if(functionType==4) then	!Cu diffusivity
 	!< Dcu(n) = Dcu(1)/n
 	Diff=diffusivityCu(matNum)/dble(DefectType(1))
-
 else
 	write(*,*) 'error incorrect diffusivity function chosen'
 endif
@@ -168,7 +163,6 @@ double precision function diffusivityCu(matNum)
 	end do outer
 
 end function
-
 
 !***************************************************************************************************
 !This function returns the binding energy of defect DefectType() which releases defect product().

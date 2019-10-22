@@ -97,18 +97,15 @@ outer: do i=1,numCells
 	atemp=atemp+1d0		!Here we don't have a reaction rate, and each cell is weighted evenly (assuming uniform mesh)
 	if(atemp >= r2timesa) then
 		exit outer			!exit both loops with reactionCurrent pointing to the randomly chosen reaction
-	endif
+	end if
 
 end do outer
 
 !Checking that reactionCurrent is pointed at the correct reaction
 if(implantType=='Cascade') then
-
 	if(reactionCurrent%numReactants==-10 .AND. reactionCurrent%numProducts==0) then !Cascade implantation
-!		numImplantEvents=numImplantEvents+1
 		numImpAnn(1)=numImpAnn(1)+1
 	end if
-
 else
 	write(*,*) 'Error wrong implant type for explicit procedure'
 end if
