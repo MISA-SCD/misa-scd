@@ -35,6 +35,10 @@ integer CascadeCount, TotalCascades !<Used to count the number of cascades prese
 
 character(12) filename, filename2, filename3, filename4, filename5, filename6
 
+!just for testing
+type(reaction),pointer :: reactionTest
+type(defect),pointer :: defectTest
+
 !***********************************************************************
 !<7.2.2015 Adding an iterative search for sink efficiency. Variables below:
 !***********************************************************************
@@ -537,6 +541,43 @@ do while(elapsedTime < totalTime)
 
 	call updateReactionList(defectUpdate)
 
+!    if(step==1 .AND. myProc%taskid==1) then
+!        defectTest=>defectList(reactionCurrent%cellNumber(1))
+!        do while(associated(defectTest))
+!            write(*,*) defectTest%defectType, defectTest%num
+!            defectTest=>defectTest%next
+!        end do
+
+!        reactionTest=>reactionList(reactionCurrent%cellNumber(1))
+!        do while(associated(reactionTest))
+!            write(*,*) 'num', reactionTest%numReactants, reactionTest%numProducts
+!            write(*,*) 'reactants', reactionTest%reactants, 'products', reactionTest%products
+!            write(*,*) 'fineCell', reactionTest%cellNumber
+!            reactionTest=>reactionTest%next
+!        end do
+!        write(*,*) '*********************************'
+!        write(*,*)
+!    end if
+
+!    if(step==3 .AND. myProc%taskid==1) then
+!        defectTest=>CascadeCurrent%localDefects(94)
+!        do while(associated(defectTest))
+!            write(*,*) defectTest%defectType, defectTest%num
+!            defectTest=>defectTest%next
+!        end do
+
+!        reactionTest=>CascadeCurrent%reactionList(94)
+!        do while(associated(reactionTest))
+!            write(*,*) 'num', reactionTest%numReactants, reactionTest%numProducts
+!            write(*,*) 'reactants', reactionTest%reactants, 'products', reactionTest%products
+!            write(*,*) 'fineCell', reactionTest%cellNumber
+!            reactionTest=>reactionTest%next
+!        end do
+!        write(*,*) '*********************************'
+!        write(*,*)
+!    end if
+
+
 	if(totalRate < 0d0) then
 		write(*,*) 'error totalRate less than zero', step
 	end if
@@ -589,6 +630,16 @@ do while(elapsedTime < totalTime)
 	! Optional: count how many cascades are present at step i and compile to find avg. number of cascades present per step
 	!******************************************
 	TotalCascades=TotalCascades+CascadeCount()
+
+    !if(step==3) then
+        !call DEBUGPrintDefects()
+        !write(*,*)
+        !write(*,*)
+        !write(*,*)
+
+        !call DEBUGPrintReactionList()
+    !end if
+
 	
 	!********************************************************************************
 	! Output according to outputCounter

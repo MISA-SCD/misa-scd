@@ -910,7 +910,7 @@ max3DInt			=4
 cascadeVolume		=0d0
 numSims				=1
 numGrains			=1
-cascadeReactionLimit=100d0
+cascadeReactionLimit=1000d0
 
 !Toggles for various output types
 totdatToggle		='yes'

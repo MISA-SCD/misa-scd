@@ -71,12 +71,11 @@ outer: do i=1,numCells
 			atemp=atemp+reactionCurrent%reactionRate
 			if(r2timesa <= atemp) then
 				exit outer	!exit both loops with reactionCurrent pointing to the randomly chosen reaction
-			endif
+			end if
 			reactionCurrent=>reactionCurrent%next
 		end do
-		
 	else
-			atemp=atemp+totalRateVol(i)
+		atemp=atemp+totalRateVol(i)
 	end if
 end do outer
 
@@ -106,27 +105,21 @@ else	!r2timesa > atemp
 					atemp=atemp+reactionCurrent%reactionRate
 					if(r2timesa <= atemp) then
 						exit outer2
-					endif
+					end if
 					reactionCurrent=>reactionCurrent%next
 				end do
-						
 			else
-				
 				atemp=atemp+CascadeCurrent%totalRate(i)	!skip this volume element
-				
-			endif
-			
+			end if
 		end do inner2
 		
 		CascadeCurrent=>CascadeCurrent%next	!Loop over cascades
-
 	end do outer2
 end if
 
 !***********************************************************************
 !if we have not chosen a reaction at this point, we have a null event
 !***********************************************************************
-
 if(.NOT. associated(reactionCurrent)) then
 	!write(*,*) 'null event chosen'
 else
@@ -319,11 +312,16 @@ implicit none
 include 'mpif.h'
 
 type(reaction), pointer :: reactionCurrent
-type(defect), pointer :: defectCurrent, defectPrev, defectTemp, defectStoreList, defectStore, defectStorePrev, defectTest
+type(defect), pointer :: defectCurrent, defectPrev, defectTemp, defectStoreList, defectStore, defectStorePrev
 type(cascadeDefect), pointer :: cascadeDefectTemp
 type(defectUpdateTracker), pointer :: defectUpdateCurrent
-type(cascade), pointer :: CascadeCurrent, CascadePrev
+type(cascade), pointer :: CascadeCurrent, CascadePrev, CascadeTest
 type(cascadeEvent), pointer :: cascadeTemp
+
+!just for testing
+
+type(defect),pointer :: defectTest
+type(reaction),pointer :: reactionTest
 
 !Used for cascade
 double precision coordinatesTemp(3)
@@ -332,7 +330,7 @@ logical combineBoolean, isCombined
 !Used for cascade recombination
 double precision r1, atemp
 
-integer i, j, k, l, m, same, products(numSpecies), product2(numSpecies), totalLocalRecv
+integer i, j1, j, k, l, m, same, products(numSpecies), product2(numSpecies), totalLocalRecv, countTest
 double precision diffusionRandom
 logical flag, flagTemp
 integer count
@@ -391,7 +389,6 @@ numUpdateFinalRecv=0
 
 !initialize variables
 totalLocalRecv=0
-mixingEvents=0
 
 !create buffers: size greater than max size needed (at most numReactants and numProducts to change)
 !"6" is the number of directions
@@ -437,7 +434,6 @@ else
 
 	!***********************************************************************************************
 	!Cascade chosen
-	!
 	!Initialization of fine mesh: randomly select defects from the coarse mesh into the fine mesh.
 	!***********************************************************************************************
 	if(reactionCurrent%numReactants==-10) then
@@ -481,45 +477,44 @@ else
 			!> update localSend if needed
 			!> populate with defects from cascade
 			!**************************************************
-
-			call chooseCascade(cascadeTemp)	!choose one of the cascades from the list randomly
+			call chooseCascade(cascadeTemp)	!cascadeTemp must be associated
 			cascadeDefectTemp=>cascadeTemp%ListOfDefects
 
 			!initialize the cascade to be added
 			CascadeCurrent=>ActiveCascades
 			if(.NOT. associated(CascadeCurrent)) then		!no cascade fine meshes are currently in the system
 				allocate(ActiveCascades)
+				ActiveCascades%cellNumber=reactionCurrent%cellNumber(1) !cell number in COARSE MESH of this cascade
+				ActiveCascades%cascadeID=numImpAnn(1)
+				nullify(ActiveCascades%localDefects)
 				nullify(ActiveCascades%next)
 				nullify(ActiveCascades%prev)
-				nullify(ActiveCascades%localDefects)
 				nullify(ActiveCascades%reactionList)
-				ActiveCascades%cellNumber=reactionCurrent%cellNumber(1) !cell number in COARSE MESH of this cascade
 				allocate(ActiveCascades%totalRate(numCellsCascade))
 				do j=1,numCellsCascade
 					ActiveCascades%totalRate(j)=0d0							!reaction rate of all reactions within fine mesh
 				end do
 				CascadeCurrent=>ActiveCascades
-                CascadeCurrent%cascadeID=numImpAnn(1)
-				!ActiveCascades%cascadeID=numImpAnn(1)
+                !CascadeCurrent%cascadeID=numImpAnn(1)
 			else	!cascade fine meshe are already in the system
-				j=1
+				j1=0
 				do while(associated(CascadeCurrent))
 					CascadePrev=>CascadeCurrent
 					CascadeCurrent=>CascadeCurrent%next
-					j=j+1
+					j1=j1+1
 				end do
 				allocate(CascadeCurrent)
-				nullify(CascadeCurrent%next)
-				nullify(CascadeCurrent%localDefects)
-				nullify(CascadeCurrent%reactionList)
-				CascadeCurrent%prev=>CascadePrev
-				CascadePrev%next=>CascadeCurrent
 				CascadeCurrent%cellNumber=reactionCurrent%cellNumber(1)	!cell number in COARSE MESH of this cascade
+				CascadeCurrent%cascadeID=numImpAnn(1)
+				nullify(CascadeCurrent%localDefects)
+				nullify(CascadeCurrent%next)
+				CascadeCurrent%prev=>CascadePrev
+				nullify(CascadeCurrent%reactionList)
 				allocate(CascadeCurrent%totalRate(numCellsCascade))
 				do j=1,numCellsCascade
 					CascadeCurrent%totalRate(j)=0d0
 				end do
-                CascadeCurrent%cascadeID=numImpAnn(1)
+				CascadePrev%next=>CascadeCurrent
 			end if
 			
 			!*******************************************************************
@@ -527,16 +522,33 @@ else
 			!volume by the cascade volume
 			!Each time a cascade is added, a new cascade-fine-mesh is created.
 			!*******************************************************************
-			
-			!update volume of couarse mesh element
+			!update volume and length of couarse mesh element
 			myMesh(cascadeCurrent%cellNumber)%volume = myMesh(cascadeCurrent%cellNumber)%volume &
 					-CascadeElementVol*dble(numCellsCascade)
+			myMesh(cascadeCurrent%cellNumber)%length = (myMesh(cascadeCurrent%cellNumber)%volume)**(1d0/3d0)
 			
 			!If we add too many cascades to a coarse mesh element, the volume inside can become negative. If this 
 			!happens, output an error message. (Only a danger in the case of very high DPA rates and
 			!small coarse mesh elements)
 			if(myMesh(cascadeCurrent%cellNumber)%volume <= 0d0) then
-				write(*,*) 'Error negative coarse mesh volume'
+
+				!just for testing
+				countTest=0
+				CascadeTest=>ActiveCascades%next
+				do while(associated(CascadeTest))
+					countTest=countTest+1
+					CascadeTest=>CascadeTest%next
+				end do
+				write(*,*) 'Error negative coarse mesh volume    step',step, 'proc', myProc%taskid, &
+						'totalCascades',numImpAnn(1), 'No.Cascade', countTest, 'j1', j1-1
+
+				defectTest=>defectList(cascadeCurrent%cellNumber)
+				do while(associated(defectTest))
+					write(*,*) defectTest%defectType, defectTest%num, defectTest%cellNumber
+					defectTest=>defectTest%next
+				end do
+				write(*,*) '********************************************'
+				write(*,*)
 			end if
 			
 			!*******************************************************************
@@ -564,20 +576,19 @@ else
 			end do
 			defectStoreList%num=0
 			defectStoreList%cellNumber=0	!unknown
-
 			nullify(defectStoreList%next)
 			defectStore=>defectStoreList
+			nullify(defectStore%next)
 			
 			!***************************************************************************************
 			!Step 1: Create defectStoreList with defects in cascade only
 			!Step 2: For each defect in the fine mesh, check whether it combines with cascade
-			!Step 3: If yes, remove it from the fine mesh and combine it randomly with one defect in
-			!	defectStoreList
-			!Step 4: Implant defects in defectStoreList in fine mesh. Remember to correctly update
-			!	defect update protocol.
+			!Step 3: If yes, remove it from the fine mesh and combine it randomly with one defect in defectStoreList, then insert the products into  defectStoreList
+			!Step 4: Implant defects in defectStoreList in fine mesh. Remember to correctly update defect update protocol.
+			!Step 5: Set up defectUpdate for all defects in fine mesh
 			!***************************************************************************************
 
-			!Step 1:
+			!Step 1: add defects of cascadeTemp into defectStoreList
 			do i=1, cascadeTemp%numDefectsTotal
 				!**************************************************************
 				!Make sure coordinates of all defects in cascade are within fine mesh, using periodic BC's
@@ -611,46 +622,46 @@ else
 				allocate(defectStore%next)
 				defectStore=>defectStore%next
 				allocate(defectStore%defectType(numSpecies))
-				nullify(defectStore%next)
-				
 				do j=1,numSpecies
 					defectStore%defectType(j)=cascadeDefectTemp%defectType(j)
 				end do
-				defectStore%cellNumber=cellNumber
-				defectStore%num=1
-
 				if(pointDefectToggle=='yes') then
 					if(defectStore%defectType(3) > max3DInt) then
 						defectStore%defectType(4) = defectStore%defectType(3)
 						defectStore%defectType(3) = 0
 					end if
 				end if
-				
+				defectStore%num=1
+				defectStore%cellNumber=cellNumber
+				nullify(defectStore%next)
+
 				cascadeDefectTemp=>cascadeDefectTemp%next
 			end do
 
-			!combination
+			!Step 2: For each initial defect in the fine mesh, check whether it combines with cascade in the defectStoreList
 			do j=1,numCellsCascade
-				defectCurrent=>CascadeCurrent%localDefects(j)
-				
-				defectPrev=>defectCurrent
-				defectTemp=>defectCurrent%next
+				!defectCurrent=>CascadeCurrent%localDefects(j)	!the first defect is 0 0 0 0
+				!defectPrev=>defectCurrent
+				!defectTemp=>defectCurrent%next
+
+				defectTemp=>CascadeCurrent%localDefects(j)	!the first defect is 0 0 0 0
+				defectPrev=>defectTemp
+				defectTemp=>defectTemp%next
 				do while(associated(defectTemp))
 					
-					!Step 2:
-					!boolean variable, if FALSE then no combination with defectCurrent, if TRUE then combination
+					!Step 2.1: boolean variable, if FALSE then no combination with defectCurrent, if TRUE then combination
 					mixingTemp=0
 					if(defectTemp%num > 0) then
 						do k=1,defectTemp%num
 							combineBoolean=cascadeMixingCheck()
-						
 							if(combineBoolean .eqv. .TRUE.) then
 								mixingTemp=mixingTemp+1
 							end if
 						end do
 					end if
 					
-					!Step 3:
+					!Step 2.2: combination
+					mixingEvents=0
 					do k=1,mixingTemp
 
 						!Choose which defect will be combined wtih defectTemp
@@ -672,7 +683,7 @@ else
 						
 						if( .NOT. associated(defectStore)) then
 							write(*,*) 'Error DefectStore not associated in cascade mixing'
-						else
+						else if(defectStore%cellNumber==j) then
 						    !***********************************************************************
 						    !Hard coded: use defect combination rules to combine defectStore and defecTemp
 						    !These rules have been transported to a separate subroutine
@@ -684,8 +695,8 @@ else
 
 						    call defectCombinationRules(defectStore%defectType,product2, defectTemp, isCombined)
 
-							if(product2(3)/=0 .OR. product2(4)/=0) then
-							    !defectStore is at the middle (or end) of defectStoreList
+							if(product2(3)/=0 .OR. product2(4)/=0) then	!product2 is SIAs
+							    !defectStore is at the middle/end of defectStoreList
 							    if(associated(defectStorePrev)) then
 								    nullify(defectStorePrev%next)
 								    allocate(defectStorePrev%next)
@@ -698,7 +709,7 @@ else
 									    defectStorePrev%defectType(i)=product2(i)
 								    end do
 								    defectStorePrev%next=>defectStore
-							    else	!defectStore is at the beginning of defectStoreList
+							    else !defectStore is at the beginning of defectStoreList, but not the first
 								    defectStorePrev=>defectStoreList
 								    nullify(defectStorePrev%next)
 								    allocate(defectStorePrev%next)
@@ -717,9 +728,7 @@ else
                             if(isCombined .eqv. .TRUE.	) then
                                 mixingEvents=mixingEvents+1
                             end if
-
 						end if
-	
 					end do
 
                     !NEXT: remove DefectTemp from the fine mesh.
@@ -749,36 +758,33 @@ else
 
 					defectPrev=>defectTemp
 					defectTemp=>defectTemp%next
-					
 				end do
 			end do
 
+			!Step 4: Implant defects in defectStoreList in fine mesh. (add all cascade mixing products and normal cascade products to the system)
 			defectStore=>defectStoreList%next
-			!add all cascade mixing products and normal cascade products to the system
 			do while(associated(defectStore))
-			
-				!**************************************************************
+
 				!Temporary debug: checking that all defects added are admissable defects
-				!**************************************************************
 				count=0
 				do j=1,numSpecies
 					if(defectStore%defectType(j) /= 0) then
 						count=count+1
-					endif
+					end if
 				end do
 				if(count > 2) then
 					write(*,*) 'Error adding unadmissible defect to cascade'
 					write(*,*) defectStore%defectType
 					call MPI_ABORT(comm,ierr)
 				end if
-			
+
+				!add DefectTemp+products to the system
 				defectCurrent=>CascadeCurrent%localDefects(defectStore%cellNumber)
-				!STEP 2: add DefectTemp+products to the system
 				count=0
 				do j=1,numSpecies
 					if(defectStore%defectType(j)==0) then
 						count=count+1
-					endif
+					end if
 				end do
 				if(count==numSpecies) then
 					!do nothing, we have total annihilation
@@ -788,18 +794,16 @@ else
 					call findDefectInList(defectCurrent, defectPrev, defectStore%defectType)
 					
 					if(associated(defectCurrent)) then !if we aren't at the end of the list
-						
 						count=0
 						do j=1,numSpecies
 							if(defectCurrent%defectType(j)==defectStore%defectType(j)) then
 								count=count+1
-							endif
+							end if
 						end do
 						if(count==numSpecies) then
 							defectCurrent%num=defectCurrent%num+1
 
 						else		!if the defect is to be inserted in the list
-
 							nullify(defectPrev%next)
 							allocate(defectPrev%next)
 							nullify(defectPrev%next%next)
@@ -811,7 +815,7 @@ else
 								defectPrev%defectType(j)=defectStore%defectType(j)
 							end do
 							defectPrev%next=>defectCurrent !if inserted defect is in the middle of the list, point it to the next item in the list
-						endif
+						end if
 					else 			!add a defect to the end of the list
 						nullify(defectPrev%next)
 						allocate(defectPrev%next)
@@ -824,60 +828,51 @@ else
 							defectPrev%defectType(j)=defectStore%defectType(j)
 						end do
 					end if
-					
-				endif
+				end if
+
 				defectStore=>defectStore%next
-			
 			end do
 			
-			!Final step: set up defectUpdate for all defects in fine mesh
+			!Step 5: set up defectUpdate for all defects in fine mesh
 			do i=1,numCellsCascade
 				defectTemp=>CascadeCurrent%localDefects(i)%next
 				
 				do while(associated(defectTemp))
-				
 					!*******************************************************************************
 					!create a new element in defectUpdate and assign all variables
-					!
 					!Note: this will be done for each member of the cascade, even if more than 
 					!one defect of this type is added to this volume element in the fine mesh.
-					!
 					!This means that the reaction list update will happen multiple times (redundant)
 					!for some defects in some volume elements in the fine mesh.
 					!*******************************************************************************
-					
 					allocate(defectUpdateCurrent%next)
 					defectUpdateCurrent=>defectUpdateCurrent%next
-					defectUpdateCurrent%proc=reactionCurrent%taskid(1)
-					defectUpdateCurrent%dir=0	!not pointed at a different proc
 					allocate(defectUpdateCurrent%defectType(numSpecies))
 					do j=1,numSpecies
 						defectUpdateCurrent%defectType(j)=defectTemp%defectType(j)
 					end do
+					defectUpdateCurrent%num=1
 					defectUpdateCurrent%cellNumber=i
+					defectUpdateCurrent%proc=reactionCurrent%taskid(1)
+					defectUpdateCurrent%dir=0	!not pointed at a different proc
 					defectUpdateCurrent%neighbor=0	!not pointed at a different proc
 					defectUpdateCurrent%cascadeNumber=CascadeCurrent%cascadeID	!identify which cascade this defect is inside
-					defectUpdateCurrent%num=1
 					nullify(defectUpdateCurrent%next)
 					
 					defectTemp=>defectTemp%next
-				
 				end do
-				
 			end do
 
 			!*******************************************************************
-			!memory erase: defectStore, defectStoreList, defectCurrent, defectPrev, defectTemp
+			!Free memory: defectStore, defectStoreList, defectCurrent, defectPrev, defectTemp
 			!*******************************************************************
 			defectStore=>defectStoreList
-			
 			do while(associated(defectStore))
 				defectTemp=>defectStore
 				defectStore=>defectStore%next
 				deallocate(defectTemp%defectType)
 				deallocate(defectTemp)
 			end do
-			
 			nullify(defectStore)
 			nullify(defectTemp)
 			nullify(defectStoreList)
@@ -907,59 +902,55 @@ else
 			end do
 			defectStoreList%num=0
 			defectStoreList%cellNumber=reactionCurrent%cellNumber(1)
-
 			nullify(defectStoreList%next)
 			defectStore=>defectStoreList
+			nullify(defectStore%next)
 			
 			!***************************************************************************************
 			!Step 1: Create defectStoreList with defects in cascade only
-			!Step 2: For each defect in the fine mesh, check whether it combines with cascade
-			!Step 3: If yes, remove it from the fine mesh and combine it randomly with one defect in
-			!	defectStoreList
-			!Step 4: Implant defects in defectStoreList in fine mesh. Remember to correctly update
-			!	defect update protocol.
+			!Step 2: For each defect in the coarse mesh, check whether it combines with cascade
+			!Step 3: If yes, remove it from the coarse mesh and combine it randomly with one defect in defectStoreList
+			!Step 4: Implant defects in defectStoreList in mesh. Remember to correctly update defect update protocol.
 			!***************************************************************************************
 
-			!Step 1:
+			!Step 1: add defects of cascadeTemp into defectStoreList
 			do i=1, cascadeTemp%numDefectsTotal
-				!Create list of defects that need to be added to cell (after casacade
-				!mixing has been taken into account)
-				
+				!Create list of defects that need to be added to cell (after casacade mixing has been taken into account)
 				allocate(defectStore%next)
 				defectStore=>defectStore%next
 				allocate(defectStore%defectType(numSpecies))
-				nullify(defectStore%next)
-				
 				do j=1,numSpecies
 					defectStore%defectType(j)=cascadeDefectTemp%defectType(j)
 				end do
-				defectStore%cellNumber=reactionCurrent%cellNumber(1)
-				defectStore%num=1
-
 				if(pointDefectToggle=='yes') then
 					if(defectStore%defectType(3) > max3DInt) then
 						defectStore%defectType(4) = defectStore%defectType(3)
 						defectStore%defectType(3) = 0
 					end if
 				end if
-				
+				defectStore%num=1
+				defectStore%cellNumber=reactionCurrent%cellNumber(1)
+				nullify(defectStore%next)
+
 				cascadeDefectTemp=>cascadeDefectTemp%next
 			end do
-			
-			defectCurrent=>defectList(reactionCurrent%cellNumber(1))	!exited defects in the CoarseMesh
-			
-			defectPrev=>defectCurrent
-			defectTemp=>defectCurrent%next
-			
+
+			!Step 2: For each exited defect in the coarse mesh, check whether it combines with cascade in the defectStoreList
+			!defectCurrent=>defectList(reactionCurrent%cellNumber(1))	!exited defects in the CoarseMesh
+			!defectPrev=>defectCurrent
+			!defectTemp=>defectCurrent%next
+
+			defectTemp=>defectList(reactionCurrent%cellNumber(1))	!exited defects in the CoarseMesh
+			defectPrev=>defectTemp
+			defectTemp=>defectTemp%next
 			if(cascadeVolume > 0d0) then
-			
 				do while(associated(defectTemp))
 					
-					!Step 3: choose a defect in defectStoreList to combine with the defect that exited in the coarseMesh
+					!Combination: choose a defect in defectStoreList to combine with the defect that exited in the coarseMesh
+					mixingEvents=0
 					do k=1,defectTemp%num
-					!	mixingEvents=mixingEvents+1
-						
-						!Choose which defect in the cascade will be combined with defectTemp already presetn in the cell
+
+						!Choose which defect in the cascade will be combined with defectTemp already present in the cell
 						nullify(defectStorePrev)
 						defectStore=>defectStoreList%next
 						
@@ -969,10 +960,9 @@ else
 						!Move defectStore through defectStoreList until defect chosen for recombination
 						do i=1,cascadeTemp%numDefectsTotal
 							atemp=atemp+1d0/dble(cascadeTemp%numDefectsTotal)
-							
 							if(atemp > r1) then
 								exit
-							endif
+							end if
 							defectStorePrev=>defectStore
 							defectStore=>defectStore%next
 						end do
@@ -980,7 +970,6 @@ else
 						if( .NOT. associated(defectStore)) then
 							write(*,*) 'Error DefectStore not associated in cascade mixing'
 						else	!associated(defectStore)
-
 						    !***********************************************************************
 						    !Hard coded: use defect combination rules to combine defectStore and defecTemp
 						    !These rules have been transported to a separate subroutine
@@ -993,7 +982,7 @@ else
 						    call defectCombinationRules(defectStore%defectType, product2,defectTemp, isCombined)
 
 						    if(product2(3)/=0 .OR. product2(4)/=0) then
-							    !defectStore is at the middle (or end) of defectStoreList
+							    !defectStore is at the middle/end of defectStoreList
 							    if(associated(defectStorePrev)) then
 								    nullify(defectStorePrev%next)
 								    allocate(defectStorePrev%next)
@@ -1058,19 +1047,19 @@ else
 					
 				end do
 			end if
-			
-			defectStore=>defectStoreList%next
 
-			!add all cascade mixing products and normal cascade products to the system
+			!Step 4: Implant defects in defectStoreList in coarse mesh. (add all cascade mixing products and normal cascade products to the system)
+			defectStore=>defectStoreList%next
 			do while(associated(defectStore))
-			
-				defectCurrent=>defectList(defectStore%cellNumber)
-				!STEP 2: add DefectTemp+products to the system
+
+				!add DefectTemp+products to the system
+				!defectCurrent=>defectList(defectStore%cellNumber)
+				defectCurrent=>defectList(reactionCurrent%cellNumber(1))
 				count=0
 				do j=1,numSpecies
 					if(defectStore%defectType(j)==0) then
 						count=count+1
-					endif
+					end if
 				end do
 				if(count==numSpecies) then
 					!do nothing, we have total annihilation
@@ -1080,12 +1069,11 @@ else
 					call findDefectInList(defectCurrent, defectPrev, defectStore%defectType)
 					
 					if(associated(defectCurrent)) then !if we aren't at the end of the list
-						
 						count=0
 						do j=1,numSpecies
 							if(defectCurrent%defectType(j)==defectStore%defectType(j)) then
 								count=count+1
-							endif
+							end if
 						end do
 						if(count==numSpecies) then
 							defectCurrent%num=defectCurrent%num+1
@@ -1114,9 +1102,9 @@ else
 						do j=1,numSpecies
 							defectPrev%defectType(j)=defectStore%defectType(j)
 						end do
-					endif
-					
-				endif
+					end if
+				end if
+
 				defectStore=>defectStore%next
 			end do
 			
@@ -1124,47 +1112,40 @@ else
 			defectTemp=>defectList(reactionCurrent%cellNumber(1))%next
 			
 			do while(associated(defectTemp))
-			
 				!*******************************************************************************
 				!create a new element in defectUpdate and assign all variables
-				!
 				!Note: this will be done for each member of the cascade, even if more than 
 				!one defect of this type is added to this volume element in the cell.
-				!
 				!This means that the reaction list update will happen multiple times (redundant)
 				!for some defects in some volume elements in the cell.
 				!*******************************************************************************
-				
 				allocate(defectUpdateCurrent%next)
 				defectUpdateCurrent=>defectUpdateCurrent%next
-				defectUpdateCurrent%proc=reactionCurrent%taskid(1)
-				defectUpdateCurrent%dir=0	!not pointed at a different proc
 				allocate(defectUpdateCurrent%defectType(numSpecies))
 				do j=1,numSpecies
 					defectUpdateCurrent%defectType(j)=defectTemp%defectType(j)
 				end do
+				defectUpdateCurrent%num=1
 				defectUpdateCurrent%cellNumber=reactionCurrent%cellNumber(1)
+				defectUpdateCurrent%proc=reactionCurrent%taskid(1)
+				defectUpdateCurrent%dir=0	!not pointed at a different proc
 				defectUpdateCurrent%neighbor=0	!not pointed at a different proc
 				defectUpdateCurrent%cascadeNumber=0	!identify which cascade this defect is inside: 0 for coarse mesh
-				defectUpdateCurrent%num=1
 				nullify(defectUpdateCurrent%next)
 				
 				defectTemp=>defectTemp%next
-			
 			end do
 
 			!*******************************************************************
-			!memory erase: defectStore, defectStoreList, defectCurrent, defectPrev, defectTemp
+			!Free memory: defectStore, defectStoreList, defectCurrent, defectPrev, defectTemp
 			!*******************************************************************
 			defectStore=>defectStoreList
-			
 			do while(associated(defectStore))
 				defectTemp=>defectStore
 				defectStore=>defectStore%next
 				deallocate(defectTemp%defectType)
 				deallocate(defectTemp)
 			end do
-			
 			nullify(defectStore)
 			nullify(defectTemp)
 			nullify(defectStoreList)
@@ -1181,7 +1162,6 @@ else
 	!Typically, no communication will be carried out if a reaction is chosen within the fine mesh.
 	!The exception is when a defect diffuses from the fine mesh to the coarse mesh.
 	!***********************************************************************************************
-		
 	else if(associated(CascadeCurrent)) then    !Reactions in the fine mesh
 
         allocate(firstSend(numSpecies+3,reactionCurrent%numProducts,6))
@@ -1305,12 +1285,25 @@ else
 
 			!If reactant defect is not in the list, then we have chosen a reaction that shouldn't exist
 			if(associated(defectCurrent) .EQV. .FALSE.) then
-				write(*,*) 'Tried to delete defect that wasnt there fine'
+				write(*,*) '*************************************'
+				write(*,*) 'Tried to delete defect that wasnt there fine  step', step, 'proc', myProc%taskid
 				write(*,*) 'reactants', reactionCurrent%reactants
 				write(*,*) 'products', reactionCurrent%products
 				write(*,*) 'cells', reactionCurrent%CellNumber
 				write(*,*) 'rate', reactionCurrent%reactionRate
 				write(*,*) 'cascade number', cascadeCurrent%cascadeID
+				defectTest=>CascadeCurrent%localDefects(reactionCurrent%cellNumber(i))
+				do while(associated(defectTest))
+					write(*,*) defectTest%defectType, defectTest%num, defectTest%cellNumber
+					defectTest=>defectTest%next
+				end do
+				reactionTest=>CascadeCurrent%reactionList(reactionCurrent%cellNumber(i))
+				do while(associated(reactionTest))
+					write(*,*) 'numReactants',reactionTest%numReactants, 'numProducts', reactionTest%numProducts
+					write(*,*) 'reactants', reactionTest%reactants, 'products',reactionTest%products
+					write(*,*) 'fineCell', reactionTest%CellNumber
+					reactionTest=>reactionTest%next
+				end do
 
 				call MPI_ABORT(comm,ierr)
 			
@@ -1463,7 +1456,6 @@ else
         allocate(firstSend(numSpecies+3,reactionCurrent%numReactants+reactionCurrent%numProducts,6))
 		!First update local buffer if needed
 		do i=1, reactionCurrent%numReactants
-
 			nullify(defectPrev)
 			defectCurrent=>defectList(reactionCurrent%cellNumber(i))
 
@@ -1546,8 +1538,7 @@ else
 				end if
 			end if
 		end if
-		!write(*,*) 'step', step, 'proc', myProc%taskid, 'numReact',reactionCurrent%numReactants, &
-		!		'numProduct',reactionCurrent%numProducts, 'reactantsCell', reactionCurrent%cellNumber
+
         if(flag .eqv. .FALSE.) then
             do i=1, reactionCurrent%numProducts
 				if(reactionCurrent%cellNumber(i+reactionCurrent%numReactants) < 0) then	!diffuse to fine mesh
@@ -1783,14 +1774,12 @@ else
 					
 					allocate(defectUpdateCurrent%next)
 					defectUpdateCurrent=>defectUpdateCurrent%next
+                    nullify(defectUpdateCurrent%next)
 					defectUpdateCurrent%proc=reactionCurrent%taskid(i+reactionCurrent%numReactants)
 					allocate(defectUpdateCurrent%defectType(numSpecies))
 					
-					!When coarse-to-fine reactions are chosen, a random cell within the fine mesh
-					!is chosen.
+					!When coarse-to-fine reactions are chosen, a random cell within the fine mesh is chosen.
 					defectUpdateCurrent%cellNumber=chooseRandomCell()	!chooseRandomCell()>0
-					
-					nullify(defectUpdateCurrent%next)
 					defectUpdateCurrent%num=1		!used for updating reaction lists
 					defectUpdateCurrent%dir=0		!tells updateReactionList that we are not in a boundary mesh
 					defectUpdateCurrent%neighbor=0	!not pointed at a different proc
@@ -1798,46 +1787,38 @@ else
 					!In coarse-to-fine reactions, the cascade number is stored in reactionCurrent%cellNumber
 					!and identified with a negative. Therefore we make it positive again.
 					defectUpdateCurrent%cascadeNumber=-reactionCurrent%cellNumber(i+reactionCurrent%numReactants)
-					
-					nullify(defectPrev)
+
 					do j=1,numSpecies
 						products(j)=reactionCurrent%products(j,i)
 						defectUpdateCurrent%defectType(j)=reactionCurrent%products(j,i)
 					end do
 					
 					!Point CascadeCurrent at the correct cascade
-					
 					CascadeCurrent=>ActiveCascades
-					
 					do while(associated(CascadeCurrent))
 						
 						if(CascadeCurrent%cascadeID==-reactionCurrent%cellNumber(i+reactionCurrent%numReactants)) then
 							exit
-						endif
-						
+						end if
 						CascadeCurrent=>CascadeCurrent%next
-					
 					end do
 					
 					!If we went through the previous loop without pointing at a cascade, then we have
 					!a problem with placing the coarse-to-fine miration in the correct cascade.
-					
 					if(.NOT. associated(CascadeCurrent)) then
 						write(*,*) 'error coarse-to-fine cascade not correctly pointed'
-					endif
-					
-					!Point defectCurrent at the defect list within the correct element in CascadeCurrent
-					defectCurrent=>CascadeCurrent%localDefects(defectUpdateCurrent%cellNumber)
-	
+					end if
+
 					!this subroutine will move defectCurrent to the place in the list where reactionCurrent%products(i,x) exists OR, if it doesn't exist,
 					! defectPrev will point to the defect before the insertion place and defectCurrent will point to the defect after insertion
-	
+                    nullify(defectPrev)
+                    !Point defectCurrent at the defect list within the correct element in CascadeCurrent
+                    defectCurrent=>CascadeCurrent%localDefects(defectUpdateCurrent%cellNumber)
 					call findDefectInList(defectCurrent, defectPrev, products)
 					
 					!*******************************************
 					!Update defects within fine mesh
 					!*******************************************
-
 					if(associated(defectCurrent)) then !if we aren't at the end of the list
 						same=0
 						do j=1,numSpecies
@@ -3627,9 +3608,7 @@ end subroutine
 !!In this way, we are ONLY updating the relevant reaction rates, not all possible reaction rates in the system.
 !!
 !!As reaction rates are updated, the total reaction rate for the processor is updated as well.
-!***************************************************************************************************
-
-!***************************************************************************************************
+!
 !06/04/2014: The bug with two defects moving to the same cell at the same time (see discussion before
 !updateDefectList) does not affect updateReactionList because defectUpdateCurrent%num is not used 
 !to update reaction lists (instead, the actual defect numbers are taken from myMesh(i)%defectList)
@@ -3647,13 +3626,19 @@ include 'mpif.h'
 type(defectUpdateTracker), pointer :: defectUpdate, defectUpdateCurrent, defectUpdatePrev, defectUpdateNext
 type(defect), pointer :: defectCurrent
 type(cascade), pointer :: cascadeCurrent
-integer numElements, numNeighbors, i, j, k, dir, count, defectTemp(numSpecies), tracker
-integer findNumDefectBoundary, findNumDefect
-logical flag
+integer i, j, dir, defectTemp(numSpecies)
 integer localGrainID, neighborGrainID
 
-!temporary
-double precision temp
+!just for testing
+type(defect), pointer :: defectTest
+integer same
+
+nullify(defectTest)
+
+nullify(cascadeCurrent)
+nullify(defectUpdateCurrent)
+nullify(defectUpdatePrev)
+nullify(defectUpdateNext)
 
 defectUpdateCurrent=>defectUpdate%next	!the first is zero
 
@@ -3664,43 +3649,38 @@ do while(associated(defectUpdateCurrent))
 		!we have an error; all defectUpdateCurrent members should have num = +/-1 (indicates adding or removing)
 		write(*,*) 'error defectUpdateCurrent%num not equal to +/- 1', myProc%taskid, defectUpdateCurrent%num
 	end if
-	
-	do i=1,numSpecies
-		defectTemp(i)=defectUpdateCurrent%defectType(i)
-	end do
-			
+
+	defectTemp=defectUpdateCurrent%defectType
+
 	!if the defect is within the local mesh, update all relevant reactions
-	
 	if(defectUpdateCurrent%proc==myProc%taskid) then
-		
 		!*******************************************************************************************
 		! defectUpdateCurrent%cascadeNumber==0 means a defect has changed in the coarse mesh
-		! if the defect is within the coarse mesh, then update all relevant reactions in the coarse mesh
+		! then update all relevant reactions in the coarse mesh
 		!*******************************************************************************************
+		if(defectUpdateCurrent%cascadeNumber==0) then	!update reaction in coarse mesh
 
-		if(defectUpdateCurrent%cascadeNumber==0) then
-			
-			!Single-defect reactions associated with defects of type defectTemp	
+			!Single-defect reactions associated with defects of type defectTemp (Dissociation、sinkRemoval、impurityTrapping)
 			call addSingleDefectReactions(defectUpdateCurrent%cellNumber,defectTemp)
-			
-			!Multi-defect reactions associated with defects of type defectTemp and defectCurrent%defectType (Scan over
-			!all defect types in the defect list)
+
+			!Multi-defect reactions associated with defects of type defectTemp and defectCurrent%defectType
+			!(Scan over all defect types in the defect list)
+			nullify(defectCurrent)
 			defectCurrent=>defectList(defectUpdateCurrent%cellNumber)
-			
 			do while(associated(defectCurrent))
 				if(defectCurrent%num /= 0) then
 					call addMultiDefectReactions(defectUpdateCurrent%cellNumber,defectTemp, defectCurrent%defectType)
 				end if
 				defectCurrent=>defectCurrent%next
 			end do
-			
+
 			!NOTE: there is a problem with annihilation reactions: if two defects annihilate and the
 			!result is that there are no defects left of those two types in the cell (example, SIA+V->0
 			!such that there is nothing left in the cell) after the reaction, addMultiDefectReactions will
-			!not remove this reaction from the reaction list because defectCurrent will never point to 
+			!not remove this reaction from the reaction list because defectCurrent will never point to
 			!one of the two defects. Therefore we must call addMultiDefectReactions using the two defect types
 			!listed in defectUpdate
-			
+
 			defectUpdateNext=>defectUpdateCurrent%next
 			if(associated(defectUpdateNext)) then
 				if(defectUpdateNext%cellNumber==defectUpdateCurrent%cellNumber) then
@@ -3710,15 +3690,15 @@ do while(associated(defectUpdateCurrent))
 					call addMultiDefectReactions(defectUpdateCurrent%cellNumber, defectTemp, defectUpdateNext%defectType)
 				end if
 			end if
-			
+
 			!*******************
 			!Diffusion reactions
 			!
-			!NOTE: diffusion reactions need to be updated in both directions. That is, we need to 
+			!NOTE: diffusion reactions need to be updated in both directions. That is, we need to
 			!update the diffusion reactions in this cell as well as in the neighboring cell
 			!(thus taking care of both defect addition and defect removal).
 			!
-			!Exception: if the neighboring cell is in a different processor, we don't need to 
+			!Exception: if the neighboring cell is in a different processor, we don't need to
 			!update the neighbor-to-cell diffusion rate because it will be taken care of in the other
 			!processor
 			!*******************
@@ -3758,31 +3738,41 @@ do while(associated(defectUpdateCurrent))
 				end if
 
 				!If the neighboring volume element is in the same processor as this element, add
-				!diffusion reactions from neighboring cells into this cell (changes reaction list
-				!in neighboring cell)
-				!
+				!diffusion reactions from neighboring cells into this cell (changes reaction list in neighboring cell)
+
 				!NOTE: don't need to switch j (direction) here even though diffusion is in opposite
 				!direction because dir is only used when diffusing into/out of neighbor processor
-			!	if(myMesh(defectUpdateCurrent%cellNumber)%neighborProcs(1,j)==myProc%taskid) then
+
+				if(mod(j,2)==0) then
+					dir=j-1
+				else
+					dir=j+1
+				end if
+
+				if(myMesh(defectUpdateCurrent%cellNumber)%neighborProcs(1,j)==myProc%taskid) then
 					!Don't need to do this for diffusion between different grains
-			!		if(polycrystal=='yes' .AND. myMesh(myMesh(defectUpdateCurrent%cellNumber)%neighbors(1,j))%material &
-			!				== myMesh(defectUpdateCurrent%cellNumber)%material) then
-			!			call addDiffusionReactions(myMesh(defectUpdateCurrent%cellNumber)%neighbors(1,j), defectUpdateCurrent%cellNumber, &
-			!					myProc%taskid, myProc%taskid, j, defectTemp)
-			!		else if(polycrystal=='no') then	!2015.05.20 Noticed that this wasn't here, probably was a bug. Fixed?
-			!			call addDiffusionReactions(myMesh(defectUpdateCurrent%cellNumber)%neighbors(1,j), defectUpdateCurrent%cellNumber, &
-			!					myProc%taskid, myProc%taskid, j, defectTemp)
-			!		end if
-			!	end if
+					if(polycrystal=='yes' .AND. myMesh(myMesh(defectUpdateCurrent%cellNumber)%neighbors(1,j))%material &
+							== myMesh(defectUpdateCurrent%cellNumber)%material) then
+						!call addDiffusionReactions(myMesh(defectUpdateCurrent%cellNumber)%neighbors(1,j), defectUpdateCurrent%cellNumber, &
+						!		myProc%taskid, myProc%taskid, j, defectTemp)
+						call addDiffusionReactions(myMesh(defectUpdateCurrent%cellNumber)%neighbors(1,j), defectUpdateCurrent%cellNumber, &
+								myProc%taskid, myProc%taskid, dir, defectTemp)
+					else if(polycrystal=='no') then
+						!call addDiffusionReactions(myMesh(defectUpdateCurrent%cellNumber)%neighbors(1,j), defectUpdateCurrent%cellNumber, &
+						!		myProc%taskid, myProc%taskid, j, defectTemp)
+						call addDiffusionReactions(myMesh(defectUpdateCurrent%cellNumber)%neighbors(1,j), defectUpdateCurrent%cellNumber, &
+								myProc%taskid, myProc%taskid, dir, defectTemp)
+					end if
+				end if
 			end do
-			
+
 			!***********************************************************************************
 			!Diffusion between coarse mesh and fine mesh - coarse to fine
 			!
 			!For each cascade in the coarse mesh element,  find the number of defects of same type
 			!in the fine mesh. Then find the diffusion rate from coarse mesh into fine mesh
 			!based on concentration of defects in coarse mesh and fine mesh. Not diffusing
-			!into individual cells of fine mesh, as there are too many possibilities (comp. 
+			!into individual cells of fine mesh, as there are too many possibilities (comp.
 			!impractical). Cell will be chosen at random.
 			!
 			!Separate subroutines created to calculate the number of defects in cascade and to
@@ -3791,19 +3781,13 @@ do while(associated(defectUpdateCurrent))
 			!To indicate that the diffusion reaction is going from the coarse to the fine mesh,
 			!use a negative cell number with the cascadeID in reaction%cellNumber.
 			!***********************************************************************************
-				
 			CascadeCurrent=>ActiveCascades
-			
 			do while(associated(CascadeCurrent))
-			
-				if(CascadeCurrent%cellNumber==defectUpdateCurrent%cellNumber) then
 
-					call addDiffusionCoarseToFine(defectUpdateCurrent%cellNumber, myProc%taskid, CascadeCurrent, defectTemp)
-				
+				if(CascadeCurrent%cellNumber==defectUpdateCurrent%cellNumber) then
+					call addDiffusionCoarseToFine(defectUpdateCurrent%cellNumber,myProc%taskid,CascadeCurrent,defectTemp)
 				end if
-				
 				CascadeCurrent=>CascadeCurrent%next
-				
 			end do
 
 		!*******************************************************************************************
@@ -3811,6 +3795,7 @@ do while(associated(defectUpdateCurrent))
 		! Therefore we update all relevant reactions within the correct cascade's fine mesh
 		!*******************************************************************************************
 		else
+
 			!Point CascadeCurrent at the cascade associated with the chosen reaction
 			CascadeCurrent=>ActiveCascades
 			
@@ -3826,7 +3811,7 @@ do while(associated(defectUpdateCurrent))
 				write(*,*) 'error CascadeCurrent not associated in updateReactionList'
 			end if
 
-			!Single-defect reactions associated with defects of type defectTemp in fine mesh	
+			!Single-defect reactions associated with defects of type defectTemp in fine mesh
 			call addSingleDefectReactionsFine(defectUpdateCurrent%cascadeNumber,defectUpdateCurrent%cellNumber,defectTemp)
 
 			!Multi-defect reactions associated with defects of type defectTemp and defectCurrent%defectType (Scan over
@@ -3835,36 +3820,41 @@ do while(associated(defectUpdateCurrent))
 			do while(associated(defectCurrent))
 				if(defectCurrent%num /= 0) then
 					call addMultiDefectReactionsFine(defectUpdateCurrent%cascadeNumber, defectUpdateCurrent%cellNumber,&
-						defectTemp, defectCurrent%defectType)
+							defectTemp, defectCurrent%defectType)
 				end if
 				defectCurrent=>defectCurrent%next
 			end do
-
 			!See above for explanation of this section
 			defectUpdateNext=>defectUpdateCurrent%next
 			if(associated(defectUpdateNext)) then
 				if(defectUpdateNext%cellNumber==defectUpdateCurrent%cellNumber) then
-					
 					call addMultiDefectReactionsFine(defectUpdateCurrent%cascadeNumber, defectUpdateCurrent%cellNumber, &
-						defectTemp, defectUpdateNext%defectType)
-						
+							defectTemp, defectUpdateNext%defectType)
 				end if
 			end if
-			
+
 			!Diffusion reactions
 			do j=1,6
 
 				!Add diffusion reactions from this cell into neighboring cells
 				call addDiffusionReactionsFine(defectUpdateCurrent%cascadeNumber, defectUpdateCurrent%cellNumber, &
-					cascadeConnectivity(j, defectUpdateCurrent%cellNumber),myProc%taskid, myProc%taskid,j,defectTemp)
+						cascadeConnectivity(j, defectUpdateCurrent%cellNumber),myProc%taskid, myProc%taskid,j,defectTemp)
+
+				if(mod(j,2)==0) then
+					dir=j-1
+				else
+					dir=j+1
+				end if
 
 				!Add diffusion reactions from neighboring cells into this cell. (both directions)
 				if(cascadeConnectivity(j, defectUpdateCurrent%cellNumber) /= 0) then
+					!call addDiffusionReactionsFine(defectUpdateCurrent%cascadeNumber, cascadeConnectivity(j, defectUpdateCurrent%cellNumber), &
+					!	defectUpdateCurrent%cellNumber,myProc%taskid, myProc%taskid,j,defectTemp)
 					call addDiffusionReactionsFine(defectUpdateCurrent%cascadeNumber, cascadeConnectivity(j, defectUpdateCurrent%cellNumber), &
-						defectUpdateCurrent%cellNumber,myProc%taskid, myProc%taskid,j,defectTemp)
+							defectUpdateCurrent%cellNumber,myProc%taskid, myProc%taskid,dir,defectTemp)
 				end if
-
 			end do
+
 		end if
 
 	!if the defect is within the boundary mesh, only update the diffusion reactions for cells touching that boundary element
@@ -3881,39 +3871,29 @@ do while(associated(defectUpdateCurrent))
 		!defectUpdateCurrent was created in a different processor and passed here. Need to check
 		!that it was initialized correctly.
 		!*******************************************************************************************
-		
 		if(defectUpdateCurrent%neighbor==-1) then
 			write(*,*) 'error neighbor not assigned for diffusion reactions into boundary'
 			call MPI_ABORT(comm,ierr)
 		end if
-		
+
 		if(polycrystal=='yes') then
-		
+
 			localGrainID=myMesh(defectUpdateCurrent%neighbor)%material
-			
 			neighborGrainID=myBoundary(defectUpdateCurrent%cellNumber,defectUpdateCurrent%dir)%material
-			
 			if(localGrainID==neighborGrainID) then
-				
 				!Allow diffusion between elements in the same grain
 				call addDiffusionReactions(defectUpdateCurrent%neighbor, defectUpdateCurrent%cellNumber, myProc%taskid, &
-					defectUpdateCurrent%proc, defectUpdateCurrent%dir, defectTemp)
-			
+						defectUpdateCurrent%proc, defectUpdateCurrent%dir, defectTemp)
 			else
-			
 				!Assume perfect sinks at grain boundaries - treat grain boundaries like free surfaces for now
 				call addDiffusionReactions(defectUpdateCurrent%neighbor, 0, myProc%taskid, -1, defectUpdateCurrent%dir, &
-					defectTemp)
-			
-			endif
-		
+						defectTemp)
+			end if
 		else
-		
 			call addDiffusionReactions(defectUpdateCurrent%neighbor, defectUpdateCurrent%cellNumber, myProc%taskid, &
-				defectUpdateCurrent%proc, defectUpdateCurrent%dir, defectTemp)
-			
+					defectUpdateCurrent%proc, defectUpdateCurrent%dir, defectTemp)
 		end if
-		
+
 	end if
 	defectUpdateCurrent=>defectUpdateCurrent%next
 

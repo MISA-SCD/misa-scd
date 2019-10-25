@@ -94,7 +94,7 @@ fType	3	param	6				!functional form type 3 (hard coded in)
 nmin	0	nmax	0
 nmin	0	nmax	0
 nmin	0	nmax	0
-nmin	1	nmax -1
+nmin	5	nmax -1
 fType	1	param	0				!functional form type 1 (used for immobile defects)
 
 bindingEnergies			!indicates we are moving into binding energies

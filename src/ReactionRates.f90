@@ -49,13 +49,14 @@ integer, allocatable :: reactants(:,:), products(:,:)
 double precision reactionRate, totalRateCheck
 logical isLegal
 
+nullify(reactionUpdate)
+nullify(reactionPrev)
 !Dissociation reactions. NOTE: the number of reactants and number of products, as well as the form 
 !of the products given the reactants, is hard-coded into this section. This type of hard-coding is
 !carried out in each section in this module, and is seen here as unavoidable.
 
 !In the case of polycrystal simulations, myMesh(cell)%material is the grain ID, not the material number. Therefore
 !we must set all values of matNum=1 in this case (only one material type in polycrystal simulations).
-nullify(reactionUpdate)
 if(numMaterials==1) then
 	matNum=1
 else
@@ -109,23 +110,18 @@ do i=1, numDissocReac(matNum)
 
         !point reactionUpdate at the reaction and reactionPrev at the reaction before it
         !(if reaction does not already exist, reactionUpdate is unallocated and reactionPrev points to the end of the list)
-        nullify(reactionPrev)
-		reactionUpdate=>reactionList(cell)
+        reactionPrev=>reactionList(cell)
+		reactionUpdate=>reactionList(cell)%next
 		call findReactionInList(reactionUpdate, reactionPrev, cell, reactants, products, numReactants, numProducts)
-		
-		!*************************************************************************************
-		!HARD CODED: if CSIA or large He clusters left over, need to disallow this reaction
-		!HARD CODED: disallow Cu1V1 dissociation where the product is V1, to avoid double-counting
-		!*************************************************************************************
-		
-		call checkReactionLegality(numProducts, products, isLegal)
+
+	!	call checkReactionLegality(numProducts, products, isLegal)
 		
 		!find the reaction rate.
-		if(isLegal .eqv. .TRUE.) then
+	!	if(isLegal .eqv. .TRUE.) then
 			reactionRate=findReactionRateDissoc(defectType, products, cell, DissocReactions(i,matNum))
-		else
-			reactionRate=0d0
-		endif
+	!	else
+	!		reactionRate=0d0
+	!	end if
 		
 		!if reactionRate==0 and reaction already exists, then delete it. Subtract from totalRate.
 		if(associated(reactionUpdate) .AND. reactionRate==0d0) then
@@ -135,7 +131,6 @@ do i=1, numDissocReac(matNum)
 			totalRateVol(cell)=totalRateVol(cell)-reactionUpdate%reactionRate
 
 			if(associated(reactionUpdate%next)) then	!in the middle
-				!deleting reactionUpdate
 				reactionPrev%next=>reactionUpdate%next
 				deallocate(reactionUpdate%reactants)
 				deallocate(reactionUpdate%products)
@@ -143,8 +138,7 @@ do i=1, numDissocReac(matNum)
 				deallocate(reactionUpdate%taskid)
 				deallocate(reactionUpdate)
 				nullify(reactionUpdate)
-			else
-				!deleting reactionUpdate
+			else    !at the end of the list
 				deallocate(reactionUpdate%reactants)
 				deallocate(reactionUpdate%products)
 				deallocate(reactionUpdate%cellNumber)
@@ -202,20 +196,20 @@ do i=1, numDissocReac(matNum)
 			
 			!update reaction rate
 			reactionUpdate%reactionRate=reactionRate
-		
 		else
 			write(*,*) 'error updating reaction list - dissociation'
 		end if
-		exit
-	end if
 
+		exit
+
+	end if
 end do
 
 !Sink reactions
-numReactants=1
-numProducts=0
 deallocate(reactants)
 deallocate(products)
+numReactants=1
+numProducts=0
 allocate(reactants(numSpecies,numReactants))
 allocate(products(numSpecies,numProducts))
 
@@ -236,27 +230,26 @@ do i=1, numSinkReac(matNum)
 	end do
 	
 	if(count==numSpecies) then	!this defect type is accepted for this dissociation reaction
-		!point reactionUpdate at the reaction and reactionPrev at the reaction before it
-		!(if reaction does not already exist, reactionUpdate is unallocated and reactionPrev points
-		!to the end of the list)
-		
+
 		!Create temporary arrays with the defect types associated with this reaction (sinks)
 		do j=1,numSpecies
 			reactants(j,1)=defectType(j)
 		end do
 
-        nullify(reactionPrev)
-		reactionUpdate=>reactionList(cell)
+        !point reactionUpdate at the reaction and reactionPrev at the reaction before it
+        !(if reaction does not already exist, reactionUpdate is unallocated and reactionPrev points to the end of the list)
+        reactionPrev=>reactionList(cell)
+		reactionUpdate=>reactionList(cell)%next
 		call findReactionInList(reactionUpdate, reactionPrev, cell, reactants, products, numReactants, numProducts)
 		
 		!find the reaction rate. HARD CODED: if CuSIA or large He clusters left over, need to disallow this reaction
-		call checkReactionLegality(numProducts, products, isLegal)
+	!	call checkReactionLegality(numProducts, products, isLegal)
 		
-		if(isLegal .eqv. .TRUE.) then
+	!	if(isLegal .eqv. .TRUE.) then
 			reactionRate=findReactionRateSink(defectType, cell, SinkReactions(i,matNum))
-		else
-			reactionRate=0d0
-		endif
+	!	else
+	!		reactionRate=0d0
+	!	end if
 		
 		!if reactionRate==0 and reaction already exists, then delete it. Subtract from totalRate.
 		if(associated(reactionUpdate) .AND. reactionRate==0d0) then
@@ -265,19 +258,17 @@ do i=1, numSinkReac(matNum)
 			totalRate=totalRate-reactionUpdate%reactionRate
 			totalRateVol(cell)=totalRateVol(cell)-reactionUpdate%reactionRate
 
-			if(associated(reactionUpdate%next)) then
-				!deleting reactionUpdate
+			if(associated(reactionUpdate%next)) then    !in the middle
 				reactionPrev%next=>reactionUpdate%next
 				deallocate(reactionUpdate%reactants)
 				if(allocated(reactionUpdate%products)) then
 					deallocate(reactionUpdate%products)
 				end if
-
 				deallocate(reactionUpdate%cellNumber)
 				deallocate(reactionUpdate%taskid)
 				deallocate(reactionUpdate)
 				nullify(reactionUpdate)
-			else
+			else    !at the end of the list
 				deallocate(reactionUpdate%reactants)
 				if(allocated(reactionUpdate%products)) then
 					deallocate(reactionUpdate%products)
@@ -350,11 +341,10 @@ do i=1, numSinkReac(matNum)
 end do
 
 !Impurity reactions
-
-numReactants=1
-numProducts=1
 deallocate(reactants)
 deallocate(products)
+numReactants=1
+numProducts=1
 allocate(reactants(numSpecies,numReactants))
 allocate(products(numSpecies,numProducts))
 
@@ -368,45 +358,43 @@ do i=1, numImpurityReac(matNum)
 			if(defectType(j) >= ImpurityReactions(i,matNum)%min(j)) then
 				if((defectType(j) <= ImpurityReactions(i,matNum)%max(j)) .OR. ImpurityReactions(i,matNum)%max(j)==-1) then
 					count=count+1
-				endif
-			endif
-		endif
+				end if
+			end if
+		end if
 	end do
 	if(count==numSpecies) then	!this defect type is accepted for this dissociation reaction
-		!point reactionUpdate at the reaction and reactionPrev at the reaction before it
-		!(if reaction does not already exist, reactionUpdate is unallocated and reactionPrev points
-		!to the end of the list)
-		
+
 		!Create temporary arrays with the defect types associated with this reaction (impurities)
-		!Impurities change defect types from glissile SIA loops to sesile SIA loops. Therefore,
-		!we must change the defectType from 0 0 n 0 to 0 0 0 n. This is hard-coded in here.
+		!Impurities change defect types from mobile SIA loops to sesile SIA loops. Therefore,
+		!we must change the defectType from 0 0 n 0 to 0 0 0 n.
 		do j=1,numSpecies
 			reactants(j,1)=defectType(j)
 			if(reactants(j,1) /= 0) then
 				storeTemp=reactants(j,1)    !reactan=0 0 n 0, storeTemp=n
 			end if
 		end do
-		
 		do j=1,numSpecies
 			if(ImpurityReactions(i,matNum)%products(j,1)==1) then   !0 0 0 1
 				products(j,1)=storeTemp
 			else
 				products(j,1)=0
-			endif
+			end if
 		end do
 
-        nullify(reactionPrev)
-		reactionUpdate=>reactionList(cell)
+        !point reactionUpdate at the reaction and reactionPrev at the reaction before it
+        !(if reaction does not already exist, reactionUpdate is unallocated and reactionPrev points to the end of the list)
+        reactionPrev=>reactionList(cell)
+		reactionUpdate=>reactionList(cell)%next
 		call findReactionInList(reactionUpdate, reactionPrev, cell, reactants, products, numReactants, numProducts)
 		
 		!find the reaction rate. HARD CODED: if CuSIA or large He clusters left over, need to disallow this reaction
-		call checkReactionLegality(numProducts, products, isLegal)
+	!	call checkReactionLegality(numProducts, products, isLegal)
 		
-		if(isLegal .eqv. .TRUE.) then
+	!	if(isLegal .eqv. .TRUE.) then
 			reactionRate=findReactionRateImpurity(defectType, cell, ImpurityReactions(i,matNum))
-		else
-			reactionRate=0d0
-		endif
+	!	else
+	!		reactionRate=0d0
+	!	end if
 				
 		!if reactionRate==0 and reaction already exists, then delete it. Subtract from totalRate.
 		if(associated(reactionUpdate) .AND. reactionRate==0d0) then
@@ -415,8 +403,7 @@ do i=1, numImpurityReac(matNum)
 			totalRate=totalRate-reactionUpdate%reactionRate
 			totalRateVol(cell)=totalRateVol(cell)-reactionUpdate%reactionRate
 
-			if(associated(reactionUpdate%next)) then
-				!deleting reactionUpdate
+			if(associated(reactionUpdate%next)) then    !in the middle
 				reactionPrev%next=>reactionUpdate%next
 				deallocate(reactionUpdate%reactants)
 				deallocate(reactionUpdate%products)
@@ -424,7 +411,7 @@ do i=1, numImpurityReac(matNum)
 				deallocate(reactionUpdate%taskid)
 				deallocate(reactionUpdate)
 				nullify(reactionUpdate)
-			else
+			else    !at the end pf the list
 				deallocate(reactionUpdate%reactants)
 				deallocate(reactionUpdate%products)
 				deallocate(reactionUpdate%cellNumber)
@@ -512,7 +499,6 @@ end subroutine
 !4) Update the reaction rate / add the reaction / remove the reaction, depending on if the
 !reaction is already present and if the reaction rate is nonzero.
 !***************************************************************************************************
-
 subroutine addSingleDefectReactionsFine(cascadeID, cell, defectType)
 use mod_constants
 use DerivedType
@@ -529,15 +515,14 @@ double precision reactionRate, totalRateCheck
 logical isLegal
 
 nullify(reactionUpdate)
+nullify(reactionPrev)
+
 !CascadeCurrent pointer should be pointing at the cascade whose ID matches the ID number passed into this subroutine
 CascadeCurrent=>ActiveCascades
-
 do while(associated(CascadeCurrent))
-
 	if(CascadeCurrent%cascadeID==cascadeID) then
 		exit
-	endif
-	
+	end if
 	CascadeCurrent=>CascadeCurrent%next
 end do
 
@@ -553,7 +538,6 @@ endif
 !Dissociation reactions. NOTE: the number of reactants and number of products, as well as the form 
 !of the products given the reactants, is hard-coded into this section. This type of hard-coding is
 !carried out in each section in this module, and is seen here as unavoidable.
-
 numReactants=1
 numProducts=2
 allocate(reactants(numSpecies,numReactants))
@@ -570,60 +554,50 @@ do i=1, numDissocReac(matNum)
 			if(defectType(j) >= DissocReactions(i,matNum)%min(j)) then
 				if((defectType(j) <= DissocReactions(i,matNum)%max(j)) .OR. DissocReactions(i,matNum)%max(j)==-1) then
 					count=count+1
-				endif
-			endif
-		endif
+				end if
+			end if
+		end if
 	end do
 		
 	if(count==numSpecies) then	!this defect type is accepted for this dissociation reaction
-		!point reactionUpdate at the reaction and reactionPrev at the reaction before it
-		!(if reaction does not already exist, reactionUpdate is unallocated and reactionPrev points
-		!to the end of the list)
-		
+
 		!Create temporary arrays with the defect types associated with this reaction (dissociation)
 		do j=1, numSpecies
 			reactants(j,1)=defectType(j)
-
 			products(j,2)=DissocReactions(i,matNum)%products(j,1)
 			products(j,1)=reactants(j,1)-products(j,2)
 		end do
 
-        !************************************************************************************
         !Dissociation of mobile defects from sessile SIA clusters
-        !************************************************************************************
-		
-		if(products(3,1) < 0) then  !dissociation of mobile defects from sessile SIA clusters
-			if(products(1,1) /= 0 .AND. products(2,1) /= 0) then	!Kick-out mechanism. Cu_V dissociates a SIA_m
-				products(3,1)=0
-				products(2,1)=products(2,1)+products(3,2)
-			else    !dissociation of SIA_m from sessile SIA clusters
+		if(products(3,1) < 0) then
+		!	if(products(1,1) /= 0 .AND. products(2,1) /= 0) then	!Kick-out mechanism. Cu_V dissociates a SIA_m
+		!		products(3,1)=0
+		!		products(2,1)=products(2,1)+products(3,2)
+		!	else    !dissociation of SIA_m from sessile SIA clusters
 				products(3,1)=0
 				products(4,1)=products(4,1)-products(3,2)
-			end if
+		!	end if
 		end if
-
-		!***********************************
-		!Mobilize SIA clusters that decrease in size below max3Dint
-		!***********************************
-		
 		!sessile cluster becomes mobile when it shrinks below max3DInt
 		if(products(4,1) /= 0 .AND. products(4,1) <= max3DInt) then
 			products(3,1)=products(4,1)
 			products(4,1)=0
-		endif
+		end if
 
-        nullify(reactionPrev)
-		reactionUpdate=>CascadeCurrent%reactionList(cell)
+        !point reactionUpdate at the reaction and reactionPrev at the reaction before it
+        !(if reaction does not already exist, reactionUpdate is unallocated and reactionPrev points to the end of the list)
+        reactionPrev=>CascadeCurrent%reactionList(cell)
+		reactionUpdate=>CascadeCurrent%reactionList(cell)%next
 		call findReactionInList(reactionUpdate, reactionPrev, cell, reactants, products, numReactants, numProducts)
 		
 		!find the reaction rate. HARD CODED: if HeSIA or large He clusters left over, need to disallow this reaction
-		call checkReactionLegality(numProducts, products, isLegal)
+	!	call checkReactionLegality(numProducts, products, isLegal)
 		
-		if(isLegal .eqv. .TRUE.) then
+	!	if(isLegal .eqv. .TRUE.) then
 			reactionRate=findReactionRateDissocFine(CascadeCurrent, defectType, products, cell, DissocReactions(i,matNum))
-		else
-			reactionRate=0d0
-		endif
+	!	else
+	!		reactionRate=0d0
+	!	end if
 				
 		!if reactionRate==0 and reaction already exists, then delete it. Subtract from totalRate.
 		if(associated(reactionUpdate) .AND. reactionRate==0d0) then
@@ -632,8 +606,7 @@ do i=1, numDissocReac(matNum)
 			totalRate=totalRate-reactionUpdate%reactionRate
 			CascadeCurrent%totalRate(cell)=CascadeCurrent%totalRate(cell)-reactionUpdate%reactionRate
 
-            if(associated(reactionUpdate%next)) then
-                !deleting reactionUpdate
+            if(associated(reactionUpdate%next)) then    !in the middle
                 reactionPrev%next=>reactionUpdate%next
                 deallocate(reactionUpdate%reactants)
                 deallocate(reactionUpdate%products)
@@ -641,8 +614,7 @@ do i=1, numDissocReac(matNum)
                 deallocate(reactionUpdate%taskid)
                 deallocate(reactionUpdate)
                 nullify(reactionUpdate)
-            else
-                !deleting reactionUpdate
+            else    !at the end of the list
                 deallocate(reactionUpdate%reactants)
                 deallocate(reactionUpdate%products)
                 deallocate(reactionUpdate%cellNumber)
@@ -712,15 +684,15 @@ do i=1, numDissocReac(matNum)
 end do
 
 !Sink reactions
-numReactants=1
-numProducts=0
 deallocate(reactants)
 deallocate(products)
+numReactants=1
+numProducts=0
 allocate(reactants(numSpecies,numReactants))
+allocate(products(numSpecies,numProducts))
 
 do i=1, numSinkReac(matNum)
 	count=0
-	
 	!Check if the defect type is accepted by this sink reaction
 	do j=1,numSpecies
 		if(defectType(j) == 0 .AND. SinkReactions(i,matNum)%reactants(j,1) == 0) then
@@ -729,33 +701,32 @@ do i=1, numSinkReac(matNum)
 			if(defectType(j) >= SinkReactions(i,matNum)%min(j)) then
 				if((defectType(j) <= SinkReactions(i,matNum)%max(j)) .OR. SinkReactions(i,matNum)%max(j)==-1) then
 					count=count+1
-				endif
-			endif
-		endif
+				end if
+			end if
+		end if
 	end do
 	
 	if(count==numSpecies) then	!this defect type is accepted for this dissociation reaction
-		!point reactionUpdate at the reaction and reactionPrev at the reaction before it
-		!(if reaction does not already exist, reactionUpdate is unallocated and reactionPrev points
-		!to the end of the list)
-		
+
 		!Create temporary arrays with the defect types associated with this reaction (sinks)
 		do j=1, numSpecies
 			reactants(j,1)=defectType(j)
 		end do
 
-        nullify(reactionPrev)
-		reactionUpdate=>CascadeCurrent%reactionList(cell)
+        !point reactionUpdate at the reaction and reactionPrev at the reaction before it
+        !(if reaction does not already exist, reactionUpdate is unallocated and reactionPrev points to the end of the list)
+        reactionPrev=>CascadeCurrent%reactionList(cell)
+		reactionUpdate=>CascadeCurrent%reactionList(cell)%next
 		call findReactionInList(reactionUpdate, reactionPrev, cell, reactants, products, numReactants, numProducts)
 		
 		!find the reaction rate. HARD CODED: if HeSIA or large He clusters left over, need to disallow this reaction
-		call checkReactionLegality(numProducts, products, isLegal)
+	!	call checkReactionLegality(numProducts, products, isLegal)
 		
-		if(isLegal .eqv. .TRUE.) then
+	!	if(isLegal .eqv. .TRUE.) then
 			reactionRate=findReactionRateSinkFine(CascadeCurrent, defectType, cell, SinkReactions(i,matNum))
-		else
-			reactionRate=0d0
-		endif
+	!	else
+	!		reactionRate=0d0
+	!	end if
 		
 		!if reactionRate==0 and reaction already exists, then delete it. Subtract from totalRate.
 		if(associated(reactionUpdate) .AND. reactionRate==0d0) then
@@ -764,8 +735,7 @@ do i=1, numSinkReac(matNum)
 			totalRate=totalRate-reactionUpdate%reactionRate
 			CascadeCurrent%totalRate(cell)=CascadeCurrent%totalRate(cell)-reactionUpdate%reactionRate
 
-            if(associated(reactionUpdate%next)) then
-                !deleting reactionUpdate
+            if(associated(reactionUpdate%next)) then    !in the middle
                 reactionPrev%next=>reactionUpdate%next
                 deallocate(reactionUpdate%reactants)
                 if(allocated(reactionUpdate%products)) then
@@ -775,8 +745,7 @@ do i=1, numSinkReac(matNum)
                 deallocate(reactionUpdate%taskid)
                 deallocate(reactionUpdate)
                 nullify(reactionUpdate)
-            else
-                !deleting reactionUpdate
+            else    !at the end of list
                 deallocate(reactionUpdate%reactants)
                 if(allocated(reactionUpdate%products)) then
                     deallocate(reactionUpdate%products)
@@ -849,18 +818,15 @@ do i=1, numSinkReac(matNum)
 end do
 
 !Impurity reactions
+deallocate(reactants)
+deallocate(products)
 numReactants=1
 numProducts=1
-deallocate(reactants)
-if(allocated(products)) then
-	deallocate(products)
-endif
 allocate(reactants(numSpecies,numReactants))
 allocate(products(numSpecies,numProducts))
 
 do i=1, numImpurityReac(matNum)
 	count=0
-	
 	!Check if the defect type is accepted by this impurity reaction
 	do j=1,numSpecies
 		if(defectType(j) == 0 .AND. ImpurityReactions(i,matNum)%reactants(j,1) == 0) then
@@ -869,16 +835,13 @@ do i=1, numImpurityReac(matNum)
 			if(defectType(j) >= ImpurityReactions(i,matNum)%min(j)) then
 				if((defectType(j) <= ImpurityReactions(i,matNum)%max(j)) .OR. ImpurityReactions(i,matNum)%max(j)==-1) then
 					count=count+1
-				endif
-			endif
-		endif
+				end if
+			end if
+		end if
 	end do
 	
 	if(count==numSpecies) then	!this defect type is accepted for this dissociation reaction
-		!point reactionUpdate at the reaction and reactionPrev at the reaction before it
-		!(if reaction does not already exist, reactionUpdate is unallocated and reactionPrev points
-		!to the end of the list)
-		
+
 		!Create temporary arrays with the defect types associated with this reaction (impurities)
 		!Impurities change defect types from glissile SIA loops to sesile SIA loops. Therefore,
 		!we must change the defectType from 0 0 n 0 to 0 0 0 n. This is hard-coded in here.
@@ -888,7 +851,6 @@ do i=1, numImpurityReac(matNum)
 				storeTemp=reactants(j,1)
 			end if
 		end do
-		
 		do j=1,numSpecies
 			if(ImpurityReactions(i,matNum)%products(j,1)==1) then
 				products(j,1)=storeTemp
@@ -897,18 +859,20 @@ do i=1, numImpurityReac(matNum)
 			endif
 		end do
 
-        nullify(reactionPrev)
-		reactionUpdate=>CascadeCurrent%reactionList(cell)
+        !point reactionUpdate at the reaction and reactionPrev at the reaction before it
+        !(if reaction does not already exist, reactionUpdate is unallocated and reactionPrev points to the end of the list)
+        reactionPrev=>CascadeCurrent%reactionList(cell)
+		reactionUpdate=>CascadeCurrent%reactionList(cell)%next
 		call findReactionInList(reactionUpdate, reactionPrev, cell, reactants, products, numReactants, numProducts)
 		
 		!find the reaction rate. HARD CODED: if HeSIA or large He clusters left over, need to disallow this reaction
-		call checkReactionLegality(numProducts, products, isLegal)
+	!	call checkReactionLegality(numProducts, products, isLegal)
 		
-		if(isLegal .eqv. .TRUE.) then
+	!	if(isLegal .eqv. .TRUE.) then
 			reactionRate=findReactionRateImpurityFine(CascadeCurrent, defectType, cell, ImpurityReactions(i,matNum))
-		else
-			reactionRate=0d0
-		endif
+	!	else
+	!		reactionRate=0d0
+	!	end if
 		
 		!if reactionRate==0 and reaction already exists, then delete it. Subtract from totalRate.
 		if(associated(reactionUpdate) .AND. reactionRate==0d0) then
@@ -917,8 +881,7 @@ do i=1, numImpurityReac(matNum)
 			totalRate=totalRate-reactionUpdate%reactionRate
 			CascadeCurrent%totalRate(cell)=CascadeCurrent%totalRate(cell)-reactionUpdate%reactionRate
 
-            if(associated(reactionUpdate%next)) then
-                !deleting reactionUpdate
+            if(associated(reactionUpdate%next)) then    !in the middle
                 reactionPrev%next=>reactionUpdate%next
                 deallocate(reactionUpdate%reactants)
                 deallocate(reactionUpdate%products)
@@ -926,8 +889,7 @@ do i=1, numImpurityReac(matNum)
                 deallocate(reactionUpdate%taskid)
                 deallocate(reactionUpdate)
                 nullify(reactionUpdate)
-            else
-                !deleting reactionUpdate
+            else    !at the end of list
                 deallocate(reactionUpdate%reactants)
                 deallocate(reactionUpdate%products)
                 deallocate(reactionUpdate%cellNumber)
@@ -1020,7 +982,6 @@ end subroutine
 !4) Update the reaction rate / add the reaction / remove the reaction, depending on if the
 !reaction is already present and if the reaction rate is nonzero.
 !***************************************************************************************************
-
 subroutine addMultiDefectReactions(cell, defectType1, defectType2)
 use mod_constants
 use DerivedType
@@ -1034,6 +995,7 @@ double precision reactionRate
 logical isLegal, isLegalTemp
 
 nullify(reactionUpdate)
+nullify(reactionPrev)
 !Clustering reactions. NOTE: the number of reactants and number of products, as well as the form 
 !of the products given the reactants, is hard-coded into this section. This type of hard-coding is
 !carried out in each section in this module, and is seen here as unavoidable.
@@ -1053,11 +1015,10 @@ allocate(reactants(numSpecies,numReactants))
 do i=1, numClusterReac(matNum)
 
     !*******************************************************
-    !defectType1 = ClusterReactions(i,matNum)%reactants(1,:)
-    !defectType2 = ClusterReactions(i,matNum)%reactants(2,:)
+    !defectType1 = ClusterReactions(i,matNum)%reactants(:,1)
+    !defectType2 = ClusterReactions(i,matNum)%reactants(:,2)
     !*******************************************************
 	count=0
-	
 	!Check if the defect type is accepted by this dissociation reaction
 	!NOTE: we must check if defectType1 matches with ClusterReactions%reactants(1) and reactants(2)
 	!and vice versa with defectType2. We only want to make one reaction rate per pair of reactants.
@@ -1070,17 +1031,17 @@ do i=1, numClusterReac(matNum)
 					if((defectType2(j) <= ClusterReactions(i,matNum)%max(j+numSpecies)) .OR. &
 						ClusterReactions(i,matNum)%max(j+numSpecies)==-1) then
 						count=count+1
-					endif
-				endif
-			endif
+					end if
+				end if
+			end if
 		else if(defectType1(j) /= 0 .AND. ClusterReactions(i,matNum)%reactants(j,1) /= 0) then
 			if(defectType2(j)==0 .AND. ClusterReactions(i,matNum)%reactants(j,2)==0) then
 				if(defectType1(j) >= ClusterReactions(i,matNum)%min(j)) then
 					if((defectType1(j) <= ClusterReactions(i,matNum)%max(j)) .OR. &
 						ClusterReactions(i,matNum)%max(j)==-1) then
 						count=count+1
-					endif
-				endif
+					end if
+				end if
 			else if(defectType2(j) /= 0 .AND. ClusterReactions(i,matNum)%reactants(j,2) /= 0) then
 				if((defectType2(j) <= ClusterReactions(i,matNum)%max(j+numSpecies)) .OR. &
 					ClusterReactions(i,matNum)%max(j+numSpecies)==-1) then
@@ -1089,26 +1050,26 @@ do i=1, numClusterReac(matNum)
 						if(defectType2(j) >= ClusterReactions(i,matNum)%min(j+numSpecies) .AND. &
 							defectType1(j) >= ClusterReactions(i,matNum)%min(j)) then
 							count=count+1
-						endif
-					endif
-				endif
-			endif
-		endif
+						end if
+					end if
+				end if
+			end if
+		end if
 	end do
 	
 	if(count==numSpecies) then	!this defect pair is accepted for this clustering reaction
-	
-		!numReactants=2
-		!allocate(reactants(numSpecies,numReactants))
-		
-		!CuV+SIA:
+
+        do j=1,numSpecies
+            reactants(j,1)=defectType1(j)
+            reactants(j,2)=defectType2(j)
+        end do
+
+        !CuV+SIA:
         if(defectType1(1)/=0 .AND. defectType1(2)/=0 .AND.  defectType2(3)>defectType1(2)) then
             numProducts=2
             allocate(products(numSpecies,numProducts))
             !Create temporary arrays with the defect types associated with this reaction (SIA pinning)
             do j=1,numSpecies
-                reactants(j,1)=defectType1(j)
-                reactants(j,2)=defectType2(j)
                 if(j==2) then
                     products(j,1)=0
                 else
@@ -1128,8 +1089,7 @@ do i=1, numClusterReac(matNum)
 
 			!Create temporary arrays with the defect types associated with this reaction (SIA pinning)
 			do j=1,numSpecies
-				reactants(j,1)=defectType1(j)
-				reactants(j,2)=defectType2(j)
+
 				if(j==2) then
 					products(j,1)=0
 				else
@@ -1152,8 +1112,6 @@ do i=1, numClusterReac(matNum)
 			
 			!Create temporary arrays with the defect types associated with this reaction (clustering)
 			do j=1,numSpecies
-				reactants(j,1)=defectType1(j)
-				reactants(j,2)=defectType2(j)
 				products(j,1)=reactants(j,1)+reactants(j,2)
 			end do
 		end if
@@ -1163,45 +1121,51 @@ do i=1, numClusterReac(matNum)
 		!Here we are assuming 4 species: Cu, V, SIA_mobile, SIA_sessile
 		!We have not yet dealt with the case of CuV+SIA=>CuSIA (should not be allowed here)
 		!*******************************************************************************************
-		
-		!Vacancy+SIA annihilation - only the larger species remains
-		if(products(2,1) >= products(3,1)) then
-			products(2,1)=products(2,1)-products(3,1)
-			products(3,1)=0
-		endif
-		
-		if(products(2,1) >= products(4,1)) then
-			products(2,1)=products(2,1)-products(4,1)
-			products(4,1)=0
-		endif
-		
-		if(products(2,1) < products(3,1)) then
-			products(3,1)=products(3,1)-products(2,1)
-			products(2,1)=0
-		endif
-		
-		if(products(2,1) < products(4,1)) then
-			products(4,1)=products(4,1)-products(2,1)
-			products(2,1)=0
-		endif
-		
-		!SIA+SIA clustering
-		!two 1D clusters coming together to make a sessile cluster
-		if(reactants(3,1) > max3DInt .AND. reactants(3,2) > max3DInt) then
-			products(4,1)=products(3,1)
-			products(3,1)=0
-		endif
-		
-		!sessile SIA + mobile SIA = sessile SIA
-		if(products(3,1) /= 0 .AND. products(4,1) /= 0) then
-			products(4,1)=products(3,1)+products(4,1)
-			products(3,1)=0
-		endif
+        if(numProducts==1) then
+            !Vacancy+SIA annihilation - only the larger species remains
+            if(products(2,1) >= products(3,1)) then
+                products(2,1)=products(2,1)-products(3,1)
+                products(3,1)=0
+            end if
+            if(products(2,1) >= products(4,1)) then
+                products(2,1)=products(2,1)-products(4,1)
+                products(4,1)=0
+            end if
 
-!        if(products(1,1)==1 .AND. products(2,1)==1) then
-!            products(1,1)=0
-!            products(2,1)=0
-!        end if
+            if(products(2,1) < products(3,1)) then
+                products(3,1)=products(3,1)-products(2,1)
+                products(2,1)=0
+            end if
+            if(products(2,1) < products(4,1)) then
+                products(4,1)=products(4,1)-products(2,1)
+                products(2,1)=0
+            end if
+
+            !SIA+SIA clustering
+            !two 1D clusters coming together to make a sessile cluster
+            if(reactants(3,1) > max3DInt .AND. reactants(3,2) > max3DInt) then
+                products(4,1)=products(3,1)
+                products(3,1)=0
+            end if
+
+            !sessile SIA + mobile SIA = sessile SIA
+            if(products(3,1) /= 0 .AND. products(4,1) /= 0) then
+                products(4,1)=products(3,1)+products(4,1)
+                products(3,1)=0
+            end if
+
+            !sessile cluster becomes mobile when it shrinks below max3DInt
+            if(products(4,1) /= 0 .AND. products(4,1) <= max3DInt) then
+                products(3,1)=products(4,1)
+                products(4,1)=0
+            end if
+        else if(numProducts==2) then
+            !sessile cluster becomes mobile when it shrinks below max3DInt
+            if(products(4,2) /= 0 .AND. products(4,2) <= max3DInt) then
+                products(3,2)=products(4,2)
+                products(4,2)=0
+            end if
+        end if
 
 		!onle point defect can move
 		if(pointDefectToggle=='yes') then
@@ -1215,19 +1179,6 @@ do i=1, numClusterReac(matNum)
 					products(3,2)=0
 				end if
 			end if
-
-		end if
-
-        !sessile cluster becomes mobile when it shrinks below max3DInt
-        if(products(4,1) /= 0 .AND. products(4,1) <= max3DInt) then
-            products(3,1)=products(4,1)
-            products(4,1)=0
-        end if
-		if(numProducts==2) then
-			if(products(4,2) /= 0 .AND. products(4,2) <= max3DInt) then
-				products(3,2)=products(4,2)
-				products(4,2)=0
-			end if
 		end if
 
 		!Total Annihilation
@@ -1235,7 +1186,7 @@ do i=1, numClusterReac(matNum)
 		do j=1,numSpecies
 			if(products(j,1)==0) then
 				count2=count2+1
-			endif
+			end if
 		end do
 		if(count2==numSpecies) then
 			!we have completely annihilated the defects
@@ -1248,18 +1199,18 @@ do i=1, numClusterReac(matNum)
 		!points to nothing and reactionPrev points to the end of the list.
 		!NOTE: if order of reactants is backwards, we might not recognize that we have already added
 		!this reaction. Thus we could double-add reactions. Will fix later.
-        nullify(reactionPrev)
-		reactionUpdate=>reactionList(cell)
+        reactionPrev=>reactionList(cell)
+		reactionUpdate=>reactionList(cell)%next
 		call findReactionInListMultiple(reactionUpdate, reactionPrev, cell, reactants, products, numReactants, numProducts)
 		
 		!find the reaction rate. HARD CODED: if CuSIA left over, need to disallow this reaction
-		call checkReactionLegality(numProducts, products, isLegal)
+	!	call checkReactionLegality(numProducts, products, isLegal)
 		
-		if(isLegal .eqv. .TRUE.) then
+	!	if(isLegal .eqv. .TRUE.) then
 			reactionRate=findReactionRateMultiple(defectType1, defectType2, cell, ClusterReactions(i,matNum))
-		else
-			reactionRate=0d0
-		endif
+	!	else
+	!		reactionRate=0d0
+	!	end if
 		
 		!if reactionRate==0 and reaction already exists, then delete it. Subtract from totalRate.
 		if(associated(reactionUpdate) .AND. reactionRate==0d0) then
@@ -1269,7 +1220,6 @@ do i=1, numClusterReac(matNum)
 			totalRateVol(cell)=totalRateVol(cell)-reactionUpdate%reactionRate
 
 			if(associated(reactionUpdate%next)) then	!in the middle
-				!deleting reactionUpdate
 				reactionPrev%next=>reactionUpdate%next
 				deallocate(reactionUpdate%reactants)
 				deallocate(reactionUpdate%products)
@@ -1277,8 +1227,7 @@ do i=1, numClusterReac(matNum)
 				deallocate(reactionUpdate%taskid)
 				deallocate(reactionUpdate)
 				nullify(reactionUpdate)
-			else
-				!deleting reactionUpdate
+			else    !at the end of list
 				deallocate(reactionUpdate%reactants)
 				deallocate(reactionUpdate%products)
 				deallocate(reactionUpdate%cellNumber)
@@ -1286,7 +1235,6 @@ do i=1, numClusterReac(matNum)
 				deallocate(reactionUpdate)
 				nullify(reactionUpdate)
 				nullify(reactionPrev%next)
-
 			end if
 
 			!deleting reactionUpdate
@@ -1360,15 +1308,13 @@ do i=1, numClusterReac(matNum)
 	end if
 
     !*******************************************************
-    !defectType1 = ClusterReactions(i,matNum)%reactants(2,:)
-    !defectType2 = ClusterReactions(i,matNum)%reactants(1,:)
+    !defectType1 = ClusterReactions(i,matNum)%reactants(:,2)
+    !defectType2 = ClusterReactions(i,matNum)%reactants(:,1)
     !*******************************************************
 	count=0
-	
 	!Check if the defect type is accepted by this dissociation reaction
 	!NOTE: we must check if defectType1 matches with ClusterReactions%reactants(1) and reactants(2)
 	!and vice versa with defectType2. We only want to make one reaction rate per pair of reactants.
-	
 	do j=1,numSpecies
 		if(defectType1(j)==0 .AND. ClusterReactions(i,matNum)%reactants(j,2)==0) then
 			if(defectType2(j)==0 .AND. ClusterReactions(i,matNum)%reactants(j,1)==0) then
@@ -1405,9 +1351,11 @@ do i=1, numClusterReac(matNum)
 	end do
 	
 	if(count==numSpecies) then	!this defect pair is accepted for this clustering reaction
-		
-		!numReactants=2
-		!allocate(reactants(numSpecies,numReactants))
+
+		do j=1,numSpecies
+			reactants(j,1)=defectType2(j)
+			reactants(j,2)=defectType1(j)
+		end do
 
         !SIA+CuV:
         if(defectType2(1)/=0 .AND. defectType2(2)/=0 .AND.  defectType1(3)>defectType2(2)) then
@@ -1415,8 +1363,6 @@ do i=1, numClusterReac(matNum)
             allocate(products(numSpecies,numProducts))
             !Create temporary arrays with the defect types associated with this reaction (SIA pinning)
             do j=1,numSpecies
-                reactants(j,2)=defectType1(j)
-                reactants(j,1)=defectType2(j)
                 if(j==2) then
                     products(j,1)=0
                 else
@@ -1435,8 +1381,7 @@ do i=1, numClusterReac(matNum)
 			allocate(products(numSpecies,numProducts))
 
 			do j=1,numSpecies
-				reactants(j,2)=defectType1(j)
-				reactants(j,1)=defectType2(j)
+
 				if(j==2) then
 					products(j,1)=0
 				else
@@ -1462,8 +1407,6 @@ do i=1, numClusterReac(matNum)
 			!NOTE: reverse the order of reactants and products so that the reaction is the same
 			!(so that findreactioninlistmultiple correctly identifies the reaction)
 			do j=1, numSpecies
-				reactants(j,2)=defectType1(j)
-				reactants(j,1)=defectType2(j)
 				products(j,1)=reactants(j,1)+reactants(j,2)
 			end do
 		end if
@@ -1473,42 +1416,50 @@ do i=1, numClusterReac(matNum)
 		!Here we are assuming 4 species: Cu, V, SIA_mobile, SIA_sessile
 		!We have not yet dealt with the case of CuV+SIA=>CuSIA (should not be allowed here)
 		!*******************************************************************************************
-		!Vacancy+SIA annihilation - only the larger species remains
-		if(products(2,1) >= products(3,1)) then
-			products(2,1)=products(2,1)-products(3,1)
-			products(3,1)=0
-		endif
-		if(products(2,1) >= products(4,1)) then
-			products(2,1)=products(2,1)-products(4,1)
-			products(4,1)=0
-		endif
-		if(products(2,1) < products(3,1)) then
-			products(3,1)=products(3,1)-products(2,1)
-			products(2,1)=0
-		endif
-		if(products(2,1) < products(4,1)) then
-			products(4,1)=products(4,1)-products(2,1)
-			products(2,1)=0
-		endif
-		
-		!SIA+SIA clustering
-		!two 1D clusters coming together to make a sessile cluster
-		if(reactants(3,1) > max3DInt .AND. reactants(3,2) > max3DInt) then
-			products(4,1)=products(3,1)
-			products(3,1)=0
-		endif
-		
-		!sessile SIA + mobile SIA = sessile SIA
-		if(products(3,1) /= 0 .AND. products(4,1) /= 0) then
-			products(4,1)=products(3,1)+products(4,1)
-			products(3,1)=0
-		endif
+		if(numProducts==1) then
+			!Vacancy+SIA annihilation - only the larger species remains
+			if(products(2,1) >= products(3,1)) then
+				products(2,1)=products(2,1)-products(3,1)
+				products(3,1)=0
+			end if
+			if(products(2,1) >= products(4,1)) then
+				products(2,1)=products(2,1)-products(4,1)
+				products(4,1)=0
+			end if
+			if(products(2,1) < products(3,1)) then
+				products(3,1)=products(3,1)-products(2,1)
+				products(2,1)=0
+			end if
+			if(products(2,1) < products(4,1)) then
+				products(4,1)=products(4,1)-products(2,1)
+				products(2,1)=0
+			end if
 
-        !Cu+V Annihilation
-!        if(products(1,1)==1 .AND. products(2,1)==1) then
-!            products(1,1)=0
-!            products(2,1)=0
-!        end if
+			!SIA+SIA clustering
+			!two 1D clusters coming together to make a sessile cluster
+			if(reactants(3,1) > max3DInt .AND. reactants(3,2) > max3DInt) then
+				products(4,1)=products(3,1)
+				products(3,1)=0
+			end if
+
+			!sessile SIA + mobile SIA = sessile SIA
+			if(products(3,1) /= 0 .AND. products(4,1) /= 0) then
+				products(4,1)=products(3,1)+products(4,1)
+				products(3,1)=0
+			end if
+
+			!sessile cluster becomes mobile when it shrinks below max3DInt
+			if(products(4,1) /= 0 .AND. products(4,1) <= max3DInt) then
+				products(3,1)=products(4,1)
+				products(4,1)=0
+			end if
+		else if(numProducts==2) then
+			!sessile cluster becomes mobile when it shrinks below max3DInt
+			if(products(4,2) /= 0 .AND. products(4,2) <= max3DInt) then
+				products(3,2)=products(4,2)
+				products(4,2)=0
+			end if
+		end if
 
 		!onle point defect can move
 		if(pointDefectToggle=='yes') then
@@ -1525,18 +1476,6 @@ do i=1, numClusterReac(matNum)
 
 		end if
 
-		!sessile cluster becomes mobile when it shrinks below max3DInt
-        if(products(4,1) /= 0 .AND. products(4,1) <= max3DInt) then
-            products(3,1)=products(4,1)
-            products(4,1)=0
-        end if
-		if(numProducts==2) then
-			if(products(4,2) /= 0 .AND. products(4,2) <= max3DInt) then
-				products(3,2)=products(4,2)
-				products(4,2)=0
-			end if
-		end if
-
 		!Total Annihilation
 		count2=0
 		do j=1,numSpecies
@@ -1546,8 +1485,8 @@ do i=1, numClusterReac(matNum)
 		end do
 		if(count2==numSpecies) then
 			!we have completely annihilated the defects
-			numProducts=0
 			deallocate(products)
+			numProducts=0
 			allocate(products(numSpecies,numProducts))
 		endif
 		
@@ -1555,18 +1494,18 @@ do i=1, numClusterReac(matNum)
 		!points to nothing and reactionPrev points to the end of the list.
 		!NOTE: if order of reactants is backwards, we might not recognize that we have already added
 		!this reaction. Thus we could double-add reactions. Will fix later.
-        nullify(reactionPrev)
-		reactionUpdate=>reactionList(cell)
+		reactionPrev=>reactionList(cell)
+		reactionUpdate=>reactionList(cell)%next
 		call findReactionInListMultiple(reactionUpdate, reactionPrev, cell, reactants, products, numReactants, numProducts)
 		
 		!find the reaction rate. HARD CODED: if HeSIA left over, need to disallow this reaction
-		call checkReactionLegality(numProducts, products, isLegal)
+	!	call checkReactionLegality(numProducts, products, isLegal)
 		
-		if(isLegal .eqv. .TRUE.) then
+	!	if(isLegal .eqv. .TRUE.) then
 			reactionRate=findReactionRateMultiple(defectType1, defectType2, cell, ClusterReactions(i,matNum))
-		else
-			reactionRate=0d0
-		endif
+	!	else
+	!		reactionRate=0d0
+	!	endif
 				
 		!if reactionRate==0 and reaction already exists, then delete it. Subtract from totalRate.
 		if(associated(reactionUpdate) .AND. reactionRate==0d0) then
@@ -1694,7 +1633,6 @@ end subroutine
 !4) Update the reaction rate / add the reaction / remove the reaction, depending on if the
 !reaction is already present and if the reaction rate is nonzero.
 !***************************************************************************************************
-
 subroutine addMultiDefectReactionsFine(cascadeID, cell, defectType1, defectType2)
 use mod_constants
 use DerivedType
@@ -1709,16 +1647,16 @@ double precision reactionrate
 logical isLegal
 
 nullify(reactionUpdate)
+nullify(reactionPrev)
 !CascadeCurrent pointer should be pointing at the cascade whose ID matches the ID number passed into this 
 !subroutine
-CascadeCurrent=>ActiveCascades
 
+CascadeCurrent=>ActiveCascades
 do while(associated(CascadeCurrent))
 
 	if(CascadeCurrent%cascadeID==cascadeID) then
 		exit
-	endif
-	
+	end if
 	CascadeCurrent=>CascadeCurrent%next
 end do
 
@@ -1733,22 +1671,17 @@ endif
 !Clustering reactions. NOTE: the number of reactants and number of products, as well as the form 
 !of the products given the reactants, is hard-coded into this section. This type of hard-coding is
 !carried out in each section in this module, and is seen here as unavoidable.
-numReactants=2
-numProducts=1
-allocate(reactants(numSpecies,numReactants))
 do i=1, numClusterReac(matNum)
 
     !*******************************************************
     !defectType1 = ClusterReactions(i,matNum)%reactants(:,1)
     !defectType2 = ClusterReactions(i,matNum)%reactants(:,2)
     !*******************************************************
-
 	count=0
 	
 	!Check if the defect type is accepted by this dissociation reaction
 	!NOTE: we must check if defectType1 matches with ClusterReactions%reactants(1) and reactants(2)
 	!and vice versa with defectType2. We only want to make one reaction rate per pair of reactants.
-	
 	do j=1,numSpecies
 		if(defectType1(j)==0 .AND. ClusterReactions(i,matNum)%reactants(j,1)==0) then
 			if(defectType2(j)==0 .AND. ClusterReactions(i,matNum)%reactants(j,2)==0) then
@@ -1758,17 +1691,17 @@ do i=1, numClusterReac(matNum)
 					if((defectType2(j) <= ClusterReactions(i,matNum)%max(j+numSpecies)) .OR. &
 						ClusterReactions(i,matNum)%max(j+numSpecies)==-1) then
 						count=count+1
-					endif
-				endif
-			endif
+					end if
+				end if
+			end if
 		else if(defectType1(j) /= 0 .AND. ClusterReactions(i,matNum)%reactants(j,1) /= 0) then
 			if(defectType2(j)==0 .AND. ClusterReactions(i,matNum)%reactants(j,2)==0) then
 				if(defectType1(j) >= ClusterReactions(i,matNum)%min(j)) then
 					if((defectType1(j) <= ClusterReactions(i,matNum)%max(j)) .OR. &
 						ClusterReactions(i,matNum)%max(j)==-1) then
 						count=count+1
-					endif
-				endif
+					end if
+				end if
 			else if(defectType2(j) /= 0 .AND. ClusterReactions(i,matNum)%reactants(j,2) /= 0) then
 				if((defectType2(j) <= ClusterReactions(i,matNum)%max(j+numSpecies)) .OR. &
 					ClusterReactions(i,matNum)%max(j+numSpecies)==-1) then
@@ -1777,26 +1710,27 @@ do i=1, numClusterReac(matNum)
 						if(defectType2(j) >= ClusterReactions(i,matNum)%min(j+numSpecies) .AND. &
 							defectType1(j) >= ClusterReactions(i,matNum)%min(j)) then
 							count=count+1
-						endif
-					endif
-				endif
-			endif
-		endif
+						end if
+					end if
+				end if
+			end if
+		end if
 	end do
 	
 	if(count==numSpecies) then	!this defect pair is accepted for this clustering reaction
-		
-		!numReactants=2
-		!allocate(reactants(numSpecies,numReactants))
+
+		numReactants=2
+		allocate(reactants(numSpecies,numReactants))
 
         !CuV+SIA:
-        if(defectType1(1)/=0 .AND. defectType1(2)/=0 .AND.  defectType2(3)>defectType1(2)) then
+        if(defectType1(1)/=0 .AND.  defectType2(3)>defectType1(2)) then
             numProducts=2
             allocate(products(numSpecies,numProducts))
             !Create temporary arrays with the defect types associated with this reaction (SIA pinning)
             do j=1,numSpecies
-                reactants(j,1)=defectType1(j)
-                reactants(j,2)=defectType2(j)
+				reactants(j,1)=defectType1(j)
+				reactants(j,2)=defectType2(j)
+
                 if(j==2) then
                     products(j,1)=0
                 else
@@ -1809,7 +1743,7 @@ do i=1, numClusterReac(matNum)
                 end if
             end do
 
-		else if(defectType1(1)/=0 .AND. defectType1(2)/=0 .AND.  defectType2(4)>defectType1(2)) then
+		else if(defectType1(1)/=0 .AND.  defectType2(4)>defectType1(2)) then
 
 			numProducts=2
 			allocate(products(numSpecies,numProducts))
@@ -1818,6 +1752,7 @@ do i=1, numClusterReac(matNum)
 			do j=1,numSpecies
 				reactants(j,1)=defectType1(j)
 				reactants(j,2)=defectType2(j)
+
 				if(j==2) then
 					products(j,1)=0
 				else
@@ -1827,13 +1762,8 @@ do i=1, numClusterReac(matNum)
 					products(j,2)=defectType2(4)-defectType1(2)
 				else
 					products(j,2)=defectType2(j)
-				endif
+				end if
 			end do
-
-!			if(products(4,2) <= max3DInt) then
-!				products(3,2)=products(4,2)
-!				products(4,2)=0
-!			end if
 
 		else
 			numProducts=1
@@ -1852,42 +1782,49 @@ do i=1, numClusterReac(matNum)
 		!Here we are assuming 4 species: Cu, V, SIA_mobile, SIA_sessile
 		!We have not yet dealt with the case of CuV+SIA=>CuSIA (should not be allowed here)
 		!*******************************************************************************************
-		!Vacancy+SIA annihilation - only the larger species remains
-		if(products(2,1) >= products(3,1)) then
-			products(2,1)=products(2,1)-products(3,1)
-			products(3,1)=0
-		end if
-		if(products(2,1) >= products(4,1)) then
-			products(2,1)=products(2,1)-products(4,1)
-			products(4,1)=0
-		end if
-		if(products(2,1) < products(3,1)) then
-			products(3,1)=products(3,1)-products(2,1)
-			products(2,1)=0
-		end if
-		if(products(2,1) < products(4,1)) then
-			products(4,1)=products(4,1)-products(2,1)
-			products(2,1)=0
-		end if
-		
-		!SIA+SIA clustering
-		!two 1D clusters coming together to make a sessile cluster
-		if(reactants(3,1) > max3DInt .AND. reactants(3,2) > max3DInt) then
-			products(4,1)=products(3,1)
-			products(3,1)=0
-		endif
-		
-		!sessile SIA + mobile SIA = sessile SIA
-		if(products(3,1) /= 0 .AND. products(4,1) /= 0) then
-			products(4,1)=products(3,1)+products(4,1)
-			products(3,1)=0
-		endif
+		if(numProducts==1) then
+			!Vacancy+SIA annihilation - only the larger species remains
+			if(products(2,1) >= products(3,1)) then
+				products(2,1)=products(2,1)-products(3,1)
+				products(3,1)=0
+			end if
+			if(products(2,1) >= products(4,1)) then
+				products(2,1)=products(2,1)-products(4,1)
+				products(4,1)=0
+			end if
+			if(products(2,1) < products(3,1)) then
+				products(3,1)=products(3,1)-products(2,1)
+				products(2,1)=0
+			end if
+			if(products(2,1) < products(4,1)) then
+				products(4,1)=products(4,1)-products(2,1)
+				products(2,1)=0
+			end if
 
-        !Cu+V Annihilation
-!        if(products(1,1)==1 .AND. products(2,1)==1) then
-!            products(1,1)=0
-!            products(2,1)=0
-!        end if
+			!two 1D SIA clusters coming together to make a sessile cluster
+			if(reactants(3,1) > max3DInt .AND. reactants(3,2) > max3DInt) then
+				products(4,1)=products(3,1)
+				products(3,1)=0
+			endif
+
+			!sessile SIA + mobile SIA = sessile SIA
+			if(products(3,1) /= 0 .AND. products(4,1) /= 0) then
+				products(4,1)=products(3,1)+products(4,1)
+				products(3,1)=0
+			endif
+
+			!sessile cluster becomes mobile when it shrinks below max3DInt
+			if(products(4,1) /= 0 .AND. products(4,1) <= max3DInt) then
+				products(3,1)=products(4,1)
+				products(4,1)=0
+			end if
+		else if(numProducts==2) then
+			!sessile cluster becomes mobile when it shrinks below max3DInt
+			if(products(4,2) /= 0 .AND. products(4,2) <= max3DInt) then
+				products(3,2)=products(4,2)
+				products(4,2)=0
+			end if
+		end if
 
 		!onle point defect can move
 		if(pointDefectToggle=='yes') then
@@ -1904,18 +1841,6 @@ do i=1, numClusterReac(matNum)
 
 		end if
 
-        !sessile cluster becomes mobile when it shrinks below max3DInt
-        if(products(4,1) /= 0 .AND. products(4,1) <= max3DInt) then
-            products(3,1)=products(4,1)
-            products(4,1)=0
-        end if
-		if(numProducts==2) then
-			if(products(4,2) /= 0 .AND. products(4,2) <= max3DInt) then
-				products(3,2)=products(4,2)
-				products(4,2)=0
-			end if
-		end if
-
 		!Total Annihilation
 		count=0
 		do j=1,numSpecies
@@ -1925,8 +1850,8 @@ do i=1, numClusterReac(matNum)
 		end do
 		if(count==numSpecies) then
 			!we have completely annihilated the defects
-			numProducts=0
 			deallocate(products)
+			numProducts=0
 			allocate(products(numSpecies,numProducts))
 		endif
 		
@@ -1935,19 +1860,18 @@ do i=1, numClusterReac(matNum)
 		!NOTE: if order of reactants is backwards, we might not recognize that we have already added
 		!this reaction. Thus we could double-add reactions. Will fix later.
 
-        nullify(reactionPrev)
-		reactionUpdate=>CascadeCurrent%reactionList(cell)
+		reactionPrev=>CascadeCurrent%reactionList(cell)
+		reactionUpdate=>CascadeCurrent%reactionList(cell)%next
 		call findReactionInListMultiple(reactionUpdate, reactionPrev, cell, reactants, products, numReactants, numProducts)
 		
 		!find the reaction rate
-		call checkReactionLegality(numProducts, products, isLegal)
+	!	call checkReactionLegality(numProducts, products, isLegal)
 		
-		if(isLegal .EQV. .TRUE.) then
+	!	if(isLegal .EQV. .TRUE.) then
 			reactionRate=findReactionRateMultipleFine(CascadeCurrent, defectType1, defectType2, cell, ClusterReactions(i,matNum))
-		else
-			reactionRate=0d0
-		endif
-		
+	!	else
+	!		reactionRate=0d0
+	!	endif
 		!if reactionRate==0 and reaction already exists, then delete it. Subtract from totalRate.
 		if(associated(reactionUpdate) .AND. reactionRate==0d0) then
 			totalRate=totalRate-reactionUpdate%reactionRate
@@ -1985,7 +1909,9 @@ do i=1, numClusterReac(matNum)
 		else if(.NOT. associated(reactionUpdate) .AND. reactionRate /= 0d0) then
 			totalRate=totalRate+reactionRate
 			CascadeCurrent%totalRate(cell)=CascadeCurrent%totalRate(cell)+reactionRate
-			
+			if(reactants(1,1)/=0 .OR. reactants(1,2)/=0) then
+				write(*,*) '&&&&&&&&&&&&&&& error defect $$$$$$$$$$$$$$$$$$$$$'
+			end if
 			!creating new reaction
 			allocate(reactionUpdate)
 			reactionUpdate%numReactants=2
@@ -1999,16 +1925,14 @@ do i=1, numClusterReac(matNum)
 			do j=1, numSpecies
 				reactionUpdate%reactants(j,1)=reactants(j,1)
 				reactionUpdate%reactants(j,2)=reactants(j,2)
-			end do
-
-            if(numProducts==1) then
-                reactionUpdate%products=products
-            else if(numProducts==2) then
-				do j=1, numSpecies
+				if(numProducts==1) then
+					reactionUpdate%products(j,1)=products(j,1)
+				else if(numProducts==2) then
 					reactionUpdate%products(j,1)=products(j,1)
 					reactionUpdate%products(j,2)=products(j,2)
-				end do
-            end if
+				end if
+
+			end do
 
 			do j=1,reactionUpdate%numReactants+reactionUpdate%numProducts
 				reactionUpdate%cellNumber(j)=cell
@@ -2027,28 +1951,24 @@ do i=1, numClusterReac(matNum)
 			
 			!update reaction rate
 			reactionUpdate%reactionRate=reactionRate
-		
 		else
 			write(*,*) 'error updating reaction list - clustering'
 		end if
 		
 	    deallocate(reactants)
 	    deallocate(products)
-
         exit
-
 	end if
 
     !*******************************************************
-    !defectType1 = ClusterReactions(i,matNum)%reactants(2,:)
-    !defectType2 = ClusterReactions(i,matNum)%reactants(1,:)
+    !defectType1 = ClusterReactions(i,matNum)%reactants(:,2)
+    !defectType2 = ClusterReactions(i,matNum)%reactants(:,1)
     !*******************************************************
 	count=0
 	
 	!Check if the defect type is accepted by this dissociation reaction
 	!NOTE: we must check if defectType1 matches with ClusterReactions%reactants(1) and reactants(2)
 	!and vice versa with defectType2. We only want to make one reaction rate per pair of reactants.
-	
 	do j=1,numSpecies
 		if(defectType1(j)==0 .AND. ClusterReactions(i,matNum)%reactants(j,2)==0) then
 			if(defectType2(j)==0 .AND. ClusterReactions(i,matNum)%reactants(j,1)==0) then
@@ -2058,17 +1978,17 @@ do i=1, numClusterReac(matNum)
 					if((defectType2(j) <= ClusterReactions(i,matNum)%max(j)) .OR. &
 						ClusterReactions(i,matNum)%max(j)==-1) then
 						count=count+1
-					endif
-				endif
-			endif
+					end if
+				end if
+			end if
 		else if(defectType1(j) /= 0 .AND. ClusterReactions(i,matNum)%reactants(j,2) /= 0) then
 			if(defectType2(j)==0 .AND. ClusterReactions(i,matNum)%reactants(j,1)==0) then
 				if(defectType1(j) >= ClusterReactions(i,matNum)%min(j+numSpecies)) then
 					if((defectType1(j) <= ClusterReactions(i,matNum)%max(j+numSpecies)) .OR. &
 						ClusterReactions(i,matNum)%max(j+numSpecies)==-1) then
 						count=count+1
-					endif
-				endif
+					end if
+				end if
 			else if(defectType2(j) /= 0 .AND. ClusterReactions(i,matNum)%reactants(j,1) /= 0) then
 				if((defectType1(j) <= ClusterReactions(i,matNum)%max(j+numSpecies)) .OR. &
 					ClusterReactions(i,matNum)%max(j+numSpecies)==-1) then
@@ -2076,26 +1996,27 @@ do i=1, numClusterReac(matNum)
 						if(defectType1(j) >= ClusterReactions(i,matNum)%min(j+numSpecies) .AND. &
 							defectType2(j) >= ClusterReactions(i,matNum)%min(j)) then
 							count=count+1
-						endif
-					endif
-				endif
-			endif
-		endif
+						end if
+					end if
+				end if
+			end if
+		end if
 	end do
 	
 	if(count==numSpecies) then	!this defect pair is accepted for this clustering reaction
-		
-		!numReactants=2
-		!allocate(reactants(numSpecies,numReactants))
+
+		numReactants=2
+		allocate(reactants(numReactants,numSpecies))
 
         !SIA+CuV
-        if(defectType2(1)/=0 .AND. defectType2(2)/=0 .AND.  defectType1(3)>defectType2(2)) then
+        if(defectType2(1)/=0 .AND.  defectType1(3)>defectType2(2)) then
 			numProducts=2
             allocate(products(numSpecies,numProducts))
             !Create temporary arrays with the defect types associated with this reaction (SIA pinning)
             do j=1,numSpecies
-                reactants(j,2)=defectType1(j)
-                reactants(j,1)=defectType2(j)
+				reactants(j,2)=defectType1(j)
+				reactants(j,1)=defectType2(j)
+
                 if(j==2) then
                     products(j,1)=0
                 else
@@ -2108,7 +2029,7 @@ do i=1, numClusterReac(matNum)
                 end if
             end do
 
-		else if(defectType2(1)/=0 .AND. defectType2(2)/=0 .AND.  defectType1(4)>defectType2(2)) then
+		else if(defectType2(1)/=0 .AND.  defectType1(4)>defectType2(2)) then
 
 			numProducts=2
 			allocate(products(numSpecies,numProducts))
@@ -2116,6 +2037,7 @@ do i=1, numClusterReac(matNum)
 			do j=1,numSpecies
 				reactants(j,2)=defectType1(j)
 				reactants(j,1)=defectType2(j)
+
 				if(j==2) then
 					products(j,1)=0
 				else
@@ -2127,12 +2049,6 @@ do i=1, numClusterReac(matNum)
 					products(j,2)=defectType1(j)
 				end if
 			end do
-
-!			if(products(4,2) <= max3DInt) then
-!				products(3,2)=products(4,2)
-!				products(4,2)=0
-!			end if
-
 		else
 			numProducts=1
 			allocate(products(numSpecies,numProducts))
@@ -2150,42 +2066,49 @@ do i=1, numClusterReac(matNum)
 		!Here we are assuming 4 species: He, V, SIA_mobile, SIA_sessile
 		!We have not yet dealt with the case of HeV+SIA=>HeSIA (should not be allowed here)
 		!*******************************************************************************************
-		!Vacancy+SIA annihilation - only the larger species remains
-		if(products(2,1) >= products(3,1)) then
-			products(2,1)=products(2,1)-products(3,1)
-			products(3,1)=0
-		endif
-		if(products(2,1) >= products(4,1)) then
-			products(2,1)=products(2,1)-products(4,1)
-			products(4,1)=0
-		endif
-		if(products(2,1) < products(3,1)) then
-			products(3,1)=products(3,1)-products(2,1)
-			products(2,1)=0
-		endif
-		if(products(2,1) < products(4,1)) then
-			products(4,1)=products(4,1)-products(2,1)
-			products(2,1)=0
-		endif
-		
-		!SIA+SIA clustering
-		!two 1D clusters coming together to make a sessile cluster
-		if(reactants(3,1) > max3DInt .AND. reactants(3,2) > max3DInt) then
-			products(4,1)=products(3,1)
-			products(3,1)=0
-		endif
-		
-		!sessile SIA + mobile SIA = sessile SIA
-		if(products(3,1) /= 0 .AND. products(4,1) /= 0) then
-			products(4,1)=products(3,1)+products(4,1)
-			products(3,1)=0
-		endif
+		if(numProducts==1) then
+			!Vacancy+SIA annihilation - only the larger species remains
+			if(products(2,1) >= products(3,1)) then
+				products(2,1)=products(2,1)-products(3,1)
+				products(3,1)=0
+			end if
+			if(products(2,1) >= products(4,1)) then
+				products(2,1)=products(2,1)-products(4,1)
+				products(4,1)=0
+			end if
+			if(products(2,1) < products(3,1)) then
+				products(3,1)=products(3,1)-products(2,1)
+				products(2,1)=0
+			end if
+			if(products(2,1) < products(4,1)) then
+				products(4,1)=products(4,1)-products(2,1)
+				products(2,1)=0
+			end if
 
-        !Cu+V Annihilation
-!        if(products(1,1)==1 .AND. products(2,1)==1) then
-!            products(1,1)=0
-!            products(2,1)=0
-!        end if
+			!two 1D SIA clusters coming together to make a sessile cluster
+			if(reactants(3,1) > max3DInt .AND. reactants(3,2) > max3DInt) then
+				products(4,1)=products(3,1)
+				products(3,1)=0
+			end if
+
+			!sessile SIA + mobile SIA = sessile SIA
+			if(products(3,1) /= 0 .AND. products(4,1) /= 0) then
+				products(4,1)=products(3,1)+products(4,1)
+				products(3,1)=0
+			end if
+
+			!sessile cluster becomes mobile when it shrinks below max3DInt
+			if(products(4,1) /= 0 .AND. products(4,1) <= max3DInt) then
+				products(3,1)=products(4,1)
+				products(4,1)=0
+			end if
+		else if(numProducts==2) then
+			!sessile cluster becomes mobile when it shrinks below max3DInt
+			if(products(4,2) /= 0 .AND. products(4,2) <= max3DInt) then
+				products(3,2)=products(4,2)
+				products(4,2)=0
+			end if
+		end if
 
 		!onle point defect can move
 		if(pointDefectToggle=='yes') then
@@ -2199,19 +2122,6 @@ do i=1, numClusterReac(matNum)
 					products(3,2)=0
 				end if
 			end if
-
-		end if
-
-        !sessile cluster becomes mobile when it shrinks below max3DInt
-        if(products(4,1) /= 0 .AND. products(4,1) <= max3DInt) then
-            products(3,1)=products(4,1)
-            products(4,1)=0
-        end if
-		if(numProducts==2) then
-			if(products(4,2) /= 0 .AND. products(4,2) <= max3DInt) then
-				products(3,2)=products(4,2)
-				products(4,2)=0
-			end if
 		end if
 
 		!Total Annihilation
@@ -2223,8 +2133,8 @@ do i=1, numClusterReac(matNum)
 		end do
 		if(count==numSpecies) then
 			!we have completely annihilated the defects
-			numProducts=0
 			deallocate(products)
+			numProducts=0
 			allocate(products(numSpecies,numProducts))
 		endif
 		
@@ -2232,18 +2142,18 @@ do i=1, numClusterReac(matNum)
 		!points to nothing and reactionPrev points to the end of the list.
 		!NOTE: if order of reactants is backwards, we might not recognize that we have already added
 		!this reaction. Thus we could double-add reactions. Will fix later.
-        nullify(reactionPrev)
-		reactionUpdate=>CascadeCurrent%reactionList(cell)
+		reactionPrev=>CascadeCurrent%reactionList(cell)
+		reactionUpdate=>CascadeCurrent%reactionList(cell)%next
 		call findReactionInListMultiple(reactionUpdate, reactionPrev, cell, reactants, products, numReactants, numProducts)
 		
 		!find the reaction rate
-		call checkReactionLegality(numProducts, products, isLegal)
+	!	call checkReactionLegality(numProducts, products, isLegal)
 		
-		if(isLegal .eqv. .TRUE.) then
+	!	if(isLegal .eqv. .TRUE.) then
 			reactionRate=findReactionRateMultipleFine(CascadeCurrent, defectType1, defectType2, cell, ClusterReactions(i,matNum))
-		else
-			reactionRate=0d0
-		endif
+	!	else
+	!		reactionRate=0d0
+	!	endif
 		
 		!if reactionRate==0 and reaction already exists, then delete it. Subtract from totalRate.
 		if(associated(reactionUpdate) .AND. reactionRate==0d0) then
@@ -2296,16 +2206,13 @@ do i=1, numClusterReac(matNum)
 			do j=1, numSpecies
 				reactionUpdate%reactants(j,1)=reactants(j,1)
 				reactionUpdate%reactants(j,2)=reactants(j,2)
-			end do
-
-            if(numProducts==1) then
-                reactionUpdate%products=products
-            else if(numProducts==2) then
-				do j=1, numSpecies
+				if(numProducts==1) then
+					reactionUpdate%products(j,1)=products(j,1)
+				else if(numProducts==2) then
 					reactionUpdate%products(j,1)=products(j,1)
 					reactionUpdate%products(j,2)=products(j,2)
-				end do
-            end if
+				end if
+			end do
 
 			do j=1,reactionUpdate%numReactants+reactionUpdate%numProducts
 				reactionUpdate%cellNumber(j)=cell
@@ -2331,9 +2238,7 @@ do i=1, numClusterReac(matNum)
 	
 	    deallocate(reactants)
 	    deallocate(products)
-
         exit
-
 	end if
 	
 end do
@@ -2377,6 +2282,7 @@ type(reaction), pointer :: reactionUpdate, reactionPrev
 double precision reactionRate
 
 nullify(reactionUpdate)
+nullify(reactionPrev)
 !In the case of polycrystal simulations, myMesh(cell)%material is the grain ID, not the material number. Therefore
 !we must set all values of matNum=1 in this case (only one material type in polycrystal simulations).
 if(numMaterials==1) then
@@ -2421,8 +2327,8 @@ do i=1, numDiffReac(matNum)
 		!nullify(reactionPrev)
 
 		!find the reaction in the reaction list (INCLUDING DIFFUSION DIRECTIONS)
-        nullify(reactionPrev)
-		reactionUpdate=>reactionList(cell1)
+		reactionPrev=>reactionList(cell1)
+		reactionUpdate=>reactionList(cell1)%next
 		call findReactionInListDiff(reactionUpdate, reactionPrev, reactants, cell1, cell2, proc1, proc2)
 
 		reactionRate=findReactionRateDiff(defectType, cell1, proc1, cell2, proc2, dir, DiffReactions(i,matNum))
@@ -2558,6 +2464,7 @@ interface
 end interface
 
 nullify(reactionUpdate)
+nullify(reactionPrev)
 !In the case of polycrystal simulations, myMesh(cell)%material is the grain ID, not the material number. Therefore
 !we must set all values of matNum=1 in this case (only one material type in polycrystal simulations).
 if(numMaterials==1) then
@@ -2602,8 +2509,8 @@ do i=1, numDiffReac(matNum)
 
 		!find the reaction in the reaction list. NOTE: -CascadeCurrent%cascadeID is used in place of cell2
 		!to identify that this is a reaction from the coarse mesh to the fine mesh into this cascade.
-		nullify(reactionPrev)
-        reactionUpdate=>reactionList(cell)
+		reactionPrev=>reactionList(cell)
+        reactionUpdate=>reactionList(cell)%next
 		call findReactionInListDiff(reactionUpdate, reactionPrev, reactants, cell, -CascadeCurrent%cascadeID, proc, proc)
 		
 		!Find the total number of defects of type defectType in the fine mesh (all cells)
@@ -2755,6 +2662,7 @@ do while(associated(CascadeCurrent))
 end do
 
 nullify(reactionUpdate)
+nullify(reactionPrev)
 !In the case of polycrystal simulations, myMesh(cell)%material is the grain ID, not the material number. Therefore
 !we must set all values of matNum=1 in this case (only one material type in polycrystal simulations).
 if(numMaterials==1) then
@@ -2796,8 +2704,8 @@ do i=1, numDiffReac(matNum)
 		end do
 
 		!find the reaction in the reaction list (INCLUDING DIFFUSION DIRECTIONS)
-		reactionUpdate=>CascadeCurrent%reactionList(cell1)
-		nullify(reactionPrev)
+		reactionPrev=>CascadeCurrent%reactionList(cell1)
+		reactionUpdate=>CascadeCurrent%reactionList(cell1)%next
 		call findReactionInListDiff(reactionUpdate, reactionPrev, reactants, cell1, cell2, proc1, proc2)
 		
 		reactionRate=findReactionRateDiffFine(CascadeCurrent, defectType, cell1, proc1, cell2, proc2, dir, DiffReactions(i,matNum))
@@ -2809,7 +2717,6 @@ do i=1, numDiffReac(matNum)
 			CascadeCurrent%totalRate(cell1)=CascadeCurrent%totalRate(cell1)-reactionUpdate%reactionRate
 
             if(associated(reactionUpdate%next)) then
-                !deleting reactionUpdate
                 reactionPrev%next=>reactionUpdate%next
                 deallocate(reactionUpdate%reactants)
                 deallocate(reactionUpdate%products)
@@ -2853,12 +2760,11 @@ do i=1, numDiffReac(matNum)
 			allocate(reactionUpdate%taskid(reactionUpdate%numReactants+reactionUpdate%numProducts))
 			nullify(reactionUpdate%next)
 			reactionPrev%next=>reactionUpdate
-			!do j=1, numSpecies
-			!	reactionUpdate%reactants(j,1)=reactants(j,1)
-			!	reactionUpdate%products(j,1)=products(j,1)
-			!end do
-			reactionUpdate%reactants=reactants
-			reactionUpdate%products=products
+			do j=1, numSpecies
+				reactionUpdate%reactants(j,1)=reactants(j,1)
+				reactionUpdate%products(j,1)=products(j,1)
+			end do
+
 			reactionUpdate%cellNumber(1)=cell1
 			reactionUpdate%taskid(1)=proc1
 			reactionUpdate%cellNumber(2)=cell2
@@ -3523,7 +3429,8 @@ type(reactionParameters) :: reactionParameter
 double precision reactionRate, Diff1, Diff2, size1, size2, num1, num2, vol, Ztemp
 !integer findNumDefectFine
 type(cascade), pointer :: CascadeCurrent
-double precision findDefectSize, findDiffusivity
+integer findDefectSize
+double precision findDiffusivity
 integer matNum, grainNum
 
 interface
@@ -3540,7 +3447,7 @@ if(polycrystal=='yes') then
 else
 	matNum=myMesh(CascadeCurrent%cellNumber)%material	!not worrying about diffusion between multiple material types right now
 	grainNum=myMesh(CascadeCurrent%cellNumber)%material
-endif
+end if
 
 size1=findDefectSize(defectType1)
 size2=findDefectSize(defectType2)
@@ -3549,16 +3456,6 @@ Diff2=findDiffusivity(matNum,defectType2)
 num1=findNumDefectFine(CascadeCurrent, defectType1,cell)
 num2=findNumDefectFine(CascadeCurrent, defectType2,cell)
 vol=cascadeElementVol
-
-!Hard-coded: sink strength bias for SIAs
-if(defectType1(3) /= 0 .OR. defectType1(4) /= 0) then
-	Ztemp=1.2d0
-else if(defectType2(3) /= 0 .OR. defectType2(4) /= 0) then
-	Ztemp=1.2d0
-else
-	Ztemp=1.0d0
-end if
-
 !Adjust the number of defects in the reaction if both reactants are of the same type
 
 count=0
@@ -3647,7 +3544,7 @@ else if(reactionParameter%functionType==9) then	!1D-1D: 1D(SIA) + 1D(SIA)
 else
 	write(*,*) 'error clustering function type only admits 5-9'
 	reactionRate=0d0
-endif
+end if
 
 findReactionRateMultipleFine=reactionRate
 end function
@@ -4069,8 +3966,8 @@ integer, allocatable :: reactants(:,:), products(:,:)
 integer numReactants, numProducts, count(numReactants+numProducts), i, j, cell
 logical flag
 
-do while(associated(reactionUpdate))
-	
+outer: do while(associated(reactionUpdate))
+
 	if(reactionUpdate%numReactants==numReactants .AND. reactionUpdate%numProducts==numProducts) then
 		
 		do i=1,numReactants
@@ -4090,23 +3987,22 @@ do while(associated(reactionUpdate))
 				end if
 			end do
 		end do
-		
-		flag=.FALSE.
-		do i=1,numReactants+numProducts
+        flag=.FALSE.
+		inter: do i=1,numReactants+numProducts
 			if(count(i) /= numSpecies) then
 				flag=.TRUE.
-				exit
+				exit inter
 			end if
-		end do
+		end do inter
 		
 		if(flag .EQV. .FALSE.) then	!we have found the reaction
-			exit
+			exit outer
 		end if
 	end if
 	
 	reactionPrev=>reactionUpdate
 	reactionUpdate=>reactionUpdate%next
-end do
+end do outer
 	
 end subroutine
 
@@ -4137,7 +4033,7 @@ do while(associated(reactionUpdate))
 				do j=1,numSpecies
 					if(reactionUpdate%reactants(j,1)==reactants(j,1)) then
 						count(1)=count(1)+1
-					endif
+					end if
 				end do
 		
 				count(2)=0
@@ -4192,21 +4088,30 @@ integer, allocatable :: reactants(:,:), products(:,:)
 integer numReactants, numProducts, count(numReactants+numProducts), i, j, cell
 logical flag
 
-do while(associated(reactionUpdate))
+outer: do while(associated(reactionUpdate))
 	
 	!Currently set up only for clustering reactions
-	if(reactionUpdate%numReactants==numReactants .AND. reactionUpdate%numProducts==numProducts) then
+	if(reactionUpdate%numReactants==2 .AND. reactionUpdate%numProducts==numProducts) then
 		
 		!check if the reactants are the same as the reactionUpdate reactants
-		count(1)=0
-		count(2)=0
-		do j=1,numSpecies
-			if(reactionUpdate%reactants(j,1)==reactants(j,1)) then
-				count(1)=count(1)+1
-			endif
-			if(reactionUpdate%reactants(j,2)==reactants(j,2)) then
-				count(2)=count(2)+1
-			endif
+		!count(1)=0
+		!count(2)=0
+		!do j=1,numSpecies
+		!	if(reactionUpdate%reactants(j,1)==reactants(j,1)) then
+		!		count(1)=count(1)+1
+		!	end if
+		!	if(reactionUpdate%reactants(j,2)==reactants(j,2)) then
+		!		count(2)=count(2)+1
+		!	end if
+		!end do
+
+		do i=1, numReactants
+			count(i)=0
+			do j=1, numSpecies
+				if(reactionUpdate%reactants(j,i)==reactants(j,i)) then
+					count(i)=count(i)+1
+				end if
+			end do
 		end do
 
 		!check if the products are the same as the reactionUpdate products
@@ -4220,15 +4125,15 @@ do while(associated(reactionUpdate))
 		end do
 		
 		flag=.FALSE.
-		do i=1,numReactants+numProducts
+		inter1: do i=1,numReactants+numProducts
 			if(count(i) /= numSpecies) then
 				flag=.TRUE.
-				exit
+				exit inter1
 			end if
-		end do
+		end do inter1
 		
 		if(flag .EQV. .FALSE.) then	!we have found the reaction
-			exit
+			exit outer
 		end if
 		
 		!*************
@@ -4242,38 +4147,38 @@ do while(associated(reactionUpdate))
 		do j=1,numSpecies
 			if(reactionUpdate%reactants(j,2)==reactants(j,1)) then
 				count(1)=count(1)+1
-			endif
+			end if
 			if(reactionUpdate%reactants(j,1)==reactants(j,2)) then
 				count(2)=count(2)+1
-			endif
+			end if
 		end do
-		
+
 		!check if the products are the same as the reactionUpdate products
 		do i=1,numProducts
 			count(i+numReactants)=0
 			do j=1,numSpecies
 				if(reactionUpdate%products(j,i)==products(j,i)) then
 					count(i+numReactants)=count(i+numReactants)+1
-				endif
+				end if
 			end do
 		end do
 		
 		flag=.FALSE.
-		do i=1,numReactants+numProducts
+		inter2: do i=1,numReactants+numProducts
 			if(count(i) /= numSpecies) then
 				flag=.TRUE.
-				exit
-			endif
-		end do
+				exit inter2
+			end if
+		end do inter2
 		
 		if(flag .EQV. .FALSE.) then	!we have found the reaction
-			exit
-		endif
+			exit outer
+		end if
 	end if
 	
 	reactionPrev=>reactionUpdate
 	reactionUpdate=>reactionUpdate%next
-end do
+end do outer
 	
 end subroutine
 
@@ -4291,7 +4196,6 @@ end subroutine
 !defect combination in the case of cascade-defect interactions. In the future, may want to
 !move all defect combination rules to this subroutine so that they only need to be changed once.
 !***************************************************************************************************
-
 subroutine defectCombinationRules(products, product2, defectTemp, isCombined)
 use derivedType
 use mod_constants
@@ -4306,11 +4210,11 @@ isCombined = .TRUE.
 
 !SIA+Cu or Cu+SIA, not combine
 if(products(1)/=0 .AND. products(2)==0 .AND. &
-        (defectTemp%defectType(3)/=0 .OR. defectTemp%defectType(4)/=0)) then    !SIA+Cu
+        (defectTemp%defectType(3)/=0 .OR. defectTemp%defectType(4)/=0)) then    !Cu+SIA
     isCombined=.FALSE.
 
 else if(defectTemp%defectType(1)/=0 .AND. defectTemp%defectType(2)==0 .AND. &
-        (products(3)/=0 .OR. products(4)/=0)) then  !Cu+SIA
+        (products(3)/=0 .OR. products(4)/=0)) then  !SIA+Cu
     isCombined=.FALSE.
 
 else	!Combine
@@ -4359,6 +4263,16 @@ else	!Combine
 		products(3)=0
 	end if
 
+	!sessile cluster becomes mobile again when it shrinks below max3DInt
+	if(products(4) /= 0 .AND. products(4) <= max3DInt) then
+		products(3)=products(4)
+		products(4)=0
+	end if
+	if(product2(4)/=0 .AND. product2(4) <= max3DInt) then
+		product2(3)=product2(4)
+		product2(4)=0
+	end if
+
 	if(pointDefectToggle=='yes') then
 		if(products(3) /= 0 .AND. products(3) > max3DInt) then
 			products(4)=products(3)
@@ -4369,16 +4283,6 @@ else	!Combine
 			product2(4)=product2(3)
 			product2(3)=0
 		end if
-	end if
-
-	!sessile cluster becomes mobile again when it shrinks below max3DInt
-	if(products(4) /= 0 .AND. products(4) <= max3DInt) then
-		products(3)=products(4)
-		products(4)=0
-	end if
-	if(product2(4)/=0 .AND. product2(4) <= max3DInt) then
-		product2(3)=product2(4)
-		product2(4)=0
 	end if
 
 end if

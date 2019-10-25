@@ -413,7 +413,7 @@ nmin	0	nmax	0
 
 1	1	0	0		0	1	0	0	!nCumV->V+nCu(m-1)V
 nmin	1	nmax    -1
-nmin	1	nmax    -1
+nmin	2	nmax    -1
 nmin	0	nmax	0
 nmin	0	nmax	0
 1							!reactionRate form 1

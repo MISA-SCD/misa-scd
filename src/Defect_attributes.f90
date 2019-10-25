@@ -356,7 +356,7 @@ max=0
 do i=1, numSpecies
 	if(defectType(i) > max) then
 		max=defectType(i)
-	endif
+	end if
 end do
 
 findDefectSize=max

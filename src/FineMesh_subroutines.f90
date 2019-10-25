@@ -39,9 +39,11 @@ interface
 	end subroutine
 end interface
 
+nullify(defectCurrentFine)
+nullify(defectCurrentCoarse)
 !Part 0: increase coarse mesh volume
 myMesh(CascadeCurrent%cellNumber)%volume=myMesh(CascadeCurrent%cellNumber)%volume+CascadeElementVol*numCellsCascade
-	 
+myMesh(CascadeCurrent%cellNumber)%length=(myMesh(CascadeCurrent%cellNumber)%volume)**(1d0/3d0)
 !Part 1: add defects to coarse mesh
 do i=1,numCellsCascade
 	
@@ -52,12 +54,10 @@ do i=1,numCellsCascade
 		nullify(defectPrevCoarse)
 		defectCurrentCoarse=>defectList(CascadeCurrent%cellNumber)
 		
-		!Point defectCurrentCoarse at the correct place in the coarse element defect list to 
-		!implant defectCurrentFine
+		!Point defectCurrentCoarse at the correct place in the coarse element defect list to implant defectCurrentFine
 		call findDefectInList(defectCurrentCoarse, defectPrevCoarse, defectCurrentFine%defectType)
 		
 		if(associated(defectCurrentCoarse)) then
-			
 			!Check to see if defectCurrentCoarse is pointing at the same type of defect as in the fine mesh
 			count=0
 			
@@ -87,7 +87,6 @@ do i=1,numCellsCascade
 				defectPrevCoarse%num=defectCurrentFine%num
 				defectPrevCoarse%cellNumber=CascadeCurrent%cellNumber
 				defectPrevCoarse%next=>defectCurrentCoarse
-			
 			else
 				write(*,*) 'Error adding fine mesh to coarse mesh, associated'
 			end if
@@ -107,20 +106,6 @@ do i=1,numCellsCascade
 			defectPrevCoarse%num=defectCurrentFine%num
 			defectPrevCoarse%cellNumber=CascadeCurrent%cellNumber
 
-			
-			!allocate(defectCurrentCoarse)
-			!allocate(defectCurrentCoarse%defectType(numSpecies))
-			!defectPrevCoarse%next=>defectCurrentCoarse
-			!nullify(defectCurrentCoarse%next)
-			!do j=1,numSpecies
-			!	defectCurrentCoarse%defectType(j)=defectCurrentFine%defectType(j)
-			!end do
-			!defectCurrentCoarse%num=defectCurrentFine%num
-			!defectCurrentCoarse%cellNumber=CascadeCurrent%cellNumber
-			
-		!NOTE: we do not need to address the case of inserting a defect at
-		!the beginning of the list because the first item in the masterlist
-		!is never deleted (1He).
 		else
 			write(*,*) 'Error adding fine mesh to coarse mesh'
 		
@@ -129,12 +114,10 @@ do i=1,numCellsCascade
 	end do
 end do
 
-!write(*,*) 'Part 1 complete: added defects to coarse mesh'
-
 !Part 2: delete fine mesh
-
+nullify(defectCurrent)
+nullify(reactionCurrent)
 !Case 1: CascadeCurrent is in the middle of the list of fine meshes
-
 if(associated(CascadeCurrent%prev) .AND. associated(CascadeCurrent%next)) then
 	
 	!Remove CascadeCurrent from the list of cascades by pointing the previous cascade to the next cascade
@@ -266,8 +249,7 @@ else if(associated(CascadeCurrent%next)) then
 
 !case 4: Only one cascade exists
 else
-	
-!	write(*,*) 'got to case 4 in step 2'
+
 	nullify(ActiveCascades)
 	do i=1,numCellsCascade
 		
@@ -317,7 +299,6 @@ end subroutine
 !!Inputs: CascadeCurrent (pointer), defectType(numSpecies), cellNumber
 !!Output: numDefects
 !***************************************************************************************************
-
 integer function findNumDefectFine(CascadeCurrent, defectType, cellNumber)
 use DerivedType
 use mod_constants
@@ -333,22 +314,17 @@ defectCurrent=>CascadeCurrent%localDefects(cellNumber)
 do while(associated(defectCurrent))
 
 	count=0
-
 	do i=1,numSpecies
-		
 		if(defectType(i)==defectCurrent%defectType(i)) then
 			count=count+1
-		endif
-
+		end if
 	end do
 
 	if(count==numSpecies) then
 		numDefects=defectCurrent%num
 		exit
-	else
-		defectCurrent=>defectCurrent%next
-	endif
-
+	end if
+	defectCurrent=>defectCurrent%next
 end do
 
 findNumDefectFine=numDefects
@@ -362,7 +338,6 @@ end function
 !!Inputs: CascadeCurrent (pointer), defectType(numSpecies), cellNumber
 !!Output: numDefects
 !***************************************************************************************************
-
 integer function findNumDefectTotalFine(defectType, CascadeCurrent)
 use mod_constants
 use DerivedType
@@ -382,7 +357,6 @@ interface
 end interface
 
 count=0
-
 do cell=1,numCellsCascade
 	
 	count=count+findNumDefectFine(CascadeCurrent, defectType, cell)
@@ -402,7 +376,6 @@ end function
 ! Inputs: coordinates(3) (double precision)
 ! Output: fine mesh cell id number (according to standard cubic meshing connectivity scheme)
 !***************************************************************************************************
-
 integer function findCellWithCoordinatesFineMesh(coordinates)
 use mod_constants
 use DerivedType
@@ -415,19 +388,19 @@ integer i,j,k,cellNumber
 do i=1,numxcascade
 	if(coordinates(1)+numxcascade*fineLength/2d0 <= i*fineLength) then
 		exit
-	endif
+	end if
 end do
 
 do j=1,numycascade
 	if(coordinates(2)+numycascade*fineLength/2d0 <= j*fineLength) then
 		exit
-	endif
+	end if
 end do
 
 do k=1,numzcascade
 	if(coordinates(3)+numzcascade*fineLength/2d0 <= k*fineLength) then
 		exit
-	endif
+	end if
 end do
 
 cellNumber=i+(j-1)*numxcascade+(k-1)*(numxcascade*numycascade)
@@ -446,7 +419,6 @@ end function
 !! Outputs: cell number
 !
 !***************************************************************************************************
-
 integer function chooseRandomCell()
 use randdp
 use mod_constants
@@ -459,13 +431,10 @@ r=dprand()
 a=0d0
 
 do i=1,numxCascade*numyCascade*numzCascade
-	
 	a=a+1d0/dble(numxCascade*numyCascade*numzCascade)
-	
 	if(a > r) then
 		exit
-	endif
-
+	end if
 end do
 
 chooseRandomCell=i
@@ -484,7 +453,6 @@ end function
 !!         mesh elements including all processors (and all cascades)
 !
 !***********************************************************************
-
 subroutine countReactionsFine(reactionsFine)
 
 use DerivedType
@@ -518,10 +486,8 @@ do while(associated(cascadeCurrent))
 			else
 				reactionCounter=reactionCounter+1
 				reactionCurrent=>reactionCurrent%next
-			endif
-			
+			end if
 		end do
-	
 	end do
 	
 	CascadeCurrent=>CascadeCurrent%next
@@ -529,7 +495,6 @@ do while(associated(cascadeCurrent))
 end do
 
 !Get info from other procs
-
 call MPI_ALLREDUCE(reactionCounter,reactionsFine, 1, MPI_INTEGER, MPI_SUM, comm, ierr)
 	
 end subroutine

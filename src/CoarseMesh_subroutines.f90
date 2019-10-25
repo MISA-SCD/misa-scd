@@ -192,7 +192,6 @@ end subroutine
 !! Output: updates cascade implantation rate
 !
 !***************************************************************************************************
-
 subroutine updateImplantRateSingleCell(cell)
 use ReactionRates
 use DerivedType
@@ -280,7 +279,6 @@ end subroutine
 ! Input: cell (integer): cell number
 ! Outputs: reaction rates for all reactions in a cell
 !***************************************************************************************************
-
 subroutine resetReactionListSingleCell(cell)
 use mod_constants
 use DerivedType
@@ -334,9 +332,7 @@ do while(associated(defectUpdate))
 			localGrainID=myMesh(cell)%material
 
 			!Find the grain ID number of the neighboring volume element
-			if(myMesh(cell)%neighborProcs(1,j) /= myProc%taskid .AND. &
-					myMesh(cell)%neighborProcs(1,j) /= -1) then
-
+			if(myMesh(cell)%neighborProcs(1,j) /= myProc%taskid .AND. myMesh(cell)%neighborProcs(1,j) /= -1) then
 				neighborGrainID=myBoundary(myMesh(cell)%neighbors(1,j),j)%material
 			else if(myMesh(cell)%neighborProcs(1,j) == -1) then
 				neighborGrainID=localGrainID
@@ -345,7 +341,6 @@ do while(associated(defectUpdate))
 			end if
 
 			if(localGrainID==neighborGrainID) then
-
 				!Allow diffusion between elements in the same grain
 				call addDiffusionReactions(cell, myMesh(cell)%neighbors(1,j),&
 						myProc%taskid, myMesh(cell)%neighborProcs(1,j),j,defectTemp)
@@ -358,16 +353,24 @@ do while(associated(defectUpdate))
 					myMesh(cell)%neighborProcs(1,j), j, defectTemp)
 		end if
 
+		if(mod(j,2)==0) then
+			dir=j-1
+		else
+			dir=j+1
+		end if
+
 		!Add diffusion reactions from the neighboring cell into this one
-	!	if(myMesh(cell)%neighborProcs(1,j)==myProc%taskid) then
-	!		if(polycrystal=='yes' .AND. myMesh(myMesh(cell)%neighbors(1,j))%material == myMesh(cell)%material) then
-	!			call addDiffusionReactions(myMesh(cell)%neighbors(1,j), cell, myProc%taskid, &
-	!					myProc%taskid, j, defectTemp)
-	!		else if(polycrystal=='no') then
-	!			call addDiffusionReactions(myMesh(cell)%neighbors(1,j), cell, myProc%taskid, &
-	!					myProc%taskid, j, defectTemp)
-	!		end if
-	!	end if
+		if(myMesh(cell)%neighborProcs(1,j)==myProc%taskid) then
+			if(polycrystal=='yes' .AND. myMesh(myMesh(cell)%neighbors(1,j))%material == myMesh(cell)%material) then
+				!call addDiffusionReactions(myMesh(cell)%neighbors(1,j), cell, myProc%taskid, &
+				!		myProc%taskid, j, defectTemp)
+				call addDiffusionReactions(myMesh(cell)%neighbors(1,j),cell,myProc%taskid,myProc%taskid,dir,defectTemp)
+			else if(polycrystal=='no') then
+				!call addDiffusionReactions(myMesh(cell)%neighbors(1,j), cell, myProc%taskid, &
+				!		myProc%taskid, j, defectTemp)
+				call addDiffusionReactions(myMesh(cell)%neighbors(1,j),cell,myProc%taskid,myProc%taskid,dir,defectTemp)
+			end if
+		end if
 	end do
 
 	!***********************************************************************************
@@ -411,7 +414,6 @@ end subroutine
 !! Actions: clears reactions in reactionList(cellNumber)
 !
 !***************************************************************************************************
-
 subroutine clearReactionListSingleCell(cellNumber)
 use DerivedType
 use mod_constants

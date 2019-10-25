@@ -130,32 +130,36 @@ if(myProc%taskid==MASTER) then
 		reactionCurrent=>reactionList(i)
 		if(associated(reactionCurrent)) then
 			write(*,*)  'cell', i
-			write(*,*) 'neighbors', (myMesh(i)%neighbors(1,j),j=1,6)
-			write(*,*) 'neigProcs', (myMesh(i)%neighborProcs(1,j),j=1,6)
+			!write(*,*) 'neighbors', (myMesh(i)%neighbors(1,j),j=1,6)
+			!write(*,*) 'neigProcs', (myMesh(i)%neighborProcs(1,j),j=1,6)
 
 			do while(associated(reactionCurrent))
 
-				write(*,*) 'numReactants', reactionCurrent%numReactants, 'reactants'
-					
-				do j=1,reactionCurrent%numReactants
-					write(*,*) (reactionCurrent%reactants(k,j),k=1,numSpecies)
-				end do
-					
-				write(*,*) 'numProducts', reactionCurrent%numProducts, 'products'
-					
-				do j=1,reactionCurrent%numProducts
-					write(*,*) (reactionCurrent%products(k,j),k=1,numSpecies)
-				end do
-					
-				write(*,*) 'cells and procs'
-					
-				do j=1,reactionCurrent%numReactants+reactionCurrent%numProducts
-					write(*,*) reactionCurrent%cellNumber(j), reactionCurrent%taskid(j)
-				end do
-					
-				write(*,*) 'rate', reactionCurrent%reactionRate
-					
-				reactionCurrent=>reactionCurrent%next
+				if(reactionCurrent%numReactants==1 .AND. reactionCurrent%numProducts==1) then
+					reactionCurrent=>reactionCurrent%next
+				else
+					write(*,*) 'numReactants', reactionCurrent%numReactants, 'reactants'
+
+					do j=1,reactionCurrent%numReactants
+						write(*,*) (reactionCurrent%reactants(k,j),k=1,numSpecies)
+					end do
+
+					write(*,*) 'numProducts', reactionCurrent%numProducts, 'products'
+
+					do j=1,reactionCurrent%numProducts
+						write(*,*) (reactionCurrent%products(k,j),k=1,numSpecies)
+					end do
+
+					!write(*,*) 'cells and procs'
+
+					!do j=1,reactionCurrent%numReactants+reactionCurrent%numProducts
+					!	write(*,*) reactionCurrent%cellNumber(j), reactionCurrent%taskid(j)
+					!end do
+
+					!write(*,*) 'rate', reactionCurrent%reactionRate
+
+					reactionCurrent=>reactionCurrent%next
+				end if
 
 			end do
 
@@ -193,13 +197,13 @@ if(myProc%taskid==MASTER) then
 							write(*,*) (reactionCurrent%products(k,j),k=1,numSpecies)
 						end do
 						
-						write(*,*) 'cells and procs'
+						!write(*,*) 'cells and procs'
 						
-						do j=1,reactionCurrent%numReactants+reactionCurrent%numProducts
-							write(*,*) reactionCurrent%cellNumber(j), reactionCurrent%taskid(j)
-						end do
+						!do j=1,reactionCurrent%numReactants+reactionCurrent%numProducts
+						!	write(*,*) reactionCurrent%cellNumber(j), reactionCurrent%taskid(j)
+						!end do
 						
-						write(*,*) 'rate', reactionCurrent%reactionRate
+						!write(*,*) 'rate', reactionCurrent%reactionRate
 						
 						reactionCurrent=>reactionCurrent%next
 					
@@ -208,7 +212,7 @@ if(myProc%taskid==MASTER) then
 			endif
 			
 		end do
-		write(*,*) 'cascade total rate', CascadeCurrent%totalRate, 'total rate', totalRate
+		!write(*,*) 'cascade total rate', CascadeCurrent%totalRate, 'total rate', totalRate
 		write(*,*) 'next cascade'
 		CascadeCurrent=>CascadeCurrent%next
 
@@ -251,26 +255,26 @@ if(myProc%taskid==MASTER) then
 endif
 
 !Output defects in boundary mesh
-if(myProc%taskid==MASTER) then
-	write(*,*) 'processor', myProc%taskid, 'boundary after step', step
-	do i=1,numCells
-		do j=1,6
-			do k=1,myMesh(i)%numNeighbors(j)
-				if(myMesh(i)%neighborProcs(k,j) /= myProc%taskid .AND. myMesh(i)%neighborProcs(k,j) /= -1) then
-					defectCurrent=>myBoundary(myMesh(i)%neighbors(k,j),j)%defectList%next
-					if(associated(defectCurrent)) then
-						write(*,*) 'proc', myMesh(i)%neighborProcs(k,j),'dir',j, 'element', myMesh(i)%neighbors(k,j)
-					end if
-					do while(associated(defectCurrent))
-						write(*,*) defectCurrent%defectType, defectCurrent%cellNumber, defectCurrent%num
-						defectCurrent=>defectCurrent%next
-					end do
-				end if
-			end do
-		end do
-	end do
-	write(*,*)
-end if
+!if(myProc%taskid==MASTER) then
+!	write(*,*) 'processor', myProc%taskid, 'boundary after step', step
+!	do i=1,numCells
+!		do j=1,6
+!			do k=1,myMesh(i)%numNeighbors(j)
+!				if(myMesh(i)%neighborProcs(k,j) /= myProc%taskid .AND. myMesh(i)%neighborProcs(k,j) /= -1) then
+!					defectCurrent=>myBoundary(myMesh(i)%neighbors(k,j),j)%defectList%next
+!					if(associated(defectCurrent)) then
+!						write(*,*) 'proc', myMesh(i)%neighborProcs(k,j),'dir',j, 'element', myMesh(i)%neighbors(k,j)
+!					end if
+!					do while(associated(defectCurrent))
+!						write(*,*) defectCurrent%defectType, defectCurrent%cellNumber, defectCurrent%num
+!						defectCurrent=>defectCurrent%next
+!					end do
+!				end if
+!			end do
+!		end do
+!	end do
+!	write(*,*)
+!end if
 
 !Output defects in fine mesh
 if(myProc%taskid==MASTER) then
@@ -288,11 +292,11 @@ if(myProc%taskid==MASTER) then
 			end do
 		end do
 		
-		do i=1,numCellsCascade
-			write(*,*) 'cell',i,'cell total rate',CascadeCurrent%totalRate(i),'processor total rate',totalRate
-		end do
+		!do i=1,numCellsCascade
+		!	write(*,*) 'cell',i,'cell total rate',CascadeCurrent%totalRate(i),'processor total rate',totalRate
+		!end do
 
-		write(*,*) 'cascade reaction limit', CascadeReactionLimit
+		!write(*,*) 'cascade reaction limit', CascadeReactionLimit
 		write(*,*)
 		CascadeCurrent=>CascadeCurrent%next
 	end do

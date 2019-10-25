@@ -85,7 +85,6 @@ integer i
 !***************************************************************************************************
 !Choose from cascades within the coarse mesh (choose which element to implant cascades in)
 !***************************************************************************************************
-
 atemp=0d0
 r2=dprand()
 r2timesa=r2*numCells
@@ -297,9 +296,11 @@ do dir=1,6
                 if(defectRecv(4,1)==-1) then
                     myBoundary(bndryCellNumber,recvDir)%volume=myBoundary(bndryCellNumber,recvDir)%volume-&
                             CascadeElementVol*dble(numCellsCascade)
+                    myBoundary(bndryCellNumber,recvDir)%length=(myBoundary(bndryCellNumber,recvDir)%volume)**(1d0/3d0)
                 else if(defectRecv(4,1)==1) then
                     myBoundary(bndryCellNumber,recvDir)%volume=myBoundary(bndryCellNumber,recvDir)%volume+&
                             CascadeElementVol*dble(numCellsCascade)
+                    myBoundary(bndryCellNumber,recvDir)%length=(myBoundary(bndryCellNumber,recvDir)%volume)**(1d0/3d0)
                 end if
             end if
 
