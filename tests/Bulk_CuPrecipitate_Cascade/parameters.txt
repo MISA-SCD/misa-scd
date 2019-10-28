@@ -30,7 +30,7 @@ numMaterials
 
 !Tell computer the location of the material input file(s)
 materialFile
-'../../inputs/Fe_Defects_Cu.txt'
+'../../inputs/FeCu_Defects_Cas.txt'
 
 !Type of implantation ('Cascade' for cascades, 'FrenkelPair' for Frenkel pairs)
 implantType
@@ -101,7 +101,7 @@ pointDefect     !Toggle whether point defects are allowed to move only
 yes
 
 grainSize
-300d0			! Mean free path for interstitial clusters to travel before removal (nm)
+3.0d4			! Mean free path for interstitial clusters to travel before removal (nm) (Christien F, Barbu A., 2004)
 
 dislocDensity
 5.0d-5			! dislocation density (nm^-2)

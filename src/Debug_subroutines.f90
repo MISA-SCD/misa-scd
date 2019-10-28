@@ -126,46 +126,45 @@ type(cascade), pointer :: CascadeCurrent
 if(myProc%taskid==MASTER) then
 	write(*,*) 'processor', myProc%taskid, 'reactions after step', step, 'numCells', numCells
 	do i=1, numCells
+		write(*,*)  'cell', i
 		!!reactionCurrent=>reactionList(i)%next
+		!write(*,*) 'neighbors', (myMesh(i)%neighbors(1,j),j=1,6)
+		!write(*,*) 'neigProcs', (myMesh(i)%neighborProcs(1,j),j=1,6)
 		reactionCurrent=>reactionList(i)
-		if(associated(reactionCurrent)) then
-			write(*,*)  'cell', i
-			!write(*,*) 'neighbors', (myMesh(i)%neighbors(1,j),j=1,6)
-			!write(*,*) 'neigProcs', (myMesh(i)%neighborProcs(1,j),j=1,6)
+		do while(associated(reactionCurrent))
 
-			do while(associated(reactionCurrent))
+			!if(reactionCurrent%numReactants==1 .AND. reactionCurrent%numProducts==1) then
+			!	reactionCurrent=>reactionCurrent%next
+			!else
+				write(*,*) 'numReactants',reactionCurrent%numReactants,'numProducts',reactionCurrent%numProducts,&
+						'cellNumber', reactionCurrent%cellNumber, 'taskid', reactionCurrent%taskid
 
-				if(reactionCurrent%numReactants==1 .AND. reactionCurrent%numProducts==1) then
-					reactionCurrent=>reactionCurrent%next
-				else
-					write(*,*) 'numReactants', reactionCurrent%numReactants, 'reactants'
+				do j=1,reactionCurrent%numReactants
+					write(*,*) reactionCurrent%reactants(:,j)
+				end do
 
-					do j=1,reactionCurrent%numReactants
-						write(*,*) (reactionCurrent%reactants(k,j),k=1,numSpecies)
-					end do
+				do j=1,reactionCurrent%numProducts
+					write(*,*) reactionCurrent%products(:,j)
+				end do
 
-					write(*,*) 'numProducts', reactionCurrent%numProducts, 'products'
+				!write(*,*) 'numProducts', reactionCurrent%numProducts, 'products',reactionCurrent%products
 
-					do j=1,reactionCurrent%numProducts
-						write(*,*) (reactionCurrent%products(k,j),k=1,numSpecies)
-					end do
+				!do j=1,reactionCurrent%numProducts
+				!	write(*,*) (reactionCurrent%products(k,j),k=1,numSpecies)
+				!end do
 
-					!write(*,*) 'cells and procs'
+				!write(*,*) 'cells and procs'
 
-					!do j=1,reactionCurrent%numReactants+reactionCurrent%numProducts
-					!	write(*,*) reactionCurrent%cellNumber(j), reactionCurrent%taskid(j)
-					!end do
+				!do j=1,reactionCurrent%numReactants+reactionCurrent%numProducts
+				!	write(*,*) reactionCurrent%cellNumber(j), reactionCurrent%taskid(j)
+				!end do
 
-					!write(*,*) 'rate', reactionCurrent%reactionRate
+				!write(*,*) 'rate', reactionCurrent%reactionRate
 
-					reactionCurrent=>reactionCurrent%next
-				end if
-
-			end do
-
-			write(*,*) '********************************'
-
-		end if
+				reactionCurrent=>reactionCurrent%next
+			!end if
+		end do
+		write(*,*) '********************************'
 	end do
 
 	write(*,*)
@@ -177,25 +176,30 @@ if(myProc%taskid==MASTER) then
 			if(associated(reactionCurrent)) then
 				write(*,*)
 				write(*,*)  'cascade cell', i
-				write(*,*) 'cascade cell neighbors', (cascadeConnectivity(j,i),j=1,6)
+				write(*,*) 'cascade cell neighbors', cascadeConnectivity(:,i)
 	
 				do while(associated(reactionCurrent))
-					if(reactionCurrent%numReactants==1 .AND. reactionCurrent%numProducts==1) then
+					!if(reactionCurrent%numReactants==1 .AND. reactionCurrent%numProducts==1) then
 						!ignore diffusion reactions for now
-						reactionCurrent=>reactionCurrent%next
-					else
-						
-						write(*,*) 'numReactants', reactionCurrent%numReactants, 'reactants'
+					!	reactionCurrent=>reactionCurrent%next
+					!else
+						write(*,*) 'numReactants',reactionCurrent%numReactants,'numProducts',reactionCurrent%numProducts &
+						,'cellNumber', reactionCurrent%cellNumber,'taskid', reactionCurrent%taskid
+						!write(*,*) 'numReactants', reactionCurrent%numReactants, 'reactants',reactionCurrent%reactants
 						
 						do j=1,reactionCurrent%numReactants
-							write(*,*) (reactionCurrent%reactants(k,j),k=1,numSpecies)
+							write(*,*) reactionCurrent%reactants(:,j)
 						end do
-						
-						write(*,*) 'numProducts', reactionCurrent%numProducts, 'products'
-						
+
 						do j=1,reactionCurrent%numProducts
-							write(*,*) (reactionCurrent%products(k,j),k=1,numSpecies)
+							write(*,*) reactionCurrent%products(:,j)
 						end do
+						
+						!write(*,*) 'numProducts', reactionCurrent%numProducts, 'products',reactionCurrent%products
+						
+						!do j=1,reactionCurrent%numProducts
+						!	write(*,*) (reactionCurrent%products(k,j),k=1,numSpecies)
+						!end do
 						
 						!write(*,*) 'cells and procs'
 						
@@ -206,16 +210,13 @@ if(myProc%taskid==MASTER) then
 						!write(*,*) 'rate', reactionCurrent%reactionRate
 						
 						reactionCurrent=>reactionCurrent%next
-					
-					endif
+					!end if
 				end do
-			endif
-			
+			end if
 		end do
 		!write(*,*) 'cascade total rate', CascadeCurrent%totalRate, 'total rate', totalRate
 		write(*,*) 'next cascade'
 		CascadeCurrent=>CascadeCurrent%next
-
 	end do
 	
 end if
@@ -246,8 +247,7 @@ if(myProc%taskid==MASTER) then
 	do i=1,numCells
 		defectCurrent=>defectList(i)%next
 		do while(associated(defectCurrent))
-			write(*,*) defectCurrent%defectType, defectCurrent%cellNumber, defectCurrent%num
-
+			write(*,*) defectCurrent%defectType, defectCurrent%num,defectCurrent%cellNumber
 			defectCurrent=>defectCurrent%next
 		end do
 	end do
@@ -281,13 +281,11 @@ if(myProc%taskid==MASTER) then
 	write(*,*) 'processor', myProc%taskid, 'cascade defects after step', step
 	CascadeCurrent=>ActiveCascades
 	do while(associated(CascadeCurrent))
-		write(*,*) 'Cascade', CascadeCurrent%cascadeID, 'coarse cell', CascadeCurrent%cellNumber
-		write(*,*) 'defects: '
+		write(*,*) 'CascadeID', CascadeCurrent%cascadeID, 'coarse cell', CascadeCurrent%cellNumber
 		do i=1,numCellsCascade
 			defectCurrent=>CascadeCurrent%localDefects(i)%next
-			do while(Associated(defectCurrent))
-				write(*,*) 'type',defectCurrent%defectType, 'cellNumber',&
-						defectCurrent%cellNumber, 'num',defectCurrent%num
+			do while(associated(defectCurrent))
+				write(*,*) defectCurrent%defectType, defectCurrent%num, defectCurrent%cellNumber
 				defectCurrent=>defectCurrent%next
 			end do
 		end do
@@ -297,7 +295,6 @@ if(myProc%taskid==MASTER) then
 		!end do
 
 		!write(*,*) 'cascade reaction limit', CascadeReactionLimit
-		write(*,*)
 		CascadeCurrent=>CascadeCurrent%next
 	end do
 end if

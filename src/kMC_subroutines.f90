@@ -1177,6 +1177,12 @@ else
 
             !we have toggled the use of grain boundaries to remove defects from system
             if(reactionCurrent%numReactants==1 .and. reactionCurrent%numProducts==1) then
+				!if(reactionCurrent%reactants(3,1) > max3DInt) then
+				!	diffusionRandom=dprand()
+				!	if(diffusionRandom <= fineLength/meanFreePath) then
+				!		flag=.TRUE.
+				!	end if
+				!end if
                 diffusionRandom=dprand()
 
                 !randomly choose whether to remove this defect from the system according to the mean free path (parameter) and the
@@ -1526,6 +1532,12 @@ else
 			!absorption, instead of the effective coarse to fine length. This could be changed if desired.
 
 			if(reactionCurrent%numReactants==1 .and. reactionCurrent%numProducts==1) then
+				!if(reactionCurrent%reactants(3,1) > max3DInt) then
+				!	diffusionRandom=dprand()
+				!	if(diffusionRandom <= fineLength/meanFreePath) then
+				!		flag=.TRUE.
+				!	end if
+				!end if
 				diffusionRandom=dprand()
 
 				!randomly choose whether to remove this defect from the system according to the mean free path (parameter) and the
@@ -3422,16 +3434,8 @@ do i=1,6
 							if(localBufferRecv(numSpecies+2,j)==-1) then
 								write(*,*) 'error: cell in boundary of multiple procs removing defect'
 								call MPI_ABORT(comm,ierr)
-							endif
-!							if(myProc%taskid==4) then
-!								if(k==5) then
-!									write(*,*) 'dir', k, 'final buffer',(finalBuffer(k,numUpdateFinal(k),m),m=1,numSpecies+2), 'add'
-!								else if(k==6) then
-!									write(*,*) 'dir', k, 'final buffer',(finalBuffer(k,numUpdateFinal(k),m),m=1,numSpecies+2), 'add'
-!								endif
-!							endif
+							end if
 						end if
-
 					end do
 				end do
 			end do
@@ -3525,7 +3529,6 @@ do i=1,6
 					
 					!point DefectCurrent at the defect we are looking for (if it is there), otherwise
 					!point defectCurrent after and defectPrev before where it should go in defectList.
-	
 					call findDefectInList(defectCurrent, defectPrev, products)
 	
 					!Next update defects in myBoundary
@@ -3615,7 +3618,6 @@ end subroutine
 !
 !Thus, no updates were made to this subroutine for the bug fix.
 !***************************************************************************************************
-
 subroutine updateReactionList(defectUpdate)
 use DerivedType
 use mod_constants
@@ -3649,8 +3651,10 @@ do while(associated(defectUpdateCurrent))
 		!we have an error; all defectUpdateCurrent members should have num = +/-1 (indicates adding or removing)
 		write(*,*) 'error defectUpdateCurrent%num not equal to +/- 1', myProc%taskid, defectUpdateCurrent%num
 	end if
+	do i=1, numSpecies
+		defectTemp(i)=defectUpdateCurrent%defectType(i)
+	end do
 
-	defectTemp=defectUpdateCurrent%defectType
 
 	!if the defect is within the local mesh, update all relevant reactions
 	if(defectUpdateCurrent%proc==myProc%taskid) then
@@ -3665,7 +3669,6 @@ do while(associated(defectUpdateCurrent))
 
 			!Multi-defect reactions associated with defects of type defectTemp and defectCurrent%defectType
 			!(Scan over all defect types in the defect list)
-			nullify(defectCurrent)
 			defectCurrent=>defectList(defectUpdateCurrent%cellNumber)
 			do while(associated(defectCurrent))
 				if(defectCurrent%num /= 0) then
@@ -3739,7 +3742,6 @@ do while(associated(defectUpdateCurrent))
 
 				!If the neighboring volume element is in the same processor as this element, add
 				!diffusion reactions from neighboring cells into this cell (changes reaction list in neighboring cell)
-
 				!NOTE: don't need to switch j (direction) here even though diffusion is in opposite
 				!direction because dir is only used when diffusing into/out of neighbor processor
 

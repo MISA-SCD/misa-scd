@@ -484,7 +484,7 @@ if(myProc%taskid==MASTER) then
 	defectCurrentList=>outputDefectList%next
 	do while(associated(defectCurrentList))
 
-		if(defectCurrentList%defectType(1) /= 0) then	!Cu cluster
+		if(defectCurrentList%defectType(1) /= 0) then	!Cu/CuV cluster
 
 			if(defectCurrentList%defectType(1)==1 .AND. defectCurrentList%defectType(2)==0) then
 				pointS=defectCurrentList%num
@@ -492,6 +492,8 @@ if(myProc%taskid==MASTER) then
 
 			if(defectCurrentList%defectType(1) > minCuCluster) then
 				numS=numS+defectCurrentList%defectType(1)*defectCurrentList%num
+				radiusScluster=radiusScluster+dble(defectCurrentList%num)*&
+						(3*dble(defectCurrentList%defectType(1))*atomSize/(4*pi))**(1d0/3d0)
 				numScluster=numScluster+defectCurrentList%num
 			end if
 
@@ -513,6 +515,8 @@ if(myProc%taskid==MASTER) then
 
 			if(defectCurrentList%defectType(2) > minVoid) then
 				numV=numV+defectCurrentList%defectType(2)*defectCurrentList%num
+				radiusVoid=radiusVoid+dble(defectCurrentList%num)*&
+						(3d0*dble(defectCurrentList%defectType(2))*atomSize/(4d0*pi))**(1d0/3d0)
 				numVoid=numVoid+defectCurrentList%num
 			end if
 
@@ -524,6 +528,8 @@ if(myProc%taskid==MASTER) then
 
 			if(defectCurrentList%defectType(3) > minLoop) then
 				numSIA=numSIA+defectCurrentList%defectType(3)*defectCurrentList%num
+				radiusLoop=radiusLoop+dble(defectCurrentList%num)*&
+						(dble(defectCurrentList%defectType(3))*atomSize/(pi*burgers))**(1d0/2d0)
 				numLoop=numLoop+defectCurrentList%num
 			end if
 
@@ -531,6 +537,8 @@ if(myProc%taskid==MASTER) then
 
 			if(defectCurrentList%defectType(4) > minLoop) then
 				numSIA=numSIA+defectCurrentList%defectType(4)*defectCurrentList%num
+				radiusLoop=radiusLoop+dble(defectCurrentList%num)*&
+						(dble(defectCurrentList%defectType(4))*atomSize/(pi*burgers))**(1d0/2d0)
 				numLoop=numLoop+defectCurrentList%num
 			end if
 
@@ -547,10 +555,13 @@ if(myProc%taskid==MASTER) then
 	denLoop = dble(numLoop)/systemVol
 	!denSVcluster = dble(numSVcluster)/systemVol
 
-	radiusScluster=(3*(dble(numS)/dble(numScluster))*atomSize/(4*pi))**(1d0/3d0)
-	radiusVoid=(3d0*(dble(numV)/dble(numVoid))*atomSize/(4d0*pi))**(1d0/3d0)
-    radiusLoop=((dble(numSIA)/dble(numLoop))*atomSize/(pi*burgers))**(1d0/2d0)
+	!radiusScluster=(3*(dble(numS)/dble(numScluster))*atomSize/(4*pi))**(1d0/3d0)
+	!radiusVoid=(3d0*(dble(numV)/dble(numVoid))*atomSize/(4d0*pi))**(1d0/3d0)
+    !radiusLoop=((dble(numSIA)/dble(numLoop))*atomSize/(pi*burgers))**(1d0/2d0)
 	!radiusSVcluster=(3d0*(dble(numSV)/dble(numSVcluster))*atomSize/(4d0*pi))**(1d0/3d0)
+	radiusScluster=radiusScluster/dble(numScluster)
+	radiusVoid=radiusVoid/dble(numVoid)
+	radiusLoop=radiusLoop/dble(numLoop)
 
 	sizeScluster=dble(numS)/dble(numScluster)
 	sizeVoid=dble(numV)/dble(numVoid)
