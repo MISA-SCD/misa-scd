@@ -137,16 +137,16 @@ no              !The Debug function is not available yet, and  this toggle shoul
 profileToggle   !‘yes’ or ‘no’: toggles output of damage profile as a function of depth
 no              !Default 'no'
 
-minCuCluster    !Only n>minCuCluster nCu clusters are used for calculating the average cluster radius and number density
+minSCluster      !Only n>minSCluster SnVm and Sn clusters are counted
 10
 
-minVoid         !Only n>minVoidn nV clusters are used for calculating the average cluster radius and number density
+minVoid         !Only n>minVoid Vn clusters are counted
 10
 
-minLoop         !Only n>minLoop nSIA clusters are used for calculating the average cluster radius and number density
+minLoop         !Only n>minLoop SIAn clusters are counted
 10
 
-minCuV          !Only (n+m)>minLoop nCumV clusters are used for calculating the average cluster radius and number density
+minSV           !Only (n+m)>minCuV SnVm clusters are counted
 10
 
 end            !Tag for the end of the Output parameters file

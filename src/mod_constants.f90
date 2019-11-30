@@ -85,7 +85,7 @@ double precision, parameter :: kboltzmann=8.625d-5	    !<Boltzmann's constant (e
 double precision, parameter :: pi=3.141592653589793d0	!<Pi
 double precision, parameter :: Zint = 1.2d0				!<Constant representing preference for clustering of interstitials by interstitial clusters (increases clustering cross-section)
 double precision, parameter :: Zv = 1.0d0
-double precision, parameter :: reactionRadius=0.65d0	!<Material parameter used for reaction distances (impacts reaction rates) (nm)
+!double precision, parameter :: reactionRadius=0.65d0	!<Material parameter used for reaction distances (impacts reaction rates) (nm)
 double precision, parameter :: lattice = 0.2867d0       !<lattice constant (nm)
 
 !2019.04.30 Add
@@ -109,11 +109,13 @@ double precision systemVol				!<Volume of all processors (global), not including
 !simulation parameters, to be read during readParameters() in main program
 double precision tempStore				!<Temperature read in (K) - used when temp. changes several times during a simulation
 double precision CuContent              !<The initial content of Cu in iron
+integer numVac                          !<The number of vacancies put in
 double precision dpaRate				!<DPA rate in dpa/s
 double precision totalDPA				!<total DPA in simulation
 double precision firr                   !firr = Vconcent / initialCeqv. Radiation enhanced factor
 double precision atomSize				!<atomic volume (nm^3)
 double precision burgers				!<magnitude of burgers vector, equal to lattice constant
+double precision :: reactionRadius      !<recombination radius (nm)
 double precision agingTime              !<Thermal aging time (s)
 double precision meanFreePath			!<mean free path before a defect is absorbed by a grain boundary (AKA avg. grain size)
 double precision dislocationDensity		!<density of dislocations (sinks for point defects)
@@ -155,10 +157,10 @@ character(len=20) vtkToggle				!<(yes or no), used to toggle whether we want vtk
 character(len=20) xyzToggle				!<(yes or no), used to toggle whether we output an .xyz data file (for visualization)
 character(len=20) outputDebug			!<(yes or no), used to toggle whether we want to output a debug restart file at each time increment
 character(len=20) profileToggle			!<(yes or no), used to toggle whether we output a DefectProfile.out data file
-integer minCuCluster                    !<Only n>minVoid nCu clusters are used for calculating the average cluster radius and number density
-integer minVoid                         !<Only n>minLoop nV clusters are used for calculating the average cluster radius and number density
-integer minLoop                         !<Only n>minLoop nSIA clusters are used for calculating the average cluster radius and number density
-integer minCuV                          !<Only (n+m)>minLoop nCumV clusters are used for calculating the average cluster radius and number density
+integer minSCluster                     !<Only n>minSCluster SnVm and Sn clusters are counted
+integer minVoid                         !<Only n>minVoid Vn clusters are counted
+integer minLoop                         !<Only n>minLoop SIAn clusters are counted
+integer minSV                           !<Only (n+m)>minCuV SnVm clusters are counted
 
 !(hard-coded) constants used for clustering rates
 double precision omega					!<Geometric constant for 3D spherical clustering (see Dunn et al. JNM 2013)

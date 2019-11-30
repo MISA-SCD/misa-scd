@@ -2166,7 +2166,7 @@ do i=1,6
 					write(*,*) 'step',step,'numBndryRecv',numBndryRecv, 'j',j
 					defectTemp=>myBoundary(firstRecv(numSpecies+1,j,i),i)%defectList
 					do while(associated(defectTemp))
-						write(*,*) defectTemp%defectType, defectTemp%num
+						write(*,*) 'proc',myProc%taskid,defectTemp%defectType, defectTemp%num
 						defectTemp=>defectTemp%next
 					end do
 

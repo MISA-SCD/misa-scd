@@ -73,9 +73,6 @@ temperature		!Temperature, in K
 CuContent       !Initial content of Cu in iron
 1.34d-2
 
-annealTemp
-563d0			!Annealing temperature, in K
-				
 dpaRate			! NOTE: if the implant profile is non-uniform, this should be the AVERAGE DPA rate.
 2d-9
 
@@ -93,9 +90,6 @@ reactionRadius  !recombination radius (nm)
 
 totalDPA
 2d-4			! total DPA in simulation 1
-
-annealTime
-0d0				! total anneal time (s)
 
 grainBoundaries	!Toggle whether we are going to include the effect of grain boundaries (Removing defects that travel too far)
 no
@@ -130,18 +124,6 @@ OutputStart
 
 totdatToggle    !‘yes’ or ‘no’: toggles output of totdat.txt file
 yes             !If you want to output totdat.txt file, both postprToggle and totdatToggle should be set 'yes'
-
-rawdatToggle    !‘yes’ or ‘no’: toggles output of raw data files
-no              !Default 'no'
-
-vtkToggle       !‘yes’ or ‘no’: toggles .vtk file output
-no              !Default 'no'
-
-restartToggle   !‘yes’ or ‘no’: toggles output of a restart file that can be used to restart simulation
-no              !The Debug function is not available yet, and  this toggle should be set to ’no’
-
-profileToggle   !‘yes’ or ‘no’: toggles output of damage profile as a function of depth
-no              !Default 'no'
 
 minSCluster      !Only n>minSCluster SnVm and Sn clusters are counted
 10

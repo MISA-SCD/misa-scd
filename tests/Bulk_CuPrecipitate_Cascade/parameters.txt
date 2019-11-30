@@ -85,8 +85,11 @@ atomSize
 firr            !Radiation enhanced factor
 7.69d5
 
-burgers
-0.132d0 			!(Fe) 			.36d0 			!(Cu)		! dislocation loop burgers vector (lattice constant) (nm)
+burgers         !dislocation loop burgers vector (lattice constant) (nm)
+0.132d0
+
+reactionRadius  !recombination radius (nm)
+0.65d0
 
 totalDPA
 1.4d-2			! total DPA in simulation 1
@@ -140,16 +143,16 @@ no              !The Debug function is not available yet, and  this toggle shoul
 profileToggle   !‘yes’ or ‘no’: toggles output of damage profile as a function of depth
 no              !Default 'no'
 
-minCuCluster    !Only n>minCuCluster nCu clusters are used for calculating the average cluster radius and number density
+minSCluster      !Only n>minSCluster SnVm and Sn clusters are counted
 10
 
-minVoid         !Only n>minVoidn nV clusters are used for calculating the average cluster radius and number density
+minVoid         !Only n>minVoid Vn clusters are counted
 10
 
-minLoop         !Only n>minLoop nSIA clusters are used for calculating the average cluster radius and number density
+minLoop         !Only n>minLoop SIAn clusters are counted
 10
 
-minCuV          !Only (n+m)>minLoop nCumV clusters are used for calculating the average cluster radius and number density
+minSV           !Only (n+m)>minCuV SnVm clusters are counted
 10
 
 end            !Tag for the end of the Output parameters file

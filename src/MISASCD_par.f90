@@ -245,6 +245,7 @@ if(myProc%taskid==MASTER) then
 	write(*,*) 'Initial number of SIA', initialNumI
 	write(*,*) 'Equilibrium concentration of V', ceqV
 	write(*,*) 'Equilibrium concentration of SIA', ceqI
+	write(*,*) 'firr',firr
 end if
 
 !***********************************************************************
@@ -1102,6 +1103,9 @@ call deallocateDefectList()
 call deallocateReactionList()
 call deallocateBoundarydefectList()
 deallocate(totalRateVol)
+if(allocated(listVI)) then
+	deallocate(listVI)
+end if
 
 if(myProc%taskid==MASTER) then
 	close(82)

@@ -68,22 +68,19 @@ implantFile
 start			!begin parameters
 
 temperature		!Temperature, in K
-563d0
+573d0
 
 CuContent       !Initial content of Cu in iron
 1.34d-2
 
-annealTemp
-563d0			!Annealing temperature, in K
-				
+numVac          ! The number of initial vacancies put in
+1
+
 dpaRate			! NOTE: if the implant profile is non-uniform, this should be the AVERAGE DPA rate.
-2d-9
+0d0
 
 atomSize
 1.18d-2 		!(Cu) (nm^3)
-
-firr
-2.5d7           !Radiation enhanced factor
 
 burgers         !dislocation loop burgers vector (lattice constant) (nm)
 0.132d0
@@ -92,10 +89,10 @@ reactionRadius  !recombination radius (nm)
 0.65d0
 
 totalDPA
-2d-4			! total DPA in simulation 1
+0d0			    ! total DPA in simulation 1
 
-annealTime
-0d0				! total anneal time (s)
+agingTime       !Thermal aging time (s)
+1.0d5
 
 grainBoundaries	!Toggle whether we are going to include the effect of grain boundaries (Removing defects that travel too far)
 no
@@ -107,10 +104,10 @@ grainSize
 3.0d4			! Mean free path for interstitial clusters to travel before removal (nm) (Christien F, Barbu A., 2004)
 
 dislocDensity
-1d-6			! dislocation density (nm^-2)
+0d0			    ! dislocation density (nm^-2)
 
 impurityConc
-30d-6			! carbon impurity concentration (atomic fraction)
+0d0			    ! carbon impurity concentration (atomic fraction)
 
 max3DInt
 1				!maximum size for SIA defect to diffuse in 3D
@@ -131,18 +128,6 @@ OutputStart
 totdatToggle    !‘yes’ or ‘no’: toggles output of totdat.txt file
 yes             !If you want to output totdat.txt file, both postprToggle and totdatToggle should be set 'yes'
 
-rawdatToggle    !‘yes’ or ‘no’: toggles output of raw data files
-no              !Default 'no'
-
-vtkToggle       !‘yes’ or ‘no’: toggles .vtk file output
-no              !Default 'no'
-
-restartToggle   !‘yes’ or ‘no’: toggles output of a restart file that can be used to restart simulation
-no              !The Debug function is not available yet, and  this toggle should be set to ’no’
-
-profileToggle   !‘yes’ or ‘no’: toggles output of damage profile as a function of depth
-no              !Default 'no'
-
 minSCluster      !Only n>minSCluster SnVm and Sn clusters are counted
 10
 
@@ -155,7 +140,7 @@ minLoop         !Only n>minLoop SIAn clusters are counted
 minSV           !Only (n+m)>minCuV SnVm clusters are counted
 10
 
-end            !Tag for the end of the Output parameters file
+end             !Tag for the end of the Output parameters file
 
 !***************************************************************************************************
 !Adaptive meshing parameters

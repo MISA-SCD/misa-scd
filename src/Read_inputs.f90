@@ -881,10 +881,12 @@ integer procVol, volume
 !Set default values for variables
 tempStore		=273d0
 CuContent		=0.5d-2
+numVac			=0
 dpaRate			=1d-4
-firr			=0d0
+firr			=1d0
 atomSize		=0d0
 burgers			=0.287d0
+reactionRadius	=0.65d0
 totalDPA		=1d-1
 alpha_v			=1d0
 alpha_i			=1d0
@@ -919,10 +921,10 @@ vtkToggle			='no'
 outputDebug			='no'
 profileToggle		='no'
 
-minCuCluster = 5
-minVoid = 5
-minLoop = 5
-minCuV = 5
+minSCluster = 10
+minVoid = 10
+minLoop = 10
+minSV = 10
 
 !Read variables in from file
 flag=.FALSE.
@@ -948,6 +950,9 @@ do while(flag .eqv. .FALSE.)
 		else if(char=='CuContent') then
 			flag2=.TRUE.
 			read(81,*) CuContent
+		else if(char=='numVac') then
+			flag2=.TRUE.
+			read(81,*) numVac
 		else if(char=='dpaRate') then
 			flag2=.TRUE.
 			read(81,*) dpaRate
@@ -963,6 +968,9 @@ do while(flag .eqv. .FALSE.)
 		else if(char=='burgers') then
 			flag2=.TRUE.
 			read(81,*) burgers
+		else if(char=='reactionRadius') then
+			flag2=.TRUE.
+			read(81,*) reactionRadius
 		else if(char=='annealTemp') then
 			flag2=.TRUE.
 			read(81,*) annealTemp
@@ -1079,18 +1087,18 @@ do while(flag .eqv. .FALSE.)
 		else if(char=='profileToggle') then
 			flag2=.TRUE.
 			read(81,*) profileToggle
-		else if(char=='minCuCluster') then
+		else if(char=='minSCluster') then
 			flag2=.TRUE.
-			read(81,*) minCuCluster
+			read(81,*) minSCluster
 		else if(char=='minVoid') then
 			flag2=.TRUE.
 			read(81,*) minVoid
 		else if(char=='minLoop') then
 			flag2=.TRUE.
 			read(81,*) minLoop
-		else if(char=='minCuV') then
+		else if(char=='minSV') then
 			flag2=.TRUE.
-			read(81,*) minCuV
+			read(81,*) minSV
 		else
 			write(*,*) 'error readParameters() unrecognized parameter: '
 		end if

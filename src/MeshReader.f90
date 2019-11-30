@@ -558,29 +558,36 @@ myProc%globalCoord(6)=length*dble(numz)
 !step 2: divide volume among processors according to the factorization above
 !This step locates the boundaries of the local processor within the global volume.
 !**********
-myProc%localCoord(1)=myProc%globalCoord(1)+&
-		mod(myProc%taskid,dims(1))*(myProc%globalCoord(2)-myProc%globalCoord(1))/&
-				dble(dims(1))
+!myProc%localCoord(1)=myProc%globalCoord(1)+&
+!		mod(myProc%taskid,dims(1))*(myProc%globalCoord(2)-myProc%globalCoord(1))/&
+!				dble(dims(1))
 
-myProc%localCoord(2)=myProc%localCoord(1)+&
-		(myProc%globalCoord(2)-myProc%globalCoord(1))/dble(dims(1))
+!myProc%localCoord(2)=myProc%localCoord(1)+&
+!		(myProc%globalCoord(2)-myProc%globalCoord(1))/dble(dims(1))
 
-myProc%localCoord(3)=myProc%globalCoord(3)+&
-		mod(myProc%taskid/dims(1),dims(2))*&
-				(myProc%globalCoord(4)-myProc%globalCoord(3))/dble(dims(2))
+!myProc%localCoord(3)=myProc%globalCoord(3)+&
+!		mod(myProc%taskid/dims(1),dims(2))*&
+!				(myProc%globalCoord(4)-myProc%globalCoord(3))/dble(dims(2))
 
-myProc%localCoord(4)=myProc%localCoord(3)+&
-		(myProc%globalCoord(4)-myProc%globalCoord(3))/dble(dims(2))
+!myProc%localCoord(4)=myProc%localCoord(3)+&
+!		(myProc%globalCoord(4)-myProc%globalCoord(3))/dble(dims(2))
 
-myProc%localCoord(5)=myProc%GlobalCoord(5)+&
-		mod(myProc%taskid/(dims(1)*dims(2)),dims(3))*&
-				(myProc%globalCoord(6)-myProc%globalCoord(5))/dble(dims(3))
+!myProc%localCoord(5)=myProc%GlobalCoord(5)+&
+!		mod(myProc%taskid/(dims(1)*dims(2)),dims(3))*&
+!				(myProc%globalCoord(6)-myProc%globalCoord(5))/dble(dims(3))
 
-myProc%localCoord(6)=myProc%localCoord(5)+&
-		(myProc%globalCoord(6)-myProc%globalCoord(5))/dble(dims(3))
+!myProc%localCoord(6)=myProc%localCoord(5)+&
+!		(myProc%globalCoord(6)-myProc%globalCoord(5))/dble(dims(3))
+
+myProc%localCoord(1)=dble(myProc%coords(1))*myProc%globalCoord(2)/dble(dims(1))    !<xmin
+myProc%localCoord(2)=myProc%localCoord(1)+myProc%globalCoord(2)/dble(dims(1))
+myProc%localCoord(3)=dble(myProc%coords(2))*myProc%globalCoord(4)/dble(dims(2))
+myProc%localCoord(4)=myProc%localCoord(3)+myProc%globalCoord(4)/dble(dims(2))
+myProc%localCoord(5)=dble(myProc%coords(3))*myProc%globalCoord(6)/dble(dims(3))
+myProc%localCoord(6)=myProc%localCoord(5)+myProc%globalCoord(6)/dble(dims(3))
 
 totalVolume=(myProc%localCoord(2)-myProc%localCoord(1))*(myProc%localCoord(4)-myProc%localCoord(3))*&
-		(myProc%localCoord(6)-myProc%localCoord(5))
+        (myProc%localCoord(6)-myProc%localCoord(5))
 
 !Step 4: create mesh in each processor of elements only within that processor's local coordinates
 !NOTE: this is an actual mesh of volume elements, not the 'processor mesh' created above.
@@ -899,7 +906,7 @@ double precision length
 !buffer lists to send all information at the end
 integer i, dir, tag
 
-integer, allocatable :: send(:,:,:), recv(:,:,:)
+integer, allocatable :: send(:,:,:), recv(:,:)
 integer, allocatable :: sendBuffer(:,:), recvBuffer(:,:)
 integer materialBuff(numCells,6)
 integer :: numSend(6)=0, numRecv(6)=0
@@ -916,7 +923,7 @@ logical flagProbe
 !periodic boundary condition version
 !************************************************
 allocate(send(2, numxLocal*numyLocal*numzLocal,6))
-allocate(recv(2, numxLocal*numyLocal*numzLocal,6))
+!allocate(recv(2, numxLocal*numyLocal*numzLocal,6))
 
 do cell=1,numCells
 
@@ -1067,26 +1074,27 @@ do dir=1,6
 
 	if(myProc%procNeighbor(dir)/=myProc%taskid) then
 
-	!	tempRecv=0
-	!	flagProbe=.FALSE.
-	!	call MPI_IPROBE(myProc%procNeighbor(dir), 200+tag,comm,flagProbe,status)
+		tempRecv=0
+		call MPI_PROBE(myProc%procNeighbor(dir), 200+tag,comm,status,ierr)
+		call MPI_GET_COUNT(status,MPI_INTEGER,tempRecv,ierr)
+		numRecv(dir)=tempRecv/2
 
 	!	if(flagProbe .eqv. .TRUE.) then
 	!		call MPI_GET_COUNT(status,MPI_INTEGER,tempRecv)
 	!		numRecv(dir)=tempRecv/2
 	!	end if
-		numRecv(dir)=numSend(dir)
-	!	allocate(recvBuffer(2,numRecv(dir)))
-		call MPI_RECV(recv(1,1,dir),numRecv(dir)*2,MPI_INTEGER,myProc%procNeighbor(dir),200+tag,&
+		!numRecv(dir)=numSend(dir)
+		allocate(recv(2,numRecv(dir)))
+		call MPI_RECV(recv,numRecv(dir)*2,MPI_INTEGER,myProc%procNeighbor(dir),200+tag,&
 				comm,status,ierr)
 		do i=1, numRecv(dir)
 			localCell=send(1,i,dir)
 		!	myMesh(localCell)%neighbors(1,dir)=recvBuffer(1,i)
 		!	materialBuff(localCell,dir)=recvBuffer(2,i)
-			myMesh(localCell)%neighbors(1,dir)=recv(1,i,dir)
-			materialBuff(localCell,dir)=recv(2,i,dir)
+			myMesh(localCell)%neighbors(1,dir)=recv(1,i)
+			materialBuff(localCell,dir)=recv(2,i)
 		end do
-	!	deallocate(recvBuffer)
+		deallocate(recv)
 	end if
 end do
 
@@ -1151,7 +1159,6 @@ do i=1,numCells
     end do
 end do
 deallocate(send)
-deallocate(recv)
 !if(myProc%taskid==MASTER) then
 !	write(*,*) 'maxElement',maxElement
 !	do dir=1,6

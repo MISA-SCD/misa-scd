@@ -58,7 +58,7 @@ if(myProc%taskid/=MASTER) then
 			end do
 			cellSend(numSpecies+1,j) = defectCurrent%num
 
-			if(defectCurrent%defectType(1) > minCuCluster) then
+			if(defectCurrent%defectType(1) > minSCluster) then
 				numScluster=numScluster+defectCurrent%num
 			else if(defectCurrent%defectType(1)==0 .AND. defectCurrent%defectType(2) > minVoid) then
 				numVoid=numVoid+defectCurrent%num
@@ -93,7 +93,7 @@ else
 
 		do while(associated(defectCurrent))
 			write(82,*) defectCurrent%defectType, defectCurrent%num
-			if(defectCurrent%defectType(1) > minCuCluster) then
+			if(defectCurrent%defectType(1) > minSCluster) then
 				numScluster=numScluster+defectCurrent%num
 			else if(defectCurrent%defectType(1)==0 .AND. defectCurrent%defectType(2) > minVoid) then
 				numVoid=numVoid+defectCurrent%num
@@ -260,7 +260,6 @@ do i=1,numCells
 			else if(associated(defectPrevList)) then
 
 				!add a defect to the end of the list
-
 				nullify(defectPrevList%next)
 				allocate(defectPrevList%next)
 				nullify(defectPrevList%next%next)
@@ -490,19 +489,22 @@ if(myProc%taskid==MASTER) then
 				pointS=defectCurrentList%num
 			end if
 
-			if(defectCurrentList%defectType(1) > minCuCluster) then
+			if(defectCurrentList%defectType(1) > minSCluster) then
 				numS=numS+defectCurrentList%defectType(1)*defectCurrentList%num
 				radiusScluster=radiusScluster+dble(defectCurrentList%num)*&
 						(3*dble(defectCurrentList%defectType(1))*atomSize/(4*pi))**(1d0/3d0)
 				numScluster=numScluster+defectCurrentList%num
 			end if
 
-			if(defectCurrentList%defectType(2) /= 0) then
-				totalVac=totalVac+defectCurrentList%defectType(2)*defectCurrentList%num
-			!	if((defectCurrentList%defectType(1)+defectCurrentList%defectType(2)) > minCuV)then
-			!		numSV=numSV+(defectCurrentList%defectType(1)+defectCurrentList%defectType(2))*defectCurrentList%num
-			!		numSVcluster=numSVcluster+defectCurrentList%num
-			!	end if
+			if((defectCurrentList%defectType(1)+defectCurrentList%defectType(2)) > minSV) then
+				numSV=numSV+max(defectCurrentList%defectType(1), defectCurrentList%defectType(2))*defectCurrentList%num
+				radiusSVcluster = radiusSVcluster+dble(defectCurrentList%num)*&
+						(3*dble(max(defectCurrentList%defectType(1), defectCurrentList%defectType(2)))*&
+								atomSize/(4*pi))**(1d0/3d0)
+				numSVcluster=numSVcluster+defectCurrentList%num
+				if(defectCurrentList%defectType(2) /= 0) then
+					totalVac=totalVac+defectCurrentList%defectType(2)*defectCurrentList%num
+				end if
 			end if
 
 		else if(defectCurrentList%defectType(2) /= 0) then	!V cluster
@@ -553,7 +555,7 @@ if(myProc%taskid==MASTER) then
 	denScluster = dble(numScluster)/systemVol
 	denVoid = dble(numVoid)/systemVol
 	denLoop = dble(numLoop)/systemVol
-	!denSVcluster = dble(numSVcluster)/systemVol
+	denSVcluster = dble(numSVcluster)/systemVol
 
 	!radiusScluster=(3*(dble(numS)/dble(numScluster))*atomSize/(4*pi))**(1d0/3d0)
 	!radiusVoid=(3d0*(dble(numV)/dble(numVoid))*atomSize/(4d0*pi))**(1d0/3d0)
@@ -562,6 +564,7 @@ if(myProc%taskid==MASTER) then
 	radiusScluster=radiusScluster/dble(numScluster)
 	radiusVoid=radiusVoid/dble(numVoid)
 	radiusLoop=radiusLoop/dble(numLoop)
+	radiusSVcluster=radiusSVcluster/dble(numSVcluster)
 
 	sizeScluster=dble(numS)/dble(numScluster)
 	sizeVoid=dble(numV)/dble(numVoid)
@@ -575,11 +578,12 @@ if(myProc%taskid==MASTER) then
 	VAnnihilated = dble(totalImpAnn(2))/(dble(numDisplacedAtoms)*dble(totalImpAnn(1)))
 
 	!Output totdat.out
-	write(83,*)	'numCluster (Cu/Void/Loop):', numScluster, numVoid, numLoop
-	write(83,*)	'NumberDensity (m-3) (Cu/Void/Loop):', denScluster*1d27, denVoid*1d27,denLoop*1d27
-	write(83,*)	'Concentration (Cu/Void/Loop):', denScluster*atomSize, denVoid*atomSize, denLoop*atomSize
-	write(83,*)	'AverageRadius (nm) (Cu/Void/Loop):', radiusScluster, radiusVoid, radiusLoop
-	write(83,*)	'AverageSize (Cu/Void/Loop):', sizeScluster, sizeVoid, sizeLoop
+	write(83,*)	'numCluster (S/Void/Loop/SV):', numScluster, numVoid, numLoop, numSVcluster
+	write(83,*)	'NumberDensity (m-3) (S/Void/Loop/SV):', denScluster*1d27, denVoid*1d27,denLoop*1d27,denSVcluster*1d27
+	write(83,*)	'Concentration (S/Void/Loop/SV):', denScluster*atomSize, denVoid*atomSize, denLoop*atomSize,&
+			denSVcluster*atomSize
+	write(83,*)	'AverageRadius (nm) (S/Void/Loop):', radiusScluster, radiusVoid, radiusLoop
+	write(83,*)	'AverageSize (S/Void/Loop):', sizeScluster, sizeVoid, sizeLoop
 	write(83,*) 'ConcenPointDefects (V/SIA):', conPointV, conPointSIA
 	write(83,*) 'PercentVRetained',VRetained,'PercentVAnnihilated',VAnnihilated
 	write(83,*)

@@ -27,8 +27,14 @@ do i=1, numSingleForm(1)
 	end if
 end do
 
-initialNumV = nint(ceqV * totalAtoms)
-initialNumI = nint(ceqI * totalAtoms)
+if(numVac==0) then
+	initialNumV = nint(ceqV * totalAtoms)
+	initialNumI = nint(ceqI * totalAtoms)
+else
+	initialNumV = numVac
+	initialNumI = 0
+	firr=dble(numVac)/systemVol*atomSize
+end if
 
 if(initialNumV >= initialNumI) then
 	maxNumTemp=initialNumV
@@ -48,7 +54,7 @@ if(myProc%taskid==MASTER) then
 		r1 = dprand()
 
 		inter1: do cell=1, numTotal
-			rtemp = rtemp + cell/numTotal
+			rtemp = rtemp + dble(cell)/dble(numTotal)
 			if(r1 <= rtemp) then
 			!	tempID = cell-1
 			!	x = mod(tempID,numx) +1
@@ -69,9 +75,6 @@ if(myProc%taskid==MASTER) then
 		end do inter1
 	end do outer1
 end if
-!if(initialNumV > 0) then
-!	call MPI_BCAST(VgCellList, initialNumV, MPI_INTEGER, MASTER, comm,ierr)
-!end if
 
 !SIA
 rtemp = 0d0
@@ -80,7 +83,7 @@ if(myProc%taskid==MASTER) then
 		r1 = dprand()
 
 		inter2: do cell=1, numTotal
-			rtemp = rtemp + cell/numTotal
+			rtemp = rtemp + dble(cell)/dble(numTotal)
 			if(r1 <= rtemp) then
 
 				!globalCell
@@ -111,7 +114,7 @@ use DerivedType
 use mod_constants
 implicit none
 
-integer cell, i
+integer cell, i, j
 type(defect), pointer :: defectCurrent, defectPrev
 
 nullify(defectCurrent)
@@ -127,6 +130,52 @@ do cell=1,numCells
 
 	defectCurrent=>defectList(cell)
 
+	!SIA_1
+	if(initialNumI > 0) then
+		do i=1, initialNumI
+			if(listVI(i,2)==myMesh(cell)%globalCell) then
+				if(defectCurrent%defectType(3)==1) then
+					defectCurrent%num = defectCurrent%num +1
+				else
+					allocate(defectCurrent%next)
+					defectCurrent=>defectCurrent%next
+					allocate(defectCurrent%defectType(numSpecies))
+					do j=1, numSpecies
+						defectCurrent%defectType(j) = 0
+					end do
+					defectCurrent%defectType(3) = 1
+					defectCurrent%num=1
+					defectCurrent%cellNumber=cell
+				end if
+
+			end if
+		end do
+		nullify(defectCurrent%next)
+	end if
+
+	!V_1
+	if(initialNumV > 0) then
+		do i=1, initialNumV
+			if(listVI(i,1)==myMesh(cell)%globalCell) then
+				if(defectCurrent%defectType(2)==1) then
+					defectCurrent%num = defectCurrent%num +1
+				else
+					allocate(defectCurrent%next)
+					defectCurrent=>defectCurrent%next
+					allocate(defectCurrent%defectType(numSpecies))
+					do j=1, numSpecies
+						defectCurrent%defectType(j) = 0
+					end do
+					defectCurrent%defectType(2) = 1
+					defectCurrent%num=1
+					defectCurrent%cellNumber=cell
+				end if
+			end if
+		end do
+		nullify(defectCurrent%next)
+
+	end if
+
 	!Cu_1
 	if(CuContent > 0d0) then
 		allocate(defectCurrent%next)
@@ -139,65 +188,6 @@ do cell=1,numCells
 		defectCurrent%num=numCuCell
 		defectCurrent%cellNumber=cell
 		nullify(defectCurrent%next)
-	end if
-
-	!V_1
-	if(initialNumV > 0) then
-		allocate(defectCurrent%next)
-		defectCurrent=>defectCurrent%next
-		allocate(defectCurrent%defectType(numSpecies))
-		do i=1, numSpecies
-			defectCurrent%defectType(i) = 0
-		end do
-		defectCurrent%defectType(2) = 1
-		defectCurrent%num=0
-		defectCurrent%cellNumber=cell
-
-		do i=1, initialNumV
-			if(listVI(i,1)==myMesh(cell)%globalCell) then
-				defectCurrent%num = defectCurrent%num +1
-			end if
-		end do
-
-		if(defectCurrent%num > 0) then
-			nullify(defectCurrent%next)
-		else
-			deallocate(defectCurrent%defectType)
-			deallocate(defectCurrent)
-			nullify(defectCurrent)
-		end if
-	end if
-
-	defectCurrent=>defectList(cell)
-	do while(associated(defectCurrent%next))
-		defectCurrent=>defectCurrent%next
-	end do
-
-	!SIA_1
-	if(initialNumI > 0) then
-		allocate(defectCurrent%next)
-		defectCurrent=>defectCurrent%next
-		allocate(defectCurrent%defectType(numSpecies))
-		do i=1, numSpecies
-			defectCurrent%defectType(i) = 0
-		end do
-		defectCurrent%defectType(3) = 1
-		defectCurrent%num=0
-		defectCurrent%cellNumber=cell
-
-		do i=1, initialNumI
-			if(listVI(i,2)==myMesh(cell)%globalCell) then
-				defectCurrent%num = defectCurrent%num +1
-			end if
-		end do
-
-		if(defectCurrent%num > 0) then
-			nullify(defectCurrent%next)
-		else
-			deallocate(defectCurrent%defectType)
-			deallocate(defectCurrent)
-			nullify(defectCurrent)
-		end if
 	end if
 
 end do
@@ -416,7 +406,6 @@ do cell=1,numCells
 		!*******************************************************
 		!clustering: Cu+Cu->2Cu
 		!*******************************************************
-		!search ClusterList for Cu+Cu->2Cu
 		do reac=1,numClusterReac(matNum)
 			if(ClusterReactions(reac,matNum)%reactants(1,1)==1 .AND. &
 					ClusterReactions(reac,matNum)%reactants(2,1)==0 .AND. &
@@ -1073,6 +1062,58 @@ do cell=1,numCells
 				defectCurrent%cellNumber=myMesh(cell)%neighbors(k,dir)
 				nullify(myBoundary(myMesh(cell)%neighbors(k,dir),dir)%defectList%next)
 
+				!SIA_1
+				if(initialNumI > 0) then
+
+					do i=1, initialNumI
+						gCell=myMesh(cell)%globalCell
+						gNeighor=findgNeighborPeriodic(gCell, dir)
+						if(listVI(i,2)==gNeighor) then
+							if(defectCurrent%defectType(3)==1) then
+								defectCurrent%num=defectCurrent%num +1
+							else
+								allocate(defectCurrent%next)
+								defectCurrent=>defectCurrent%next
+								allocate(defectCurrent%defectType(numSpecies))
+								do j=1, numSpecies
+									defectCurrent%defectType(j)=0
+								end do
+								defectCurrent%defectType(3)=1
+								defectCurrent%num=1
+								defectCurrent%cellNumber=myMesh(cell)%neighbors(k,dir)
+							end if
+
+						end if
+					end do
+					nullify(defectCurrent%next)
+				end if
+
+				!V_1
+				if(initialNumV > 0) then
+					do i=1, initialNumV
+						gCell=myMesh(cell)%globalCell
+						gNeighor=findgNeighborPeriodic(gCell, dir)
+						if(listVI(i,1)==gNeighor) then
+							if(defectCurrent%defectType(2)==1) then
+								defectCurrent%num=defectCurrent%num +1
+							else
+								allocate(defectCurrent%next)
+								defectCurrent=>defectCurrent%next
+								allocate(defectCurrent%defectType(numSpecies))
+								do j=1, numSpecies
+									defectCurrent%defectType(j)=0
+								end do
+								defectCurrent%defectType(2)=1
+								defectCurrent%num=1
+								defectCurrent%cellNumber=myMesh(cell)%neighbors(k,dir)
+							end if
+
+						end if
+					end do
+					nullify(defectCurrent%next)
+
+				end if
+
 				!Cu_1
 				if(CuContent > 0d0) then
 					allocate(defectCurrent%next)
@@ -1085,64 +1126,6 @@ do cell=1,numCells
 					defectCurrent%num=numCuCell
 					defectCurrent%cellNumber=myMesh(cell)%neighbors(k,dir)
 					nullify(defectCurrent%next)
-				end if
-
-				!V_1
-				if(initialNumV > 0) then
-					allocate(defectCurrent%next)
-					defectCurrent=>defectCurrent%next
-					allocate(defectCurrent%defectType(numSpecies))
-					do i=1, numSpecies
-						defectCurrent%defectType(i)=0
-					end do
-					defectCurrent%defectType(2)=1
-					defectCurrent%num=0
-					defectCurrent%cellNumber=myMesh(cell)%neighbors(k,dir)
-
-					do i=1, initialNumV
-						gCell=myMesh(cell)%globalCell
-						gNeighor=findgNeighborPeriodic(gCell, dir)
-						if(listVI(i,1)==gNeighor) then
-							defectCurrent%num=defectCurrent%num +1
-						end if
-					end do
-
-					if(defectCurrent%num > 0) then
-						nullify(defectCurrent%next)
-					else
-						deallocate(defectCurrent%defectType)
-						deallocate(defectCurrent)
-						nullify(defectCurrent)
-					end if
-				end if
-
-				!SIA_1
-				if(initialNumI > 0) then
-					allocate(defectCurrent%next)
-					defectCurrent=>defectCurrent%next
-					allocate(defectCurrent%defectType(numSpecies))
-					do i=1, numSpecies
-						defectCurrent%defectType(i)=0
-					end do
-					defectCurrent%defectType(3)=1
-					defectCurrent%num=0
-					defectCurrent%cellNumber=myMesh(cell)%neighbors(k,dir)
-
-					do i=1, initialNumI
-						gCell=myMesh(cell)%globalCell
-						gNeighor=findgNeighborPeriodic(gCell, dir)
-						if(listVI(i,2)==gNeighor) then
-							defectCurrent%num=defectCurrent%num +1
-						end if
-					end do
-
-					if(defectCurrent%num > 0) then
-						nullify(defectCurrent%next)
-					else
-						deallocate(defectCurrent%defectType)
-						deallocate(defectCurrent)
-						nullify(defectCurrent)
-					end if
 				end if
 
 			end if  !myMesh(cell)%neighborProcs(dir,k) /= myProc%taskid
