@@ -324,7 +324,7 @@ else if(functionType==7) then	!nCumV->V+nCu(m-1)V
 	CuNum=DefectType(1)
 	VNum=DefectType(2)
 	Eb=parameters(1)-parameters(2)*(dble(VNum)**(1d0/3d0)-dble(VNum+1)**(1d0/3d0))+&
-			parameters(3)*(dble(VNum)**(2d0/3d0)-dble(VNum+1)**(2d0/3d0))-parameters(3)*dble(CuNum)*&
+			parameters(3)*(dble(VNum)**(2d0/3d0)-dble(VNum+1)**(2d0/3d0))-parameters(4)*dble(CuNum)*&
 			(dble(VNum)**(1d0/3d0)-dble(VNum+1)**(1d0/3d0)+dble(VNum)**(2d0/3d0)-dble(VNum+1)**(2d0/3d0))
 
 else

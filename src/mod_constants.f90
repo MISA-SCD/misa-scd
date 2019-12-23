@@ -128,6 +128,10 @@ integer SIAPinMin			            !<Smallest size of SIA that can pin at HeV clust
 integer numGrains			            !<Number of grains inside polycrystal (default 1)
 integer numSims				            !<Number of times to repeat simulation
 
+!used for test2
+character(len=20) test3
+integer oneCascadeGCell
+
 !annealing information
 double precision annealTime				!<Amount of time for anneal (s)
 double precision annealTemp				!<Temperature of anneal stage (K)

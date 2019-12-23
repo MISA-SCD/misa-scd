@@ -879,6 +879,7 @@ logical flag, flag2
 integer procVol, volume
 
 !Set default values for variables
+test3			='no'
 tempStore		=273d0
 CuContent		=0.5d-2
 numVac			=0
@@ -891,8 +892,9 @@ totalDPA		=1d-1
 alpha_v			=1d0
 alpha_i			=1d0
 
-annealTemp		=273d0
 agingTime       =0d0	!2019.04.30 Add
+
+annealTemp		=273d0
 annealTime		=0d0
 annealSteps		=0
 annealType		='add'
@@ -912,7 +914,7 @@ max3DInt			=4
 cascadeVolume		=0d0
 numSims				=1
 numGrains			=1
-cascadeReactionLimit=1000d0
+cascadeReactionLimit=100d0
 
 !Toggles for various output types
 totdatToggle		='yes'
@@ -944,6 +946,9 @@ do while(flag .eqv. .FALSE.)
 		if(char=='end') then
 			flag2=.TRUE.
 			flag=.TRUE.
+		else if(char=='test3') then
+			flag2=.TRUE.
+			read(81,*) test3
 		else if(char=='temperature') then
 			flag2=.TRUE.
 			read(81,*) tempStore

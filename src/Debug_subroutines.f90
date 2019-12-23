@@ -242,17 +242,21 @@ type(defect), pointer :: defectCurrent
 type(Cascade), pointer :: CascadeCurrent
 
 !Output defects in local mesh
-if(myProc%taskid==MASTER) then
+!if(myProc%taskid==MASTER) then
 	write(*,*) 'processor', myProc%taskid, 'defects after step', step
 	do i=1,numCells
-		defectCurrent=>defectList(i)%next
-		do while(associated(defectCurrent))
-			write(*,*) defectCurrent%defectType, defectCurrent%num,defectCurrent%cellNumber
-			defectCurrent=>defectCurrent%next
-		end do
+		if(oneCascadeGCell == myMesh(i)%globalCell) then
+			defectCurrent=>defectList(i)%next
+			do while(associated(defectCurrent))
+				write(*,*) defectCurrent%defectType, defectCurrent%num,defectCurrent%cellNumber
+				defectCurrent=>defectCurrent%next
+			end do
+			exit
+		end if
+
 	end do
 	write(*,*)
-endif
+!endif
 
 !Output defects in boundary mesh
 !if(myProc%taskid==MASTER) then
@@ -277,13 +281,13 @@ endif
 !end if
 
 !Output defects in fine mesh
-if(myProc%taskid==MASTER) then
+!if(myProc%taskid==MASTER) then
 	write(*,*) 'processor', myProc%taskid, 'cascade defects after step', step
 	CascadeCurrent=>ActiveCascades
 	do while(associated(CascadeCurrent))
 		write(*,*) 'CascadeID', CascadeCurrent%cascadeID, 'coarse cell', CascadeCurrent%cellNumber
 		do i=1,numCellsCascade
-			defectCurrent=>CascadeCurrent%localDefects(i)%next
+			defectCurrent=>CascadeCurrent%localDefects(i)
 			do while(associated(defectCurrent))
 				write(*,*) defectCurrent%defectType, defectCurrent%num, defectCurrent%cellNumber
 				defectCurrent=>defectCurrent%next
@@ -297,7 +301,8 @@ if(myProc%taskid==MASTER) then
 		!write(*,*) 'cascade reaction limit', CascadeReactionLimit
 		CascadeCurrent=>CascadeCurrent%next
 	end do
-end if
+	write(*,*)
+!end if
 
 end subroutine
 
@@ -361,7 +366,7 @@ subroutine DEBUGPrintDefectList()
 			!!reactionCurrent=>reactionList(i)%next
 			defectCurrent=>defectList(i)
 			write(*,*) '************defectList********************'
-			write(*,*) 'cellNumber', i
+			write(*,*) 'cellNumber', i, 'processor', myProc%taskid
 			do while(associated(defectCurrent))
 				write(*,*) 'defectType', defectCurrent%defectType, 'numDefects', defectCurrent%num
 

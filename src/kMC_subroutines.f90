@@ -17,6 +17,61 @@ GenerateTimestep=dlog(1d0/r1)/maxRate
 end function
 
 !*****************************************************************************************
+!>subroutine
+
+!*****************************************************************************************
+subroutine chooseImplantReaction(reactionCurrent, CascadeCurrent)
+	use DerivedType
+	use mod_constants
+	implicit none
+
+	type(reaction), pointer :: reactionCurrent
+	type(cascade), pointer :: cascadeCurrent
+	integer i
+
+	write(*,*) 'step', step, 'oneCascadeGCell',oneCascadeGCell
+	nullify(CascadeCurrent)		!These are default pointed at nothing, indicating null event
+	nullify(reactionCurrent)	!These are default pointed at nothing, indicating null event
+
+	!***********************************************************************
+	!Choose from reactions within the coarse mesh
+	!***********************************************************************
+
+	outer: do i=1,numCells
+
+		!search for which volume element we are choosing among
+		if(oneCascadeGCell == myMesh(i)%globalCell) then
+
+			!a reaction is chosen in this volume element, so we no longer nullify reactionCurrent
+			reactionCurrent=>reactionList(i)
+			exit
+
+		end if
+	end do outer
+
+
+	!***********************************************************************
+	!if we have not chosen a reaction at this point, we have a null event
+	!***********************************************************************
+	if(.NOT. associated(reactionCurrent)) then
+		!write(*,*) 'null event chosen'
+	else
+		!add to DPA and to numImplantEvents if we have an implantation event
+		if(implantType=='FrenkelPair') then
+			if(reactionCurrent%numProducts==2 .AND. reactionCurrent%numReactants==0) then	!Frenkel pair implantation
+				numImpAnn(1)=numImpAnn(1)+1
+			end if
+		else if(implantType=='Cascade') then
+			if(reactionCurrent%numReactants==-10 .AND. reactionCurrent%numProducts==0) then !Cascade implantation
+				numImpAnn(1)=numImpAnn(1)+1
+			end if
+		else
+			write(*,*) 'Error implantType'
+		end if
+	end if
+end subroutine
+
+!*****************************************************************************************
 !>subroutine choose reaction - chooses a reaction in each processor according to the Monte
 !!Carlo algorithm (this is a local reaction)
 !!

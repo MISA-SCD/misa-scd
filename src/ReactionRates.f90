@@ -198,7 +198,7 @@ do i=1, numDissocReac(matNum)
 			write(*,*) 'error updating reaction list - dissociation'
 		end if
 
-		exit
+		!exit
 
 	end if
 end do
@@ -673,7 +673,7 @@ do i=1, numDissocReac(matNum)
 			write(*,*) 'error updating reaction list - dissociation'
 		end if
 
-        exit
+        !exit
 
 	end if
 end do
@@ -1003,7 +1003,7 @@ endif
 isLegalTemp =.TRUE.
 
 numReactants=2
-numProducts=1
+!numProducts=1
 allocate(reactants(numSpecies,numReactants))
 do i=1, numClusterReac(matNum)
 

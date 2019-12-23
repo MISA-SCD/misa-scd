@@ -49,6 +49,13 @@ double precision Residual, Residual_stdev, Residual_prev
 double precision Residual_square, Residual_sqrdev
 
 interface
+    subroutine chooseImplantReaction(reactionCurrent, CascadeCurrent)
+        use DerivedType
+        implicit none
+        type(reaction), pointer :: reactionCurrent
+        type(cascade), pointer :: CascadeCurrent
+    end subroutine
+
 	subroutine chooseReaction(reactionCurrent, CascadeCurrent)
 		use DerivedType
 		implicit none
@@ -325,7 +332,7 @@ rateTau=0d0
 !<5. Repeat 1-4.
 
 do while(elapsedTime < totalTime)
-!do while(step < 20)
+!do while(step < 1)
 	
 	step=step+1
         
@@ -501,7 +508,13 @@ do while(elapsedTime < totalTime)
 				call chooseReaction(reactionCurrent, CascadeCurrent)
 			end if
 		else if(implantScheme=='MonteCarlo') then
-			call chooseReaction(reactionCurrent, CascadeCurrent)
+			if(test3 == 'yes') then
+				call initializeOneCascade()
+				call chooseImplantReaction(reactionCurrent, CascadeCurrent)
+			else
+				call chooseReaction(reactionCurrent, CascadeCurrent)
+			end if
+
 		else
 			write(*,*) 'error choosing reaction main program'
 		end if
@@ -662,6 +675,11 @@ do while(elapsedTime < totalTime)
 		!endif
 
 	end if
+
+	if(test3 == 'yes') then
+		exit
+	end if
+
 end do
 
 !***********************************************************************
@@ -689,7 +707,6 @@ if(myProc%taskid==MASTER) then
 		write(83,*) 'noImplantation', totalImpAnn(1), 'computationTime', time2-time1
 	end if
 	write(*,*)
-	write(82,*) 'Final  step'
 	write(83,*) 'Final  step'
 end if
 
@@ -718,43 +735,42 @@ if(annealTime > 0d0) then
 	call annealInitialization()	!Sets up simulation for annealing (change temp, etc)
 	annealIdentify=.TRUE.
 
-	outputCounter=1		!Used to output once for each annealing step
+	outputCounter=0		!Used to output once for each annealing step
+	elapsedTime=0d0
+	totalTime=annealTime
+	step=0
+	nullSteps=0
 
 	if(myProc%taskid==MASTER ) then
+		write(*,*) '************************************'
 		write(*,*) 'Entering Annealing Phase'
-		write(82,*) 'Entering Annealing Phase'
+		write(83,*) '************************************'
 		write(83,*) 'Entering Annealing Phase'
-		write(84,*) 'Entering Annealing Phase'
 	end if
 end if
 
 !begin annealing
 !carry out annealing in multiple steps if desired. Each step increases temperature.
-do annealIter=1,annealSteps	!default value: annealSteps = 1
+!!do annealIter=1,annealSteps	!default value: annealSteps = 1
 
-	if(annealType=='mult') then
-		temperature=annealTemp*annealTempInc**dble(annealIter-1)
-	else if(annealType=='add') then
-		temperature=annealTemp+dble(annealIter-1)*annealTempInc
-	else
-		write(*,*) 'error unknown anneal type'
-	end if
+	!!if(annealType=='mult') then
+	!!	temperature=annealTemp*annealTempInc**dble(annealIter-1)
+	!!else if(annealType=='add') then
+	!!	temperature=annealTemp+dble(annealIter-1)*annealTempInc
+	!!else
+	!!	write(*,*) 'error unknown anneal type'
+	!!end if
 
 	!Possible bug: this will make the reaction rates for implantation non-zero. Not sure why this wasn't a problem before.
-	do i=1,numCells
-		call resetReactionListSingleCell(i)
-	end do
+	!do i=1,numCells
+	!	call resetReactionListSingleCell(i)
+	!end do
 
 	totalRate=TotalRateCheck()
 
-	if(myProc%taskid==MASTER .AND. annealTime > 0d0) then
-		write(*,*) 'Anneal step', annealIter, 'temperature', temperature
-		write(84,*) 'Anneal step', annealIter, 'temperature', temperature
-		write(83,*) 'Anneal step', annealIter, 'temperature', temperature
-	end if
-
 	!if annealTime = 0, the following "do" does not execute
-	do while(elapsedTime < totalTime+dble(annealIter)*annealTime/dble(annealSteps))
+	!!do while(elapsedTime < totalTime+dble(annealIter)*annealTime/dble(annealSteps))
+	do while(elapsedTime < totalTime)
 
 		step=step+1
 	
@@ -776,8 +792,7 @@ do annealIter=1,annealSteps	!default value: annealSteps = 1
 			end do
 			totalRate=rateSingle
 		end if
-	
-	!	call MPI_ALLREDUCE(totalRate,maxRate,1,MPI_DOUBLE_PRECISION,MPI_MAX,comm,ierr)
+
 		call MPI_REDUCE(totalRate,maxRate,1,MPI_DOUBLE_PRECISION,MPI_MAX,0,comm,ierr)
 
 		if(myProc%taskid==MASTER) then
@@ -791,24 +806,22 @@ do annealIter=1,annealSteps	!default value: annealSteps = 1
 			else
 				!Generate timestep in the master processor and send it to all other processors
 				if(myProc%taskid==MASTER) then
-					tau=GenerateTimestep()
-					if(elapsedTime-totalTime+tau > annealTime/dble(annealSteps)*outputCounter) then
+					rateTau(2)=GenerateTimestep()
+					!!if(elapsedTime-totalTime+tau > annealTime/dble(annealSteps)*outputCounter) then
 						!we have taken a timestep that moves us past this annealing step
-						tau=annealTime/dble(annealSteps)*outputCounter-(elapsedTime-totalTime)
-					end if
+					!!	rateTau(2)=annealTime/dble(annealSteps)*outputCounter-(elapsedTime-totalTime)
+					!!end if
 				end if
 			end if
 		else
 			if(myProc%taskid==MASTER) then
-				tau=GenerateTimestep()
-				if(elapsedTime-totalTime+tau > annealTime/dble(annealSteps)*outputCounter) then
+				rateTau(2)=GenerateTimestep()
+				!!if(elapsedTime-totalTime+tau > annealTime/dble(annealSteps)*outputCounter) then
 					!we have taken a timestep that moves us past this annealing step
-					tau=annealTime/dble(annealSteps)*outputCounter-(elapsedTime-totalTime)
-				end if
+				!!	rateTau(2)=annealTime/dble(annealSteps)*outputCounter-(elapsedTime-totalTime)
+				!!end if
 			end if
 		end if
-
-		rateTau(2)=tau
 
 		call MPI_BCAST(rateTau, 2, MPI_DOUBLE_PRECISION, MASTER, comm,ierr)
 
@@ -838,15 +851,6 @@ do annealIter=1,annealSteps	!default value: annealSteps = 1
 			if(implantScheme=='explicit') then
 				write(*,*) 'Error explicit implantation not implemented for single element kMC'
 			else
-				!Generate timestep in the master processor and send it to all other processors
-				if(myProc%taskid==MASTER) then
-					tau=GenerateTimestep()
-					if(elapsedTime-totalTime+tau > annealTime/dble(annealSteps)*outputCounter) then
-						!we have taken a timestep that moves us past this annealing step
-						tau=annealTime/dble(annealSteps)*outputCounter-(elapsedTime-totalTime)
-					end if
-				end if
-
 				!Choose one reaction in each cell
 				do cell=1,numCells
 			
@@ -873,16 +877,7 @@ do annealIter=1,annealSteps	!default value: annealSteps = 1
 		else	!choose a reaction in one volume element
 		
 			call chooseReaction(reactionCurrent, CascadeCurrent)
-		
-			!Generate timestep in the master processor and send it to all other processors
-			if(myProc%taskid==MASTER) then
-				tau=GenerateTimestep()
-				if(elapsedTime-totalTime+tau > annealTime/dble(annealSteps)*outputCounter) then
-					!we have taken a timestep that moves us past this annealing step
-					tau=annealTime/dble(annealSteps)*outputCounter-(elapsedTime-totalTime)
-				end if
-			end if
-	
+
 			!***********************************************************************************************
 			!Update defects according to reactions chosen. Communicate defects that have changed on
 			!boundaries of other processors and create a list of defects whose reaction rates must be update
@@ -915,23 +910,27 @@ do annealIter=1,annealSteps	!default value: annealSteps = 1
 		!If we have chosen an event inside a fine mesh, we check the total reaction rate within that
 		!fine mesh. If the total rate is less than a set value, we assume the cascade is annealed and
 		!release the defects into the coarse mesh.
+		releaseToggle=.FALSE.
 		if(associated(CascadeCurrent)) then
 			if(totalRateCascade(CascadeCurrent) < cascadeReactionLimit) then
 			
 				!Record the coarse mesh cell number of cascade (it is destroyed in releaseFineMeshDefects)
 				!Used to reset reaction list and to tell cascadeUpdateStep whether a cascade event has occurred
 				cascadeCell=CascadeCurrent%cellNumber
+				releaseToggle=.TRUE.
 
 				!Release cascade defects into coarse mesh cell and reset the reaction list within that cell
 				call releaseFineMeshDefects(CascadeCurrent)
 				call resetReactionListSingleCell(cascadeCell)
+
+				write(*,*) 'taskid', myProc%taskid, 'step', step, 'anneal step', annealIter, &
+						'totalRateCascade',totalRateCascade(CascadeCurrent),'release fine meshes'
 			end if
 		end if
 		
 		!Cascade communication step:
 		!Tell neighbors whether a cascade has occurred in a cell that is a boundary of a neighbor.
 		!If so, update boundary mesh (send defects to boundary mesh) and update all diffusion reaction rates.
-		releaseToggle=.TRUE.
 		call cascadeUpdateStep(releaseToggle,cascadeCell)
 		
 		!Update the totalRate in order to avoid any truncation error every 1000 steps (this value can be modified)
@@ -948,47 +947,56 @@ do annealIter=1,annealSteps	!default value: annealSteps = 1
 		!******************************************
 		! Output
 		!******************************************
-		if((elapsedTime-totalTime) >= annealTime/dble(annealSteps)*outputCounter) then
+		!!if((elapsedTime-totalTime) >= annealTime/dble(annealSteps)*outputCounter) then
+		if(elapsedTime >= totalTime/2.0d6*(2.0d0)**(outputCounter)) then
 
 			call MPI_REDUCE(numImpAnn,totalImpAnn, 2, MPI_INTEGER, MPI_SUM,0,comm, ierr)
 
 			if(myProc%taskid==MASTER) then
-				DPA=dble(totalImpAnn(1))/(((myProc%globalCoord(2)-myProc%globalCoord(1))*(myProc%globalCoord(4)-myProc%globalCoord(3))*&
-						(myProc%globalCoord(6)-myProc%globalCoord(5)))/(numDisplacedAtoms*atomSize))
+				DPA=dble(totalImpAnn(1))/(systemVol/(numDisplacedAtoms*atomSize))
 				call cpu_time(time2)
-				write(*,*) 'time', elapsedTime, 'anneal time', elapsedTime-totalTime, 'dpa', dpa, 'steps', step
-				write(*,*) 'Cascades/Frenkel pairs', totalImpAnn(1), 'computation time', time2-time1
-				write(83,*) 'time', elapsedTime, 'anneal time', elapsedTime-totalTime, 'DPA', dpa, 'steps', step
-				write(83,*) 'Cascades/Frenkel pairs', totalImpAnn(1), 'computation time', time2-time1
-			
-				!Optional: output average number of cascades present per step in local processor
-				!write(*,*) 'Processor ', myProc%taskid, 'Avg. cascades present', dble(TotalCascades)/dble(step)
-				!write(84,*) 'Processor ', myProc%taskid, 'Avg. cascades present', dble(TotalCascades)/dble(step)
-			
+				write(*,*)
+				write(*,*) 'Anneal time', elapsedTime, 'DPA',DPA, 'steps',step, 'AverageTimeStep', elapsedTime/dble(step)
+				!!write(*,*) 'Anneal step', annealIter, 'temperature', temperature
+				write(83,*) '*********************************************************************************************'
+				write(83,*) 'Anneal time', elapsedTime, 'DPA', DPA, 'steps', step, 'AverageTimeStep', elapsedTime/dble(step)
+				!!write(83,*) 'Anneal step', annealIter, 'temperature', temperature
+
+				if(implantType=='FrenkelPair') then
+					write(*,*) 'FrenkelPairs', totalImpAnn(1), 'computationTime', time2-time1
+					write(83,*) 'FrenkelPairs', totalImpAnn(1), 'computationTime', time2-time1
+				else if(implantType=='Cascade')	then
+					write(*,*) 'Cascades', totalImpAnn(1), 'computationTime', time2-time1
+					write(83,*) 'Cascades', totalImpAnn(1), 'computationTime', time2-time1
+				else	!Thermal aging
+					write(*,*) 'noImplantation', totalImpAnn(1), 'computationTime', time2-time1
+					write(83,*) 'noImplantation', totalImpAnn(1), 'computationTime', time2-time1
+				end if
+
 				!Optional: output fraction of steps that are null events
 				if(singleElemKMC=='yes') then
 					write(83,*) 'Fraction null steps', dble(nullSteps)/dble(step*numCells)
 				else
 					write(83,*) 'Fraction null steps', dble(nullSteps)/dble(step)
 				end if
-			
 				write(83,*)
 				write(*,*)
 			end if
 
-			if(totdatToggle=='yes') call outputDefectsTotal()
-			if(rawdatToggle=='yes') call outputDefectsXYZ()
-			!if(vtkToggle=='yes') call outputDefectsVTK(outputCounter)
-			if(outputDebug=='yes') call outputDebugRestart(outputCounter)
+			!Several defect output optionas available.
+			if(totdatToggle=='yes') call outputDefectsTotal()	!write(83,*): totdat.out
+			if(rawdatToggle=='yes') call outputDefectsXYZ()		!write(82,*): rawdat
+			!if(vtkToggle=='yes') call outputDefectsVTK(outputCounter)		!write(88,*): VTKout.vtk
+			if(outputDebug=='yes') call outputDebugRestart(outputCounter)	!write(88,*): Restart.in
 			!if(sinkEffSearch=='no' .AND. numMaterials .GT. 1) call outputDefectsBoundary(elapsedTime,step)
 			!if(sinkEffSearch=='no' .AND. numMaterials==1) call outputDefectsTotal(elapsedTime, step)
 		
 			outputCounter=outputCounter+1
+			!call MPI_BARRIER(comm，ierr)
 		end if
 	end do	!Anneal time loop
 
-end do	!Multiple anneal steps loop
-
+!!end do	!Multiple anneal steps loop
 
 !***********************************************************************
 !Output final defect state
@@ -1000,50 +1008,53 @@ if(annealTime > 0d0) then
 	write(*,*) 'Fraction null steps', dble(nullSteps)/dble(step), 'Proc', myProc%taskid
 
 	if(myProc%taskid==MASTER) then
-		DPA=dble(totalImpAnn(1))/(((myProc%globalCoord(2)-myProc%globalCoord(1))*(myProc%globalCoord(4)-&
-				myProc%globalCoord(3))*(myProc%globalCoord(6)-myProc%globalCoord(5)))/(numDisplacedAtoms*atomSize))
+		DPA=dble(totalImpAnn(1))/(systemVol/(numDisplacedAtoms*atomSize))
 		call cpu_time(time2)
-	
-		if(sinkEffSearch=='no') then
-			write(*,*) 'Final Defect State'
-			write(82,*) 'Final Defect State'
-			write(83,*) 'Final Defect State'
-			write(84,*) 'Final Defect State'
-		
-			write(*,*) 'time', elapsedTime, 'dpa', dpa, 'steps', step
-			write(*,*) 'Cascades/Frenkel pairs', totalImpAnn(1), 'computation time', time2-time1
-		
-			write(83,*) 'time', elapsedTime, 'dpa', dpa, 'steps', step
-			write(83,*) 'Cascades/Frenkel pairs', totalImpAnn(1), 'computation time', time2-time1
-		
-			!Optional: output average number of cascades present per step in local processor
-			!write(*,*) 'Processor ', myProc%taskid, 'Avg. cascades present', dble(TotalCascades)/dble(step)
-			!write(84,*) 'Processor ', myProc%taskid, 'Avg. cascades present', dble(TotalCascades)/dble(step)
-		
-			!Optional: output fraction of steps that are null events
-			if(singleElemKMC=='yes') then
-				write(83,*) 'Fraction null steps', dble(nullSteps)/dble(step*numCells)
-			else
-				write(83,*) 'Fraction null steps', dble(nullSteps)/dble(step)
-			end if
-		
-			!Optional: output sink efficiency of grain boundary
-			if(numMaterials == 2) then
-				write(*,*) 'Number of emitted defects', numEmitV, numEmitSIA
-				write(*,*) 'Number of trapped defects', numTrapV, numTrapSIA
-				write(*,*) 'GB V Sink Eff', 1d0-dble(numEmitV)/dble(numTrapV)
-				write(*,*) 'GB SIA Sink Eff', 1d0-dble(numEmitSIA)/dble(numTrapSIA)
-			
-				write(83,*) 'GB_V_Sink_Eff', 1d0-dble(numEmitV)/dble(numTrapV)
-				write(83,*) 'GB_SIA_Sink_Eff', 1d0-dble(numEmitSIA)/dble(numTrapSIA)
-			end if
-		
-			write(83,*)
-			write(*,*)
-	
+
+		write(*,*) 'Final Defect State'
+		write(83,*) 'Final Defect State'
+
+		write(*,*) 'Anneal time', elapsedTime, 'DPA', DPA, 'steps', step, 'AverageTimeStep', elapsedTime/dble(step)
+		!!write(*,*) 'Anneal step', annealIter, 'temperature', temperature
+		write(83,*) '*********************************************************************************************'
+		write(83,*) 'Anneal time', elapsedTime, 'DPA', DPA, 'steps', step, 'AverageTimeStep', elapsedTime/dble(step)
+		!!write(83,*) 'Anneal step', annealIter, 'temperature', temperature
+
+		if(implantType=='FrenkelPair') then
+			write(*,*) 'FrenkelPairs', totalImpAnn(1), 'computationTime', time2-time1
+			write(83,*) 'FrenkelPairs', totalImpAnn(1), 'computationTime', time2-time1
+		else if(implantType=='Cascade')	then
+			write(*,*) 'Cascades', totalImpAnn(1), 'computationTime', time2-time1
+			write(83,*) 'Cascades', totalImpAnn(1), 'computationTime', time2-time1
+		else
+			write(*,*) 'noImplantation', totalImpAnn(1), 'computationTime', time2-time1
+			write(83,*) 'noImplantation', totalImpAnn(1), 'computationTime', time2-time1
 		end if
+		write(*,*)
+		write(83,*) 'Final  step'
+
+
+		!Optional: output fraction of steps that are null events
+		if(singleElemKMC=='yes') then
+			write(83,*) 'Fraction null steps', dble(nullSteps)/dble(step*numCells)
+		else
+			write(83,*) 'Fraction null steps', dble(nullSteps)/dble(step)
+		end if
+
+		!Optional: output sink efficiency of grain boundary
+		!if(numMaterials == 2) then
+		!	write(*,*) 'Number of emitted defects', numEmitV, numEmitSIA
+		!	write(*,*) 'Number of trapped defects', numTrapV, numTrapSIA
+		!	write(*,*) 'GB V Sink Eff', 1d0-dble(numEmitV)/dble(numTrapV)
+		!	write(*,*) 'GB SIA Sink Eff', 1d0-dble(numEmitSIA)/dble(numTrapSIA)
+
+		!	write(83,*) 'GB_V_Sink_Eff', 1d0-dble(numEmitV)/dble(numTrapV)
+		!	write(83,*) 'GB_SIA_Sink_Eff', 1d0-dble(numEmitSIA)/dble(numTrapSIA)
+		!end if
+
 	end if
 
+	!Final output
 	if(totdatToggle=='yes') call outputDefectsTotal()
 	if(rawdatToggle=='yes') call outputDefectsXYZ()
 	if(vtkToggle=='yes') call outputDefectsVTK(outputCounter)

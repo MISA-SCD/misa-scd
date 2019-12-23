@@ -104,6 +104,35 @@ end if
 end subroutine
 
 !*****************************************************************************************
+!>Subroutine
+
+!*****************************************************************************************
+subroutine initializeOneCascade()
+	use DerivedType
+	use mod_constants
+	use randdp
+	implicit none
+	include 'mpif.h'
+
+	double precision rtemp, r1
+	integer cell
+
+	rtemp = 0d0
+	r1 = dprand()
+	if(myProc%taskid==MASTER) then
+		do cell=1, numTotal
+			rtemp = rtemp + dble(cell)/dble(numTotal)
+			if(r1 <= rtemp) then
+				oneCascadeGCell = cell
+				exit
+			end if
+		end do
+	end if
+	call MPI_BCAST(oneCascadeGCell, 1, MPI_INTEGER, MASTER, comm,ierr)
+
+end  subroutine
+
+!*****************************************************************************************
 !>Subroutine initialize defect list - initializes defect list for each volume element
 !
 !Begins with a defect with type 0 0 0 0 and num 0. Note that numCells is needed in this subroutine
@@ -1548,12 +1577,9 @@ type(reaction), pointer :: reactionCurrent
 type(cascade), pointer :: CascadeCurrent
 
 !Change temperature to annealTemp
-
 temperature=annealTemp
 
-!Next, reset implant rates. This step will depend on the number of implant
-!types originally in the simulation
-
+!Next, reset implant rates. This step will depend on the number of implant types originally in the simulation
 !Coarse mesh
 do cell=1,numCells
 	reactionCurrent=>reactionList(cell)
