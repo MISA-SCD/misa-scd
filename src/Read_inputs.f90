@@ -1,4 +1,3 @@
-
 !***************************************************************************************************
 !>Subroutine read material input - reads material input information from file
 !!
@@ -11,7 +10,6 @@
 !!NOTE: we are double-reading in the values of numSingleDiff(matNum), etc, because it has
 !!already been done in the subroutine readReactionListSizes().
 !***************************************************************************************************
-
 subroutine readMaterialInput(filename)	!read FeCu_Defects.txt
 use DerivedType
 use mod_constants
@@ -132,11 +130,6 @@ do i=1,numSingleDiff(matNum)
 	read(80,*) char, DiffSingle(i,matNum)%D, char, DiffSingle(i,matNum)%Em
 end do
 
-!do 16 i=1,numSingleDiff(matNum)
-!	write(*,*) 'species', (DiffSingle(i,matNum)%defectType(j),j=1,numSpecies)
-!	write(*,*) 'D0', DiffSingle(i,matNum)%D, 'Em', DiffSingle(matNum,i)%Em
-!16 continue
-
 do while(flag .eqv. .FALSE.)
 	read(80,*) char
 	if(char=='function') then
@@ -210,11 +203,6 @@ do i=1,numSingleBind(matNum)
 	read(80,*) (BindSingle(i,matNum)%defectType(j),j=1,numSpecies), (BindSingle(i,matNum)%product(j),j=1,numSpecies)
 	read(80,*) char, BindSingle(i,matNum)%Eb
 end do
-
-!do 30 i=1,numSingleBind
-!	write(*,*) 'species', (BindSingle(i)%defectType(j),j=1,numSpecies), 'product', (BindSingle(i)%product(j),j=1,numSpecies)
-!	write(*,*) 'Eb', BindSingle(i)%Eb
-!30 continue
 
 do while(flag .eqv. .FALSE.)
 	read(80,*) char
@@ -290,8 +278,6 @@ do while(flag .eqv. .FALSE.)
 end do
 flag=.FALSE.
 
-!write(*,*) 'reading diffusion reactions', myProc%taskid
-
 !allocate(DiffReactions(numDiffReac))
 do i=1,numDiffReac(matNum)
 	DiffReactions(i,matNum)%numReactants=1
@@ -317,8 +303,6 @@ do while(flag .eqv. .FALSE.)
 	end if
 end do
 flag=.FALSE.
-
-!write(*,*) 'reading sink removal reactions', myProc%taskid
 
 !allocate(SinkReactions(numSinkReac))
 do i=1,numSinkReac(matNum)
@@ -442,9 +426,7 @@ do i=1,numImplantReac(matNum)
 			end if
 		end do
 		flag=.FALSE.
-		
-		!write(*,*) 'reading cascade reactions', myProc%taskid
-		
+
 		ImplantReactions(i,matNum)%numReactants=-10
 		ImplantReactions(i,matNum)%numProducts=0
 		read(80,*) ImplantReactions(i,matNum)%functionType
@@ -466,7 +448,6 @@ end subroutine
 !! throughout the duration of the program.
 !
 !***************************************************************************************************
-
 subroutine readCascadeList()
 use mod_constants
 use DerivedType
@@ -562,26 +543,7 @@ if(implantType=='Cascade') then
 	end do
 	nullify(defectCurrent)
 	nullify(cascadeCurrent)
-	
-	!output read-in cascade list to make sure it works
-	!if(myProc%taskid==MASTER) then
-	!	cascadeCurrent=>CascadeList
-	!	do while(associated(CascadeCurrent))
-	!		write(*,*) 'Cascade Event'
-	!		defectCurrent=>CascadeCurrent%ListOfDefects
-	!		write(*,*) 'total number of defects', cascadeCurrent%NumDefectsTotal
-	!		do while(associated(defectCurrent))
-	!			write(*,*) 'type', defectCurrent%defectType, 'coordinates', defectCurrent%coordinates
-	!			defectCurrent=>defectCurrent%next
-	!		end do
-	!		CascadeCurrent=>CascadeCurrent%nextCascade
-	!	end do
-	!	write(*,*)
-	!	read(*,*)
-	!	nullify(defectCurrent)
-	!	nullify(cascadeCurrent)
-	!endif
-	
+
 	close(80)
 
 else if(implantType=='FrenkelPair') then
@@ -613,7 +575,6 @@ end subroutine
 !! Outputs: information is stored in a global array.
 !
 !***************************************************************************************************
-
 subroutine readImplantData()
 use DerivedType
 use mod_constants
@@ -690,7 +651,6 @@ endif
 end subroutine
 
 !***************************************************************************************************
-!
 !> Subroutine selectMaterialInputs() - controlling subroutines that calls other subroutines to read inputs.
 !!
 !! This subroutine reads the name of the material input file(s) and then reads in relevant material
@@ -698,7 +658,6 @@ end subroutine
 !! forms, etc)
 !
 !***************************************************************************************************
-
 subroutine selectMaterialInputs()
 use mod_constants
 use DerivedType
@@ -848,16 +807,9 @@ do i=1,numMaterials
 	call readMaterialInput(filename(i))
 end do
 
-!If we are including the strain field, read in the dipoles from a data file
-!Must do this after readMaterialInput or numSpecies won't be defined
-if(strainField=='yes') then
-	call readDipoleTensors(dipoleFileName)
-end if
-
 end subroutine
 
 !***************************************************************************************************
-!
 !> Subroutine readParameters() - reads in simulation parameters from parameters.txt
 !!
 !! This subroutine reads in all simulation and material parameters located in parameters.txt
@@ -868,7 +820,6 @@ end subroutine
 !! Geometric constants used in computing clustering rates are computed at the end of this subroutine.
 !
 !***************************************************************************************************
-
 subroutine readParameters()
 use mod_constants
 use DerivedType
@@ -902,7 +853,6 @@ annealTempInc	=0d0
 
 grainBoundaryToggle	='no'
 pointDefectToggle	='no'
-!SIAPinToggle		='no'
 polycrystal			='no'
 singleElemKMC		='no'
 sinkEffSearch		='no'	!< This toggle is mostly legacy code and should be set to ’no’
@@ -1018,9 +968,6 @@ do while(flag .eqv. .FALSE.)
 		else if(char=='cascRxnLimit') then
 			flag2=.TRUE.
 			read(81,*) cascadeReactionLimit
-!		else if(char=='SIAPinToggle') then
-!			flag2=.TRUE.
-!			read(81,*) SIAPinToggle
 		else if(char=='SIAPinMin') then
 			flag2=.TRUE.
 			read(81,*) SIAPinMin
@@ -1172,14 +1119,6 @@ omegacircle1D=(1d0/burgers)**(1d0/2d0)				!clustering rate parameter for 1D migr
 
 recombinationCoeff=4d0*pi*(.4466)/atomSize			!from Stoller et al., not used any longer
 
-!***********************************************************************
-!initialize counters
-!***********************************************************************
-
-!numImplantEvents=0									!counter for number of cascade /Frenkel pairs introduced
-!numHeImplantEvents=0								!counter for number of He atoms introduced
-!numAnnihilate=0										!counter for number of Vac that are annihilated
-
 if(myProc%taskid==MASTER) write(*,*) 'cascadeReactionLimit', cascadeReactionLimit
 
 end subroutine
@@ -1194,7 +1133,6 @@ end subroutine
 !!
 !!2) Number of allowed reactions of each size
 !***************************************************************************************************
-
 subroutine readReactionListSizes(filename)	!< filename is 'xx_Defects.txt'
 use DerivedType
 use mod_constants

@@ -1,5 +1,4 @@
 !***************************************************************************************************
-!
 !> Function releaseFineMeshDefects(CascadeCurrent) - releases fine mesh back to coarse mesh when cascade is annealed
 !!
 !! This function deletes the fine mesh and deposits all defects into the coarse mesh cell containing 
@@ -16,7 +15,6 @@
 !!		pointed towards the next cascade.
 !
 !***************************************************************************************************
-
 subroutine releaseFineMeshDefects(CascadeCurrent)
 use mod_constants
 use DerivedType
@@ -410,14 +408,12 @@ findCellWithCoordinatesFineMesh=cellNumber
 end function
 
 !***************************************************************************************************
-!
 !> Function chooseRandomCell() - chooses a random fine mesh volume element ID
 !!
 !! Chooses a cell number at random from the fine mesh. (Uniform distribution)
 !!
 !! Inputs: none (just mod_constants values such as the number of cells)
 !! Outputs: cell number
-!
 !***************************************************************************************************
 integer function chooseRandomCell()
 use randdp
@@ -442,7 +438,6 @@ chooseRandomCell=i
 end function
 
 !***********************************************************************
-!
 !> subroutine countReactionsFine(reactionsFine) - counts reactions in the fine mesh
 !!
 !! Counts the total number of reactions in the fine mesh (all processors)
@@ -451,7 +446,6 @@ end function
 !! Inputs: none
 !! Output: reactionsfine, total number of reactions in all fine
 !!         mesh elements including all processors (and all cascades)
-!
 !***********************************************************************
 subroutine countReactionsFine(reactionsFine)
 

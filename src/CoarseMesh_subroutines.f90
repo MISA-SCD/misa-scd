@@ -8,7 +8,6 @@
 !!Inputs: products
 !!Outputs: defectCurrent and defectPrev pointed at location in list
 !***************************************************************************************************
-
 subroutine findDefectInList(defectCurrent, defectPrev, products)
 use DerivedType
 use mod_constants
@@ -56,7 +55,6 @@ end subroutine
 !!Inputs: defectType, cellNumber
 !!Outputs: returns number of defects of type in cell
 !***************************************************************************************************
-
 integer function findNumDefect(defectType, cellNumber)
 use DerivedType
 use mod_constants
@@ -95,7 +93,6 @@ end function
 !!Inputs: defectType, cellNumber, direction (used to identify correct element of myBoundary)
 !!Outputs: returns number of defects of type in cell
 !***************************************************************************************************
-
 integer function findNumDefectBoundary(defectType, cellNumber, dir)
 use DerivedType
 use mod_constants
@@ -142,7 +139,6 @@ end function
 !!         mesh elements including all processors
 !
 !***********************************************************************
-
 subroutine countReactionsCoarse(reactionsCoarse)
 
 use DerivedType

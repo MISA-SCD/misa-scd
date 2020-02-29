@@ -9,7 +9,6 @@
 !! Action: goes through boundary mesh and deallocates all defects
 !
 !***********************************************************************
-
 subroutine deallocateBoundaryDefectList()
 use DerivedType
 use mod_constants
@@ -63,7 +62,6 @@ end subroutine
 !! (note: these are the lists used as inputs, not the fine mesh defects)
 !
 !***********************************************************************
-
 Subroutine deallocateCascadeList()
 use DerivedType
 use mod_constants
@@ -120,8 +118,6 @@ end subroutine
 !!type(reactionParameters), allocatable :: ImpurityReactions(:), ClusterReactions(:), ImplantReactions(:)	
 !
 !***********************************************************************
-
-
 subroutine deallocateMaterialInput()
 use DerivedType
 use mod_constants
@@ -231,7 +227,6 @@ end subroutine
 !! deallocates all defects
 !
 !***********************************************************************
-
 subroutine deallocateDefectList()
 use DerivedType
 use mod_constants
@@ -283,7 +278,6 @@ end subroutine
 !! deallocates all reactions
 !
 !***********************************************************************
-
 subroutine deallocateReactionList()
 use DerivedType
 use mod_constants

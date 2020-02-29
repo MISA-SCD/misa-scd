@@ -1,0 +1,34 @@
+# -------------------Begin-------------------------
+#$Header:
+#
+#SHELL = /bin/sh
+# -------------------End---------------------------
+
+#Compiler and Compile options
+FC = mpif90
+
+#Source code files, Object files and Target(Executable) file defeine
+SRCS =  src_*.f90
+OBJS = $(SRCS:.f90=.o)
+TARGET = misascd
+
+MODSRCS =   derivedtype.f90\
+            mod_constants.f90
+MODOBJS = $(MODSRCS:.f90=.o)
+MODS = $(MODSRCS:.f90=.mod)
+
+#Generate Target file using Object files
+$(TARGET): $(OBJS) $(MODOBJS)
+	$(FC) -o $@ $^
+
+#Generate Object files using Source files
+%.o: %.f90 $(MODS)
+	$(FC) -c $<
+
+$(MODS) $(MODOBJS): $(MODSRCS)
+	$(FC) -c $^
+
+# Clean Object files
+clean:
+	rm $(TARGET) $(OBJS) $(MODOBJS) $(MODS) *.mod
+

@@ -157,7 +157,7 @@ end subroutine
 !! This subroutine will also automatically output the concentration of solute, vacancies, and SIAs of size large.
 !*******************************************************************************************************
 
-subroutine outputTotal()
+subroutine outputDefectsTotal()
 use DerivedType
 use mod_constants
 implicit none
@@ -492,15 +492,16 @@ if(myProc%taskid==MASTER) then
 			if(defectCurrentList%defectType(1) > minSCluster) then
 				numS=numS+defectCurrentList%defectType(1)*defectCurrentList%num
 				radiusScluster=radiusScluster+dble(defectCurrentList%num)*&
-						(3*dble(defectCurrentList%defectType(1))*atomSize/(4*pi))**(1d0/3d0)
+						(3*dble(defectCurrentList%defectType(1))*atomSize_Cu/(4*pi))**(1d0/3d0)
 				numScluster=numScluster+defectCurrentList%num
 			end if
 
-			if((defectCurrentList%defectType(1)+defectCurrentList%defectType(2)) > minSV) then
-				numSV=numSV+max(defectCurrentList%defectType(1), defectCurrentList%defectType(2))*defectCurrentList%num
+			if(defectCurrentList%defectType(2)>1 .AND. &
+					(defectCurrentList%defectType(1)+defectCurrentList%defectType(2)) > minSV) then
+				numSV=numSV+(defectCurrentList%defectType(1)+defectCurrentList%defectType(2))*defectCurrentList%num
 				radiusSVcluster = radiusSVcluster+dble(defectCurrentList%num)*&
-						(3*dble(max(defectCurrentList%defectType(1), defectCurrentList%defectType(2)))*&
-								atomSize/(4*pi))**(1d0/3d0)
+						(3*dble(defectCurrentList%defectType(1)+defectCurrentList%defectType(2))*&
+								atomSize_Cu/(4*pi))**(1d0/3d0)
 				numSVcluster=numSVcluster+defectCurrentList%num
 				if(defectCurrentList%defectType(2) /= 0) then
 					totalVac=totalVac+defectCurrentList%defectType(2)*defectCurrentList%num
@@ -569,7 +570,7 @@ if(myProc%taskid==MASTER) then
 	sizeScluster=dble(numS)/dble(numScluster)
 	sizeVoid=dble(numV)/dble(numVoid)
 	sizeLoop=dble(numSIA)/dble(numLoop)
-	!sizeSVcluster=dble(numSV)/dble(numSVcluster)
+	sizeSVcluster=dble(numSV)/dble(numSVcluster)
 
 	conPointV=dble(pointV)/systemVol*atomSize
 	conPointSIA=dble(pointSIA)/systemVol*atomSize
@@ -580,10 +581,10 @@ if(myProc%taskid==MASTER) then
 	!Output totdat.out
 	write(83,*)	'numCluster (S/Void/Loop/SV):', numScluster, numVoid, numLoop, numSVcluster
 	write(83,*)	'NumberDensity (m-3) (S/Void/Loop/SV):', denScluster*1d27, denVoid*1d27,denLoop*1d27,denSVcluster*1d27
-	write(83,*)	'Concentration (S/Void/Loop/SV):', denScluster*atomSize, denVoid*atomSize, denLoop*atomSize,&
-			denSVcluster*atomSize
-	write(83,*)	'AverageRadius (nm) (S/Void/Loop):', radiusScluster, radiusVoid, radiusLoop
-	write(83,*)	'AverageSize (S/Void/Loop):', sizeScluster, sizeVoid, sizeLoop
+	write(83,*)	'Concentration (S/Void/Loop/SV):', denScluster*atomSize_Cu, denVoid*atomSize, denLoop*atomSize,&
+			denSVcluster*atomSize_Cu
+	write(83,*)	'AverageRadius (nm) (S/Void/Loop/SV):', radiusScluster, radiusVoid, radiusLoop, radiusSVcluster
+	write(83,*)	'AverageSize (S/Void/Loop/SV):', sizeScluster, sizeVoid, sizeLoop, sizeSVcluster
 	write(83,*) 'ConcenPointDefects (V/SIA):', conPointV, conPointSIA
 	write(83,*) 'PercentVRetained',VRetained,'PercentVAnnihilated',VAnnihilated
 	write(83,*)
@@ -613,7 +614,7 @@ end subroutine
 !***********************************************************************
 !***********************************************************************
 
-subroutine outputDefectsTotal
+subroutine outputTotal()
 	use DerivedType
 	use mod_constants
 	implicit none

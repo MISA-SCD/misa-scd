@@ -7,7 +7,6 @@
 !!
 !! This is limited to numbers n<17 for computer feasibility.
 !***************************************************************************************************
-
 integer function factorial(n)
 implicit none
 
@@ -32,7 +31,6 @@ end function
 !! Inputs: n, k (integers)
 !! Outputs: Binomial (integer)
 !***************************************************************************************************
-
 integer function binomial(n,k)
 implicit none
 
@@ -43,7 +41,6 @@ binomial=factorial(n)/(factorial(k)*factorial(n-k))
 end function
 
 !***************************************************************************************************
-!
 !> function TotalRateCheck() - checks if our total rate still matches the actual total rate
 !!
 !! This function is used as a diagnostic tool, it calcuates the total rate of all reactions in the 
@@ -51,9 +48,7 @@ end function
 !!
 !! Inputs: none
 !! Output: total reaction rate (sum of all reaction rates)
-!
 !***************************************************************************************************
-
 double precision function TotalRateCheck()
 use mod_constants
 use DerivedType
@@ -86,8 +81,6 @@ do i=1,numCells
 end do
 
 !Compute total rate of all reactions in the fine meshes by going through active cascades
-!2015.04.02: Need to create something analagous to totalRateVol() for the case of cascades.
-!Put it in the cascade derived type definition
 do while(associated(CascadeCurrent))
 
 	do i=1,numCellsCascade
@@ -132,7 +125,6 @@ end function
 !! This subroutine was added on 2015.04.03 when I switched to tracking the reaction rate in each volume element
 !! instead of the entire cascade, for the sake of computational efficiency when choosing reactions.
 !***************************************************************************************************
-
 double precision function totalRateCascade(CascadeCurrent)
 use DerivedType
 use mod_constants

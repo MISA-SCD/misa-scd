@@ -2,7 +2,6 @@
 !>double precision generate timestep - chooses a timestep using random number and Monte Carlo algorithm
 !!(this is a global timestep)
 !*****************************************************************************************
-
 double precision function GenerateTimestep()
 use DerivedType
 use mod_constants
@@ -80,7 +79,6 @@ end subroutine
 !!NOTE: to increase computation speed, choose an element first and then choose a reaction
 !!within that element.
 !*****************************************************************************************
-
 subroutine chooseReaction(reactionCurrent, CascadeCurrent)
 use DerivedType
 use mod_constants

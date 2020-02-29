@@ -137,7 +137,6 @@ end  subroutine
 !
 !Begins with a defect with type 0 0 0 0 and num 0. Note that numCells is needed in this subroutine
 !*****************************************************************************************
-
 subroutine initializeDefectList()
 use DerivedType
 use mod_constants
@@ -230,7 +229,6 @@ end subroutine
 !!generates several integers in the master processor and uses them to initialize the 
 !!random number seed of the other processors.
 !*****************************************************************************************
-
 subroutine initializeRandomSeeds()
 use mod_constants
 use DerivedType
@@ -269,7 +267,6 @@ end subroutine
 !!Return: totalRateVol(:) Total reaction rate in each volume element of the  local processor
 !!		  totalRate		  Total rate of the local processor
 !*****************************************************************************************
-
 subroutine initializeTotalRate()
 use mod_constants
 use DerivedType
@@ -317,7 +314,6 @@ end subroutine
 !!First reaction in list is either Frenkel pair implantation or cascade implantation, second
 !!reaction in the list is Cu clustering, the .
 !*****************************************************************************************
-
 subroutine initializeReactionList()
 use DerivedType
 use mod_constants
@@ -887,7 +883,6 @@ end do
 end subroutine
 
 !***************************************************************************************************
-!
 !> Subroutine initializeDebugRestart() - initializes defect and reaction lists if we are restarting from debug file
 !!
 !! This subroutine is used to populate the mesh with defects and initialize the DPA at a non-zero value
@@ -897,7 +892,6 @@ end subroutine
 !! The number of processors must also match from the reset file and the current simulation.
 !
 !***************************************************************************************************
-
 subroutine initializeDebugRestart()
 use mod_constants
 use DerivedType
@@ -1059,7 +1053,6 @@ end subroutine
 !!(AKA when the element to the left is a different proc than the proc to the left, due to uneven meshing)
 !!This may cause errors when the non-uniform mesh is used.
 !*****************************************************************************************
-
 subroutine initializeBoundaryDefectList()
 use DerivedType
 use mod_constants
@@ -1175,7 +1168,6 @@ end subroutine
 !Inputs: CascadeCurrent (cascade type derived type variable)
 !Output: CascadeCurrent (initialized with defects from coarse mesh)
 !***************************************************************************************************
-
 subroutine initializeFineMesh(CascadeCurrent)
 use DerivedType
 use mod_constants
@@ -1293,28 +1285,25 @@ do while(associated(defectCurrentCoarse))
 				!***********************************************************************************
 				
 				if(k <= 12) then    !Poisson distribution
-					!write(*,*) 'poisson distribution'
 					r2=r2+lambda**(dble(k))*dexp(-lambda)/factorial(k)
-					!write(*,*) 'r2', r2, lambda**(dble(k))*dexp(-lambda)/factorial(k)
-					!write(*,*) 'r1', r1, 'r2', r2, 'k', k, 'n', n
 					if(r2 > r1) then
 						exit
 					end if
 				else    !Gaussian distrubition
-					!write(*,*) 'gaussian distribution'
+
 					r2=r2+dexp(-(k-lambda)**(2d0)/(2d0*lambda))/(dsqrt(2*pi*lambda))
-					!write(*,*) 'r1', r1, 'r2', r2, 'k', k, 'n', n
+
 					if(rstore-r2 == 0d0) then
-						!write(*,*) 'gaussian exit'
+
 						exit
 					else if(r2 > r1) then
-						!write(*,*) 'gaussian exit'
+
 						exit
 					end if
 					rstore=r2
 				end if
 			end do
-			!write(*,*) 'k', k
+
 		end if
 
 		!************************************************************
@@ -1442,8 +1431,8 @@ do while(associated(defectCurrentCoarse))
 end do
 
 end subroutine
+
 !***************************************************************************************************
-!
 !> Subroutine initializeMesh() - begins the mesh initialization process at the beginning of the program
 !!
 !! This subroutine reads the name of the mesh file from the central input file (parameters.txt) and
@@ -1458,7 +1447,6 @@ end subroutine
 !! This allows us to start the simulation further along than the beginning of the simulation.
 !
 !***************************************************************************************************
-
 subroutine initializeMesh()
 use MeshReader
 use mod_constants
@@ -1525,8 +1513,6 @@ end if
 if(meshType=='uniform') then
 !	call readMeshUniform(filename)
 	call initialMeshUniform(filename)
-else if(meshType=='nonUniform') then
-	call readMeshNonUniform(filename)
 else
 	write(*,*) 'error mesh type unknown'
 end if
@@ -1566,7 +1552,6 @@ end subroutine
 !! Outputs: none
 !! Actions: prepares system for annealing
 !***********************************************************************
-
 subroutine annealInitialization()
 use DerivedType
 use mod_constants

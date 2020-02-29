@@ -80,13 +80,13 @@ dpaRate			! NOTE: if the implant profile is non-uniform, this should be the AVER
 1.4d-7
 
 atomSize
-1.18d-2 		!(Cu) (nm^3)
+1.18d-2 		!(Fe) (nm^3)
 
 firr            !Radiation enhanced factor
 7.69d5
 
 burgers         !dislocation loop burgers vector (lattice constant) (nm)
-0.132d0
+0.248d0
 
 reactionRadius  !recombination radius (nm)
 0.65d0

@@ -10,7 +10,6 @@
 !! 6) Simulation parameters read in from parameters.txt
 !! 7) Other miscellaneous variables used for MPI, debugging, or postprocessing
 !****************************************************************************************
-
 module mod_constants
 
 use DerivedType
@@ -87,6 +86,7 @@ double precision, parameter :: Zint = 1.2d0				!<Constant representing preferenc
 double precision, parameter :: Zv = 1.0d0
 !double precision, parameter :: reactionRadius=0.65d0	!<Material parameter used for reaction distances (impacts reaction rates) (nm)
 double precision, parameter :: lattice = 0.2867d0       !<lattice constant (nm)
+double precision, parameter :: atomSize_Cu = 8.79d-3    !<Cu (nm^3)
 
 !2019.04.30 Add
 !Cu solubility CeqCu(T) = exp(DelatS/kB)*exp(-Omega/(kB*T))  Reference: (F. Christien and A. Barbu, 2004)
@@ -187,9 +187,6 @@ integer, parameter :: maxBufferSize=50	!<Used to define the max size of a send/r
 double precision rateTau(2)             !<Used for collective communication
 integer numImpAnn(2)                    !<Postprocessing: numImpAnn(1) is the num of Frenkel pairs / cascades (local), numImpAnn(2) is the number of annihilation reactions carried out (local)
 integer totalImpAnn(2)                  !<Postprocessing: numImpAnn(1) is the number of implant events across all processors, numImpAnn(2) is the number of annihilation reactions across all processors
-!integer numImplantEvents			    !<Postprocessing: number of Frenkel pairs / cascades (local)
-!integer totalImplantEvents			    !<Postprocessing: number of implant events across all processors
-!integer numAnnihilate				    !<Postprocessing: number of annihilation reactions carried out
 
 !counters for sink efficiency
 integer numTrapV			            !<Postprocessing: number of vacancies trapped on grain boundary

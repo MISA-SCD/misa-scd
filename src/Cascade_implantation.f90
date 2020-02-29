@@ -6,7 +6,6 @@
 !!Inputs: CascadeList (global variable)
 !!Output: CascadeTemp (pointing at the cascade we want)
 !***************************************************************************************************
-
 subroutine chooseCascade(CascadeTemp)
 use DerivedType
 use randdp
@@ -31,14 +30,12 @@ end subroutine
 
 !***************************************************************************************************
 !> Integer function cascadeCount()
-!
 ! This subroutine counts how many cascades are active in the LOCAL mesh (not on all processors)
 ! and returns that value
 !
 ! Inputs: none
 ! Outputs: number of cascades present
 !***************************************************************************************************
-
 integer function CascadeCount()
 use mod_constants
 use DerivedType
@@ -63,7 +60,6 @@ end function
 
 !***************************************************************************************************
 !> subroutine addCascadeExplicit
-!
 ! This subroutine takes the place of chooseReaction in the case of explicit cascade implantation.
 ! It forces the program to 'choose' a cascade reaction, instead of using the Monte Carlo algorithm
 ! to do so.
@@ -71,7 +67,6 @@ end function
 ! Inputs: none
 ! Outputs: reactionCurrent and CascadeCurrent, pointing at cascade reaction.
 !***************************************************************************************************
-
 subroutine addCascadeExplicit(reactionCurrent)
 use DerivedType
 use mod_constants
@@ -113,14 +108,12 @@ end subroutine
 
 !***************************************************************************************************
 !> logical function cascadeMixingCheck()
-!
 ! cascadeMixingCheck checks whether a given defect in the fine mesh interacts with the cascade. It
 ! returns a logical value of true or false.
 !
 ! Input: none
 ! Output: logical value for whether or not a fine mesh defect combines with a cascade.
 !***************************************************************************************************
-
 logical function cascadeMixingCheck()
 use mod_constants
 use randdp
@@ -149,7 +142,7 @@ end function
 
 !***************************************************************************************************
 !> Subroutine CascadeUpdateStep(cascadeCell)
-!
+
 ! Carries out the communication necessary when a cascade is created or destroyed in an element
 ! that bounds another processor.
 !
@@ -168,7 +161,6 @@ end function
 !
 ! Actions: see above, sends/recieves information on boundary updates and updates reaction lists.
 !***************************************************************************************************
-
 subroutine cascadeUpdateStep(releaseToggle, cascadeCell)
 use DerivedType
 use mod_constants
@@ -387,7 +379,6 @@ end subroutine
 ! Input: numxcascade, numycascade, nunmzcascade (global variables) : from parameters.txt
 ! Output: cascadeConnectivity (global variable)
 !***************************************************************************************************
-
 subroutine createCascadeConnectivity()
 use mod_constants
 

@@ -443,7 +443,7 @@ nmin	0	nmax	0
 nmin	0	nmax	0
 
 nmin	0	nmax	0
-lmin	1	lmax	-1
+nmin	1	nmax	-1
 nmin	0	nmax	0
 nmin	0	nmax	0
 6							!reactionRate form 7 - for HeV Clusters - use V number for volume of defect
@@ -454,8 +454,8 @@ mmin	1	mmax	-1
 nmin	0	nmax	0
 nmin	0	nmax	0
 
-lmin	1	lmax	-1
-omin	1	omax	-1
+nmin	1	nmax	-1
+nmin	1	nmax	-1
 nmin	0	nmax	0
 nmin	0	nmax	0
 6							!reactionRate form 7 - for HeV Clusters - use V number for volume of defect

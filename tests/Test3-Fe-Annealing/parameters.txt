@@ -91,20 +91,11 @@ reactionRadius  !recombination radius (nm)
 totalDPA
 1.0d-2			! total DPA in simulation 1
 
-annealTemp      !Starting annealing temperature, in K
+annealTemp      ! annealing temperature, in K
 373d0
-
-annealSteps     ! number of steps in the annealing process
-44
 
 annealTime      ! total anneal time (s)
 10000d0
-
-annealType      ! (add) for adding constant temperature increment at each anneal step, (mult) for multiplying the temperature by a constant at each anneal step
-add
-
-annealTempInc   ! Temperature increment for each annealing step (either added or multiplied by)
-1.03
 
 grainBoundaries	!Toggle whether we are going to include the effect of grain boundaries (Removing defects that travel too far)
 yes

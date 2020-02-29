@@ -11,7 +11,6 @@
 !!the cell (reactions that are no longer possible after a reaction has occurred).
 !
 !***************************************************************************************************
-
 module ReactionRates
 implicit none
 contains
@@ -112,39 +111,14 @@ do i=1, numDissocReac(matNum)
 		reactionUpdate=>reactionList(cell)
 		call findReactionInList(reactionUpdate, reactionPrev, cell, reactants, products, numReactants, numProducts)
 
-	!	call checkReactionLegality(numProducts, products, isLegal)
-		
-		!find the reaction rate.
-	!	if(isLegal .eqv. .TRUE.) then
-			reactionRate=findReactionRateDissoc(defectType, products, cell, DissocReactions(i,matNum))
-	!	else
-	!		reactionRate=0d0
-	!	end if
-		
+		reactionRate=findReactionRateDissoc(defectType, products, cell, DissocReactions(i,matNum))
+
 		!if reactionRate==0 and reaction already exists, then delete it. Subtract from totalRate.
 		if(associated(reactionUpdate) .AND. reactionRate==0d0) then
 			
 			!Update total rate (entire processor and this volume element)
 			totalRate=totalRate-reactionUpdate%reactionRate
 			totalRateVol(cell)=totalRateVol(cell)-reactionUpdate%reactionRate
-
-			!if(associated(reactionUpdate%next)) then	!in the middle
-			!	reactionPrev%next=>reactionUpdate%next
-			!	deallocate(reactionUpdate%reactants)
-			!	deallocate(reactionUpdate%products)
-			!	deallocate(reactionUpdate%cellNumber)
-			!	deallocate(reactionUpdate%taskid)
-			!	deallocate(reactionUpdate)
-			!	nullify(reactionUpdate)
-			!else    !at the end of the list
-			!	deallocate(reactionUpdate%reactants)
-			!	deallocate(reactionUpdate%products)
-			!	deallocate(reactionUpdate%cellNumber)
-			!	deallocate(reactionUpdate%taskid)
-			!	deallocate(reactionUpdate)
-			!	nullify(reactionUpdate)
-			!	nullify(reactionPrev%next)
-			!end if
 
 			!deleting reactionUpdate
 			reactionPrev%next=>reactionUpdate%next
@@ -238,15 +212,8 @@ do i=1, numSinkReac(matNum)
         !(if reaction does not already exist, reactionUpdate is unallocated and reactionPrev points to the end of the list)
 		reactionUpdate=>reactionList(cell)
 		call findReactionInList(reactionUpdate, reactionPrev, cell, reactants, products, numReactants, numProducts)
-		
-		!find the reaction rate. HARD CODED: if CuSIA or large He clusters left over, need to disallow this reaction
-	!	call checkReactionLegality(numProducts, products, isLegal)
-		
-	!	if(isLegal .eqv. .TRUE.) then
-			reactionRate=findReactionRateSink(defectType, cell, SinkReactions(i,matNum))
-	!	else
-	!		reactionRate=0d0
-	!	end if
+
+		reactionRate=findReactionRateSink(defectType, cell, SinkReactions(i,matNum))
 		
 		!if reactionRate==0 and reaction already exists, then delete it. Subtract from totalRate.
 		if(associated(reactionUpdate) .AND. reactionRate==0d0) then
@@ -255,28 +222,6 @@ do i=1, numSinkReac(matNum)
 			totalRate=totalRate-reactionUpdate%reactionRate
 			totalRateVol(cell)=totalRateVol(cell)-reactionUpdate%reactionRate
 
-			!if(associated(reactionUpdate%next)) then    !in the middle
-			!	reactionPrev%next=>reactionUpdate%next
-			!	deallocate(reactionUpdate%reactants)
-			!	if(allocated(reactionUpdate%products)) then
-			!		deallocate(reactionUpdate%products)
-			!	end if
-			!	deallocate(reactionUpdate%cellNumber)
-			!	deallocate(reactionUpdate%taskid)
-			!	deallocate(reactionUpdate)
-			!	nullify(reactionUpdate)
-			!else    !at the end of the list
-			!	deallocate(reactionUpdate%reactants)
-			!	if(allocated(reactionUpdate%products)) then
-			!		deallocate(reactionUpdate%products)
-			!	end if
-			!	deallocate(reactionUpdate%cellNumber)
-			!	deallocate(reactionUpdate%taskid)
-			!	deallocate(reactionUpdate)
-			!	nullify(reactionUpdate)
-			!	nullify(reactionPrev%next)
-			!end if
-			
 			!deleting reactionUpdate
 			reactionPrev%next=>reactionUpdate%next
 			deallocate(reactionUpdate%reactants)
@@ -382,16 +327,9 @@ do i=1, numImpurityReac(matNum)
         !(if reaction does not already exist, reactionUpdate is unallocated and reactionPrev points to the end of the list)
 		reactionUpdate=>reactionList(cell)
 		call findReactionInList(reactionUpdate, reactionPrev, cell, reactants, products, numReactants, numProducts)
-		
-		!find the reaction rate. HARD CODED: if CuSIA or large He clusters left over, need to disallow this reaction
-	!	call checkReactionLegality(numProducts, products, isLegal)
-		
-	!	if(isLegal .eqv. .TRUE.) then
-			reactionRate=findReactionRateImpurity(defectType, cell, ImpurityReactions(i,matNum))
-	!	else
-	!		reactionRate=0d0
-	!	end if
-				
+
+		reactionRate=findReactionRateImpurity(defectType, cell, ImpurityReactions(i,matNum))
+
 		!if reactionRate==0 and reaction already exists, then delete it. Subtract from totalRate.
 		if(associated(reactionUpdate) .AND. reactionRate==0d0) then
 			
@@ -399,24 +337,6 @@ do i=1, numImpurityReac(matNum)
 			totalRate=totalRate-reactionUpdate%reactionRate
 			totalRateVol(cell)=totalRateVol(cell)-reactionUpdate%reactionRate
 
-			!if(associated(reactionUpdate%next)) then    !in the middle
-			!	reactionPrev%next=>reactionUpdate%next
-			!	deallocate(reactionUpdate%reactants)
-			!	deallocate(reactionUpdate%products)
-			!	deallocate(reactionUpdate%cellNumber)
-			!	deallocate(reactionUpdate%taskid)
-			!	deallocate(reactionUpdate)
-			!	nullify(reactionUpdate)
-			!else    !at the end pf the list
-			!	deallocate(reactionUpdate%reactants)
-			!	deallocate(reactionUpdate%products)
-			!	deallocate(reactionUpdate%cellNumber)
-			!	deallocate(reactionUpdate%taskid)
-			!	deallocate(reactionUpdate)
-			!	nullify(reactionUpdate)
-			!	nullify(reactionPrev%next)
-			!end if
-			
 			!deleting reactionUpdate
 			reactionPrev%next=>reactionUpdate%next
 			deallocate(reactionUpdate%reactants)
@@ -585,15 +505,8 @@ do i=1, numDissocReac(matNum)
 		reactionUpdate=>CascadeCurrent%reactionList(cell)
 		call findReactionInList(reactionUpdate, reactionPrev, cell, reactants, products, numReactants, numProducts)
 		
-		!find the reaction rate. HARD CODED: if HeSIA or large He clusters left over, need to disallow this reaction
-	!	call checkReactionLegality(numProducts, products, isLegal)
-		
-	!	if(isLegal .eqv. .TRUE.) then
-			reactionRate=findReactionRateDissocFine(CascadeCurrent, defectType, products, cell, DissocReactions(i,matNum))
-	!	else
-	!		reactionRate=0d0
-	!	end if
-				
+		reactionRate=findReactionRateDissocFine(CascadeCurrent, defectType, products, cell, DissocReactions(i,matNum))
+
 		!if reactionRate==0 and reaction already exists, then delete it. Subtract from totalRate.
 		if(associated(reactionUpdate) .AND. reactionRate==0d0) then
 			
@@ -601,24 +514,6 @@ do i=1, numDissocReac(matNum)
 			totalRate=totalRate-reactionUpdate%reactionRate
 			CascadeCurrent%totalRate(cell)=CascadeCurrent%totalRate(cell)-reactionUpdate%reactionRate
 
-            !if(associated(reactionUpdate%next)) then    !in the middle
-            !    reactionPrev%next=>reactionUpdate%next
-            !    deallocate(reactionUpdate%reactants)
-            !    deallocate(reactionUpdate%products)
-            !    deallocate(reactionUpdate%cellNumber)
-            !    deallocate(reactionUpdate%taskid)
-            !    deallocate(reactionUpdate)
-            !    nullify(reactionUpdate)
-            !else    !at the end of the list
-            !    deallocate(reactionUpdate%reactants)
-            !    deallocate(reactionUpdate%products)
-            !    deallocate(reactionUpdate%cellNumber)
-            !    deallocate(reactionUpdate%taskid)
-            !    deallocate(reactionUpdate)
-            !    nullify(reactionUpdate)
-            !    nullify(reactionPrev%next)
-            !end if
-			
 			!deleting reactionUpdate
 			reactionPrev%next=>reactionUpdate%next
 			deallocate(reactionUpdate%reactants)
@@ -713,14 +608,7 @@ do i=1, numSinkReac(matNum)
 		reactionUpdate=>CascadeCurrent%reactionList(cell)
 		call findReactionInList(reactionUpdate, reactionPrev, cell, reactants, products, numReactants, numProducts)
 		
-		!find the reaction rate. HARD CODED: if HeSIA or large He clusters left over, need to disallow this reaction
-	!	call checkReactionLegality(numProducts, products, isLegal)
-		
-	!	if(isLegal .eqv. .TRUE.) then
-			reactionRate=findReactionRateSinkFine(CascadeCurrent, defectType, cell, SinkReactions(i,matNum))
-	!	else
-	!		reactionRate=0d0
-	!	end if
+		reactionRate=findReactionRateSinkFine(CascadeCurrent, defectType, cell, SinkReactions(i,matNum))
 		
 		!if reactionRate==0 and reaction already exists, then delete it. Subtract from totalRate.
 		if(associated(reactionUpdate) .AND. reactionRate==0d0) then
@@ -729,28 +617,6 @@ do i=1, numSinkReac(matNum)
 			totalRate=totalRate-reactionUpdate%reactionRate
 			CascadeCurrent%totalRate(cell)=CascadeCurrent%totalRate(cell)-reactionUpdate%reactionRate
 
-            !if(associated(reactionUpdate%next)) then    !in the middle
-            !    reactionPrev%next=>reactionUpdate%next
-            !    deallocate(reactionUpdate%reactants)
-            !    if(allocated(reactionUpdate%products)) then
-            !        deallocate(reactionUpdate%products)
-            !    endif
-            !    deallocate(reactionUpdate%cellNumber)
-            !    deallocate(reactionUpdate%taskid)
-            !    deallocate(reactionUpdate)
-            !    nullify(reactionUpdate)
-            !else    !at the end of list
-            !    deallocate(reactionUpdate%reactants)
-            !    if(allocated(reactionUpdate%products)) then
-            !        deallocate(reactionUpdate%products)
-            !    endif
-            !    deallocate(reactionUpdate%cellNumber)
-            !    deallocate(reactionUpdate%taskid)
-            !    deallocate(reactionUpdate)
-            !    nullify(reactionUpdate)
-            !    nullify(reactionPrev%next)
-            !end if
-			
 			!deleting reactionUpdate
 			reactionPrev%next=>reactionUpdate%next
 			deallocate(reactionUpdate%reactants)
@@ -857,15 +723,7 @@ do i=1, numImpurityReac(matNum)
         !(if reaction does not already exist, reactionUpdate is unallocated and reactionPrev points to the end of the list)
 		reactionUpdate=>CascadeCurrent%reactionList(cell)
 		call findReactionInList(reactionUpdate, reactionPrev, cell, reactants, products, numReactants, numProducts)
-		
-		!find the reaction rate. HARD CODED: if HeSIA or large He clusters left over, need to disallow this reaction
-	!	call checkReactionLegality(numProducts, products, isLegal)
-		
-	!	if(isLegal .eqv. .TRUE.) then
-			reactionRate=findReactionRateImpurityFine(CascadeCurrent, defectType, cell, ImpurityReactions(i,matNum))
-	!	else
-	!		reactionRate=0d0
-	!	end if
+		reactionRate=findReactionRateImpurityFine(CascadeCurrent, defectType, cell, ImpurityReactions(i,matNum))
 		
 		!if reactionRate==0 and reaction already exists, then delete it. Subtract from totalRate.
 		if(associated(reactionUpdate) .AND. reactionRate==0d0) then
@@ -874,24 +732,6 @@ do i=1, numImpurityReac(matNum)
 			totalRate=totalRate-reactionUpdate%reactionRate
 			CascadeCurrent%totalRate(cell)=CascadeCurrent%totalRate(cell)-reactionUpdate%reactionRate
 
-            !if(associated(reactionUpdate%next)) then    !in the middle
-            !    reactionPrev%next=>reactionUpdate%next
-            !    deallocate(reactionUpdate%reactants)
-            !    deallocate(reactionUpdate%products)
-            !    deallocate(reactionUpdate%cellNumber)
-            !    deallocate(reactionUpdate%taskid)
-            !    deallocate(reactionUpdate)
-            !    nullify(reactionUpdate)
-            !else    !at the end of list
-            !    deallocate(reactionUpdate%reactants)
-            !    deallocate(reactionUpdate%products)
-            !    deallocate(reactionUpdate%cellNumber)
-            !    deallocate(reactionUpdate%taskid)
-            !    deallocate(reactionUpdate)
-            !    nullify(reactionUpdate)
-            !    nullify(reactionPrev%next)
-            !end if
-			
 			!deleting reactionUpdate
 			reactionPrev%next=>reactionUpdate%next
 			deallocate(reactionUpdate%reactants)
@@ -1190,39 +1030,14 @@ do i=1, numClusterReac(matNum)
 		reactionUpdate=>reactionList(cell)
 		call findReactionInListMultiple(reactionUpdate, reactionPrev, cell, reactants, products, numReactants, numProducts)
 		
-		!find the reaction rate. HARD CODED: if CuSIA left over, need to disallow this reaction
-	!	call checkReactionLegality(numProducts, products, isLegal)
-		
-	!	if(isLegal .eqv. .TRUE.) then
-			reactionRate=findReactionRateMultiple(defectType1, defectType2, cell, ClusterReactions(i,matNum))
-	!	else
-	!		reactionRate=0d0
-	!	end if
-		
+		reactionRate=findReactionRateMultiple(defectType1, defectType2, cell, ClusterReactions(i,matNum))
+
 		!if reactionRate==0 and reaction already exists, then delete it. Subtract from totalRate.
 		if(associated(reactionUpdate) .AND. reactionRate==0d0) then
 			
 			!Update total rate (entire processor and this volume element)
 			totalRate=totalRate-reactionUpdate%reactionRate
 			totalRateVol(cell)=totalRateVol(cell)-reactionUpdate%reactionRate
-
-			!if(associated(reactionUpdate%next)) then	!in the middle
-			!	reactionPrev%next=>reactionUpdate%next
-			!	deallocate(reactionUpdate%reactants)
-			!	deallocate(reactionUpdate%products)
-			!	deallocate(reactionUpdate%cellNumber)
-			!	deallocate(reactionUpdate%taskid)
-			!	deallocate(reactionUpdate)
-			!	nullify(reactionUpdate)
-			!else    !at the end of list
-			!	deallocate(reactionUpdate%reactants)
-			!	deallocate(reactionUpdate%products)
-			!	deallocate(reactionUpdate%cellNumber)
-			!	deallocate(reactionUpdate%taskid)
-			!	deallocate(reactionUpdate)
-			!	nullify(reactionUpdate)
-			!	nullify(reactionPrev%next)
-			!end if
 
 			!deleting reactionUpdate
 			reactionPrev%next=>reactionUpdate%next
@@ -1478,41 +1293,14 @@ do i=1, numClusterReac(matNum)
 		reactionUpdate=>reactionList(cell)
 		call findReactionInListMultiple(reactionUpdate, reactionPrev, cell, reactants, products, numReactants, numProducts)
 		
-		!find the reaction rate. HARD CODED: if HeSIA left over, need to disallow this reaction
-	!	call checkReactionLegality(numProducts, products, isLegal)
-		
-	!	if(isLegal .eqv. .TRUE.) then
-			reactionRate=findReactionRateMultiple(defectType1, defectType2, cell, ClusterReactions(i,matNum))
-	!	else
-	!		reactionRate=0d0
-	!	endif
-				
+		reactionRate=findReactionRateMultiple(defectType1, defectType2, cell, ClusterReactions(i,matNum))
+
 		!if reactionRate==0 and reaction already exists, then delete it. Subtract from totalRate.
 		if(associated(reactionUpdate) .AND. reactionRate==0d0) then
 			
 			!Update total rate (entire processor and this volume element)
 			totalRate=totalRate-reactionUpdate%reactionRate
 			totalRateVol(cell)=totalRateVol(cell)-reactionUpdate%reactionRate
-
-			!if(associated(reactionUpdate%next)) then	!in the middle
-				!deleting reactionUpdate
-			!	reactionPrev%next=>reactionUpdate%next
-			!	deallocate(reactionUpdate%reactants)
-			!	deallocate(reactionUpdate%products)
-			!	deallocate(reactionUpdate%cellNumber)
-			!	deallocate(reactionUpdate%taskid)
-			!	deallocate(reactionUpdate)
-			!	nullify(reactionUpdate)
-			!else
-				!deleting reactionUpdate
-			!	deallocate(reactionUpdate%reactants)
-			!	deallocate(reactionUpdate%products)
-			!	deallocate(reactionUpdate%cellNumber)
-			!	deallocate(reactionUpdate%taskid)
-			!	deallocate(reactionUpdate)
-			!	nullify(reactionUpdate)
-			!	nullify(reactionPrev%next)
-			!end if
 
 			!deleting reactionUpdate
 			reactionPrev%next=>reactionUpdate%next
@@ -1840,39 +1628,14 @@ do i=1, numClusterReac(matNum)
 		!this reaction. Thus we could double-add reactions. Will fix later.
 		reactionUpdate=>CascadeCurrent%reactionList(cell)
 		call findReactionInListMultiple(reactionUpdate, reactionPrev, cell, reactants, products, numReactants, numProducts)
-		
-		!find the reaction rate
-	!	call checkReactionLegality(numProducts, products, isLegal)
-		
-	!	if(isLegal .EQV. .TRUE.) then
-			reactionRate=findReactionRateMultipleFine(CascadeCurrent, defectType1, defectType2, cell, ClusterReactions(i,matNum))
-	!	else
-	!		reactionRate=0d0
-	!	endif
+
+		reactionRate=findReactionRateMultipleFine(CascadeCurrent, defectType1, defectType2, cell, ClusterReactions(i,matNum))
+
 		!if reactionRate==0 and reaction already exists, then delete it. Subtract from totalRate.
 		if(associated(reactionUpdate) .AND. reactionRate==0d0) then
 			totalRate=totalRate-reactionUpdate%reactionRate
 			CascadeCurrent%totalRate(cell)=CascadeCurrent%totalRate(cell)-reactionUpdate%reactionRate
 
-            !if(associated(reactionUpdate%next)) then
-            !    !deleting reactionUpdate
-            !    reactionPrev%next=>reactionUpdate%next
-            !    deallocate(reactionUpdate%reactants)
-            !    deallocate(reactionUpdate%products)
-            !    deallocate(reactionUpdate%cellNumber)
-            !    deallocate(reactionUpdate%taskid)
-            !    deallocate(reactionUpdate)
-            !    nullify(reactionUpdate)
-            !else
-            !    deallocate(reactionUpdate%reactants)
-            !    deallocate(reactionUpdate%products)
-            !    deallocate(reactionUpdate%cellNumber)
-            !    deallocate(reactionUpdate%taskid)
-            !    deallocate(reactionUpdate)
-            !    nullify(reactionUpdate)
-            !    nullify(reactionPrev%next)
-            !end if
-			
 			!deleting reactionUpdate
 			reactionPrev%next=>reactionUpdate%next
 			deallocate(reactionUpdate%reactants)
@@ -2116,39 +1879,13 @@ do i=1, numClusterReac(matNum)
 		reactionUpdate=>CascadeCurrent%reactionList(cell)
 		call findReactionInListMultiple(reactionUpdate, reactionPrev, cell, reactants, products, numReactants, numProducts)
 		
-		!find the reaction rate
-	!	call checkReactionLegality(numProducts, products, isLegal)
-		
-	!	if(isLegal .eqv. .TRUE.) then
-			reactionRate=findReactionRateMultipleFine(CascadeCurrent, defectType1, defectType2, cell, ClusterReactions(i,matNum))
-	!	else
-	!		reactionRate=0d0
-	!	endif
+		reactionRate=findReactionRateMultipleFine(CascadeCurrent, defectType1, defectType2, cell, ClusterReactions(i,matNum))
 		
 		!if reactionRate==0 and reaction already exists, then delete it. Subtract from totalRate.
 		if(associated(reactionUpdate) .AND. reactionRate==0d0) then
 			totalRate=totalRate-reactionUpdate%reactionRate
 			CascadeCurrent%totalRate(cell)=CascadeCurrent%totalRate(cell)-reactionUpdate%reactionRate
 
-            !if(associated(reactionUpdate%next)) then
-            !    !deleting reactionUpdate
-            !    reactionPrev%next=>reactionUpdate%next
-            !    deallocate(reactionUpdate%reactants)
-            !    deallocate(reactionUpdate%products)
-            !    deallocate(reactionUpdate%cellNumber)
-            !    deallocate(reactionUpdate%taskid)
-            !    deallocate(reactionUpdate)
-            !    nullify(reactionUpdate)
-            !else
-            !    deallocate(reactionUpdate%reactants)
-            !    deallocate(reactionUpdate%products)
-            !    deallocate(reactionUpdate%cellNumber)
-            !    deallocate(reactionUpdate%taskid)
-            !    deallocate(reactionUpdate)
-            !    nullify(reactionUpdate)
-            !    nullify(reactionPrev%next)
-            !end if
-			
 			!deleting reactionUpdate
 			reactionPrev%next=>reactionUpdate%next
 			deallocate(reactionUpdate%reactants)
@@ -2306,25 +2043,6 @@ do i=1, numDiffReac(matNum)
 			totalRate=totalRate-reactionUpdate%reactionRate
 			totalRateVol(cell1)=totalRateVol(cell1)-reactionUpdate%reactionRate
 
-			!if(associated(reactionUpdate%next)) then	!in the middle
-			!	!deleting reactionUpdate
-			!	reactionPrev%next=>reactionUpdate%next
-			!	deallocate(reactionUpdate%reactants)
-			!	deallocate(reactionUpdate%products)
-			!	deallocate(reactionUpdate%cellNumber)
-			!	deallocate(reactionUpdate%taskid)
-			!	deallocate(reactionUpdate)
-			!	nullify(reactionUpdate)
-			!else
-			!	deallocate(reactionUpdate%reactants)
-			!	deallocate(reactionUpdate%products)
-			!	deallocate(reactionUpdate%cellNumber)
-			!	deallocate(reactionUpdate%taskid)
-			!	deallocate(reactionUpdate)
-			!	nullify(reactionUpdate)
-			!	nullify(reactionPrev%next)
-			!end if
-			
 			!deleting reactionUpdate
 			reactionPrev%next=>reactionUpdate%next
 			deallocate(reactionUpdate%reactants)
@@ -2406,7 +2124,6 @@ end subroutine
 !4) Update the reaction rate / add the reaction / remove the reaction, depending on if the
 !reaction is already present and if the reaction rate is nonzero.
 !***************************************************************************************************
-
 subroutine addDiffusionCoarseToFine(cell, proc, CascadeCurrent, defectType)
 use mod_constants
 use DerivedType
@@ -2492,25 +2209,6 @@ do i=1, numDiffReac(matNum)
 			totalRate=totalRate-reactionUpdate%reactionRate
 			totalRateVol(cell)=totalRateVol(cell)-reactionUpdate%reactionRate
 
-            !if(associated(reactionUpdate%next)) then
-                !deleting reactionUpdate
-            !    reactionPrev%next=>reactionUpdate%next
-            !    deallocate(reactionUpdate%reactants)
-            !    deallocate(reactionUpdate%products)
-            !    deallocate(reactionUpdate%cellNumber)
-            !    deallocate(reactionUpdate%taskid)
-            !    deallocate(reactionUpdate)
-            !    nullify(reactionUpdate)
-            !else
-            !    deallocate(reactionUpdate%reactants)
-            !    deallocate(reactionUpdate%products)
-            !    deallocate(reactionUpdate%cellNumber)
-            !    deallocate(reactionUpdate%taskid)
-            !    deallocate(reactionUpdate)
-            !    nullify(reactionUpdate)
-            !    nullify(reactionPrev%next)
-            !end if
-			
 			!deleting reactionUpdate
 			reactionPrev%next=>reactionUpdate%next
 			deallocate(reactionUpdate%reactants)
@@ -2600,7 +2298,6 @@ end subroutine
 !
 !NOTE: includes possibility of diffusion from fine mesh to coarse mesh.
 !***************************************************************************************************
-
 subroutine addDiffusionReactionsFine(cascadeID, cell1, cell2, proc1, proc2, dir, defectType)
 use mod_constants
 use DerivedType
@@ -2677,24 +2374,6 @@ do i=1, numDiffReac(matNum)
 			totalRate=totalRate-reactionUpdate%reactionRate
 			CascadeCurrent%totalRate(cell1)=CascadeCurrent%totalRate(cell1)-reactionUpdate%reactionRate
 
-            !if(associated(reactionUpdate%next)) then
-            !    reactionPrev%next=>reactionUpdate%next
-            !    deallocate(reactionUpdate%reactants)
-            !    deallocate(reactionUpdate%products)
-            !    deallocate(reactionUpdate%cellNumber)
-            !    deallocate(reactionUpdate%taskid)
-            !    deallocate(reactionUpdate)
-            !    nullify(reactionUpdate)
-            !else
-            !    deallocate(reactionUpdate%reactants)
-            !    deallocate(reactionUpdate%products)
-            !    deallocate(reactionUpdate%cellNumber)
-            !    deallocate(reactionUpdate%taskid)
-            !    deallocate(reactionUpdate)
-            !    nullify(reactionUpdate)
-            !    nullify(reactionPrev%next)
-            !end if
-			
 			!deleting reactionUpdate
 			reactionPrev%next=>reactionUpdate%next
 			deallocate(reactionUpdate%reactants)
@@ -2998,7 +2677,6 @@ end function
 !! an arbitrary number of unique formulas for computing reaction rates. Each formula has a
 !! function type associated with it, that function type is assigned in the input file.
 !**************************************************************************************************************
-
 double precision function findReactionRateDissoc(defectType, products, cell, reactionParameter)
 use mod_constants
 use DerivedType
@@ -4024,12 +3702,7 @@ end do
 
 end subroutine
 
-
 !***************************************************************************************************
-!This subroutine will point reactionUpdate at the correct clustering reaction in the reaction
-!list. If it is not present, this subroutine will point to the end of the list.
-!***************************************************************************************************
-
 !>Subroutine find Reaction In List Multiple (clustering)
 !!
 !!Points reactionUpdate at the clustering reaction in the coarse or fine mesh with matching reactants and products in cell
@@ -4038,6 +3711,7 @@ end subroutine
 !!
 !!Inputs: cell, reactants(:,:), products(:,:), numReactants, numProducts
 !!Outputs: reactionUpdate, reactionPrev (pointers)
+!***************************************************************************************************
 
 subroutine findReactionInListMultiple(reactionUpdate, reactionPrev, cell, reactants, products, numReactants, numProducts)
 use mod_constants
@@ -4347,18 +4021,6 @@ endif
 end function
 
 !***************************************************************************************************
-!
-! Function findHeImplantRateLocal(zCoord)
-!
-! This function finds the He implant rate rate in a non-uniform implantation profile given a z-coordinate of the
-! center of the mesh element. An error is returned if the non-uniform implantation profile does not 
-! completely surround the mesh.
-!
-! Input: zCoord, the z-coordinate of the center of the mesh element we are looking for
-! Output: the DPA rate at that point in the non-uniform implantation profile, based on the input file
-!
-!***************************************************************************************************
-
 !>Function find Helium Implantation Rate Local (zCoord)
 !!
 !!This function finds the He implant rate rate in a non-uniform implantation profile given a z-coordinate of the
@@ -4367,7 +4029,7 @@ end function
 !!
 !!Input: zCoord, the z-coordinate of the center of the mesh element we are looking for
 !!Output: the DPA rate at that point in the non-uniform implantation profile, based on the input file
-
+!***************************************************************************************************
 double precision function findHeImplantRateLocal(zCoord)
 use DerivedType
 use mod_constants

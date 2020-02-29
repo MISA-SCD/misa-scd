@@ -13,7 +13,6 @@
 !!
 !! OUTPUT: unadmissible defects, if any (on the screen)
 !***************************************************************************************************
-
 subroutine DEBUGCheckForUnadmissible(reactionCurrent)
 use mod_constants
 use DerivedType
@@ -231,7 +230,6 @@ end subroutine
 !!
 !!Have the option to skip volume elements that are empty.
 !*****************************************************************************************
-
 subroutine DEBUGPrintDefects()
 use DerivedType
 use mod_constants

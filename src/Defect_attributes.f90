@@ -8,7 +8,6 @@
 !!Input: defect type
 !!Output: diffusivity (nm^2/s)
 !*****************************************************************************************
-
 double precision function findDiffusivity(matNum, defectType)
 use DerivedType
 use mod_constants
@@ -97,7 +96,6 @@ end function
 !! defects, constant functions, and mobile SIA loops. Additional functional forms can be added
 !! as needed.
 !*****************************************************************************************
-
 double precision function DiffusivityCompute(DefectType, functionType, numParameters, parameters,matNum)
 use mod_constants
 use DerivedType
@@ -136,7 +134,6 @@ end function
 !**********************************************************************************
 !This function is used to compute diffusivity of Cu atom
 !**********************************************************************************
-
 double precision function diffusivityCu(matNum)
 	use DerivedType
 	use mod_constants
@@ -180,7 +177,6 @@ end function
 !!Input: defect type, product type (what type of defect dissociates from the cluster)
 !!Output: binding energy (eV)
 !*****************************************************************************************
-
 double precision function findBinding(matNum, DefectType, productType)
 use DerivedType
 use mod_constants
@@ -280,8 +276,6 @@ end function
 !! clusters, SIA clusters, He/V clusters, and the activation energy for a sessile-glissile
 !!SIA loop transformation
 !*****************************************************************************************
-
-
 double precision function BindingCompute(DefectType, product, functionType, numParameters, parameters)
 use mod_constants
 implicit none
@@ -344,7 +338,6 @@ end function
 !!
 !!NOTE: for He_nV_m clusters, this function returns the larger of m or n
 !*****************************************************************************************
-
 integer function findDefectSize(defectType)
 use mod_constants
 implicit none
@@ -372,7 +365,6 @@ end function
 !!accounts for all possible orientations of the defect. It is not known if this is the 
 !!correct averaging procedure that should be used here.
 !*****************************************************************************************
-
 double precision function findStrainEnergy(defectType, cell)
 use DerivedType
 use mod_constants
@@ -432,7 +424,6 @@ end function
 !!accounts for all possible orientations of the defect. It is not known if this is the 
 !!correct averaging procedure that should be used here.
 !*****************************************************************************************
-
 double precision function findStrainEnergyBoundary(defectType, dir, cell)
 use DerivedType
 use mod_constants
