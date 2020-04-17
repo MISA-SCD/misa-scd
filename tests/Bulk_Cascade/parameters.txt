@@ -39,7 +39,7 @@ Cascade
 !Toggle Monte Carlo cascade introduction vs explicit cascade introduction (for better weak scaling)
 !('MonteCarlo' for MC cascade implantation, 'explicit' for explicit cascade implantation)
 implantScheme
-explicit
+MonteCarlo
 
 !Tell computer the location of the cascade input file
 cascadeFile
@@ -47,7 +47,7 @@ cascadeFile
 
 !Tell computer whether we are using adaptive meshing protocol or not (adaptive for yes, nonAdaptive for no)
 meshingType
-adaptive
+nonAdaptive
 
 !Tell computer whether we are implanting defects uniformly or if we have implantation listed separately
 !at each material point (for non-uniform implantation) - (Uniform or NonUniform)
@@ -86,7 +86,7 @@ burgers
 0.287d0 		!(Fe) 			.36d0 			!(Cu)		! dislocation loop burgers vector (lattice constant) (nm)
 
 totalDPA
-1.0d-2			! total DPA in simulation 1
+1.0d0			! total DPA in simulation 1
 
 annealTime
 0d0				! total anneal time (s)

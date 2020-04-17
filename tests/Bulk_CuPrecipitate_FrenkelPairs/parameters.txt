@@ -86,7 +86,7 @@ firr
 2.5d7           !Radiation enhanced factor
 
 burgers         !dislocation loop burgers vector (lattice constant) (nm)
-0.132d0
+0.248d0
 
 reactionRadius  !recombination radius (nm)
 0.65d0
@@ -98,7 +98,7 @@ annealTime
 0d0				! total anneal time (s)
 
 grainBoundaries	!Toggle whether we are going to include the effect of grain boundaries (Removing defects that travel too far)
-no
+yes
 
 pointDefect     !Toggle whether point defects are allowed to move only
 yes

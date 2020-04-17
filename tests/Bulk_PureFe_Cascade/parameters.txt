@@ -71,7 +71,7 @@ temperature		!Temperature, in K
 573d0
 
 CuContent       !Initial content of Cu in iron
-0.3d-2
+0d0
 
 annealTemp
 573d0			!Annealing temperature, in K
@@ -98,7 +98,7 @@ annealTime
 0d0				! total anneal time (s)
 
 grainBoundaries	!Toggle whether we are going to include the effect of grain boundaries (Removing defects that travel too far)
-yes
+no
 
 pointDefect     !Toggle whether point defects are allowed to move only
 yes

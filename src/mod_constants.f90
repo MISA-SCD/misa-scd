@@ -85,7 +85,7 @@ double precision, parameter :: pi=3.141592653589793d0	!<Pi
 double precision, parameter :: Zint = 1.2d0				!<Constant representing preference for clustering of interstitials by interstitial clusters (increases clustering cross-section)
 double precision, parameter :: Zv = 1.0d0
 !double precision, parameter :: reactionRadius=0.65d0	!<Material parameter used for reaction distances (impacts reaction rates) (nm)
-double precision, parameter :: lattice = 0.2867d0       !<lattice constant (nm)
+double precision, parameter :: lattice = 0.2876d0       !<lattice constant (nm)
 double precision, parameter :: atomSize_Cu = 8.79d-3    !<Cu (nm^3)
 
 !2019.04.30 Add

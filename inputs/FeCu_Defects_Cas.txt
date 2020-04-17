@@ -139,7 +139,7 @@ Eb	0.892d0
 
 0	0	0	2		0	0	1	0	!2SIA_im->SIA_m+SIA_m
 Eb	1.2d0
-0	0	0	3		0	0	1	0	!3SIA_im->SIA_m+2SIA_im
+0	0	0	3		0	0	1	0	!3SIA_im->SIA_m+2SIA_im, 1.6999eV
 Eb	0.92d0
 
 1	1	0	0		1	0	0	0	!CuV->Cu+V   !< nCumV-> Cu + (n-1)CumV

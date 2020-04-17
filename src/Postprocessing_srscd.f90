@@ -496,7 +496,7 @@ if(myProc%taskid==MASTER) then
 				numScluster=numScluster+defectCurrentList%num
 			end if
 
-			if(defectCurrentList%defectType(2)>1 .AND. &
+			if(defectCurrentList%defectType(2)>0 .AND. &
 					(defectCurrentList%defectType(1)+defectCurrentList%defectType(2)) > minSV) then
 				numSV=numSV+(defectCurrentList%defectType(1)+defectCurrentList%defectType(2))*defectCurrentList%num
 				radiusSVcluster = radiusSVcluster+dble(defectCurrentList%num)*&
