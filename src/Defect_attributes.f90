@@ -123,6 +123,9 @@ else if(functionType==3) then	!Mobile defect diffusivity
 else if(functionType==4) then	!Cu diffusivity
 	!< Dcu(n) = Dcu(1)/n
 	Diff=diffusivityCu(matNum)/dble(DefectType(1))
+else if(functionType==5) then	!SIA_m (loop, W)
+	D0=parameters(1)*dble(DefectType(3))**(-0.5d0)
+	Diff=D0*dexp(-parameters(2)/(kboltzmann*temperature))
 else
 	write(*,*) 'error incorrect diffusivity function chosen'
 endif

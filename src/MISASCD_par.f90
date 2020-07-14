@@ -195,6 +195,7 @@ if(myProc%taskid==MASTER) then
 	write(*,*) 'Equilibrium concentration of V', ceqV
 	write(*,*) 'Equilibrium concentration of SIA', ceqI
 	write(*,*) 'firr',firr
+	write(*,*) 'totalRate', totalRate
 end if
 
 !***********************************************************************
@@ -388,9 +389,13 @@ do while(elapsedTime < totalTime)
 
 	call updateReactionList(defectUpdate)
 
-	if(totalRate < 0d0) then
-		write(*,*) 'error totalRate less than zero', step
-	end if
+	!if(totalRate < 0d0) then
+	!	write(*,*) 'error totalRate less than zero', step
+		!call DEBUGPrintDefectList()
+	!	call DEBUGPrintReactionList()
+
+		!call MPI_ABORT(comm,ierr)
+	!end if
 
 	!If we have chosen an event inside a fine mesh, we check the total reaction rate within that
 	!fine mesh. If the total rate is less than a set value, we assume the cascade is annealed and
@@ -445,6 +450,7 @@ do while(elapsedTime < totalTime)
 	! Output according to outputCounter
 	!********************************************************************************
 	if(elapsedTime >= totalTime/2.0d6*(2.0d0)**(outputCounter)) then
+    !if(elapsedTime >= totalTime/50d0*(outputCounter)) then
 	! or if(mod(step,100000)==0) then
 		call MPI_REDUCE(numImpAnn,totalImpAnn, 2, MPI_INTEGER, MPI_SUM, 0,comm, ierr)
 
@@ -485,29 +491,7 @@ do while(elapsedTime < totalTime)
 
 		outputCounter=outputCounter+1
 
-		!call MPI_BARRIER(comm，ierr)
-
-		!***************************************************************************************
-		! Adding debugging section, used to find errors in code that occur rarely
-		! Every 100000 steps, we will erase the debug file and open a new one in order to
-		! save memory. The debug file contains written outputs at major locations in the code,
-		! in order to see where the code is hanging.
-		!***************************************************************************************
-		!if(myProc%taskid==MASTER) then
-		!	!Close and re-open write file (gets rid of old write data)
-		!	close(86)
-		!	open(86, file=filename5, action='write', status='Unknown')
-
-		!	!Write initial information into write file
-		!	write(86,*) 'time', elapsedTime, 'dpa', dpa, 'steps', step
-		!	write(86,*) 'Cascades/Frenkel pairs', totalImplantEvents,  'computation time', time2-time1
-		!	write(86,*)
-		!endif
-
-		!if(mod(step,10)==0) then
-		!	call outputRates(elapsedTime, step)
-		!endif
-
+		call MPI_BARRIER(comm,ierr)
 	end if
 
 	if(test3 == 'yes') then
@@ -563,7 +547,7 @@ if(outputDebug=='yes') call outputDebugRestart(outputCounter)
 !defect production rates to 0 (dpa rate, He implant rate)
 !Then carry out simulation normally until elapsedTime=totalTime+annealTime
 !***************************************************************************
-
+totalTime=0d0
 if(annealTime > 0d0) then
 	call annealInitialization()	!Sets up simulation for annealing (change temp, etc)
 	annealIdentify=.TRUE.

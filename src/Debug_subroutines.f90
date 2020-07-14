@@ -152,19 +152,20 @@ if(myProc%taskid==MASTER) then
 				!	write(*,*) (reactionCurrent%products(k,j),k=1,numSpecies)
 				!end do
 
-				!write(*,*) 'cells and procs'
+				write(*,*) 'cells and procs'
 
-				!do j=1,reactionCurrent%numReactants+reactionCurrent%numProducts
-				!	write(*,*) reactionCurrent%cellNumber(j), reactionCurrent%taskid(j)
-				!end do
+				do j=1,reactionCurrent%numReactants+reactionCurrent%numProducts
+					write(*,*) reactionCurrent%cellNumber(j), reactionCurrent%taskid(j)
+				end do
 
-				!write(*,*) 'rate', reactionCurrent%reactionRate
+				write(*,*) 'rate', reactionCurrent%reactionRate
 
 				reactionCurrent=>reactionCurrent%next
 			!end if
 		end do
 		write(*,*) '********************************'
 	end do
+	write(*,*) 'totalRate', totalRate
 
 	write(*,*)
 	CascadeCurrent=>ActiveCascades

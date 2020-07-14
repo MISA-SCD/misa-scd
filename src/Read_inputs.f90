@@ -835,11 +835,12 @@ tempStore		=273d0
 CuContent		=0.5d-2
 numVac			=0
 dpaRate			=1d-4
+totalDPA		=1d-1
 firr			=1d0
 atomSize		=0d0
 burgers			=0.287d0
 reactionRadius	=0.65d0
-totalDPA		=1d-1
+lattice			=0.2876d0	!Fe
 alpha_v			=1d0
 alpha_i			=1d0
 
@@ -926,6 +927,9 @@ do while(flag .eqv. .FALSE.)
 		else if(char=='reactionRadius') then
 			flag2=.TRUE.
 			read(81,*) reactionRadius
+		else if(char=='lattice') then
+			flag2=.TRUE.
+			read(81,*) lattice
 		else if(char=='annealTemp') then
 			flag2=.TRUE.
 			read(81,*) annealTemp

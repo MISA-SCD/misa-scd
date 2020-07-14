@@ -76,6 +76,7 @@ do i=1,numCells
 	if(dabs(totalRateVol(i)-rateCell) > 1d0) then
 		write(*,*) 'Error: total rate differs significantly from expected in cell', i
 		write(*,*) 'TotalRateVol', totalRateVol(i), 'expected value', rateCell
+		call MPI_ABORT(comm,ierr)
 	end if
 	totalRateVol(i)=rateCell			!Also updating the total rate within each volume element
 end do

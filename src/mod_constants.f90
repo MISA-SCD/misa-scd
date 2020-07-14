@@ -85,7 +85,7 @@ double precision, parameter :: pi=3.141592653589793d0	!<Pi
 double precision, parameter :: Zint = 1.2d0				!<Constant representing preference for clustering of interstitials by interstitial clusters (increases clustering cross-section)
 double precision, parameter :: Zv = 1.0d0
 !double precision, parameter :: reactionRadius=0.65d0	!<Material parameter used for reaction distances (impacts reaction rates) (nm)
-double precision, parameter :: lattice = 0.2876d0       !<lattice constant (nm)
+!double precision, parameter :: lattice = 0.316d0       !<lattice constant (nm) (Fe: 0.2876d0; W: 0.316)
 double precision, parameter :: atomSize_Cu = 8.79d-3    !<Cu (nm^3)
 
 !2019.04.30 Add
@@ -115,7 +115,8 @@ double precision totalDPA				!<total DPA in simulation
 double precision firr                   !firr = Vconcent / initialCeqv. Radiation enhanced factor
 double precision atomSize				!<atomic volume (nm^3)
 double precision burgers				!<magnitude of burgers vector, equal to lattice constant
-double precision :: reactionRadius      !<recombination radius (nm)
+double precision reactionRadius         !<recombination radius (nm)
+double precision lattice                !<recombination radius (nm)
 double precision agingTime              !<Thermal aging time (s)
 double precision meanFreePath			!<mean free path before a defect is absorbed by a grain boundary (AKA avg. grain size)
 double precision dislocationDensity		!<density of dislocations (sinks for point defects)
