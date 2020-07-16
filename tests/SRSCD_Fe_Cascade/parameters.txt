@@ -3,7 +3,7 @@
 !It necessary simulation parameters and some filenames of various other input files used in the simulation.
 !***************************************************************************************************
 defectFile              !Location of the defect attributes file
-'../../inputs/FeCu_Defects_FP.txt'
+'../../inputs/Fe_Defects.txt'
 
 meshFile                !Location of the mesh file
 '../../meshes/Mesh_SingleCrystal.txt'
@@ -36,16 +36,13 @@ no
 !***************************************************************************************************
 start			        !begin parameters
 
-test3                   !Used for test 3
-yes
-
 temperature		        !Temperature, in K
-363d0
+373d0
 
 CuContent               !Initial content of Cu in iron
 0d0
 
-numVac                  !The number of initial vacancies put in
+numVac                    !The number of initial vacancies put in
 0
 
 dpaRate			        !NOTE: if the implant profile is non-uniform, this should be the AVERAGE DPA rate.
@@ -54,23 +51,14 @@ dpaRate			        !NOTE: if the implant profile is non-uniform, this should be t
 totalDPA
 1.0d-2			        !total DPA in simulation 1
 
-annealTemp              !Starting annealing temperature, in K
-363d0
-
-annealSteps             !number of steps in the annealing process
-44
-
-annealTime              !total anneal time (s)
-10000d0
+firr                    !firr = Vconcent / initialCeqv. Radiation enhanced factor
+1.0d0
 
 atomSize
-1.18d-2 		        !(Fe) (nm^3)
+1.182d-2 		        !(Fe) (nm^3)
 
 lattice                 !lattice constant (nm)  atomVolume = lattice^3/2
 0.2867d0
-
-firr
-1.0d0
 
 burgers                 !dislocation loop burgers vector (nm)
 0.287d0
@@ -94,7 +82,7 @@ max3DInt                !maximum size for SIA defect to diffuse in 3D
 4
 
 numSims                 !number of times to repeat simulation
-1
+5
 
 end				        !Tag for the end of the parameters file
 
@@ -113,7 +101,7 @@ minSCluster      !Only n>minSCluster SnVm and Sn clusters are counted
 10
 
 minVoid         !Only n>minVoid Vn clusters are counted
-10
+1
 
 minLoop         !Only n>minLoop SIAn clusters are counted
 10

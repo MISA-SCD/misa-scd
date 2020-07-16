@@ -3,7 +3,7 @@
 !It necessary simulation parameters and some filenames of various other input files used in the simulation.
 !***************************************************************************************************
 defectFile              !Location of the defect attributes file
-'../../inputs/FeCu_Defects_FP.txt'
+'../../inputs/FeCu_Defects_Cas.txt'
 
 meshFile                !Location of the mesh file
 '../../meshes/Mesh_SingleCrystal.txt'
@@ -24,10 +24,10 @@ implantDist             !('uniform' or 'nonUniform') Implant defects uniformly o
 uniform
 
 grainBoundaries	        !('yes' or 'no') Toggle whether or not we are going to include the effect of grain boundaries (Removing defects that travel too far)
-yes
+no
 
 pointDefect             !('yes' or 'no') Toggle whether or not point defects are allowed to move only
-no
+yes
 
 !***************************************************************************************************
 !Simulation Parameters
@@ -36,11 +36,8 @@ no
 !***************************************************************************************************
 start			        !begin parameters
 
-test3                   !Used for test 3
-yes
-
 temperature		        !Temperature, in K
-363d0
+573d0
 
 CuContent               !Initial content of Cu in iron
 0d0
@@ -49,19 +46,13 @@ numVac                  !The number of initial vacancies put in
 0
 
 dpaRate			        !NOTE: if the implant profile is non-uniform, this should be the AVERAGE DPA rate.
-1.0d-4
+1.4d-7
 
 totalDPA
-1.0d-2			        !total DPA in simulation 1
+2.0d-1			        !total DPA in simulation 1
 
-annealTemp              !Starting annealing temperature, in K
-363d0
-
-annealSteps             !number of steps in the annealing process
-44
-
-annealTime              !total anneal time (s)
-10000d0
+firr                    !firr = Vconcent / initialCeqv. Radiation enhanced factor
+7.69d5
 
 atomSize
 1.18d-2 		        !(Fe) (nm^3)
@@ -69,20 +60,17 @@ atomSize
 lattice                 !lattice constant (nm)  atomVolume = lattice^3/2
 0.2867d0
 
-firr
-1.0d0
-
 burgers                 !dislocation loop burgers vector (nm)
-0.287d0
+0.248d0
 
 reactionRadius          !<Material parameter used for reaction distances (impacts reaction rates) (nm)
 0.65d0
 
 grainSize               !Mean free path for interstitial clusters to travel before removal (nm)
-1.0d3
+3.0d4
 
 dislocDensity           !dislocation density (nm^-2)
-1d-5
+5.0d-5
 
 impurityConc            !carbon impurity concentration (atomic fraction)
 30d-6
@@ -91,10 +79,10 @@ cascadeVolume           !volume of cascade (nm^3) - used for cascade-defect inte
 1000d0
 
 max3DInt                !maximum size for SIA defect to diffuse in 3D
-4
+1
 
 numSims                 !number of times to repeat simulation
-1
+5
 
 end				        !Tag for the end of the parameters file
 

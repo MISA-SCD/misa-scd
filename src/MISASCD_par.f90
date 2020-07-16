@@ -11,7 +11,6 @@
 !***************************************************************************************************
 program MISASCD
 use DerivedType			!<variable classes for MISASCD
-use MeshReader			!<module created for reading in mesh
 use mod_constants		!<module containing all global variables
 use randdp				!<module for double precision random number generation
 implicit none
@@ -126,11 +125,8 @@ end if
 !***********************************************************************
 !Initialize input parameters
 !***********************************************************************
-call initializeMesh()			!open Mesh_xx.txt file and carry out parallel mesh initialization routine
-call selectMaterialInputs()		!open material input files (Fe_Defects.txt) and read all relevant data (migration and binding energies, etc)
-call readCascadeList()			!input cascade list (Fe_Cascades.txt) from file to cascadeList (global variable)
-call readImplantData()			!input (1-dimensional) non-uniform defect implantation info (DPA rates, He implant rates)
-call readParameters()			!read simulation parameters (DPA rate, temperature, etc)
+call ReadInputs()
+call initialMesh()			!open Mesh_xx.txt file and carry out parallel mesh initialization routine
 
 !<Create fine mesh connectivity
 allocate(cascadeConnectivity(6, numCellsCascade))	!< numCellsCascade=numxFine*numyFine*numzFine

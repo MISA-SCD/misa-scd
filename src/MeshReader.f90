@@ -1,102 +1,27 @@
-!**************************************************************************************************
-!>Module Mesh Reader: creates a processor mesh and volume element mesh using input from file
-!**************************************************************************************************
-
-module MeshReader
-use mod_constants
-use DerivedType
-implicit none
-
-contains
-
 !***************************************************************************************************
-!>Subroutine initial Mesh Uniform - creates processor and uniform meshes
-!
-!This is the main subroutine that controls creating the uniform mesh. It creates the mesh
-!and divides the volume elements between the processors in the parallel simulation.
-!If a division such that each processor has at least one element is not possible,
-!then the subroutine returns an error. It also creates a 'processor mesh', indicating
-!the bounds of each processor. NOTE: this subroutine is for uniform meshes only, a different
-!subroutine has been created to read in non-uniform meshes (and these have not been
-!implemented in the rest of the program)
-!
-!Input: MeshGenInput_XX.txt
-!Outputs: myProc (processors with meshes), myMesh, and myBoundary
+!>Subroutine initialMeshUniform():
+!The subroutine creates meshes and sectors, and establishes the mapping relationship among meshes, sectors and processes.
+!Each process is divided into eight sectors.
+!NOTE: Each sector should have at least two meshes per dimension (x, y, z dimension).
 !***************************************************************************************************
-subroutine initialMeshUniform(filename)
+subroutine initialMesh()
 use mod_constants
 use DerivedType
 
 implicit none
 include 'mpif.h'
 
-integer status(MPI_STATUS_SIZE), i, j, k, l, dir, matNum
-character*20 readIn, meshType
-character*50 filename
-logical flag
+integer status(MPI_STATUS_SIZE), i, j, k, dir
 double precision length
-integer localElem, grain
+integer localElem
 integer x, y, z, numXmin,numXmax,numYmin,numYmax,numZmin,numZmax	!used to determine numxLocal, numyLocal, numzLocal
 
 double precision tempCenter(6)
 
-open(80, file=filename,action='read', status='old')	!MeshGenInput_XX.txt
-
-!Used to read in data from files
-flag=.FALSE.
-
-!Step -1: read in mesh type (free surfaces or periodic)
-do while(flag .eqv. .FALSE.)
-			read(80,*) readIn
-			if(readIn=='meshType') then
-				read(80,*) meshType
-				flag=.TRUE.
-			end if
-end do
-flag=.FALSE.
-
-!Step 0: read in volume element lengths (true for UNIFORM CUBIC MESH ONLY)
-do while(flag .eqv. .FALSE.)
-	read(80,*) readIn
-	if(readIn=='length') then
-		read(80,*) length
-		flag=.TRUE.
-	end if
-end do
-flag=.FALSE.
-
-meshLength = length
-
-!Step 0-1: Read the number of elements in x,y,and z directions
-do while(flag .eqv. .FALSE.)
-	read(80,*) readIn
-	if(readIn=='numx') then
-		read(80,*) numx
-	else if(readIn=='numy') then
-		read(80,*) numy
-	else if(readIn=='numz') then
-		read(80,*) numz
-		flag=.TRUE.
-	end if
-end do
-flag=.FALSE.
-
+!open(80, file=filename,action='read', status='old')	!MeshGenInput_XX.txt
+length=meshLength
 numTotal=numx*numy*numz	!total cell in the system
 systemVol = dble(numTotal)*length**3d0
-
-!Tells program that we are about to start reading in element coordinates and material numbers
-do while(flag .eqv. .FALSE.)
-	read(80,*) readIn
-	if(readIn=='end') then
-		flag=.TRUE.
-	endif
-end do
-flag=.FALSE.
-
-
-!************************************************
-!Step 1: modify global coordinates to include entire simulation volume (not just centers of elements)
-!************************************************
 
 !The  boundary coordinates of the system (xmin,xmax,ymin,ymax,zmin,zmax)
 do i=1,5,2
@@ -106,6 +31,7 @@ myProc%globalCoord(2)=length*dble(numx)
 myProc%globalCoord(4)=length*dble(numy)
 myProc%globalCoord(6)=length*dble(numz)
 
+!The  boundary coordinates of the processor (xmin,xmax,ymin,ymax,zmin,zmax)
 myProc%localCoord(1)=dble(myProc%coords(1))*myProc%globalCoord(2)/dble(dims(1))    !<xmin
 myProc%localCoord(2)=myProc%localCoord(1)+myProc%globalCoord(2)/dble(dims(1))
 myProc%localCoord(3)=dble(myProc%coords(2))*myProc%globalCoord(4)/dble(dims(2))
@@ -116,7 +42,6 @@ myProc%localCoord(6)=myProc%localCoord(5)+myProc%globalCoord(6)/dble(dims(3))
 totalVolume=(myProc%localCoord(2)-myProc%localCoord(1))*(myProc%localCoord(4)-myProc%localCoord(3))*&
         (myProc%localCoord(6)-myProc%localCoord(5))
 
-!Step 4: find how many volume elements are in local processor and allocate myMesh accordingly
 !numxLocal, numyLocal, numzLocal are used to determine the size of the mesh inside the local processor.
 numxLocal=0
 numyLocal=0
@@ -300,7 +225,6 @@ else	!in the middle
 	numzLocal = numZmax-numZmin
 	tempCenter(5)=dble(numZmin)*length+length/2d0
 	tempCenter(6)=dble(numZmax)*length-length/2d0
-
 end if
 
 !this variable is used at various points in SRSCD; lets us know the length fo myMesh(:)
@@ -350,32 +274,25 @@ do k=1,numzLocal
 			do dir=1,6
 				myMesh(localElem)%numNeighbors(dir)=1
 			end do
-
 		end do
 	end do
 end do
 
 !Step 3d: assign neighbors and processor numbers for neighbors (connectivity in myMesh) - periodic or free surfaces in +/- z
 if(meshType=='periodic') then
-	call createConnectLocalPeriodicUniform(length)
+	call createConnectLocalPeriodic(length)
 else if(meshType=='freeSurfaces') then
-	call createConnectLocalFreeSurfUniform(length)
+	call createConnectLocalFreeSurf(length)
 end if
-
-close(80)
 
 end subroutine
 
 !**************************************************************************************************
-!>Subroutine create local connectivity (uniform mesh, periodic boundary conditions)
-!These subroutines create LOCAL connectivity. They identify the volume element # and processor # of
-!neighboring volume elements for each element. The connectivity scheme is the same as in the global
-!case, but neighboring processor numbers are used here.
-!
-!Inputs: numxLocal, numyLocal, numzLocal, numx, numy, numz
-!Output: myMesh, myBoundary
+!>Subroutine createConnectLocalPeriodic(length) (periodic boundary conditions)
+!It identifies the mesh and processor of neighboring meshes for each mesh.
+!The connectivity scheme is the same as in the global case, but neighboring processor numbers are used here.
 !**************************************************************************************************
-subroutine createConnectLocalPeriodicUniform(length)
+subroutine createConnectLocalPeriodic(length)
 use DerivedType
 use mod_constants
 implicit none
@@ -383,7 +300,6 @@ include 'mpif.h'
 
 integer cell, localCell, maxElement
 double precision length
-
 !buffer lists to send all information at the end
 integer i, dir, tag
 
@@ -444,7 +360,6 @@ do cell=1,numCells
 			send(1,numSend(2),2)=cell
 			send(2,numSend(2),2)=myMesh(cell)%material
 		end if
-
 	else
 		myMesh(cell)%neighbors(1,2)=cell-1
 		myMesh(cell)%neighborProcs(1,2)=myProc%taskid
@@ -533,7 +448,6 @@ maxElement=0
 
 !*******************************************************
 !Send
-
 do dir=1,6
 	if(myProc%procNeighbor(dir)/=myProc%taskid) then
 
@@ -581,8 +495,6 @@ end do
 !***************************************************************************************************
 !Initializing myBoundary with elements that are in neighboring processors that bound this one
 !***************************************************************************************************
-
-!Step 1: Find the max cell# of any boundary mesh element
 maxElement=0
 do i=1, numCells
     do dir=1, 6
@@ -594,9 +506,6 @@ do i=1, numCells
     end do
 end do
 
-!This tells us how large to allocate myBoundary. NOTE: many elements in myBoundary will be unused. Only
-!the elements that represent volume elements on the boundary of myMesh will be used. This represents
-!wasted memory for the sake of easier computation
 allocate(myBoundary(maxElement,6))	!6 directions, maxElement elements in each direction (more than needed)
 
 !initialize myBoundary with 0 in localNeighbor - signal that myBoundary is not attached to anything
@@ -629,21 +538,18 @@ deallocate(send)
 end subroutine
 
 !**************************************************************************************************
-!>Subroutine create local connectivity (uniform mesh, free surfaces in z-direction and periodic boundary conditions in other directions)
+!>Subroutine createConnectLocalFreeSurf(length) (free surfaces in z-direction and periodic boundary conditions in other directions)
 !This is the same as the previous subroutine except if the cell is at the free surface, its connectivity cell number
 !is 0 and the processor number is -1.
-!
-!Inputs: length
-!Output: myMesh
 !**************************************************************************************************
-subroutine createConnectLocalFreeSurfUniform(length)
+subroutine createConnectLocalFreeSurf(length)
 use DerivedType
-
+use mod_constants
 implicit none
 include 'mpif.h'
+
 integer cell, maxElement,localCell
 double precision length
-
 integer globalCell, globalNeighbor, status(MPI_STATUS_SIZE)
 
 !buffer lists to send all information at the end
@@ -831,8 +737,6 @@ deallocate(sendBuffer)
 !***************************************************************************************************
 !Initializing myBoundary with elements that are in neighboring processors that bound this one
 !***************************************************************************************************
-
-!Step 1: Find the max cell# of any boundary mesh element
 maxElement=0
 do i=1, numCells
 	do dir=1, 6
@@ -843,10 +747,6 @@ do i=1, numCells
 		end if
 	end do
 end do
-
-!This tells us how large to allocate myBoundary. NOTE: many elements in myBoundary will be unused. Only
-!the elements that represent volume elements on the boundary of myMesh will be used. This represents
-!wasted memory for the sake of easier computation
 
 allocate(myBoundary(maxElement,6))	!6 directions, maxElement elements in each direction (more than needed)
 
@@ -876,12 +776,10 @@ do i=1,numCells
 	end do
 end do
 
-
 end subroutine
 
 !***************************************************************************************
-!>Function find global neighbor (uniform mesh, periodic boundary conditions)
-!
+!>Function findgNeighborPeriodic(globalID, dir)
 !Inputs: globalID, direction
 !Output: globalNeighborID of the globalID in the direaction
 !***************************************************************************************
@@ -895,7 +793,6 @@ integer globalID, dir, neighborID
 !************************************************
 !periodic boundary condition version
 !************************************************
-
 if(dir==1) then
     if(mod(globalID,numx)==0) then !identify cell to the right
         neighborID=globalID-numx+1
@@ -939,8 +836,7 @@ findgNeighborPeriodic=neighborID
 end function
 
 !***************************************************************************************
-!>Function find global neighbor (uniform mesh, free surfaces in z-directions and periodic boundary conditions in other directions)
-!
+!>Function findgNeighborFreeSurf(globalID, dir)
 !Inputs: globalID, direction
 !Output: globalNeighborID of the globalID in the direaction
 !***************************************************************************************
@@ -996,6 +892,4 @@ end if
 findgNeighborFreeSurf=neighborID
 
 end function
-
-end module
 

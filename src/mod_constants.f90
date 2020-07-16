@@ -114,20 +114,20 @@ double precision dpaRate				!<DPA rate in dpa/s
 double precision totalDPA				!<total DPA in simulation
 double precision firr                   !firr = Vconcent / initialCeqv. Radiation enhanced factor
 double precision atomSize				!<atomic volume (nm^3)
+double precision lattice                !<recombination radius (nm)
 double precision burgers				!<magnitude of burgers vector, equal to lattice constant
 double precision reactionRadius         !<recombination radius (nm)
-double precision lattice                !<recombination radius (nm)
 double precision agingTime              !<Thermal aging time (s)
 double precision meanFreePath			!<mean free path before a defect is absorbed by a grain boundary (AKA avg. grain size)
 double precision dislocationDensity		!<density of dislocations (sinks for point defects)
 double precision impurityDensity		!<denstiy of impurity atoms (traps for SIA loops)
 double precision cascadeVolume			!<Volume of cascade (used for cascade mixing probability)
 double precision cascadeReactionLimit	!<Total reaction rate in a cascade cell to consider it annealed and release cascade back to coarse mesh (s^-1)
-
 integer max3DInt			            !<largest SIA size that can diffuse in 3D as spherical cluster
-integer SIAPinMin			            !<Smallest size of SIA that can pin at HeV clusters
 integer numGrains			            !<Number of grains inside polycrystal (default 1)
 integer numSims				            !<Number of times to repeat simulation
+
+integer SIAPinMin			            !<Smallest size of SIA that can pin at HeV clusters
 
 !used for test2
 character(len=20) test3
@@ -143,13 +143,14 @@ logical annealIdentify			        !<(.TRUE. if in annealing phase, .FALSE. otherw
 integer annealIter                      !<Current number of time steps
 
 !Toggles
-character(len=20) implantType			!<(Frenkel pairs or cascades), used to determine the type of damage in the simulation
-character(len=20) grainBoundaryToggle	!<Used to determine whether or not we are using grain boundaries to remove defects from simulation
-character(len=20) pointDefectToggle		!<Toggles whether or not we allow HeSIA clusters to form ('yes' or 'no')
-!character(len=20) SIAPinToggle			!<Toggles whether or not we allow point defects to move only
-character(len=20) meshingType			!<(adaptive or nonAdaptive), used to determine whether we are simulating cascade implantation with adaptive meshing
 character(len=20) implantScheme			!<(MonteCarlo or explicit), used to determine if cascades are implanted through Monte Carlo algorithm or explicitly
 character(len=20) implantDist			!<(Uniform or NonUniform), used to determine if defects are implanted uniformly or if DPA rate / He implant rate are given for each volume element
+character(len=20) grainBoundaryToggle	!<Used to determine whether or not we are using grain boundaries to remove defects from simulation
+character(len=20) pointDefectToggle		!<Toggles whether or not we allow HeSIA clusters to form ('yes' or 'no')
+character(len=20) meshType              !<Boundary conditions
+
+character(len=20) implantType			!<(Frenkel pairs or cascades), used to determine the type of damage in the simulation
+character(len=20) meshingType			!<(adaptive or nonAdaptive), used to determine whether we are simulating cascade implantation with adaptive meshing
 character(len=20) polycrystal			!<(yes or no), used to identify whether or not we have multiple grains in our crystal
 character(len=20) singleElemKMC			!<(yes or no), used to toggle whether we are making one kMC choice per volume element or one kMC choice for the whole processors
 character(len=20) sinkEffSearch			!<(yes or no), used to toggle search for effective sink efficiency
@@ -166,6 +167,13 @@ integer minSCluster                     !<Only n>minSCluster SnVm and Sn cluster
 integer minVoid                         !<Only n>minVoid Vn clusters are counted
 integer minLoop                         !<Only n>minLoop SIAn clusters are counted
 integer minSV                           !<Only (n+m)>minCuV SnVm clusters are counted
+
+!add 2020.07.14
+!<input files
+integer, parameter :: PARAFILE = 10                     !<Used to read parameter.txtx file
+integer, parameter :: DEFFILE = 11                      !<Used to read Defects.txtx file
+integer, parameter :: MESHFILE = 12                     !<Used to read Mesh_*.txt file
+integer, parameter :: CASFILE = 13                      !<Used to read cascades.txt File
 
 !(hard-coded) constants used for clustering rates
 double precision omega					!<Geometric constant for 3D spherical clustering (see Dunn et al. JNM 2013)

@@ -1056,7 +1056,6 @@ end subroutine
 subroutine initializeBoundaryDefectList()
 use DerivedType
 use mod_constants
-use MeshReader
 implicit none
 
 integer cell, dir, k, i, j, gCell,gNeighor
@@ -1429,112 +1428,6 @@ do while(associated(defectCurrentCoarse))
 	defectCurrentCoarse=>defectCurrentCoarse%next
 	
 end do
-
-end subroutine
-
-!***************************************************************************************************
-!> Subroutine initializeMesh() - begins the mesh initialization process at the beginning of the program
-!!
-!! This subroutine reads the name of the mesh file from the central input file (parameters.txt) and
-!! sends it to readMeshUniform() or readMeshNonUniform().
-!!
-!! NOTE: although the mesh file and creation of mesh files and connectivity differ for uniform/nonuniform
-!! meshes, the format of the final global variable created (class mesh, myMesh, in mod_constants)
-!! is the same for both readMeshUniform and readMeshNonUniform. Thus the rest of the program can use
-!! it either way.
-!!
-!! Debug tool: if debugRestart=='yes', then we populate the mesh with the defects in the debug file.
-!! This allows us to start the simulation further along than the beginning of the simulation.
-!
-!***************************************************************************************************
-subroutine initializeMesh()
-use MeshReader
-use mod_constants
-use DerivedType
-implicit none
-
-character*20 char, meshType
-character*50 filename
-logical flag
-
-flag=.FALSE.
-
-!read in filename of mesh file
-do  while (flag .eqv. .FALSE.)
-	read(81,*) char
-	if(char=='meshFile') then
-		read(81,*) filename
-		flag=.TRUE.
-	end if
-end do
-flag=.FALSE.
-
-!read in whether mesh is uniform or non-uniform
-do while(flag .eqv. .FALSE.)
-	read(81,*) char
-	if(char=='meshType') then
-		read(81,*) meshType
-		flag=.TRUE.
-	end if
-end do
-flag=.FALSE.
-
-!read in whether we have a strain field or not
-do while(flag .eqv. .FALSE.)
-	read(81,*) char
-	if(char=='strainField') then
-		read(81,*) strainField
-		flag=.TRUE.
-	end if
-end do
-flag=.FALSE.
-
-if(strainField=='yes') then
-	do while(flag .eqv. .FALSE.)
-		read(81,*) char
-		if(char=='strainFile') then
-			read(81,*) strainFileName
-			flag=.TRUE.
-		end if
-	end do
-	flag=.FALSE.
-	
-	do while(flag .eqv. .FALSE.)
-		read(81,*) char
-		if(char=='dipoleFile') then
-			read(81,*) dipoleFileName
-			flag=.TRUE.
-		end if
-	end do
-	flag=.FALSE.
-end if
-
-!these subroutines (located in MeshReader.f90) initialize the mesh and connectivity.
-if(meshType=='uniform') then
-!	call readMeshUniform(filename)
-	call initialMeshUniform(filename)
-else
-	write(*,*) 'error mesh type unknown'
-end if
-
-!Check to see if we are starting from a saved point (from a reset file)
-do while(flag .eqv. .FALSE.)
-	read(81,*) char
-	if(char == 'debugRestart') then
-		read(81,*) debugToggle
-		flag=.TRUE.
-	end if
-end do
-flag=.FALSE.
-
-do while(flag .eqv. .FALSE.)
-	read(81,*) char
-	if(char == 'debugRestartFile') then
-		read(81,*) restartFileName
-		flag=.TRUE.
-	end if
-end do
-flag=.FALSE.
 
 end subroutine
 

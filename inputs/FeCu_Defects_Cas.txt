@@ -27,23 +27,14 @@
 !NOTE: functional forms 1 and 2 are reserved for two cases: zero and constant
 !***************************************************************************************************
 
-!Identify material number: Fe
-material
-1
-
-!Define number of allowed species
-!Here: 4 species: Cu, V, SIA_mobile, SIA_sessile
-species
+species     !Default: 4 species: Cu, V, SIA_mobile, SIA_mobile
 4
 
-!List of allowed species, formation energies (eV), diffusion prefactors (nm^2/s), and migration energies (eV) for each
-
-formationEnergies
+formationEnergies   !<List of formation energies (eV)
 
 numSingle
 3
 
-single
 1	0	0	0   !Cu_1
 Ef	1.77d0
 0	1	0	0   !V_1
@@ -54,11 +45,8 @@ Ef	4.3d0
 diffusionPrefactors
 
 numSingle
-3				!Indicates there are 1 sizes of Cu that are treated individually
-numFunction
-4				!Indicates that there is 1 functional form for all other He sizes
+3
 
-single			!Indicates that we are about to read in single defect parameters
 1	0	0	0			!Cu
 D0	6.3d13	Em 	2.29d0
 0	1	0	0			!V
@@ -66,46 +54,40 @@ D0	1.0d14	Em	1.0d0
 0	0	1	0			!SIA_m
 D0	4.0d10	Em	0.3d0
 
-function		!Indicates that we are about to read in functional form parameters
+numFunction
+4
+
 1	0	0	0			!nCu    immobile
-nmin	2	nmax	-1
-nmin	0	nmax	0
-nmin	0	nmax	0
-nmin	0	nmax	0
-fType	1	param	0				!functional form type 5 (used for used for immobile defects)
+min 2   0   0   0
+max -1  0   0   0
+fType	1               !type 1: used for immobile defects
+param	0
 
 0	1	0	0			!nV immobile
-nmin	0	nmax	0
-nmin	2	nmax    -1
-nmin	0	nmax	0
-nmin	0	nmax	0
-fType	1	param	0				!functional form type 1 (used for immobile defects)
+min 0   2   0   0
+max 0   -1  0   0
+fType	1
+param	0
 
 0	0	0	1           !nSIA_im
-nmin	0	nmax	0
-nmin	0	nmax	0
-nmin	0	nmax	0
-nmin	2	nmax    -1
-fType	1	param	0				!functional form type 1 (used for immobile defects)
+min 0   0   0   2
+max 0   0   0   -1  0
+fType	1
+param	0
 
 1	1	0	0           !nCumV  immobile
-nmin	1	nmax    -1		!Cu number that can be considered with this function
-nmin	1	nmax    -1		!V number that can be considered with this function
-nmin	0	nmax	0
-nmin	0	nmax	0
-fType	1	param	0
+min 1   1   0   0
+max -1  -1  0   0
+fType	1
+param	0
 
-bindingEnergies			!indicates we are moving into binding energies
+bindingEnergies
 
 numSingle
 46
-numFunction
-11
 
-single
 2	0	0	0		1	0	0	0	!2Cu->Cu+Cu
 Eb	0.19d0
-
 0	2	0	0		0	1	0	0	!2V->V+V
 Eb	0.8d0
 0	3	0	0		0	1	0	0	!3V->V+2V
@@ -136,17 +118,14 @@ Eb	1.14d0
 Eb	1.14d0
 0	16	0	0		0	1	0	0	!16V->V+15V
 Eb	0.892d0
-
 0	0	0	2		0	0	1	0	!2SIA_im->SIA_m+SIA_m
 Eb	1.2d0
-0	0	0	3		0	0	1	0	!3SIA_im->SIA_m+2SIA_im, 1.6999eV
+0	0	0	3		0	0	1	0	!3SIA_im->SIA_m+2SIA_im
 Eb	0.92d0
-
 1	1	0	0		1	0	0	0	!CuV->Cu+V   !< nCumV-> Cu + (n-1)CumV
 Eb	0.192d0
 2	1	0	0		1	0	0	0	!2CuV->Cu+CuV   !< nCumV-> Cu + (n-1)CumV
 Eb	0.217d0
-
 1	2	0	0		0	1	0	0	!Cu2V->V+CuV
 Eb	0.401d0
 1	3	0	0		0	1	0	0	!Cu3V->V+Cu2V
@@ -200,347 +179,226 @@ Eb	0.451d0
 5	3	0	0		0	1	0	0	!5Cu3V->V+5Cu2V
 Eb	0.659d0
 
-function
+numFunction
+11
+
 1	0	0	0		1	0	0	0	!nCu->Cu+(n-1)Cu
-nmin	3	nmax	-1
-nmin	0	nmax	0
-nmin	0	nmax	0
-nmin	0	nmax	0
-ftype	2	param	3			!functional form type 2 (used for constant functions)
-6255d0	0.866d0 2.3125          !mixing enthalpy=6255kB (K), non-configurational entropy=0.866kB, interface energy (eV/nm2)
+min 3   0   0   0
+max -1  0   0   0
+ftype	2	                !type 2: used for constant functions
+param	3
+6255d0	0.866d0 2.3125      !mixing enthalpy=6255kB (K), non-configurational entropy=0.866kB, interface energy (eV/nm2)
 
 0	1	0	0		0	1	0	0	!nV->V+(n-1)V
-nmin	0	nmax	0
-nmin	17	nmax	-1
-nmin	0	nmax	0
-nmin	0	nmax	0
-ftype	4	param	2			!functional form type 4 (hard-coded in)
-1.6d0	0.8d0					!parameters for functional form type 4 (only 2)
+min 0   17  0   0
+max 0   -1  0   0
+ftype	4
+param	2			        !type 4
+1.6d0	0.8d0
 
 0	0	0	1		0	0	1	0	!nSIA->SIA+(n-1)SIA NOTE: mobile SIA ejected from Sessile SIA cluster
-nmin	0	nmax	0
-nmin	0	nmax	0
-nmin	0	nmax	0
-nmin	4	nmax	-1
-ftype	4	param	2			!functional form type 5	(hard-coded in)
-4.3d0	1.2d0					!parameters for functional form type 5 (only 2)
+min 0   0   0   4
+max 0   0   0   -1
+ftype	4
+param	2
+4.3d0	1.2d0
 
 1	1	0	0		1	0	0	0	!nCumV->Cu+(n-1)CumV
-nmin	3	nmax    -1
-mmin	3	mmax    -1
-nmin	0	nmax	0
-nmin	0	nmax	0
-ftype	6	param	3			!functional form type 6 (hard-coded in)
+min 3   3   0   0
+max -1  -1  0   0
+ftype	6	            !type 6
+param	3
 0.5d0	0.215d0 0.0004d0
 
 1	1	0	0		1	0	0	0	!nCumV->Cu+(n-1)CumV
-nmin	3	nmax    -1
-mmin	1	mmax    2
-nmin	0	nmax	0
-nmin	0	nmax	0
-ftype	6	param	3			!functional form type 6 (hard-coded in)
+min 3   1   0   0
+max -1  2   0   0
+ftype	6
+param	3
 0.5d0	0.215d0 0.0004d0
 
 1	1	0	0		1	0	0	0	!nCumV->Cu+(n-1)CumV
-nmin	1	nmax    2
-mmin	3	mmax    -1
-nmin	0	nmax	0
-nmin	0	nmax	0
-ftype	6	param	3			!functional form type 6 (hard-coded in)
+min 1   3   0   0
+max 2   -1  0   0
+ftype	6
+param	3
 0.5d0	0.215d0 0.0004d0
 
 1	1	0	0		1	0	0	0	!nCumV->Cu+(n-1)CumV
-nmin	1	nmax    2
-mmin	2	mmax    2
-nmin	0	nmax	0
-nmin	0	nmax	0
-ftype	6	param	3			!functional form type 6 (hard-coded in)
+min 1   2   0   0
+max 2   2   0   0
+ftype	6
+param	3
 0.5d0	0.215d0 0.0004d0
 
 1	1	0	0		0	1	0	0	!nCumV->V+nCu(m-1)V
-nmin	6	nmax    -1
-nmin	7	nmax    -1
-nmin	0	nmax	0
-nmin	0	nmax	0
-ftype	7	param	4			!functional form type 7 (hard-coded in)
+min 6   7   0   0
+max -1  -1  0   0
+ftype	7               !type 7
+param	4
 1.63d0	1.72d0	2.69d0  0.0004d0
 
 1	1	0	0		0	1	0	0	!nCumV->V+nCu(m-1)V
-nmin	6	nmax    -1
-nmin	1	nmax    6
-nmin	0	nmax	0
-nmin	0	nmax	0
-ftype	7	param	4			!functional form type 7 (hard-coded in)
+min 6   1   0   0
+max -1  6   0   0
+ftype	7
+param	4
 1.63d0	1.72d0	2.69d0	0.0004d0
 
 1	1	0	0		0	1	0	0	!nCumV->V+nCu(m-1)V
-nmin	1	nmax    5
-nmin	7	nmax    -1
-nmin	0	nmax	0
-nmin	0	nmax	0
-ftype	7	param	4			!functional form type 7 (hard-coded in)
+min 1   7   0   0
+max 5   -1  0   0
+ftype	7
+param	4
 1.63d0	1.72d0	2.69d0	0.0004d0
 
 1	1	0	0		0	1	0	0	!nCumV->V+nCu(m-1)V
-nmin	5	nmax    5
-nmin	4	nmax    6
-nmin	0	nmax	0
-nmin	0	nmax	0
-ftype	7	param	4			!functional form type 7 (hard-coded in)
+min 5   4   0   0
+max 5   6   0   0
+ftype	7
+param	4
 1.63d0	1.72d0	2.69d0	0.0004d0
 
 !***************************************************************************************************
-!The following will be hard-coded by necessity
+!Reactions
 !***************************************************************************************************
-singleDefect			!the following will list single-defect reactions and their rates
-
 dissociation
 5						!Number of defect dissociation types
 
 1	0	0	0		1	0	0	0	!Cu cluster dissociation
-nmin	2	nmax	-1
-nmin	0	nmax	0
-nmin	0	nmax	0
-nmin	0	nmax	0
-1							!reactionRate form 1 (used for all dissociation rates in Fe, hard coded)
+min 2   0   0   0
+max -1  0   0   0
+fType   1							!reactionRate form 1 (used for all dissociation rates in Fe, hard coded)
 
 0	1	0	0		0	1	0	0	!nV->V+(n-1)V
-nmin	0	nmax	0
-nmin	2	nmax	-1
-nmin	0	nmax	0
-nmin	0	nmax	0
-1							!reactionRate form 1
+min 0   2   0   0
+max 0   -1  0   0
+fType   1							!reactionRate form 1
 
 0	0	0	1		0	0	1	0	!nSIA_im->SIA+(n-1)SIA NOTE: mobile SIA ejected from Sessile SIA cluster
-nmin	0	nmax	0
-nmin	0	nmax	0
-nmin	0	nmax	0
-nmin	2	nmax	-1
-1							!reactionRate form 1
+min 0   0   0   2
+max 0   0   0   -1
+fType   1							!reactionRate form 1
 
 1	1	0	0		1	0	0	0	!nCumV->Cu+(n-1)CumV
-nmin	1	nmax    -1
-mmin	1	mmax    -1
-nmin	0	nmax	0
-nmin	0	nmax	0
-1							!reactionRate form 1
+min 1   1   0   0
+max -1  -1  0   0
+fType   1							!reactionRate form 1
 
 1	1	0	0		0	1	0	0	!nCumV->V+nCu(m-1)V
-nmin	1	nmax    -1
-nmin	2	nmax    -1
-nmin	0	nmax	0
-nmin	0	nmax	0
-1							!reactionRate form 1
+min 1   2   0   0
+max -1  -1  0   0
+fType   1							!reactionRate form 1
 
 diffusion
 3							!number of defect types that can diffuse
 
 1	0	0	0		1	0	0	0				!Cu diffusion
-nmin	1	nmax	1
-nmin	0	nmax	0
-nmin	0	nmax	0
-nmin	0	nmax	0
-2							!reactionRate form 2 (used for all diffusion events, hard coded)
+min 1   0   0   0
+max 1   0   0   0
+fType   2							!reactionRate form 2 (used for all diffusion events, hard coded)
 
 0	1	0	0		0	1	0	0				!V diffusion
-nmin	0	nmax	0
-nmin	1	nmax	1
-nmin	0	nmax	0
-nmin	0	nmax	0
-2							!reactionRate form 2
+min 0   1   0   0
+max 0   1   0   0
+fType   2							!reactionRate form 2
 
 0	0	1	0		0	0	1	0				!SIA_mobile diffusion
-nmin	0	nmax	0
-nmin	0	nmax	0
-nmin	1 	nmax	1
-nmin	0	nmax	0
-2							!reactionRate form 2
+min 0   0   1   0
+max 0   0   1   0
+fType   2							!reactionRate form 2
 
 sinkRemoval					!These reactions involve removing defects from the mesh by dislocations
 2							!number of defect types that can be removed this way
 
 0	1	0	0				!V trapping
-nmin	0	nmax	0
-nmin	1	nmax	1
-nmin	0	nmax	0
-nmin	0	nmax	0
-3							!reactionRate form 3
+min 0   1   0   0
+max 0   1   0   0
+fType   3							!reactionRate form 3
 
 0	0	1	0				!SIA_mobile trapping
-nmin	0	nmax	0
-nmin	0	nmax	0
-nmin	1 	nmax	1
-nmin	0	nmax	0
-3							!reactionRate form 3
+min 0   0   1   0
+max 0   0   1   0
+fType   3							!reactionRate form 3
 
 impurityTrapping			!These reactions involve changing mobile SIA loops to sessile SIA loops via trapping by impurities
 1							!Only one defect type can be affected by this
 
 0	0	1	0		0	0	0	1
-nmin	0	nmax	0
-nmin	0	nmax	0
-nmin	0	nmax	0
-nmin	0	nmax	0
-4							!reactionRate form 4 (essentially clustering between SIA loop and point defect)
-
-multipleDefect				!the following is a list of multiple-defect reactions and their rates (clustering)
+min 0   0   0   0
+max 0   0   0   0
+fType   4							!reactionRate form 4 (essentially clustering between SIA loop and point defect)
 
 clustering
 12							!number of different reactions allowed
 
 1	0	0	0		1	0	0	0		!Cu-Cu
-nmin	1	nmax	-1
-nmin	0	nmax	0
-nmin	0	nmax	0
-nmin	0	nmax	0
-
-mmin	1	mmax	-1
-nmin	0	nmax	0
-nmin	0	nmax	0
-nmin	0	nmax	0
-6							!reactionRate form 5 (He-He clustering reaction rate includes limit on He cluster size)
+min 1   0   0   0       1   0   0   0
+max -1  0   0   0       -1  0   0   0
+fType   6							!reactionRate form 5 (He-He clustering reaction rate includes limit on He cluster size)
 
 1	0	0	0		0	1	0	0		!Cu-V
-nmin	1	nmax	-1
-nmin	0	nmax	0
-nmin	0	nmax	0
-nmin	0	nmax	0
-
-nmin	0	nmax	0
-mmin	1	mmax	-1
-nmin	0	nmax	0
-nmin	0	nmax	0
-6							!reactionRate form 6 - for spherical clusters interacting
+min 1   0   0   0       0   1   0   0
+max -1  0   0   0       0   -1  0   0
+fType   6							!reactionRate form 6 - for spherical clusters interacting
 
 0	1	0	0		0	1	0	0		!V-V
-nmin	0	nmax	0
-nmin	1	nmax	-1
-nmin	0	nmax	0
-nmin	0	nmax	0
-
-nmin	0	nmax	0
-mmin	1	mmax	-1
-nmin	0	nmax	0
-nmin	0	nmax	0
-6							!reactionRate form 6 - for spherical clusters
+min 0   1   0   0       0   1   0   0
+max 0   -1  0   0       0   -1  0   0
+fType   6							!reactionRate form 6 - for spherical clusters
 
 1	1	0	0		1	0	0	0		!CuV-Cu
-nmin	1	nmax	-1
-mmin	1	mmax	-1
-nmin	0	nmax	0
-nmin	0	nmax	0
-
-lmin	1	lmax	-1
-nmin	0	nmax	0
-nmin	0	nmax	0
-nmin	0	nmax	0
-6							!reactionRate form 7 - for HeV clusters - use V number for volume of defect
+min 1   1   0   0       1   0   0   0
+max -1  -1  0   0       -1  0   0   0
+fType   6							!reactionRate form 7 - for HeV clusters - use V number for volume of defect
 
 1	1	0	0		0	1	0	0		!CuV-V
-nmin	1	nmax	-1
-mmin	1	mmax	-1
-nmin	0	nmax	0
-nmin	0	nmax	0
-
-nmin	0	nmax	0
-nmin	1	nmax	-1
-nmin	0	nmax	0
-nmin	0	nmax	0
-6							!reactionRate form 7 - for HeV Clusters - use V number for volume of defect
+min 1   1   0   0       0   1   0   0
+max -1  -1  0   0       0   -1  0   0
+fType   6							!reactionRate form 7 - for HeV Clusters - use V number for volume of defect
 
 1	1	0	0		1	1	0	0		!CuV-CuV
-nmin	1	nmax	-1
-mmin	1	mmax	-1
-nmin	0	nmax	0
-nmin	0	nmax	0
-
-nmin	1	nmax	-1
-nmin	1	nmax	-1
-nmin	0	nmax	0
-nmin	0	nmax	0
-6							!reactionRate form 7 - for HeV Clusters - use V number for volume of defect
+min 1   1   0   0       1   1   0   0
+max -1  -1  0   0       -1  -1  0   0
+fType   6							!reactionRate form 7 - for HeV Clusters - use V number for volume of defect
 
 0	1	0	0		0	0	1	0		!V-SIA_mobile (annihilation) 3D SIA
-nmin	0	nmax	0
-nmin	1	nmax	-1
-nmin	0	nmax	0
-nmin	0	nmax	0
-
-nmin	0	nmax	0
-nmin	0	nmax	0
-mmin	1	mmax	1
-nmin	0	nmax	0
-6							!reactionRate form 6 - for spherical clusters
+min 0   1   0   0       0   0   1   0
+max 0   -1  0   0       0   0   1   0
+fType   6							!reactionRate form 6 - for spherical clusters
 
 0	1	0	0		0	0	0	1		!V-SIA_sessile (annihilation) (loop) 1D SIA
-nmin	0	nmax	0
-nmin	1	nmax	-1
-nmin	0	nmax	0
-nmin	0	nmax	0
-
-nmin	0	nmax	0
-nmin	0	nmax	0
-nmin	0	nmax	0
-mmin	2	mmax	-1
-7							!reactionRate form 8 - for 1D circular - 3D spherical interactions
+min 0   1   0   0       0   0   0   2
+max 0   -1  0   0       0   0   0   -1
+fType   7							!reactionRate form 8 - for 1D circular - 3D spherical interactions
 
 1	1	0	0		0	0	1	0		!CuV-SIA_mobile (annihilation) 3D SIA
-nmin	1	nmax	-1
-mmin	1	mmax	-1
-nmin	0	nmax	0
-nmin	0	nmax	0
-
-nmin	0	nmax	0
-nmin	0	nmax	0
-lmin	1	lmax	1
-nmin	0	nmax	0
-6							!reactionRate form 7 - for HeV clusters - use V number for volume of defects
+min 1   1   0   0       0   0   1   0
+max -1  -1  0   0       0   0   1   0
+fType   6							!reactionRate form 7 - for HeV clusters - use V number for volume of defects
 
 1	1	0	0		0	0	0	1		!CuV-SIA_sessile (annihilation) 1D SIA
-nmin	1	nmax	-1
-mmin	1	mmax	-1
-nmin	0	nmax	0
-nmin	0	nmax	0
-
-nmin	0	nmax	0
-nmin	0	nmax	0
-nmin	0	nmax	0
-lmin	2	lmax	-1
-7							!reactionRate form 8 - for 1D circular - 3D spherical interactions
+min 1   1   0   0       0   0   0   2
+max -1  -1  0   0       0   0   0   -1
+fType   7							!reactionRate form 8 - for 1D circular - 3D spherical interactions
 
 0	0	1	0		0	0	1	0		!small SIA_mobile clusters 3D-3D
-nmin	0	nmax	0
-nmin	0	nmax	0
-nmin	1	nmax	1
-nmin	0	nmax	0
-
-nmin	0	nmax	0
-nmin	0	nmax	0
-mmin	1	mmax	1
-nmin	0	nmax	0
-6							!reactionRate form 6 - for spherical clusters
+min 0   0   1   0       0   0   1   0
+max 0   0   1   0       0   0   1   0
+fType   6							!reactionRate form 6 - for spherical clusters
 
 0	0	1	0		0	0	0	1		!3D-1D small SIA_mobile+SIA_sessile (leaves SIA_sessile)
-nmin	0	nmax	0
-nmin	0	nmax	0
-nmin	1	nmax	1
-nmin	0	nmax	0
+min 0   0   1   0       0   0   0   2
+max 0   0   1   0       0   0   0   -1
+fType   8							!reactionRate form 8 - for 1D circular - 3D spherical interactions
 
-nmin	0	nmax	0
-nmin	0	nmax	0
-nmin	0	nmax	0
-mmin	2	mmax	-1
-8							!reactionRate form 8 - for 1D circular - 3D spherical interactions
-
-noDefect					!Reactions with no reactants (defect generation reactions)
+Implantation					!Reactions with no reactants (defect generation reactions)
 2							!Number of reactions with no reactants
 
 FrenkelPair					!Frenkel pair implantation
-
 0	1	0	0		0	0	1	0		!V+SIA creation
-10							!reactionRate form 10 - for Frenkel pair implantation
+fType   10							!reactionRate form 10 - for Frenkel pair implantation
 
 Cascade						!Cascade implantation
-
-11							!reactionRate form 11 - for cascade implantation
+fType   11							!reactionRate form 11 - for cascade implantation
 
