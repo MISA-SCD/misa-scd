@@ -81,7 +81,6 @@ end subroutine
 !> Subroutine DEBUG Print Defect Update - prints defectUpdate, which is used to identify which
 !!defects have been updated (used to update reaction list)
 !*****************************************************************************************
-
 subroutine DEBUGPrintDefectUpdate(defectUpdate)
 use mod_constants
 use DerivedType
@@ -111,7 +110,6 @@ end subroutine
 !!
 !!Prints reaction lists in coarse mesh as well as in cascades, if any are present
 !*****************************************************************************************
-
 subroutine DEBUGPrintReactionList()
 use mod_constants
 use DerivedType
@@ -309,7 +307,6 @@ end subroutine
 !> Subroutine debug print reaction - outputs the reaction chosen at a given step in the 
 !master processor. Used for debugging.
 !***********************************************************************
-
 subroutine DEBUGPrintReaction(reactionCurrent)
 use mod_constants
 use DerivedType

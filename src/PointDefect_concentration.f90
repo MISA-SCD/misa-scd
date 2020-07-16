@@ -2,7 +2,6 @@
 !2019.05.29 Add
 !This function is used to compute vacancy concentration。
 !************************************************
-
 subroutine computeVconcent()
     use DerivedType
     use mod_constants
