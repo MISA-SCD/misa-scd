@@ -273,11 +273,10 @@ use DerivedType
 implicit none
 
 type(Reaction), pointer :: reactionCurrent
-double precision rate, rateCell, rateSingle
+double precision rate, rateCell
 integer cell
 
 rate=0d0
-rateSingle=0d0
 
 do cell=1,numCells
 	rateCell=0d0
@@ -290,20 +289,9 @@ do cell=1,numCells
 	end do
 	
 	totalRateVol(cell)=rateCell	!Total reaction rate in this volume element
-	
-	if(singleElemKMC=='yes') then
-		if(rateCell > rateSingle) then
-			rateSingle=rateCell
-		end if
-	end if
-	
 end do
 
-if(singleElemKMC=='yes') then
-	totalRate=rateSingle	!max reaction rate among all volume elements in this processor
-else
-	totalRate=rate			!Total reaction rate in the entire processor
-endif
+totalRate=rate			!Total reaction rate in the entire processor
 
 end subroutine
 
@@ -879,168 +867,6 @@ do cell=1,numCells
 	end if
 
 end do
-
-end subroutine
-
-!***************************************************************************************************
-!> Subroutine initializeDebugRestart() - initializes defect and reaction lists if we are restarting from debug file
-!!
-!! This subroutine is used to populate the mesh with defects and initialize the DPA at a non-zero value
-!! for debugging (restart from a saved point).
-!!
-!! This subroutine reads in from an input file. The mesh must match the mesh in the actual simulation.
-!! The number of processors must also match from the reset file and the current simulation.
-!
-!***************************************************************************************************
-subroutine initializeDebugRestart()
-use mod_constants
-use DerivedType
-implicit none
-
-character*20 char
-
-logical flag
-
-integer procID, numProcs, numDefectTypes
-integer defectTypeReset(numSpecies), defectNumReset
-integer i, j, k
-
-double precision cellCoord(3)
-
-type(defect), pointer :: defectCurrent, defectPrev
-
-interface
-	subroutine findDefectInList(defectCurrent, defectPrev, products)
-		use DerivedType
-		use mod_constants
-		implicit none
-		type(defect), pointer :: defectCurrent, defectPrev
-		integer products(numSpecies)
-	end subroutine
-end interface
-
-flag=.FALSE.
-
-!Read in the name of the debug restart file
-if(debugToggle == 'yes') then
-	
-	open(87, file=restartFileName,action='read', status='old')
-	
-	!Step 1: read in header information from restart file
-	
-	do while(flag .eqv. .FALSE.)
-		read(87,*) char
-		if(char=='numProcs') then
-			read(87,*) numProcs
-			flag=.TRUE.
-		end if
-	end do
-	flag=.FALSE.
-	
-	if(numProcs /= myProc%numTasks) then
-		write(*,*) 'Error restart file incorrect number of processors'
-		if(myProc%taskid==MASTER) read(*,*)
-	end if
-	
-	do while(flag .eqv. .FALSE.)
-		read(87,*) char
-		if(char=='numImplantEvents') then
-			read(87,*) numImplantEventsReset
-			flag=.TRUE.
-		end if
-	end do
-	flag=.FALSE.
-
-	do while(flag .eqv. .FALSE.)
-		read(87,*) char
-		if(char=='elapsedTime') then
-			read(87,*) elapsedTimeReset
-			flag=.TRUE.
-		end if
-	end do
-	flag=.FALSE.
-	
-	!Step 2: skip to part of input file that matches this processor
-	
-	do while(flag .eqv. .FALSE.)
-		read(87,*) char
-		if(char=='processor') then
-			read(87,*) procID
-			if(procID==myProc%taskid) then
-				flag=.TRUE.
-			end if
-		end if
-	end do
-	flag=.FALSE.
-	
-	!Step 3: Read in defect information from file to defect list (coarse mesh),
-	!noting that the coordinates in the input file must match the coordinates
-	!of the coarse mesh element.
-	
-	do i=1,numCells
-		
-		do while(flag .eqv. .FALSE.)
-			read(87,*) char
-			if(char=='coordinates') then
-				read(87,*) (cellCoord(j), j=1,3)
-				flag=.TRUE.
-			end if
-		end do
-		flag=.FALSE.
-		
-		do j=1,3
-			if(cellCoord(j) /= myMesh(i)%coordinates(j)) then
-				write(*,*) 'Error cell coordinates do not match in reset file'
-				write(*,*) 'CellCoord', cellCoord(j), 'myMeshCoord', myMesh(i)%coordinates(j)
-				if(myProc%taskid==MASTER) read(*,*)
-			end if
-		end do
-		
-		do while(flag .eqv. .FALSE.)
-			read(87,*) char
-			if(char=='numDefectTypes') then
-				read(87,*) numDefectTypes
-				flag=.TRUE.
-			end if
-		end do
-		flag=.FALSE.
-		
-		do j=1,numDefectTypes
-			read(87,*) (defectTypeReset(k), k=1,numSpecies)
-			read(87,*) defectNumReset
-			
-			defectCurrent=>defectList(i)
-			nullify(defectPrev)
-			
-			call findDefectInList(defectCurrent, defectPrev, defectTypeReset)
-			
-			!insert defect in list. Since we are starting from an empty list and adding
-			!defects in order, we should always have defectPrev pointing at the last 
-			!element of the list and defectCurrent pointing at nothing.
-			
-			if(associated(defectCurrent)) then
-				write(*,*) 'error defectCurrent associated in initializeDebugRestart'
-			else
-				!Create new defect in list
-				allocate(defectCurrent)
-				allocate(defectCurrent%defectType(numSpecies))
-				nullify(defectCurrent%next)
-				defectPrev%next=>defectCurrent
-				
-				do k=1,numSpecies
-					defectCurrent%defectType(k)=defectTypeReset(k)
-				end do
-				defectCurrent%num=defectNumReset
-				defectCurrent%cellNumber=i
-				
-			end if
-		end do
-		
-	end do
-	
-	close(87)
-end if
-flag=.FALSE.
 
 end subroutine
 

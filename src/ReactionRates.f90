@@ -3204,7 +3204,6 @@ implicit none
 integer cell1, proc1, cell2, proc2, defectType(numSpecies), num1, num2, dir
 type(ReactionParameters) :: reactionParameter
 double precision Diff, area1, area2, areaShared, lengthShared, Vol1, Vol2, length1, length2, reactionRate
-double precision strainE1, strainE2
 integer findNumDefect, findNumDefectBoundary
 double precision findStrainEnergy, findStrainEnergyBoundary
 double precision findDiffusivity
@@ -3230,14 +3229,7 @@ if(reactionParameter%functionType==2) then	!3D diffusion
 	area1=length1**2d0
 	Vol1=myMesh(cell1)%volume
 	num1=findNumDefect(defectType,cell1)
-	
-	strainE1=findStrainEnergy(defectType, cell1)
-	if(strainE1 /= 0d0) then
-		write(*,*) 'defectType', defectType
-		write(*,*) 'strainE1', strainE1
-		read(*,*)
-	end if
-	
+
 	if(proc2==-1) then	!free surface (NOTE: not taking into account strain-assisted diffusion here)
 		areaShared=area1
 		reactionRate=Diff*areaShared*(dble(num1)/Vol1)/length1
@@ -3252,12 +3244,10 @@ if(reactionParameter%functionType==2) then	!3D diffusion
 			matNeighbor=myMesh(cell2)%material
 			length2=myMesh(cell2)%length
 			Vol2=myMesh(cell2)%volume
-			strainE2=findStrainEnergy(defectType, cell2)
 		else	!proc2 /= proc1
 			matNeighbor=myBoundary(cell2,dir)%material
 			length2=myBoundary(cell2,dir)%length
 			Vol2=myBoundary(cell2,dir)%volume
-			strainE2=findStrainEnergyBoundary(defectType, cell2, dir)
 		end if
 		
 		area2=length2**2d0
@@ -3279,32 +3269,11 @@ if(reactionParameter%functionType==2) then	!3D diffusion
 			alpha=1d0
 			
 		else
-			if(numMaterials > 1) then
-				!Sink efficiencies (Default set at 1)
-				if(defectType(2) /= 0d0) then
-					alpha=alpha_v
-				else if(defectType(3) /= 0d0) then
-					alpha=alpha_i
-				else
-					alpha=1d0
-				end if
-			else
-				alpha=1d0
-			end if
+			alpha=1d0
 			num2=0	!If we are diffusing between two material types, assume perfect sink
 		end if
-		
-		if(strainField=='yes') then
-			if(strainE1 /= 0d0) then
-				write(*,*) 'Strain E1', strainE1, 'Strain E2', strainE2
-				write(*,*) 'defect type', defectType
-				read(*,*)
-			endif
-			reactionRate=alpha*Diff*areaShared*(dble(num1)/Vol1-dble(num2)/Vol2+&
-				dble(num1)*(strainE1-strainE2)/(Vol1*kboltzmann*temperature))/(length1/2d0 + length2/2d0)
-		else
-			reactionRate=alpha*Diff*areaShared*(dble(num1)/Vol1-dble(num2)/Vol2)/(length1/2d0 + length2/2d0)
-		end if
+
+		reactionRate=alpha*Diff*areaShared*(dble(num1)/Vol1-dble(num2)/Vol2)/(length1/2d0 + length2/2d0)
 		
 		if(reactionRate > 0d0) then
 			findReactionRateDiff=reactionRate

@@ -15,6 +15,14 @@ module mod_constants
 use DerivedType
 implicit none
 
+!used for MPI commands
+integer comm                            !<New communication domain: created by MPI_CART_CREAT
+integer dims(3)                         !<Number of processors in x, y, z.
+logical periods(3)                      !<Boundary conditions in x, y, z.  The default is periodic
+integer ierr							!<used for initializing and finalizing MPI
+integer, parameter :: MASTER=0			!<Define the master node as ID=0
+integer, parameter :: maxBufferSize=50	!<Used to define the max size of a send/recieve buffer
+
 !Processor and mesh information, created in MeshReader.f90
 type(processorData) myProc							!<Contains processor information (id, neighbors)
 type(mesh),allocatable :: myMesh(:)					!<Contains (local) mesh information
@@ -127,8 +135,6 @@ integer max3DInt			            !<largest SIA size that can diffuse in 3D as sphe
 integer numGrains			            !<Number of grains inside polycrystal (default 1)
 integer numSims				            !<Number of times to repeat simulation
 
-integer SIAPinMin			            !<Smallest size of SIA that can pin at HeV clusters
-
 !used for test2
 character(len=20) test3
 integer oneCascadeGCell
@@ -152,17 +158,10 @@ character(len=20) meshType              !<Boundary conditions
 character(len=20) implantType			!<(Frenkel pairs or cascades), used to determine the type of damage in the simulation
 character(len=20) meshingType			!<(adaptive or nonAdaptive), used to determine whether we are simulating cascade implantation with adaptive meshing
 character(len=20) polycrystal			!<(yes or no), used to identify whether or not we have multiple grains in our crystal
-character(len=20) singleElemKMC			!<(yes or no), used to toggle whether we are making one kMC choice per volume element or one kMC choice for the whole processors
-character(len=20) sinkEffSearch			!<(yes or no), used to toggle search for effective sink efficiency
-character(len=20) strainField			!<(yes or no), used to toggle whether we are simulating diffusion in a strain field
 
 !Output  parameters
 character(len=20) totdatToggle			!<(yes or no), used to toggle whether we output the totdat.out data file
 character(len=20) rawdatToggle			!<(yes or no), used to toggle whether we output the rawdat.out data file
-character(len=20) vtkToggle				!<(yes or no), used to toggle whether we want vtk output at each time increment (log scale)
-character(len=20) xyzToggle				!<(yes or no), used to toggle whether we output an .xyz data file (for visualization)
-character(len=20) outputDebug			!<(yes or no), used to toggle whether we want to output a debug restart file at each time increment
-character(len=20) profileToggle			!<(yes or no), used to toggle whether we output a DefectProfile.out data file
 integer minSCluster                     !<Only n>minSCluster SnVm and Sn clusters are counted
 integer minVoid                         !<Only n>minVoid Vn clusters are counted
 integer minLoop                         !<Only n>minLoop SIAn clusters are counted
@@ -184,14 +183,6 @@ double precision omegastar1D			!<Geometric constant for clustering with dislocat
 double precision omegacircle1D			!<Geometric constant for clustering with dislocation loops (see Dunn et al. JNM 2013)
 double precision recombinationCoeff		!<Geometric constant for Frenkel pair recombination (see Dunn et al. JNM 2013)
 
-!used for MPI commands
-integer comm                            !<New communication domain: created by MPI_CART_CREAT
-integer dims(3)                         !<Number of processors in x, y, z.
-logical periods(3)                      !<Boundary conditions in x, y, z.  The default is periodic
-integer ierr							!<used for initializing and finalizing MPI
-integer, parameter :: MASTER=0			!<Define the master node as ID=0
-integer, parameter :: maxBufferSize=50	!<Used to define the max size of a send/recieve buffer
-
 !counters
 double precision rateTau(2)             !<Used for collective communication
 integer numImpAnn(2)                    !<Postprocessing: numImpAnn(1) is the num of Frenkel pairs / cascades (local), numImpAnn(2) is the number of annihilation reactions carried out (local)
@@ -203,27 +194,9 @@ integer numTrapSIA			            !<Postprocessing: number of SIAs trapped on gra
 integer numEmitV			            !<Postprocessing: number of vacancies emitted from grain boundary
 integer numEmitSIA			            !<Postprocessing: number of SIAs emitted from grain boundary
 
-!DEBUG reset parameters
-integer numImplantEventsReset		    !<For creating restart file (debugging tool, see example): number of cascades/Frenkel pairs
-double precision elapsedTimeReset	    !<For creating restart file (debugging tool, see example): elapsed time
-character(len=20) debugToggle		    !<('yes' or 'no') input parameter indicating whether we are restarting from a file
-character(len=50) restartFileName	    !<Name of restart file
-
 !array containing distribution of DPA and He implantation rates
 integer numImplantDataPoints							    !<For non-uniform implantation, number of input data points through-thickness
 double precision, allocatable :: implantRateData(:,:)	    !<Data containing implantation rates as a function of depth (for non-uniform implantation)
-
-!Sink efficiency parameters
-double precision alpha_v				!<Grain boundary sink efficiency for vacancies
-double precision alpha_i				!<Grain boundary sink efficiency for interstitials
-double precision conc_v					!<Concentration of vacancies found by GB model (used to fit alpha_v)
-double precision conc_i					!<Concentration of interstitials found by GB model (used to fit alpha_i)
-
-!Strain-related varialbes
-integer numDipole									    !<Number of dipole tensors that are read in from a file
-type(dipoleTensor), allocatable :: dipoleStore(:)		!<Array of dipole tensors for associated defects, size numDipole
-character(len=50) strainFileName					    !<File name of strain field intput data
-character(len=50) dipoleFileName					    !<File name of dipole tensor input data
 
 contains
 
