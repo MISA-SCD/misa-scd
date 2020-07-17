@@ -5,7 +5,7 @@
 !***************************************************************************************************
 subroutine outputDefectsXYZ()
 	use mod_constants
-	use DerivedType
+	use mod_structures
 	implicit none
 	include 'mpif.h'
 
@@ -149,7 +149,7 @@ end subroutine
 !Used to find total defect populations in simulation volume, not spatial distribution of defects.
 !*******************************************************************************************************
 subroutine outputDefectsTotal()
-	use DerivedType
+	use mod_structures
 	use mod_constants
 	implicit none
 	include 'mpif.h'
@@ -182,7 +182,7 @@ subroutine outputDefectsTotal()
 
 	interface
 		subroutine findDefectInList(defectCurrent, defectPrev, products)
-			use DerivedType
+			use mod_structures
 			use mod_constants
 			implicit none
 			type(defect), pointer :: defectCurrent, defectPrev
@@ -605,7 +605,7 @@ end subroutine
 !***********************************************************************
 !***********************************************************************
 subroutine outputTotal()
-	use DerivedType
+	use mod_structures
 	use mod_constants
 	implicit none
 	include 'mpif.h'
@@ -904,7 +904,7 @@ end subroutine
 !function: computeVConc
 !*****************************************************
 double precision function computeVConc()
-use DerivedType
+use mod_structures
 use mod_constants
 implicit none
 include 'mpif.h'
@@ -925,7 +925,7 @@ integer totalVoid, totalLoop, VoidNum
 
 interface
 	subroutine findDefectInList(defectCurrent, defectPrev, products)
-		use DerivedType
+		use mod_structures
 		use mod_constants
 		implicit none
 		type(defect), pointer :: defectCurrent, defectPrev
@@ -1325,7 +1325,7 @@ end function
 !function: computeIConc()
 !******************************************************
 double precision function computeIConc()
-use DerivedType
+use mod_structures
 use mod_constants
 implicit none
 
@@ -1347,7 +1347,7 @@ integer totalVoid, totalLoop, VoidNum
 
 interface
 	subroutine findDefectInList(defectCurrent, defectPrev, products)
-		use DerivedType
+		use mod_structures
 		use mod_constants
 		implicit none
 		type(defect), pointer :: defectCurrent, defectPrev

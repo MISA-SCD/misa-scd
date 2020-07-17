@@ -2,7 +2,7 @@
 !>Subroutine initialize vacancy or SIA defect.
 !***************************************************************************************
 subroutine initializeVIdefect()
-	use DerivedType
+	use mod_structures
 	use mod_constants
 	use randdp
 	implicit none
@@ -107,7 +107,7 @@ end subroutine
 !>Subroutine
 !*****************************************************************************************
 subroutine initializeOneCascade()
-	use DerivedType
+	use mod_structures
 	use mod_constants
 	use randdp
 	implicit none
@@ -136,7 +136,7 @@ end  subroutine
 !Begins with a defect with type 0 0 0 0 and num 0. Note that numCells is needed in this subroutine
 !*****************************************************************************************
 subroutine initializeDefectList()
-	use DerivedType
+	use mod_structures
 	use mod_constants
 	implicit none
 
@@ -226,7 +226,7 @@ end subroutine
 !*****************************************************************************************
 subroutine initializeRandomSeeds()
 	use mod_constants
-	use DerivedType
+	use mod_structures
 	use randdp
 	implicit none
 	include 'mpif.h'
@@ -254,7 +254,7 @@ end subroutine
 !*****************************************************************************************
 subroutine initializeTotalRate()
 	use mod_constants
-	use DerivedType
+	use mod_structures
 	implicit none
 
 	type(Reaction), pointer :: reactionCurrent
@@ -281,7 +281,7 @@ end subroutine
 !creates a new reaction list for each volume element and initializes implantation reactions (with rates)
 !*****************************************************************************************
 subroutine initializeReactionList()
-	use DerivedType
+	use mod_structures
 	use mod_constants
 	use ReactionRates
 	implicit none
@@ -789,7 +789,7 @@ end subroutine
 !This subroutine initializes the defect lists within the boundary mesh.
 !*****************************************************************************************
 subroutine initializeBoundaryDefectList()
-	use DerivedType
+	use mod_structures
 	use mod_constants
 	implicit none
 
@@ -887,7 +887,7 @@ end subroutine
 !initializes defect and reaction lists in a newly created fine mesh
 !***************************************************************************************************
 subroutine initializeFineMesh(CascadeCurrent)
-	use DerivedType
+	use mod_structures
 	use mod_constants
 	use randdp
 	use ReactionRates
@@ -903,7 +903,7 @@ subroutine initializeFineMesh(CascadeCurrent)
 
 	interface
 		subroutine findDefectInList(defectCurrent, defectPrev, products)
-			use DerivedType
+			use mod_structures
 			use mod_constants
 			implicit none
 			type(defect), pointer :: defectCurrent, defectPrev
@@ -1107,7 +1107,7 @@ end subroutine
 !This subroutine carries out the following tasks in order to switch from damage introduction to annealing:
 !***********************************************************************
 subroutine annealInitialization()
-	use DerivedType
+	use mod_structures
 	use mod_constants
 	implicit none
 

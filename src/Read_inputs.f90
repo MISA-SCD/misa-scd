@@ -4,7 +4,7 @@
 !for all other input files (defect attributes, mesh, cascades, implantation, etc).
 !***************************************************************************************************
 subroutine ReadInputs()
-	use DerivedType
+	use mod_structures
 	use mod_constants
 	implicit none
 
@@ -446,7 +446,7 @@ end subroutine
 !***************************************************************************************************
 subroutine readDefectAttributes(filename)
 	use mod_constants
-	use DerivedType
+	use mod_structures
 	implicit none
 
 	character(len=50), intent(in) :: filename
@@ -796,7 +796,7 @@ end subroutine
 !***************************************************************************************************
 subroutine readCascadeList(filename)
 	use mod_constants
-	use DerivedType
+	use mod_structures
 	implicit none
 
 	character(len=50), intent(in) :: filename

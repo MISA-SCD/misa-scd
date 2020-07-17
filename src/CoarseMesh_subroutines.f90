@@ -5,7 +5,7 @@
 !Outputs: defectCurrent and defectPrev pointed at location in list
 !***************************************************************************************************
 subroutine findDefectInList(defectCurrent, defectPrev, products)
-	use DerivedType
+	use mod_structures
 	use mod_constants
 	implicit none
 
@@ -47,7 +47,7 @@ end subroutine
 !Outputs: returns number of defects of type in cell
 !***************************************************************************************************
 integer function findNumDefect(defectType, cellNumber)
-	use DerivedType
+	use mod_structures
 	use mod_constants
 	implicit none
 
@@ -82,7 +82,7 @@ end function
 !Outputs: returns number of defects of type in cell
 !***************************************************************************************************
 integer function findNumDefectBoundary(defectType, cellNumber, dir)
-	use DerivedType
+	use mod_structures
 	use mod_constants
 	implicit none
 
@@ -120,7 +120,7 @@ end function
 !counts number of reactions in the coarse mesh (all processors)
 !***********************************************************************
 subroutine countReactionsCoarse(reactionsCoarse)
-	use DerivedType
+	use mod_structures
 	use mod_constants
 	implicit none
 	include 'mpif.h'
@@ -155,7 +155,7 @@ end subroutine
 !***************************************************************************************************
 subroutine updateImplantRateSingleCell(cell)
 	use ReactionRates
-	use DerivedType
+	use mod_structures
 	use mod_constants
 	implicit none
 
@@ -221,7 +221,7 @@ end subroutine
 !***************************************************************************************************
 subroutine resetReactionListSingleCell(cell)
 	use mod_constants
-	use DerivedType
+	use mod_structures
 	use ReactionRates
 	implicit none
 
@@ -331,7 +331,7 @@ end subroutine
 !clears reactions from a reaction list in a single volume element
 !***************************************************************************************************
 subroutine clearReactionListSingleCell(cellNumber)
-	use DerivedType
+	use mod_structures
 	use mod_constants
 	implicit none
 

@@ -3,7 +3,7 @@
 !returns the diffusivity of a given defect type
 !*****************************************************************************************
 double precision function findDiffusivity(matNum, defectType)
-	use DerivedType
+	use mod_structures
 	use mod_constants
 	implicit none
 
@@ -80,7 +80,7 @@ end function
 !*****************************************************************************************
 double precision function DiffusivityCompute(DefectType, functionType, numParameters, parameters,matNum)
 	use mod_constants
-	use DerivedType
+	use mod_structures
 	implicit none
 
 	integer DefectType(numSpecies)
@@ -116,7 +116,7 @@ end function
 !This function is used to compute diffusivity of Cu atom
 !**********************************************************************************
 double precision function diffusivityCu(matNum)
-	use DerivedType
+	use mod_structures
 	use mod_constants
 	implicit none
 
@@ -152,7 +152,7 @@ end function
 !returns the binding energy of a given defect type
 !*****************************************************************************************
 double precision function findBinding(matNum, DefectType, productType)
-	use DerivedType
+	use mod_structures
 	use mod_constants
 	implicit none
 

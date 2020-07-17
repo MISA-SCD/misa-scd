@@ -12,7 +12,7 @@
 !****************************************************************************************
 module mod_constants
 
-use DerivedType
+use mod_structures
 implicit none
 
 !used for MPI commands

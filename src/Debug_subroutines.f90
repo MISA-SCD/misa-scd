@@ -15,7 +15,7 @@
 !***************************************************************************************************
 subroutine DEBUGCheckForUnadmissible(reactionCurrent)
 use mod_constants
-use DerivedType
+use mod_structures
 implicit none
 
 type(reaction), pointer :: reactionCurrent
@@ -26,7 +26,7 @@ integer i,j,k,count
 
 interface
 	subroutine DEBUGPrintReaction(reactionCurrent)
-		use DerivedType
+		use mod_structures
 		implicit none
 		type(Reaction), pointer :: reactionCurrent
 	end subroutine
@@ -83,7 +83,7 @@ end subroutine
 !*****************************************************************************************
 subroutine DEBUGPrintDefectUpdate(defectUpdate)
 use mod_constants
-use DerivedType
+use mod_structures
 implicit none
 
 type(defectUpdateTracker), pointer :: defectUpdate, defectUpdateCurrent
@@ -112,7 +112,7 @@ end subroutine
 !*****************************************************************************************
 subroutine DEBUGPrintReactionList()
 use mod_constants
-use DerivedType
+use mod_structures
 implicit none
 
 integer i, j, k
@@ -230,7 +230,7 @@ end subroutine
 !!Have the option to skip volume elements that are empty.
 !*****************************************************************************************
 subroutine DEBUGPrintDefects()
-use DerivedType
+use mod_structures
 use mod_constants
 implicit none
 
@@ -309,7 +309,7 @@ end subroutine
 !***********************************************************************
 subroutine DEBUGPrintReaction(reactionCurrent)
 use mod_constants
-use DerivedType
+use mod_structures
 implicit none
 
 type(Reaction), pointer :: reactionCurrent
@@ -349,7 +349,7 @@ end subroutine
 !***********************************************************************
 subroutine DEBUGPrintDefectList()
 	use mod_constants
-	use DerivedType
+	use mod_structures
 	implicit none
 
 	integer i

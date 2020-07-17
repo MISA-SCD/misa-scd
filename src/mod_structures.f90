@@ -1,5 +1,5 @@
 !***************************************************************************************************
-!>Module DerivedType: contains all derived structures created for MISA-SCD1.0.
+!>Module mod_structures: contains all derived structures created for MISA-SCD1.0.
 !>Information read in from input file (
 !										Formation energies: formation
 !										Diffusivities: diffusion, diffusionFunction
@@ -11,7 +11,7 @@
 !>Information about cascade (cascadeEvent，cascadeDefect, cascade)
 !***************************************************************************************************
 
-module DerivedType
+module mod_structures
 	implicit none
 	!**********************************************************************
 	!>Constant type: list of defect attributes read in from an input file.

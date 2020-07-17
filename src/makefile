@@ -28,7 +28,7 @@ SRCS =  dprand.f90\
 OBJS = $(SRCS:.f90=.o)
 TARGET = misascd
 
-MODSRCS =   derivedtype.f90\
+MODSRCS =   mod_structures.f90\
             mod_constants.f90
 MODOBJS = $(MODSRCS:.f90=.o)
 MODS = $(MODSRCS:.f90=.mod)

@@ -3,7 +3,7 @@
 !(this is a global timestep)
 !*****************************************************************************************
 double precision function GenerateTimestep()
-	use DerivedType
+	use mod_structures
 	use mod_constants
 	use randdp
 	implicit none
@@ -19,7 +19,7 @@ end function
 !>subroutine
 !*****************************************************************************************
 subroutine chooseImplantReaction(reactionCurrent, CascadeCurrent)
-	use DerivedType
+	use mod_structures
 	use mod_constants
 	implicit none
 
@@ -70,7 +70,7 @@ end subroutine
 !chooses a reaction in each processor according to the Monte Carlo algorithm (this is a local reaction)
 !*****************************************************************************************
 subroutine chooseReaction(reactionCurrent, CascadeCurrent)
-	use DerivedType
+	use mod_structures
 	use mod_constants
 	use randdp
 	implicit none
@@ -210,7 +210,7 @@ end subroutine
 !***************************************************************************************************
 subroutine updateDefectList(reactionCurrent, defectUpdateCurrent, CascadeCurrent)
 	use mod_constants
-	use DerivedType
+	use mod_structures
 	use ReactionRates
 	use randdp
 	implicit none
@@ -265,7 +265,7 @@ subroutine updateDefectList(reactionCurrent, defectUpdateCurrent, CascadeCurrent
 
 	interface
 		subroutine findDefectInList(defectCurrent, defectPrev, products)
-			use DerivedType
+			use mod_structures
 			use mod_constants
 			implicit none
 			type(defect), pointer :: defectCurrent, defectPrev
@@ -273,13 +273,13 @@ subroutine updateDefectList(reactionCurrent, defectUpdateCurrent, CascadeCurrent
 		end subroutine
 
 		subroutine chooseCascade(CascadeTemp)
-			use DerivedType
+			use mod_structures
 			implicit none
 			type(cascadeEvent), pointer :: CascadeTemp
 		end subroutine
 
 		subroutine initializeFineMesh(CascadeCurrent)
-			use DerivedType
+			use mod_structures
 			type(cascade), pointer :: CascadeCurrent
 		end subroutine
 	end interface

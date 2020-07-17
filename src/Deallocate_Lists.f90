@@ -2,7 +2,7 @@
 !> Subroutine deallocateBoundaryDefectList(): deallocates boundary defect lists
 !***********************************************************************
 subroutine deallocateBoundaryDefectList()
-	use DerivedType
+	use mod_structures
 	use mod_constants
 	implicit none
 
@@ -39,7 +39,7 @@ end subroutine
 !(read in from file) in cascade list
 !***********************************************************************
 Subroutine deallocateCascadeList()
-	use DerivedType
+	use mod_structures
 	use mod_constants
 	implicit none
 
@@ -71,7 +71,7 @@ end subroutine
 !DissocReactions(:,:), DiffReactions(:,:), SinkReactions(:,:), ImpurityReactions(:,:), ClusterReactions(:,:), ImplantReactions(:,:)
 !***********************************************************************
 subroutine deallocateMaterialInput()
-	use DerivedType
+	use mod_structures
 	use mod_constants
 	implicit none
 
@@ -169,7 +169,7 @@ end subroutine
 !> Subroutine deallocateDefectList(): deallocates defects in the coarse mesh
 !***********************************************************************
 subroutine deallocateDefectList()
-	use DerivedType
+	use mod_structures
 	use mod_constants
 	implicit none
 
@@ -204,7 +204,7 @@ end subroutine
 !> Subroutine deallocateReactionList(): deallocates reactions in the coarse mesh
 !***********************************************************************
 subroutine deallocateReactionList()
-	use DerivedType
+	use mod_structures
 	use mod_constants
 	implicit none
 

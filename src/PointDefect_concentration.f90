@@ -3,7 +3,7 @@
 !This function is used to compute vacancy concentration。
 !************************************************
 subroutine computeVconcent()
-    use DerivedType
+    use mod_structures
     use mod_constants
     implicit none
     include 'mpif.h'
@@ -86,7 +86,7 @@ end subroutine
 !************************************************
 
 subroutine computeSIAconcent()
-    use DerivedType
+    use mod_structures
     use mod_constants
     implicit none
     include 'mpif.h'
@@ -166,7 +166,7 @@ end subroutine
 !This function will not be used
 !**********************************************************************************
 double precision function permanentCv(matNum)
-    use DerivedType
+    use mod_structures
     use mod_constants
     implicit none
 

@@ -4,7 +4,7 @@
 !***************************************************************************************************
 subroutine releaseFineMeshDefects(CascadeCurrent)
 	use mod_constants
-	use DerivedType
+	use mod_structures
 	implicit none
 
 	!Data structures used:
@@ -16,7 +16,7 @@ subroutine releaseFineMeshDefects(CascadeCurrent)
 
 	interface
 		subroutine findDefectInList(defectCurrent, defectPrev, products)
-			use DerivedType
+			use mod_structures
 			use mod_constants
 			type(defect), pointer :: defectCurrent, defectPrev
 			integer products(numSpecies)
@@ -255,7 +255,7 @@ end subroutine
 !!Finds the number of defects of type defectType in CascadeCurrent%localDefects. If none, returns 0
 !***************************************************************************************************
 integer function findNumDefectFine(CascadeCurrent, defectType, cellNumber)
-	use DerivedType
+	use mod_structures
 	use mod_constants
 	implicit none
 
@@ -291,7 +291,7 @@ end function
 !***************************************************************************************************
 integer function findNumDefectTotalFine(defectType, CascadeCurrent)
 	use mod_constants
-	use DerivedType
+	use mod_structures
 	implicit none
 
 	integer defectType(numSpecies)
@@ -323,7 +323,7 @@ end function
 !***************************************************************************************************
 integer function findCellWithCoordinatesFineMesh(coordinates)
 	use mod_constants
-	use DerivedType
+	use mod_structures
 	implicit none
 
 	double precision coordinates(3)
@@ -382,7 +382,7 @@ end function
 !Counts the total number of reactions in the fine mesh (all processors) and returns the sum (used for postprocessing)
 !***********************************************************************
 subroutine countReactionsFine(reactionsFine)
-	use DerivedType
+	use mod_structures
 	use mod_constants
 	implicit none
 	include 'mpif.h'

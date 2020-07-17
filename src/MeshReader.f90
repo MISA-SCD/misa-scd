@@ -6,7 +6,7 @@
 !***************************************************************************************************
 subroutine initialMesh()
 	use mod_constants
-	use DerivedType
+	use mod_structures
 
 	implicit none
 	include 'mpif.h'
@@ -294,7 +294,7 @@ end subroutine
 !The connectivity scheme is the same as in the global case, but neighboring processor numbers are used here.
 !**************************************************************************************************
 subroutine createConnectLocalPeriodic(length)
-	use DerivedType
+	use mod_structures
 	use mod_constants
 	implicit none
 	include 'mpif.h'
@@ -541,7 +541,7 @@ end subroutine
 !is 0 and the processor number is -1.
 !**************************************************************************************************
 subroutine createConnectLocalFreeSurf(length)
-	use DerivedType
+	use mod_structures
 	use mod_constants
 	implicit none
 	include 'mpif.h'
@@ -783,7 +783,7 @@ end subroutine
 !Output: globalNeighborID of the globalID in the direaction
 !***************************************************************************************
 integer function findgNeighborPeriodic(globalID, dir)
-	use DerivedType
+	use mod_structures
 	use mod_constants
 	implicit none
 
@@ -840,7 +840,7 @@ end function
 !Output: globalNeighborID of the globalID in the direaction
 !***************************************************************************************
 integer function findgNeighborFreeSurf(globalID, dir)
-	use DerivedType
+	use mod_structures
 	use mod_constants
 	implicit none
 

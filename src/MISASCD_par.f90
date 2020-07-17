@@ -7,7 +7,7 @@
 !Amendant Record: original code
 !***************************************************************************************************
 program MISASCD
-	use DerivedType			!<variable classes for MISASCD
+	use mod_structures			!<variable classes for MISASCD
 	use mod_constants		!<module containing all global variables
 	use randdp				!<module for double precision random number generation
 	implicit none
@@ -30,27 +30,27 @@ program MISASCD
 
 	interface
 		subroutine chooseImplantReaction(reactionCurrent, CascadeCurrent)
-			use DerivedType
+			use mod_structures
 			implicit none
 			type(reaction), pointer :: reactionCurrent
 			type(cascade), pointer :: CascadeCurrent
 		end subroutine
 
 		subroutine chooseReaction(reactionCurrent, CascadeCurrent)
-			use DerivedType
+			use mod_structures
 			implicit none
 			type(reaction), pointer :: reactionCurrent
 			type(cascade), pointer :: CascadeCurrent
 		end subroutine
 
 		subroutine addCascadeExplicit(reactionCurrent)
-			use DerivedType
+			use mod_structures
 			implicit none
 			type(reaction), pointer :: reactionCurrent
 		end subroutine
 
 		subroutine updateDefectList(reactionCurrent, defectUpdateCurrent, CascadeCurrent)
-			use DerivedType
+			use mod_structures
 			implicit none
 			type(reaction), pointer :: reactionCurrent
 			type(DefectUpdateTracker), pointer :: defectUpdateCurrent
@@ -58,37 +58,37 @@ program MISASCD
 		end subroutine
 
 		subroutine updateReactionList(defectUpdate)
-			use DerivedType
+			use mod_structures
 			implicit none
 			type(DefectUpdateTracker), pointer :: defectUpdate
 		end subroutine
 
 		subroutine DEBUGPrintReaction(reactionCurrent)
-			use DerivedType
+			use mod_structures
 			implicit none
 			type(reaction), pointer :: reactionCurrent
 		end subroutine
 
 		subroutine DEBUGPrintDefectUpdate(defectUpdate)
-			use DerivedType
+			use mod_structures
 			implicit none
 			type(defectUpdateTracker), pointer :: defectUpdate
 		end subroutine
 
 		subroutine DEBUGcheckForUnadmissible(reactionCurrent)
-			use DerivedType
+			use mod_structures
 			implicit none
 			type(Reaction), pointer :: reactionCurrent
 		end subroutine
 
 		subroutine releaseFineMeshDefects(CascadeCurrent)
-			use DerivedType
+			use mod_structures
 			implicit none
 			type(cascade), pointer :: CascadeCurrent
 		end subroutine
 
 		double precision function totalRateCascade(CascadeCurrent)
-			use DerivedType
+			use mod_structures
 			implicit none
 			type(Cascade), pointer :: CascadeCurrent
 		end function
