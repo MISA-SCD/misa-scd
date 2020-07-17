@@ -355,7 +355,7 @@ end function
 
 !***************************************************************************************************
 !>Function chooseRandomCell()
-!Chooses a cell number at random from the fine mesh. (Uniform distribution)
+!Chooses a cell number at random from the fine mesh. (uniform distribution)
 !***************************************************************************************************
 integer function chooseRandomCell()
 	use randdp

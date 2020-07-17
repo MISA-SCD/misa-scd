@@ -233,17 +233,16 @@ subroutine initialMesh()
 
 	!this variable is used at various points in SRSCD; lets us know the length fo myMesh(:)
 	numCells=numxLocal*numyLocal*numzLocal	!total cells of this processor
+	if(myProc%taskid==MASTER) then
+		write(*,*) 'numx numy numz', numx, numy, numz
+	end if
+	write(*,*) 'proc', myProc%taskid, 'numxLocal numyLocal numzLocal', numxLocal, numyLocal, numzLocal
 
 	!If any processors don't have volume elements in them (too many procs), we create an error message
 	if(numCells==0) then
 		write(*,*) 'error processors with no volume elements'
 		call MPI_ABORT(comm,ierr)
 	end if
-
-	if(myProc%taskid==MASTER) then
-		write(*,*) 'numx numy numz', numx, numy, numz
-	end if
-	write(*,*) 'proc', myProc%taskid, 'numxLocal numyLocal numzLocal', numxLocal, numyLocal, numzLocal
 
 	!Step 5: Create meshes. And for each volume element in myMesh, assign coordinates and material number (and proc number)
 	allocate(myMesh(numCells))
@@ -553,17 +552,15 @@ subroutine createConnectLocalFreeSurf(length)
 	!buffer lists to send all information at the end
 	integer i,j, dir, tag
 	integer numSend(6), numRecv(6)
-
 	integer, allocatable :: sendBuffer(:,:,:)
 	integer, allocatable :: recvBuffer(:,:)
-
 	integer materialBuff(numxLocal*numyLocal*numzLocal,6)	!materialID of boundary meshes
-
 	integer sendRequest(6), recvRequest(6)
 	integer sendStatus(MPI_STATUS_SIZE,6), recvStatus(MPI_STATUS_SIZE,6)
-
 	integer tempRecv
 	logical flagProbe
+
+	integer findgNeighborFreeSurf
 
 	numSend(1:6)=0
 	numRecv(1:6)=0

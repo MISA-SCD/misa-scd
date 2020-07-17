@@ -88,9 +88,9 @@ subroutine ReadInputs()
 		if(char=='numx') then
 			read(MESHFILE,*) numx
 		else if(char=='numy') then
-			read(MESHFILE,*) numx
+			read(MESHFILE,*) numy
 		else if(char=='numz') then
-			read(MESHFILE,*) numx
+			read(MESHFILE,*) numz
 			flag=.true.
 		end if
 	end do
@@ -128,7 +128,7 @@ subroutine ReadInputs()
 	do while (flag .eqv. .false.)
 		read(PARAFILE,*) char
 		if(char=='cascadeFile') then
-			read(PARAFILE,*) cascadeFile
+			read(PARAFILE,*) cascadeFilename
 			flag=.true.
 		end if
 	end do
@@ -452,7 +452,7 @@ subroutine readDefectAttributes(filename)
 	character(len=50), intent(in) :: filename
 	character(len=20) :: char
 	logical flag
-	integer i, matNum
+	integer i,j, matNum
 
 	flag=.FALSE.
 	numMaterials=1
@@ -733,8 +733,8 @@ subroutine readDefectAttributes(filename)
 				(ClusterReactions(i,matNum)%reactants(j,2),j=1,numSpecies)
 		allocate(ClusterReactions(i,matNum)%min(numSpecies*ClusterReactions(i,matNum)%numReactants))
 		allocate(ClusterReactions(i,matNum)%max(numSpecies*ClusterReactions(i,matNum)%numReactants))
-		read(DEFFILE,*) char,(ClusterReactions(i,matNum)%min(j),i=1,numSpecies*ClusterReactions(i,matNum)%numReactants)
-		read(DEFFILE,*) char,(ClusterReactions(i,matNum)%max(j),i=1,numSpecies*ClusterReactions(i,matNum)%numReactants)
+		read(DEFFILE,*) char,(ClusterReactions(i,matNum)%min(j),j=1,numSpecies*ClusterReactions(i,matNum)%numReactants)
+		read(DEFFILE,*) char,(ClusterReactions(i,matNum)%max(j),j=1,numSpecies*ClusterReactions(i,matNum)%numReactants)
 		do j=1,numSpecies
 			ClusterReactions(i,matNum)%products(j,1)=ClusterReactions(i,matNum)%reactants(j,1)+&
 					ClusterReactions(i,matNum)%reactants(j,2)

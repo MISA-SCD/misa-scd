@@ -2283,7 +2283,7 @@ end subroutine
 !5) Add all reactions associated with reactants and prodcuts in volume elements associated with reaction
 !***************************************************************************************************
 subroutine updateReactionList(defectUpdate)
-	use DerivedType
+	use mod_structures
 	use mod_constants
 	use ReactionRates
 	implicit none

@@ -39,7 +39,7 @@ end function
 !***************************************************************************************************
 double precision function TotalRateCheck()
 	use mod_constants
-	use DerivedType
+	use mod_structures
 	implicit none
 
 	integer cell, i, j, k
@@ -107,7 +107,7 @@ end function
 !> Function total rate cascade - finds total reaction rate within cascade
 !***************************************************************************************************
 double precision function totalRateCascade(CascadeCurrent)
-	use DerivedType
+	use mod_structures
 	use mod_constants
 	implicit none
 

@@ -795,6 +795,7 @@ subroutine initializeBoundaryDefectList()
 
 	integer cell, dir, i, j, gCell,gNeighor
 	type(defect), pointer :: defectCurrent
+	integer findgNeighborPeriodic
 
 	do cell=1,numCells
 		do dir=1,6

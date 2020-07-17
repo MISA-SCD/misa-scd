@@ -4,7 +4,7 @@
 !!Output: CascadeTemp (pointing at the cascade we want)
 !***************************************************************************************************
 subroutine chooseCascade(CascadeTemp)
-    use DerivedType
+    use mod_structures
     use randdp
     use mod_constants
     implicit none
@@ -33,7 +33,7 @@ end subroutine
 !***************************************************************************************************
 integer function CascadeCount()
     use mod_constants
-    use DerivedType
+    use mod_structures
     implicit none
 
     type(cascade), pointer :: CascadeCurrent
@@ -57,7 +57,7 @@ end function
 ! Outputs: reactionCurrent and CascadeCurrent, pointing at cascade reaction.
 !***************************************************************************************************
 subroutine addCascadeExplicit(reactionCurrent)
-    use DerivedType
+    use mod_structures
     use mod_constants
     use randdp
     implicit none
@@ -130,7 +130,7 @@ end function
 !Outputs: none
 !***************************************************************************************************
 subroutine cascadeUpdateStep(releaseToggle, cascadeCell)
-    use DerivedType
+    use mod_structures
     use mod_constants
     use ReactionRates
     implicit none
@@ -151,7 +151,7 @@ subroutine cascadeUpdateStep(releaseToggle, cascadeCell)
 
     interface
         subroutine findDefectInList(defectCurrent, defectPrev, defectType)
-            use DerivedType
+            use mod_structures
             use mod_constants
             implicit none
             type(defect), pointer :: defectCurrent, defectPrev

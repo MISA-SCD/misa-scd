@@ -2268,7 +2268,7 @@ double precision function findReactionRate(cell, reactionParameter)
 
 		volume=myMesh(cell)%volume
 
-		if(implantDist=='Uniform') then
+		if(implantDist=='uniform') then
 			findReactionRate=volume*dpaRate/atomSize
 		else
 			write(*,*) 'Error implant distribution not recognized'
@@ -2278,7 +2278,7 @@ double precision function findReactionRate(cell, reactionParameter)
 
 		volume=myMesh(cell)%volume
 
-		if(implantDist=='Uniform') then
+		if(implantDist=='uniform') then
 			findReactionRate=volume*dpaRate/(numDisplacedAtoms*atomSize)
 		else
 			write(*,*) 'Error implant distribution not recognized'
@@ -3320,7 +3320,7 @@ end subroutine
 !***************************************************************************************************
 subroutine findReactionInListDiff(reactionUpdate, reactionPrev, reactants, cell1, cell2, proc1, proc2)
 	use mod_constants
-	use DerivedType
+	use mod_structures
 	implicit none
 
 	type(reaction), pointer :: reactionUpdate, reactionPrev
@@ -3371,10 +3371,9 @@ end subroutine
 !Points reactionUpdate at the clustering reaction in the coarse or fine mesh with matching reactants and products in cell
 !If reaction is not present, reactionUpdate is not associated and reactionPrev points to the end of the list.
 !***************************************************************************************************
-
 subroutine findReactionInListMultiple(reactionUpdate,reactionPrev,cell,reactants,products,numReactants,numProducts)
 	use mod_constants
-	use DerivedType
+	use mod_structures
 	implicit none
 
 	type(reaction), pointer :: reactionUpdate, reactionPrev
@@ -3477,7 +3476,7 @@ end subroutine
 !move all defect combination rules to this subroutine so that they only need to be changed once.
 !***************************************************************************************************
 subroutine defectCombinationRules(products, product2, defectTemp, isCombined)
-	use derivedType
+	use mod_structures
 	use mod_constants
 	implicit none
 
@@ -3575,7 +3574,7 @@ end subroutine
 !***************************************************************************************************
 subroutine checkReactionLegality(numProducts, products, isLegal)
 use mod_constants
-use DerivedType
+use mod_structures
 implicit none
 
 integer numProducts, i
