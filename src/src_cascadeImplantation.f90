@@ -5,7 +5,7 @@
 !***************************************************************************************************
 subroutine chooseCascade(CascadeTemp)
     use mod_structures
-    use randdp
+    use mod_randdp
     use mod_constants
     implicit none
 
@@ -59,7 +59,7 @@ end function
 subroutine addCascadeExplicit(reactionCurrent)
     use mod_structures
     use mod_constants
-    use randdp
+    use mod_randdp
     implicit none
 
     type(reaction), pointer :: reactionCurrent
@@ -97,7 +97,7 @@ end subroutine
 !***************************************************************************************************
 logical function cascadeMixingCheck()
     use mod_constants
-    use randdp
+    use mod_randdp
     implicit none
 
     double precision r1, probability
@@ -132,7 +132,7 @@ end function
 subroutine cascadeUpdateStep(releaseToggle, cascadeCell)
     use mod_structures
     use mod_constants
-    use ReactionRates
+    use mod_reactionRates
     implicit none
     include 'mpif.h'
 

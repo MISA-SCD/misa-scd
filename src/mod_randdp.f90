@@ -16,7 +16,7 @@
 !!   condition is passed onto all subsequent recipients of the software,
 !!   whether modified or not.
 
-MODULE randdp
+MODULE mod_randdp
 ! Replaces COMMON /randpp/ and defines dp
 
 IMPLICIT NONE
@@ -152,5 +152,5 @@ fn_val = x + tiny
 RETURN
 END FUNCTION dprand
 
-END MODULE randdp
+END MODULE mod_randdp
 

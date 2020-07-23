@@ -1,4 +1,4 @@
-module ReactionRates
+module mod_reactionRates
 implicit none
 contains
 

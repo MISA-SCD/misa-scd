@@ -5,7 +5,7 @@
 double precision function GenerateTimestep()
 	use mod_structures
 	use mod_constants
-	use randdp
+	use mod_randdp
 	implicit none
 
 	double precision r1
@@ -72,7 +72,7 @@ end subroutine
 subroutine chooseReaction(reactionCurrent, CascadeCurrent)
 	use mod_structures
 	use mod_constants
-	use randdp
+	use mod_randdp
 	implicit none
 
 	type(reaction), pointer :: reactionCurrent, reactionTemp
@@ -211,8 +211,8 @@ end subroutine
 subroutine updateDefectList(reactionCurrent, defectUpdateCurrent, CascadeCurrent)
 	use mod_constants
 	use mod_structures
-	use ReactionRates
-	use randdp
+	use mod_reactionRates
+	use mod_randdp
 	implicit none
 	include 'mpif.h'
 
@@ -2285,7 +2285,7 @@ end subroutine
 subroutine updateReactionList(defectUpdate)
 	use mod_structures
 	use mod_constants
-	use ReactionRates
+	use mod_reactionRates
 	implicit none
 	include 'mpif.h'
 

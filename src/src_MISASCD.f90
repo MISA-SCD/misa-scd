@@ -9,7 +9,7 @@
 program MISASCD
 	use mod_structures			!<variable classes for MISASCD
 	use mod_constants		!<module containing all global variables
-	use randdp				!<module for double precision random number generation
+	use mod_randdp			!<module for double precision random number generation
 	implicit none
 	include 'mpif.h'
 

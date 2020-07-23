@@ -4,7 +4,7 @@
 subroutine initializeVIdefect()
 	use mod_structures
 	use mod_constants
-	use randdp
+	use mod_randdp
 	implicit none
 	include 'mpif.h'
 
@@ -109,7 +109,7 @@ end subroutine
 subroutine initializeOneCascade()
 	use mod_structures
 	use mod_constants
-	use randdp
+	use mod_randdp
 	implicit none
 	include 'mpif.h'
 
@@ -227,7 +227,7 @@ end subroutine
 subroutine initializeRandomSeeds()
 	use mod_constants
 	use mod_structures
-	use randdp
+	use mod_randdp
 	implicit none
 	include 'mpif.h'
 
@@ -283,7 +283,7 @@ end subroutine
 subroutine initializeReactionList()
 	use mod_structures
 	use mod_constants
-	use ReactionRates
+	use mod_reactionRates
 	implicit none
 
 	integer cell, i, j, reac, matNum, count
@@ -890,8 +890,8 @@ end subroutine
 subroutine initializeFineMesh(CascadeCurrent)
 	use mod_structures
 	use mod_constants
-	use randdp
-	use ReactionRates
+	use mod_randdp
+	use mod_reactionRates
 	implicit none
 
 	type(cascade), pointer :: CascadeCurrent
