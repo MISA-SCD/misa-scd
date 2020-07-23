@@ -1,32 +1,57 @@
 !***************************************************************************************************
-!This is the input file for iron.
-!It includes:
-!1) Number of allowed species and identity of each species (He, V, SIA_mobile, SIA_sessile)
-!2) Allowed defects of each species and combinations (He_n, V_m, He_nV_m)
-!3) Migration energies of each species and diffusion prefactors
-!4) Binding energies of each species to single defects (eg. V_n->V+V_n-1). NOTE: defects with 
-!	multiple species (He_mV_n), need binding energies of each species allowed to dissociate
-!	(single He or single V). Include possibility of larger (V_2) dissociation events as well.
-!5) List of allowed single-defect reactions for each species and functional form of reaction rate,
-!	including:
-!5a)	Dissociation
-!5b)	Diffusion between elements
-!5c)	Removal (eg. by sinks)
-!5d)	Conversion of species type (eg. SIA_mobile->SIA_sessile)
-!
-!6)	List of allowed multiple-defect reactions for each pair of species and functional form of 
-!	reaction rate (clustering reactions) - including final defect type 
-!	(eg. SIA_mobile+SIA_mobile->SIA_sessile)
-!7)	List of allowed 0-defect reactions (cascade implantation), including:
-!7a)	Cascade energies and avg. number of Frenkel pairs in each cascade energy
-!7b)	DPA rate at each cascade energy
-!7c)	Flag showing whether DPA rate is uniform or a distribution; if it is a distribution then
-!		need to include functional form of DPA distrubtion as well as parameters input into
-!		functional form.
-!
-!NOTE: functional forms 1 and 2 are reserved for two cases: zero and constant
+!************************************DEFECT ATTRIBUTES**********************************************
+!This is the input file for pure Fe, includes:
+! 1) Component species: defectType(SPECIES), default: SPECIES = 4
+!               defectType(1): number of slutes atoms (Cu)
+!               defectType(2): number of vacancies
+!               defectType(3): number of SIAs (mobile)
+!               defectType(4): number of SIAs (immobile)
+! 2) Formation energies of point defects (Ef)
+! 3) Diffusion parameters of mobile defects (D0 and Em)
+! 4) Binding energies of clusters
+!    NOTE: defects with multiple species (eg. V_nS_m), need binding energies of each species allowed to dissociate (single S or single V).
+! 5) List of allowed reactions for each defect species and functional form of reaction rate, including 0th, 1th and 2th
+!    0th:        implantation (cascade or Fenkel pairs)
+!    1th:        dissociation
+!                sinkRemoval (absorption at sinks, include dislocation and grain boundary, sink strength: S=Sd+Sg)
+!                diffusion
+!                impurityTrapping
+!    2th:        clustering
+! 6) Identify the function form with ftype, including:
+!    6a)ftype   1~10 are used to calculate diffusivities
+!               1: immobile (0 parameters)
+!               2: constant (1 parameters)
+!               3: mobile SIA loops (6 parameters, Fe)
+!               4: mobile solute clusters (Cu) (2 parameters: D0 and Em of Cu monomer, D(n)=D(1)/n)
+!               5: mobile W atoms (2 parameters: D0 and Em of W atom)
+!    6b)ftype   11~20 are used to calculate binding energies
+!               11: constant (1 parameters)
+!               12: Eb of SIA/V clusters (2 parameters: Eb(2) and Ef(1))
+!               13: Eb of Cun->Cu+Cu(n-1) (3 parameters: Christien F and Barbu A. (2004))
+!               14: Eb of VmCun->Cu+VmCu(n-1)) (3 parameters: Kulikov § D, Malerba L and Hou M. (2006))
+!               15: Eb of VmCun->V+V(m-1)Cun (4 parameters: Kulikov § D, Malerba L and Hou M. (2006))
+! 7) Reaction type, including:
+!    7a) 1~10 are used for 0th reaction, including:
+!               1: Frenkel pair
+!               2: cascade
+!               3: He
+!               4: Re
+!               5: H
+!    7b) 11~20 are used for 1th reaction ,including:
+!               11: dissociation
+!               12: sinkRemoval
+!               13: diffusion (3D diffusion)
+!               14: impurityTrapping
+!               15: 2D diffusion
+!               16: Dissociation from grain boundary into bulk volume element
+!    7c) 21~30 are used for 2th reaction, including:
+!               21: 3D-3D
+!               22: 3D (V/S) -1D (SIA)
+!               23: 3D (SIA)-1D (SIA)
+!               24: 1D-1D
 !***************************************************************************************************
-species     !Default: 4 species: Cu, V, SIA_mobile, SIA_mobile
+!***************************************************************************************************
+species         !Default: 4 species: Cu, V, SIA_mobile, SIA_mobile
 4
 
 formationEnergies
@@ -34,9 +59,9 @@ formationEnergies
 numSingle
 2
 
-0	1	0	0   !V_1
+0	1	0	0           !V_1
 Ef	1.6d0
-0	0	1	0   !SIA_1
+0	0	1	0           !SIA_1
 Ef	4.3d0
 
 diffusionPrefactors
@@ -105,21 +130,21 @@ numFunction
 0	1	0	0		0	1	0	0	!nV->V+(n-1)V
 min 0   5   0   0
 max 0   -1  0   0
-ftype	4
+ftype	12
 param	2
 2.07d0	3.01d0
 
 0	0	1	0		0	0	1	0	!nSIA->SIA+(n-1)SIA
 min 0   0   4   0
 max 0   0   -1  0
-ftype	4
+ftype	12
 param	2
 3.77d0	5.05d0
 
-0	0	0	1		0	0	1	0	!nSIA->SIA+(n-1)SIA NOTE: mobile SIA ejected from Sessile SIA cluster
+0	0	0	1		0	0	1	0	!nSIA->SIA+(n-1)SIA
 min 0   0   0   4
 max 0   0   0   -1
-ftype	4
+ftype	12
 param	2
 3.77d0	5.05d0
 
@@ -127,112 +152,112 @@ param	2
 !Reactions
 !***************************************************************************************************
 dissociation
-3						!Number of defect dissociation types
+3						            !Number of defect dissociation types
 
 0	1	0	0		0	1	0	0	!nV->V+(n-1)V
 min 0   2   0   0
 max 0   -1  0   0
-fType   1							!reactionRate form 1
+fType   11
 
 0	0	1	0		0	0	1	0	!nSIA->SIA+(n-1)SIA
 min 0   0   2   0
 max 0   0   -1  0
-fType   1							!reactionRate form 1
+fType   11
 
-0	0	0	1		0	0	1	0	!nSIA->SIA+(n-1)SIA NOTE: mobile SIA ejected from Sessile SIA cluster
+0	0	0	1		0	0	1	0	!nSIA->SIA+(n-1)SIA
 min 0   0   0   2
 max 0   0   0   -1
-fType   1							!reactionRate form 1
+fType   11
 
 diffusion
-2							!number of defect types that can diffuse
+2							        !number of defect types that can diffuse
 
-0	1	0	0		0	1	0	0				!V diffusion
+0	1	0	0		0	1	0	0	!V diffusion
 min 0   1   0   0
 max 0   4   0   0
-fType   2							!reactionRate form 2
+fType   13
 
-0	0	1	0		0	0	1	0				!SIA_mobile diffusion
+0	0	1	0		0	0	1	0	!SIA_mobile diffusion
 min 0   0   1   0
 max 0   0   -1  0
-fType   2							!reactionRate form 2
+fType   13
 
-sinkRemoval					!These reactions involve removing defects from the mesh by dislocations
-2							!number of defect types that can be removed this way
+sinkRemoval
+2							        !number of defect types that can be removed this way
 
-0	1	0	0				!V trapping
+0	1	0	0				        !V trapping
 min 0   1   0   0
 max 0   4   0   0
-fType   3							!reactionRate form 3
+fType   12
 
-0	0	1	0				!SIA_mobile trapping
+0	0	1	0				        !SIA_mobile trapping
 min 0   0   1   0
 max 0   0   -1  0
-fType   3							!reactionRate form 3
+fType   12
 
-impurityTrapping			!These reactions involve changing mobile SIA loops to sessile SIA loops via trapping by impurities
-0							!Only one defect type can be affected by this
+impurityTrapping			        !These reactions involve changing mobile SIA loops to sessile SIA loops via trapping by impurities
+0
 
 0	0	1	0		0	0	0	1
 min 0   0   5   0
 max 0   0   -1  0
-fType   4							!reactionRate form 4 (essentially clustering between SIA loop and point defect)
+fType   14
 
 clustering
-9							!number of different reactions allowed
+9
 
 0	1	0	0		0	1	0	0		!V-V 3D-3D
 min 0   1   0   0       0   1   0   0
 max 0   -1  0   0       0   -1  0   0
-fType   6							!reactionRate form 6 - for spherical clusters
+fType   21
 
 0	1	0	0		0	0	1	0		!V-SIA_mobile (annihilation) 3D-3D
 min 0   1   0   0       0   0   1   0
 max 0   -1  0   0       0   0   4   0
-fType   6							!reactionRate form 6 - for spherical clusters
+fType   21
 
 0	1	0	0		0	0	1	0		!V-SIA_mobile(loop) (annihilation) 3D-1D
 min 0   1   0   0       0   0   5   0
 max 0   -1  0   0       0   0   -1  0
-fType   7							!reactionRate form 8 - for 1D circular - 3D spherical interactions
+fType   22
 
-0	1	0	0		0	0	0	1		!V-SIA_sessile(loop) (annihilation) 3D-1D
+0	1	0	0		0	0	0	1		!V-SIA_immobile(loop) (annihilation) 3D-1D
 min 0   1   0   0       0   0   0   5
 max 0   -1  0   0       0   0   0   -1
-fType   7							!reactionRate form 8 - for 1D circular - 3D spherical interactions
+fType   22
 
 0	0	1	0		0	0	1	0		!SIA_mobile-SIA_mobile 3D-3D
 min 0   0   1   0       0   0   1   0
 max 0   0   4   0       0   0   4   0
-fType   6							!reactionRate form 6 - for spherical clusters
+fType   21
 
 0	0	1	0		0	0	1	0		!SIA_mobile-SIA_mobile(loop) 3D-1D
 min 0   0   1   0       0   0   5   0
 max 0   0   4   0       0   0   -1  0
-fType   8							!reactionRate form 8 - for 1D circular - 3D spherical interactions
+fType   23
 
 0	0	1	0		0	0	1	0		!SIA_mobile(loop)-SIA_mobile(loop) 1D-1D
 min 0   0   5   0       0   0   5   0
 max 0   0   -1  0       0   0   -1  0
-fType   9							!reactionRate form 9 - for 1D-1D SIA loop interactions
+fType   24
 
-0	0	1	0		0	0	0	1		!SIA_mobile-SIA_sessile(loop) 3D-1D
+0	0	1	0		0	0	0	1		!SIA_mobile-SIA_immobile(loop) 3D-1D
 min 0   0   1   0       0   0   0   5
 max 0   0   4   0       0   0   0   -1
-fType   8							!reactionRate form 8 - for 1D circular - 3D spherical interactions
+fType   23
 
-0	0	1	0		0	0	0	1		!SIA_mobile(loop)-SIA_sessile(loop) 1D-1D
+0	0	1	0		0	0	0	1		!SIA_mobile(loop)-SIA_immobile(loop) 1D-1D
 min 0   0   5   0       0   0   0   5
 max 0   0   -1  0       0   0   0   -1
-fType   9							!reactionRate form 9 - for 1D-1D SIA loop interactions
+fType   24
 
-Implantation					!Reactions with no reactants (defect generation reactions)
-2							!Number of reactions with no reactants
+Implantation					        !Reactions with no reactants (defect generation reactions)
+2
 
-FrenkelPair					!Frenkel pair implantation
+FrenkelPair					            !Frenkel pair implantation
 0	1	0	0		0	0	1	0		!V+SIA creation
-fType   10							!reactionRate form 10 - for Frenkel pair implantation
+fType   1
 
-Cascade						!Cascade implantation
-fType   11							!reactionRate form 11 - for cascade implantation
+Cascade						            !Cascade implantation
+fType   2
 

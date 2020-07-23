@@ -90,18 +90,18 @@ double precision function DiffusivityCompute(DefectType, functionType, numParame
 	double precision D0, Em
 	double precision diffusivityCu
 
-	if(functionType==1) then	!used for immobile defects
+	if(functionType==1) then		!used for immobile defects
 		Diff=0d0
 	else if(functionType==2) then	!used for constant functions
 		Diff=parameters(1)
-	else if(functionType==3) then	!Mobile defect diffusivity
+	else if(functionType==3) then	!mobile SIA loops (6 parameters, Fe)
 		D0=parameters(1)+parameters(2)/dble(DefectType(3))**(parameters(3))
 		Em=parameters(4)+parameters(5)/dble(DefectType(3))**(parameters(6))
 		Diff=D0*dexp(-Em/(kboltzmann*temperature))
 	else if(functionType==4) then	!Cu diffusivity
 		!< Dcu(n) = Dcu(1)/n
 		Diff=diffusivityCu(matNum)/dble(DefectType(1))
-	else if(functionType==5) then	!SIA_m (loop, W)
+	else if(functionType==5) then	!mobile W atoms (2 parameters: D0 and Em of W atom)
 		D0=parameters(1)*dble(DefectType(3))**(-0.5d0)
 		Diff=D0*dexp(-parameters(2)/(kboltzmann*temperature))
 	else
@@ -140,12 +140,6 @@ double precision function diffusivityCu(matNum)
 	end do outer
 
 end function
-
-!***************************************************************************************************
-!This function returns the binding energy of defect DefectType() which releases defect product().
-!It searches to see if DefectType and product are listed in BindSingle, and if not, in BindFunc.
-!If they are in neither, it outputs an error message (cannot dissociate that product from that defect)
-!***************************************************************************************************
 
 !*****************************************************************************************
 !>double precision function findBinding(matNum, DefectType, productType)
@@ -251,11 +245,7 @@ double precision function BindingCompute(DefectType, product, functionType, numP
 	double precision parameters(numParameters)
 	double precision Eb
 
-	if(functionType==2) then	!used for Cu cluster dislocation
-		CuNum=DefectType(1)
-		Eb=parameters(1)*kboltzmann-parameters(2)*kboltzmann*tempStore- &
-				(36d0*pi)**(1d0/3d0)*atomSize**(2d0/3d0)*parameters(3)*(dble(CuNum)**(2d0/3d0)-dble(CuNum-1)**(2d0/3d0))
-	else if(functionType==4) then	!V / SIA cluster dislocation
+	if(functionType==12) then	!V / SIA cluster dislocation
 		num=0
 		do i=1,numSpecies
 			if(DefectType(i) > num) then
@@ -263,15 +253,17 @@ double precision function BindingCompute(DefectType, product, functionType, numP
 				exit
 			end if
 		end do
-
 		Eb=parameters(1)+(parameters(2)-parameters(1))*(dble(num)**(2d0/3d0)-dble(num-1)**(2d0/3d0))/(2d0**(2d0/3d0)-1d0)
-
-	else if(functionType==6) then	!nCumV->Cu+(n-1)CumV
+	else if(functionType==13) then	!nCu->Cu+(n-1)Cu
+		CuNum=DefectType(1)
+		Eb=parameters(1)*kboltzmann-parameters(2)*kboltzmann*tempStore- &
+				(36d0*pi)**(1d0/3d0)*atomSize**(2d0/3d0)*parameters(3)*(dble(CuNum)**(2d0/3d0)-dble(CuNum-1)**(2d0/3d0))
+	else if(functionType==14) then	!nCumV->Cu+(n-1)CumV
 		CuNum=DefectType(1)
 		VNum=DefectType(2)
 		Eb=parameters(1)+parameters(2)*(dble(CuNum)**(0.85d0)-dble(CuNum+1)**(0.85d0))-&
 				parameters(3)*(dble(VNum)**(1d0/3d0)-dble(VNum)**(2d0/3d0))
-	else if(functionType==7) then	!nCumV->V+nCu(m-1)V
+	else if(functionType==15) then	!nCumV->V+nCu(m-1)V
 		CuNum=DefectType(1)
 		VNum=DefectType(2)
 		Eb=parameters(1)-parameters(2)*(dble(VNum)**(1d0/3d0)-dble(VNum+1)**(1d0/3d0))+&
