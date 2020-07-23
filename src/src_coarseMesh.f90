@@ -154,7 +154,7 @@ end subroutine
 !updates defect implantation rates due to change in volume
 !***************************************************************************************************
 subroutine updateImplantRateSingleCell(cell)
-	use mod_reactionRates
+	use mod_reactionrates
 	use mod_structures
 	use mod_constants
 	implicit none
@@ -222,7 +222,7 @@ end subroutine
 subroutine resetReactionListSingleCell(cell)
 	use mod_constants
 	use mod_structures
-	use mod_reactionRates
+	use mod_reactionrates
 	implicit none
 
 	type(defect), pointer :: defectCurrent, defectUpdate

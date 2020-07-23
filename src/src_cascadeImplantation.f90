@@ -132,7 +132,7 @@ end function
 subroutine cascadeUpdateStep(releaseToggle, cascadeCell)
     use mod_structures
     use mod_constants
-    use mod_reactionRates
+    use mod_reactionrates
     implicit none
     include 'mpif.h'
 

@@ -211,7 +211,7 @@ end subroutine
 subroutine updateDefectList(reactionCurrent, defectUpdateCurrent, CascadeCurrent)
 	use mod_constants
 	use mod_structures
-	use mod_reactionRates
+	use mod_reactionrates
 	use mod_randdp
 	implicit none
 	include 'mpif.h'
@@ -2285,7 +2285,7 @@ end subroutine
 subroutine updateReactionList(defectUpdate)
 	use mod_structures
 	use mod_constants
-	use mod_reactionRates
+	use mod_reactionrates
 	implicit none
 	include 'mpif.h'
 

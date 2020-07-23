@@ -16,7 +16,7 @@ TARGET = misascd
 MODSRCS =   mod_structures.f90\
             mod_constants.f90\
             mod_randdp.f90\
-            mod_reactionRates.f90
+            mod_reactionrates.f90
 MODOBJS = $(MODSRCS:.f90=.o)
 MODS = $(MODSRCS:.f90=.mod)
 
@@ -33,5 +33,5 @@ $(MODS) $(MODOBJS): $(MODSRCS)
 
 # Clean Object files
 clean:
-	rm $(TARGET) $(OBJS) $(MODOBJS) $(MODS) *.mod
+	rm $(TARGET) $(OBJS) $(MODOBJS) $(MODS)
 

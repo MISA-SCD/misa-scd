@@ -283,7 +283,7 @@ end subroutine
 subroutine initializeReactionList()
 	use mod_structures
 	use mod_constants
-	use mod_reactionRates
+	use mod_reactionrates
 	implicit none
 
 	integer cell, i, j, reac, matNum, count
@@ -891,7 +891,7 @@ subroutine initializeFineMesh(CascadeCurrent)
 	use mod_structures
 	use mod_constants
 	use mod_randdp
-	use mod_reactionRates
+	use mod_reactionrates
 	implicit none
 
 	type(cascade), pointer :: CascadeCurrent
