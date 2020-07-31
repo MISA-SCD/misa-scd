@@ -74,21 +74,21 @@ subroutine outputDefectsXYZ()
 
 	else
 
-		write(82,*) 'time', elapsedTime, 'DPA', DPA, 'steps', step
+		write(RAWDAT,*) 'time', elapsedTime, 'DPA', DPA, 'steps', step
 
 		!Write defects in processor 0 to file
-		write(82,*) 'processor', myProc%taskid
+		write(RAWDAT,*) 'processor', myProc%taskid
 		do i=1,numCells
 			defectCurrent=>defectList(i)%next
-			write(82,*) 'cell', i,'globalCell', myMesh(i)%globalCell
-			write(82,*) 'defects (Cu V SIA_m SIA_im num)'
+			write(RAWDAT,*) 'cell', i,'globalCell', myMesh(i)%globalCell
+			write(RAWDAT,*) 'defects (Cu V SIA_m SIA_im num)'
 
 			numScluster=0
 			numVoid=0
 			numLoop=0
 
 			do while(associated(defectCurrent))
-				write(82,*) defectCurrent%defectType, defectCurrent%num
+				write(RAWDAT,*) defectCurrent%defectType, defectCurrent%num
 				if(defectCurrent%defectType(1) > minSCluster) then
 					numScluster=numScluster+defectCurrent%num
 				else if(defectCurrent%defectType(1)==0 .AND. defectCurrent%defectType(2) > minVoid) then
@@ -99,18 +99,18 @@ subroutine outputDefectsXYZ()
 				defectCurrent=>defectCurrent%next
 			end do
 
-			write(82,*) 'concentration of point defects (Cu/V/SIA) and clusters (Cu cluster/Void/Loop)'
-			write(82,*) dble(numScluster)*volTemp, dble(numVoid)*volTemp, dble(numLoop)*volTemp
-			write(82,*)
+			write(RAWDAT,*) 'concentration of point defects (Cu/V/SIA) and clusters (Cu cluster/Void/Loop)'
+			write(RAWDAT,*) dble(numScluster)*volTemp, dble(numVoid)*volTemp, dble(numLoop)*volTemp
+			write(RAWDAT,*)
 		end do
-		write(82,*)
-		write(82,*)
+		write(RAWDAT,*)
+		write(RAWDAT,*)
 
 		!Other processors will send information about defects contained in their mesh. This processor
 		!must output all information to data file (can't do it from other processors). Information should
 		!be output in the same format for the master and slave processors.
 		do i=1,myProc%numtasks-1
-			write(82,*) 'processor', i
+			write(RAWDAT,*) 'processor', i
 
 			do j=1,numCellRecv(i+1)
 
@@ -122,22 +122,22 @@ subroutine outputDefectsXYZ()
 				allocate(cellRecv(numSpecies+1,numRecv))
 				call MPI_RECV(cellRecv,(numSpecies+1)*numRecv,MPI_INTEGER,i,100+j,comm,status,ierr)
 
-				write(82,*) 'cell', j,'globalCell', cellRecv(2,1)
-				write(82,*) 'defects (Cu V SIA_m SIA_im num)'
+				write(RAWDAT,*) 'cell', j,'globalCell', cellRecv(2,1)
+				write(RAWDAT,*) 'defects (Cu V SIA_m SIA_im num)'
 
 				do k=1,cellRecv(1,1)
-					write(82,*) cellRecv(:,k+1)
+					write(RAWDAT,*) cellRecv(:,k+1)
 				end do
 
-				write(82,*) 'concentration of point defects (Cu/V/SIA) and clusters (Cu cluster/Void/Loop)'
-				write(82,*) dble(cellRecv(3,1))*volTemp,dble(cellRecv(4,1))*volTemp,dble(cellRecv(5,1))*volTemp
-				write(82,*)
+				write(RAWDAT,*) 'concentration of point defects (Cu/V/SIA) and clusters (Cu cluster/Void/Loop)'
+				write(RAWDAT,*) dble(cellRecv(3,1))*volTemp,dble(cellRecv(4,1))*volTemp,dble(cellRecv(5,1))*volTemp
+				write(RAWDAT,*)
 
 				deallocate(cellRecv)
 			end do
 		end do
-		write(82,*)
-		write(82,*)
+		write(RAWDAT,*)
+		write(RAWDAT,*)
 	end if
 
 end subroutine
@@ -470,7 +470,7 @@ subroutine outputDefectsTotal()
 		VRetained=0d0
 		VAnnihilated=0d0
 
-		write(83,*) 'defects (Cu, V, SIA_m, SIA_im, num)'
+		write(TOTDAT,*) 'defects (Cu, V, SIA_m, SIA_im, num)'
 		defectCurrentList=>outputDefectList%next
 		do while(associated(defectCurrentList))
 
@@ -539,7 +539,7 @@ subroutine outputDefectsTotal()
 			end if
 
 			!Output defects
-			write(83,*) defectCurrentList%defectType, defectCurrentList%num
+			write(TOTDAT,*) defectCurrentList%defectType, defectCurrentList%num
 
 			defectCurrentList=>defectCurrentList%next
 		end do
@@ -570,16 +570,16 @@ subroutine outputDefectsTotal()
 		VAnnihilated = dble(totalImpAnn(2))/(dble(numDisplacedAtoms)*dble(totalImpAnn(1)))
 
 		!Output totdat.out
-		write(83,*)	'numCluster (S/Void/Loop/SV):', numScluster, numVoid, numLoop, numSVcluster
-		write(83,*)	'NumberDensity (m-3) (S/Void/Loop/SV):',denScluster*1d27,denVoid*1d27,denLoop*1d27,denSVcluster*1d27
-		write(83,*)	'Concentration (S/Void/Loop/SV):', denScluster*atomSize_Cu, denVoid*atomSize, denLoop*atomSize,&
+		write(TOTDAT,*)	'numCluster (S/Void/Loop/SV):', numScluster, numVoid, numLoop, numSVcluster
+		write(TOTDAT,*)	'NumberDensity (m-3) (S/Void/Loop/SV):',denScluster*1d27,denVoid*1d27,denLoop*1d27,denSVcluster*1d27
+		write(TOTDAT,*)	'Concentration (S/Void/Loop/SV):', denScluster*atomSize_Cu, denVoid*atomSize, denLoop*atomSize,&
 				denSVcluster*atomSize_Cu
-		write(83,*)	'AverageRadius (nm) (S/Void/Loop/SV):', radiusScluster, radiusVoid, radiusLoop, radiusSVcluster
-		write(83,*)	'AverageSize (S/Void/Loop/SV):', sizeScluster, sizeVoid, sizeLoop, sizeSVcluster
-		write(83,*) 'ConcenPointDefects (V/SIA):', conPointV, conPointSIA
-		write(83,*) 'PercentVRetained',VRetained,'PercentVAnnihilated',VAnnihilated
-		write(83,*)
-		write(83,*)
+		write(TOTDAT,*)	'AverageRadius (nm) (S/Void/Loop/SV):', radiusScluster, radiusVoid, radiusLoop, radiusSVcluster
+		write(TOTDAT,*)	'AverageSize (S/Void/Loop/SV):', sizeScluster, sizeVoid, sizeLoop, sizeSVcluster
+		write(TOTDAT,*) 'ConcenPointDefects (V/SIA):', conPointV, conPointSIA
+		write(TOTDAT,*) 'PercentVRetained',VRetained,'PercentVAnnihilated',VAnnihilated
+		write(TOTDAT,*)
+		write(TOTDAT,*)
 
 	end if
 
@@ -886,15 +886,15 @@ subroutine outputTotal()
 		!VAnnihilated = dble(totalImpAnn(2))/(dble(numDisplacedAtoms)*dble(totalImpAnn(1)))
 
 		!Output totdat.out
-		write(83,*)	'numCluster (S/Void/Loop):', numScluster, numVoid, numLoop
-		write(83,*)	'NumberDensity (m-3) (S/Void/Loop):', denScluster*1d27, denVoid*1d27,denLoop*1d27
-		write(83,*)	'Concentration (S/Void/Loop):', denScluster*atomSize, denVoid*atomSize, denLoop*atomSize
-		write(83,*)	'AverageRadius (nm) (S/Void/Loop):', radiusScluster, radiusVoid, radiusLoop
-		write(83,*)	'AverageSize (S/Void/Loop):', sizeScluster, sizeVoid, sizeLoop
-		write(83,*) 'ConcenPointDefects (V/SIA):', conPointV, conPointSIA
-		!write(83,*) 'PercentVRetained',VRetained,'PercentVAnnihilated',VAnnihilated
-		write(83,*)
-		write(83,*)
+		write(TOTDAT,*)	'numCluster (S/Void/Loop):', numScluster, numVoid, numLoop
+		write(TOTDAT,*)	'NumberDensity (m-3) (S/Void/Loop):', denScluster*1d27, denVoid*1d27,denLoop*1d27
+		write(TOTDAT,*)	'Concentration (S/Void/Loop):', denScluster*atomSize, denVoid*atomSize, denLoop*atomSize
+		write(TOTDAT,*)	'AverageRadius (nm) (S/Void/Loop):', radiusScluster, radiusVoid, radiusLoop
+		write(TOTDAT,*)	'AverageSize (S/Void/Loop):', sizeScluster, sizeVoid, sizeLoop
+		write(TOTDAT,*) 'ConcenPointDefects (V/SIA):', conPointV, conPointSIA
+		!write(TOTDAT,*) 'PercentVRetained',VRetained,'PercentVAnnihilated',VAnnihilated
+		write(TOTDAT,*)
+		write(TOTDAT,*)
 
 	end if
 

@@ -143,8 +143,8 @@ program MISASCD
 			write(unit=filename2(7:8), fmt='(I2)') sim
 			filename(9:12)='.out'
 			filename2(9:12)='.out'
-			if(rawdatToggle=='yes') open(82, file=filename, action='write', status='Unknown')
-			if(totdatToggle=='yes') open(83, file=filename2, action='write', status='Unknown')
+			if(rawdatToggle=='yes') open(RAWDAT, file=filename, action='write', status='Unknown')
+			if(totdatToggle=='yes') open(TOTDAT, file=filename2, action='write', status='Unknown')
 		end if
 
 		call initializeRandomSeeds()		!<set unique random number seeds in each processor
@@ -376,27 +376,27 @@ program MISASCD
 					call cpu_time(time2)
 					write(*,*)
 					write(*,*) 'time', elapsedTime, 'DPA', DPA, 'steps', step, 'AverageTimeStep', elapsedTime/dble(step)
-					write(83,*) '*********************************************************************************************'
-					write(83,*) 'time', elapsedTime, 'DPA', DPA, 'steps', step, 'AverageTimeStep', elapsedTime/dble(step)
+					write(TOTDAT,*) '*********************************************************************************************'
+					write(TOTDAT,*) 'time', elapsedTime, 'DPA', DPA, 'steps', step, 'AverageTimeStep', elapsedTime/dble(step)
 
 					if(implantType=='FrenkelPair') then
 						write(*,*) 'FrenkelPairs', totalImpAnn(1), 'computationTime', time2-time1
-						write(83,*) 'FrenkelPairs', totalImpAnn(1), 'computationTime', time2-time1
+						write(TOTDAT,*) 'FrenkelPairs', totalImpAnn(1), 'computationTime', time2-time1
 					else if(implantType=='Cascade')	then
 						write(*,*) 'Cascades', totalImpAnn(1), 'computationTime', time2-time1
-						write(83,*) 'Cascades', totalImpAnn(1), 'computationTime', time2-time1
+						write(TOTDAT,*) 'Cascades', totalImpAnn(1), 'computationTime', time2-time1
 					else	!Thermal aging
 						write(*,*) 'noImplantation', totalImpAnn(1), 'computationTime', time2-time1
-						write(83,*) 'noImplantation', totalImpAnn(1), 'computationTime', time2-time1
+						write(TOTDAT,*) 'noImplantation', totalImpAnn(1), 'computationTime', time2-time1
 					end if
 					!Optional: output fraction of steps that are null events
-					write(83,*) 'Fraction null steps', dble(nullSteps)/dble(step)
+					write(TOTDAT,*) 'Fraction null steps', dble(nullSteps)/dble(step)
 					write(*,*)
 				end if
 
 				!Several defect output optionas available.
-				if(rawdatToggle=='yes') call outputDefectsXYZ()		!write(82,*): rawdat
-				if(totdatToggle=='yes') call outputDefectsTotal()	!write(83,*): totdat.out
+				if(rawdatToggle=='yes') call outputDefectsXYZ()		!write(RAWDAT,*): rawdat
+				if(totdatToggle=='yes') call outputDefectsTotal()	!write(TOTDAT,*): totdat.out
 
 				outputCounter=outputCounter+1
 				call MPI_BARRIER(comm,ierr)
@@ -422,20 +422,20 @@ program MISASCD
 			write(*,*)
 			write(*,*) 'Final  step'
 			write(*,*) 'time', elapsedTime, 'DPA', DPA, 'steps', step, 'AverageTimeStep', elapsedTime/dble(step)
-			write(83,*) '*********************************************************************************************'
-			write(83,*) 'elapsedTime', elapsedTime, 'DPA', DPA, 'steps', step, 'AverageTimeStep', elapsedTime/dble(step)
+			write(TOTDAT,*) '*********************************************************************************************'
+			write(TOTDAT,*) 'elapsedTime', elapsedTime, 'DPA', DPA, 'steps', step, 'AverageTimeStep', elapsedTime/dble(step)
 			if(implantType=='FrenkelPair') then
 				write(*,*) 'FrenkelPairs', totalImpAnn(1), 'computationTime', time2-time1
-				write(83,*) 'FrenkelPairs', totalImpAnn(1), 'computationTime', time2-time1
+				write(TOTDAT,*) 'FrenkelPairs', totalImpAnn(1), 'computationTime', time2-time1
 			else if(implantType=='Cascade')	then
 				write(*,*) 'Cascades', totalImpAnn(1), 'computationTime', time2-time1
-				write(83,*) 'Cascades', totalImpAnn(1), 'computationTime', time2-time1
+				write(TOTDAT,*) 'Cascades', totalImpAnn(1), 'computationTime', time2-time1
 			else
 				write(*,*) 'noImplantation', totalImpAnn(1), 'computationTime', time2-time1
-				write(83,*) 'noImplantation', totalImpAnn(1), 'computationTime', time2-time1
+				write(TOTDAT,*) 'noImplantation', totalImpAnn(1), 'computationTime', time2-time1
 			end if
 			write(*,*)
-			write(83,*) 'Final  step'
+			write(TOTDAT,*) 'Final  step'
 		end if
 
 		!Final output
@@ -468,8 +468,8 @@ program MISASCD
 			if(myProc%taskid==MASTER ) then
 				write(*,*) '************************************'
 				write(*,*) 'Entering Annealing Phase'
-				write(83,*) '************************************'
-				write(83,*) 'Entering Annealing Phase'
+				write(TOTDAT,*) '************************************'
+				write(TOTDAT,*) 'Entering Annealing Phase'
 			end if
 		end if
 
@@ -573,29 +573,29 @@ program MISASCD
 					call cpu_time(time2)
 					write(*,*)
 					write(*,*) 'Anneal time', elapsedTime, 'DPA',DPA, 'steps',step, 'AverageTimeStep', elapsedTime/dble(step)
-					write(83,*) '*********************************************************************************************'
-					write(83,*) 'Anneal time', elapsedTime, 'DPA', DPA, 'steps', step, 'AverageTimeStep', elapsedTime/dble(step)
+					write(TOTDAT,*) '*********************************************************************************************'
+					write(TOTDAT,*) 'Anneal time', elapsedTime, 'DPA', DPA, 'steps', step, 'AverageTimeStep', elapsedTime/dble(step)
 
 					if(implantType=='FrenkelPair') then
 						write(*,*) 'FrenkelPairs', totalImpAnn(1), 'computationTime', time2-time1
-						write(83,*) 'FrenkelPairs', totalImpAnn(1), 'computationTime', time2-time1
+						write(TOTDAT,*) 'FrenkelPairs', totalImpAnn(1), 'computationTime', time2-time1
 					else if(implantType=='Cascade')	then
 						write(*,*) 'Cascades', totalImpAnn(1), 'computationTime', time2-time1
-						write(83,*) 'Cascades', totalImpAnn(1), 'computationTime', time2-time1
+						write(TOTDAT,*) 'Cascades', totalImpAnn(1), 'computationTime', time2-time1
 					else	!Thermal aging
 						write(*,*) 'noImplantation', totalImpAnn(1), 'computationTime', time2-time1
-						write(83,*) 'noImplantation', totalImpAnn(1), 'computationTime', time2-time1
+						write(TOTDAT,*) 'noImplantation', totalImpAnn(1), 'computationTime', time2-time1
 					end if
 
 					!Optional: output fraction of steps that are null events
-					write(83,*) 'Fraction null steps', dble(nullSteps)/dble(step)
-					write(83,*)
+					write(TOTDAT,*) 'Fraction null steps', dble(nullSteps)/dble(step)
+					write(TOTDAT,*)
 					write(*,*)
 				end if
 
 				!Several defect output optionas available.
-				if(totdatToggle=='yes') call outputDefectsTotal()	!write(83,*): totdat.out
-				if(rawdatToggle=='yes') call outputDefectsXYZ()		!write(82,*): rawdat
+				if(totdatToggle=='yes') call outputDefectsTotal()	!write(TOTDAT,*): totdat.out
+				if(rawdatToggle=='yes') call outputDefectsXYZ()		!write(RAWDAT,*): rawdat
 
 				outputCounter=outputCounter+1
 				!call MPI_BARRIER(comm，ierr)
@@ -615,24 +615,24 @@ program MISASCD
 				call cpu_time(time2)
 
 				write(*,*) 'Final Defect State'
-				write(83,*) 'Final Defect State'
+				write(TOTDAT,*) 'Final Defect State'
 
 				write(*,*) 'Anneal time', elapsedTime, 'DPA', DPA, 'steps', step, 'AverageTimeStep', elapsedTime/dble(step)
-				write(83,*) '*********************************************************************************************'
-				write(83,*) 'Anneal time', elapsedTime, 'DPA', DPA, 'steps', step, 'AverageTimeStep', elapsedTime/dble(step)
+				write(TOTDAT,*) '*********************************************************************************************'
+				write(TOTDAT,*) 'Anneal time', elapsedTime, 'DPA', DPA, 'steps', step, 'AverageTimeStep', elapsedTime/dble(step)
 				if(implantType=='FrenkelPair') then
 					write(*,*) 'FrenkelPairs', totalImpAnn(1), 'computationTime', time2-time1
-					write(83,*) 'FrenkelPairs', totalImpAnn(1), 'computationTime', time2-time1
+					write(TOTDAT,*) 'FrenkelPairs', totalImpAnn(1), 'computationTime', time2-time1
 				else if(implantType=='Cascade')	then
 					write(*,*) 'Cascades', totalImpAnn(1), 'computationTime', time2-time1
-					write(83,*) 'Cascades', totalImpAnn(1), 'computationTime', time2-time1
+					write(TOTDAT,*) 'Cascades', totalImpAnn(1), 'computationTime', time2-time1
 				else
 					write(*,*) 'noImplantation', totalImpAnn(1), 'computationTime', time2-time1
-					write(83,*) 'noImplantation', totalImpAnn(1), 'computationTime', time2-time1
+					write(TOTDAT,*) 'noImplantation', totalImpAnn(1), 'computationTime', time2-time1
 				end if
 				write(*,*)
-				write(83,*) 'Final  step'
-				write(83,*) 'Fraction null steps', dble(nullSteps)/dble(step)
+				write(TOTDAT,*) 'Final  step'
+				write(TOTDAT,*) 'Fraction null steps', dble(nullSteps)/dble(step)
 
 			end if
 
@@ -651,8 +651,8 @@ program MISASCD
 		if(myProc%taskid==MASTER) then
 			write(*,*) 'computation time', time2-time1
 			write(*,*) 'total steps', step
-			write(83,*) 'computation time', time2-time1
-			write(83,*) 'total steps', step
+			write(TOTDAT,*) 'computation time', time2-time1
+			write(TOTDAT,*) 'total steps', step
 			write(*,*) 'Deallocating memory: fine mesh defects and reactions'
 		end if
 
@@ -665,7 +665,7 @@ program MISASCD
 		end do
 
 		if(myProc%taskid==MASTER) then
-			write(83,*) 'Released all fine mesh defects'
+			write(TOTDAT,*) 'Released all fine mesh defects'
 			write(*,*) 'Deallocating memory: coarse mesh defects and reactions'
 		end if
 
@@ -678,8 +678,8 @@ program MISASCD
 		end if
 
 		if(myProc%taskid==MASTER) then
-			close(82)
-			close(83)
+			close(RAWDAT)
+			close(TOTDAT)
 		end if
 
 	end do	!End of loop for multiple trials

@@ -173,6 +173,9 @@ integer, parameter :: PARAFILE = 10                     !<Used to read parameter
 integer, parameter :: DEFFILE = 11                      !<Used to read Defects.txtx file
 integer, parameter :: MESHFILE = 12                     !<Used to read Mesh_*.txt file
 integer, parameter :: CASFILE = 13                      !<Used to read cascades.txt File
+!<output file
+integer, parameter :: RAWDAT = 82
+integer, parameter :: TOTDAT = 83
 
 !(hard-coded) constants used for clustering rates
 double precision omega					!<Geometric constant for 3D spherical clustering (see Dunn et al. JNM 2013)
@@ -193,10 +196,6 @@ integer numTrapV			            !<Postprocessing: number of vacancies trapped on 
 integer numTrapSIA			            !<Postprocessing: number of SIAs trapped on grain boundary
 integer numEmitV			            !<Postprocessing: number of vacancies emitted from grain boundary
 integer numEmitSIA			            !<Postprocessing: number of SIAs emitted from grain boundary
-
-!array containing distribution of DPA and He implantation rates
-integer numImplantDataPoints							    !<For non-uniform implantation, number of input data points through-thickness
-double precision, allocatable :: implantRateData(:,:)	    !<Data containing implantation rates as a function of depth (for non-uniform implantation)
 
 contains
 
