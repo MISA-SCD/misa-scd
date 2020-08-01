@@ -34,17 +34,17 @@ subroutine addSingleDefectReactions(cell, defectType)
 	numProducts=2
 	allocate(reactants(numSpecies,numReactants))
 	allocate(products(numSpecies,numProducts))
-	do i=1, numDissocReac(matNum)
+	do i=1, numDissocReac
 		count=0
 
 		!Check if the defect type is accepted by this dissociation reaction
 		do j=1,numSpecies
-			if(defectType(j) == 0 .AND. DissocReactions(i,matNum)%reactants(j,1) == 0) then
+			if(defectType(j) == 0 .AND. DissocReactions(i)%reactants(j,1) == 0) then
 				count=count+1
-			else if(defectType(j) /= 0 .AND. DissocReactions(i,matNum)%reactants(j,1) /= 0) then
-				if(defectType(j) >= DissocReactions(i,matNum)%min(j) .AND. &
-						((defectType(j) <= DissocReactions(i,matNum)%max(j)) .OR. &
-								DissocReactions(i,matNum)%max(j)==-1)) then
+			else if(defectType(j) /= 0 .AND. DissocReactions(i)%reactants(j,1) /= 0) then
+				if(defectType(j) >= DissocReactions(i)%min(j) .AND. &
+						((defectType(j) <= DissocReactions(i)%max(j)) .OR. &
+								DissocReactions(i)%max(j)==-1)) then
 					count=count+1
 				end if
 			end if
@@ -55,7 +55,7 @@ subroutine addSingleDefectReactions(cell, defectType)
 			!Create temporary arrays with the defect types associated with this reaction (dissociation)
 			do j=1,numSpecies
 				reactants(j,1)=defectType(j)
-				products(j,2)=DissocReactions(i,matNum)%products(j,1)   !point defects
+				products(j,2)=DissocReactions(i)%products(j,1)   !point defects
 				products(j,1)=reactants(j,1)-products(j,2)
 			end do
 
@@ -80,7 +80,7 @@ subroutine addSingleDefectReactions(cell, defectType)
 			reactionUpdate=>reactionList(cell)
 			call findReactionInList(reactionUpdate, reactionPrev, cell, reactants, products, numReactants, numProducts)
 
-			reactionRate=findReactionRateDissoc(defectType, products, cell, DissocReactions(i,matNum))
+			reactionRate=findReactionRateDissoc(defectType, products, cell, DissocReactions(i))
 
 			!if reactionRate==0 and reaction already exists, then delete it. Subtract from totalRate.
 			if(associated(reactionUpdate) .AND. reactionRate==0d0) then
@@ -150,16 +150,16 @@ subroutine addSingleDefectReactions(cell, defectType)
 	numProducts=0
 	allocate(reactants(numSpecies,numReactants))
 	allocate(products(numSpecies,numProducts))
-	do i=1, numSinkReac(matNum)
+	do i=1, numSinkReac
 		count=0
 
 		!Check if the defect type is accepted by this sink reaction
 		do j=1,numSpecies
-			if(defectType(j) == 0 .AND. SinkReactions(i,matNum)%reactants(j,1) == 0) then
+			if(defectType(j) == 0 .AND. SinkReactions(i)%reactants(j,1) == 0) then
 				count=count+1
-			else if(defectType(j) /= 0 .AND. SinkReactions(i,matNum)%reactants(j,1) /= 0) then
-				if(defectType(j) >= SinkReactions(i,matNum)%min(j)) then
-					if((defectType(j) <= SinkReactions(i,matNum)%max(j)) .OR. SinkReactions(i,matNum)%max(j)==-1) then
+			else if(defectType(j) /= 0 .AND. SinkReactions(i)%reactants(j,1) /= 0) then
+				if(defectType(j) >= SinkReactions(i)%min(j)) then
+					if((defectType(j) <= SinkReactions(i)%max(j)) .OR. SinkReactions(i)%max(j)==-1) then
 						count=count+1
 					end if
 				end if
@@ -178,7 +178,7 @@ subroutine addSingleDefectReactions(cell, defectType)
 			reactionUpdate=>reactionList(cell)
 			call findReactionInList(reactionUpdate, reactionPrev, cell, reactants, products, numReactants, numProducts)
 
-			reactionRate=findReactionRateSink(defectType, cell, SinkReactions(i,matNum))
+			reactionRate=findReactionRateSink(defectType, cell, SinkReactions(i))
 
 			!if reactionRate==0 and reaction already exists, then delete it. Subtract from totalRate.
 			if(associated(reactionUpdate) .AND. reactionRate==0d0) then
@@ -250,16 +250,16 @@ subroutine addSingleDefectReactions(cell, defectType)
 	numProducts=1
 	allocate(reactants(numSpecies,numReactants))
 	allocate(products(numSpecies,numProducts))
-	do i=1, numImpurityReac(matNum)
+	do i=1, numImpurityReac
 		count=0
 		!Check if the defect type is accepted by this impurity reaction
 		do j=1,numSpecies
-			if(defectType(j) == 0 .AND. ImpurityReactions(i,matNum)%reactants(j,1) == 0) then
+			if(defectType(j) == 0 .AND. ImpurityReactions(i)%reactants(j,1) == 0) then
 				count=count+1
-			else if(defectType(j) /= 0 .AND. ImpurityReactions(i,matNum)%reactants(j,1) /= 0) then
-				if(defectType(j) >= ImpurityReactions(i,matNum)%min(j)) then
-					if((defectType(j) <= ImpurityReactions(i,matNum)%max(j)) .OR. &
-							ImpurityReactions(i,matNum)%max(j)==-1) then
+			else if(defectType(j) /= 0 .AND. ImpurityReactions(i)%reactants(j,1) /= 0) then
+				if(defectType(j) >= ImpurityReactions(i)%min(j)) then
+					if((defectType(j) <= ImpurityReactions(i)%max(j)) .OR. &
+							ImpurityReactions(i)%max(j)==-1) then
 						count=count+1
 					end if
 				end if
@@ -277,7 +277,7 @@ subroutine addSingleDefectReactions(cell, defectType)
 				end if
 			end do
 			do j=1,numSpecies
-				if(ImpurityReactions(i,matNum)%products(j,1)==1) then   !0 0 0 1
+				if(ImpurityReactions(i)%products(j,1)==1) then   !0 0 0 1
 					products(j,1)=storeTemp
 				else
 					products(j,1)=0
@@ -289,7 +289,7 @@ subroutine addSingleDefectReactions(cell, defectType)
 			reactionUpdate=>reactionList(cell)
 			call findReactionInList(reactionUpdate, reactionPrev, cell, reactants, products, numReactants, numProducts)
 
-			reactionRate=findReactionRateImpurity(defectType, cell, ImpurityReactions(i,matNum))
+			reactionRate=findReactionRateImpurity(defectType, cell, ImpurityReactions(i))
 
 			!if reactionRate==0 and reaction already exists, then delete it. Subtract from totalRate.
 			if(associated(reactionUpdate) .AND. reactionRate==0d0) then
@@ -399,17 +399,17 @@ subroutine addSingleDefectReactionsFine(cascadeID, cell, defectType)
 	numProducts=2
 	allocate(reactants(numSpecies,numReactants))
 	allocate(products(numSpecies,numProducts))
-	do i=1, numDissocReac(matNum)
+	do i=1, numDissocReac
 		count=0
 
 		!Check if the defect type is accepted by this dissociation reaction
 		do j=1,numSpecies
-			if(defectType(j) == 0 .AND. DissocReactions(i,matNum)%reactants(j,1) == 0) then
+			if(defectType(j) == 0 .AND. DissocReactions(i)%reactants(j,1) == 0) then
 				count=count+1
-			else if(defectType(j) /= 0 .AND. DissocReactions(i,matNum)%reactants(j,1) /= 0) then
-				if(defectType(j) >= DissocReactions(i,matNum)%min(j)) then
-					if((defectType(j) <= DissocReactions(i,matNum)%max(j)) .OR. &
-							DissocReactions(i,matNum)%max(j)==-1) then
+			else if(defectType(j) /= 0 .AND. DissocReactions(i)%reactants(j,1) /= 0) then
+				if(defectType(j) >= DissocReactions(i)%min(j)) then
+					if((defectType(j) <= DissocReactions(i)%max(j)) .OR. &
+							DissocReactions(i)%max(j)==-1) then
 						count=count+1
 					end if
 				end if
@@ -421,7 +421,7 @@ subroutine addSingleDefectReactionsFine(cascadeID, cell, defectType)
 			!Create temporary arrays with the defect types associated with this reaction (dissociation)
 			do j=1, numSpecies
 				reactants(j,1)=defectType(j)
-				products(j,2)=DissocReactions(i,matNum)%products(j,1)
+				products(j,2)=DissocReactions(i)%products(j,1)
 				products(j,1)=reactants(j,1)-products(j,2)
 			end do
 
@@ -446,7 +446,7 @@ subroutine addSingleDefectReactionsFine(cascadeID, cell, defectType)
 			reactionUpdate=>CascadeCurrent%reactionList(cell)
 			call findReactionInList(reactionUpdate, reactionPrev, cell, reactants, products, numReactants, numProducts)
 
-			reactionRate=findReactionRateDissocFine(CascadeCurrent,defectType,products,cell,DissocReactions(i,matNum))
+			reactionRate=findReactionRateDissocFine(CascadeCurrent,defectType,products,cell,DissocReactions(i))
 
 			!if reactionRate==0 and reaction already exists, then delete it. Subtract from totalRate.
 			if(associated(reactionUpdate) .AND. reactionRate==0d0) then
@@ -517,15 +517,15 @@ subroutine addSingleDefectReactionsFine(cascadeID, cell, defectType)
 	numProducts=0
 	allocate(reactants(numSpecies,numReactants))
 	allocate(products(numSpecies,numProducts))
-	do i=1, numSinkReac(matNum)
+	do i=1, numSinkReac
 		count=0
 		!Check if the defect type is accepted by this sink reaction
 		do j=1,numSpecies
-			if(defectType(j) == 0 .AND. SinkReactions(i,matNum)%reactants(j,1) == 0) then
+			if(defectType(j) == 0 .AND. SinkReactions(i)%reactants(j,1) == 0) then
 				count=count+1
-			else if(defectType(j) /= 0 .AND. SinkReactions(i,matNum)%reactants(j,1) /= 0) then
-				if(defectType(j) >= SinkReactions(i,matNum)%min(j)) then
-					if((defectType(j) <= SinkReactions(i,matNum)%max(j)) .OR. SinkReactions(i,matNum)%max(j)==-1) then
+			else if(defectType(j) /= 0 .AND. SinkReactions(i)%reactants(j,1) /= 0) then
+				if(defectType(j) >= SinkReactions(i)%min(j)) then
+					if((defectType(j) <= SinkReactions(i)%max(j)) .OR. SinkReactions(i)%max(j)==-1) then
 						count=count+1
 					end if
 				end if
@@ -544,7 +544,7 @@ subroutine addSingleDefectReactionsFine(cascadeID, cell, defectType)
 			reactionUpdate=>CascadeCurrent%reactionList(cell)
 			call findReactionInList(reactionUpdate, reactionPrev, cell, reactants, products, numReactants, numProducts)
 
-			reactionRate=findReactionRateSinkFine(CascadeCurrent, defectType, cell, SinkReactions(i,matNum))
+			reactionRate=findReactionRateSinkFine(CascadeCurrent, defectType, cell, SinkReactions(i))
 
 			!if reactionRate==0 and reaction already exists, then delete it. Subtract from totalRate.
 			if(associated(reactionUpdate) .AND. reactionRate==0d0) then
@@ -616,16 +616,16 @@ subroutine addSingleDefectReactionsFine(cascadeID, cell, defectType)
 	numProducts=1
 	allocate(reactants(numSpecies,numReactants))
 	allocate(products(numSpecies,numProducts))
-	do i=1, numImpurityReac(matNum)
+	do i=1, numImpurityReac
 		count=0
 		!Check if the defect type is accepted by this impurity reaction
 		do j=1,numSpecies
-			if(defectType(j) == 0 .AND. ImpurityReactions(i,matNum)%reactants(j,1) == 0) then
+			if(defectType(j) == 0 .AND. ImpurityReactions(i)%reactants(j,1) == 0) then
 				count=count+1
-			else if(defectType(j) /= 0 .AND. ImpurityReactions(i,matNum)%reactants(j,1) /= 0) then
-				if(defectType(j) >= ImpurityReactions(i,matNum)%min(j)) then
-					if((defectType(j) <= ImpurityReactions(i,matNum)%max(j)) .OR. &
-							ImpurityReactions(i,matNum)%max(j)==-1) then
+			else if(defectType(j) /= 0 .AND. ImpurityReactions(i)%reactants(j,1) /= 0) then
+				if(defectType(j) >= ImpurityReactions(i)%min(j)) then
+					if((defectType(j) <= ImpurityReactions(i)%max(j)) .OR. &
+							ImpurityReactions(i)%max(j)==-1) then
 						count=count+1
 					end if
 				end if
@@ -644,7 +644,7 @@ subroutine addSingleDefectReactionsFine(cascadeID, cell, defectType)
 				end if
 			end do
 			do j=1,numSpecies
-				if(ImpurityReactions(i,matNum)%products(j,1)==1) then
+				if(ImpurityReactions(i)%products(j,1)==1) then
 					products(j,1)=storeTemp
 				else
 					products(j,1)=0
@@ -655,7 +655,7 @@ subroutine addSingleDefectReactionsFine(cascadeID, cell, defectType)
 			!(if reaction does not already exist, reactionUpdate is unallocated and reactionPrev points to the end of the list)
 			reactionUpdate=>CascadeCurrent%reactionList(cell)
 			call findReactionInList(reactionUpdate, reactionPrev, cell, reactants, products, numReactants, numProducts)
-			reactionRate=findReactionRateImpurityFine(CascadeCurrent, defectType, cell, ImpurityReactions(i,matNum))
+			reactionRate=findReactionRateImpurityFine(CascadeCurrent, defectType, cell, ImpurityReactions(i))
 
 			!if reactionRate==0 and reaction already exists, then delete it. Subtract from totalRate.
 			if(associated(reactionUpdate) .AND. reactionRate==0d0) then
@@ -752,43 +752,43 @@ subroutine addMultiDefectReactions(cell, defectType1, defectType2)
 	numReactants=2
 	!numProducts=1
 	allocate(reactants(numSpecies,numReactants))
-	do i=1, numClusterReac(matNum)
+	do i=1, numClusterReac
 
 		!*******************************************************
-		!defectType1 = ClusterReactions(i,matNum)%reactants(:,1)
-		!defectType2 = ClusterReactions(i,matNum)%reactants(:,2)
+		!defectType1 = ClusterReactions(i)%reactants(:,1)
+		!defectType2 = ClusterReactions(i)%reactants(:,2)
 		!*******************************************************
 		count=0
 		!Check if the defect type is accepted by this dissociation reaction
 		!NOTE: we must check if defectType1 matches with ClusterReactions%reactants(1) and reactants(2)
 		!and vice versa with defectType2. We only want to make one reaction rate per pair of reactants.
 		do j=1,numSpecies
-			if(defectType1(j)==0 .AND. ClusterReactions(i,matNum)%reactants(j,1)==0) then
-				if(defectType2(j)==0 .AND. ClusterReactions(i,matNum)%reactants(j,2)==0) then
+			if(defectType1(j)==0 .AND. ClusterReactions(i)%reactants(j,1)==0) then
+				if(defectType2(j)==0 .AND. ClusterReactions(i)%reactants(j,2)==0) then
 					count=count+1
-				else if(defectType2(j) /= 0 .AND. ClusterReactions(i,matNum)%reactants(j,2) /= 0) then
-					if(defectType2(j) >= ClusterReactions(i,matNum)%min(j+numSpecies)) then
-						if((defectType2(j) <= ClusterReactions(i,matNum)%max(j+numSpecies)) .OR. &
-								ClusterReactions(i,matNum)%max(j+numSpecies)==-1) then
+				else if(defectType2(j) /= 0 .AND. ClusterReactions(i)%reactants(j,2) /= 0) then
+					if(defectType2(j) >= ClusterReactions(i)%min(j+numSpecies)) then
+						if((defectType2(j) <= ClusterReactions(i)%max(j+numSpecies)) .OR. &
+								ClusterReactions(i)%max(j+numSpecies)==-1) then
 							count=count+1
 						end if
 					end if
 				end if
-			else if(defectType1(j) /= 0 .AND. ClusterReactions(i,matNum)%reactants(j,1) /= 0) then
-				if(defectType2(j)==0 .AND. ClusterReactions(i,matNum)%reactants(j,2)==0) then
-					if(defectType1(j) >= ClusterReactions(i,matNum)%min(j)) then
-						if((defectType1(j) <= ClusterReactions(i,matNum)%max(j)) .OR. &
-								ClusterReactions(i,matNum)%max(j)==-1) then
+			else if(defectType1(j) /= 0 .AND. ClusterReactions(i)%reactants(j,1) /= 0) then
+				if(defectType2(j)==0 .AND. ClusterReactions(i)%reactants(j,2)==0) then
+					if(defectType1(j) >= ClusterReactions(i)%min(j)) then
+						if((defectType1(j) <= ClusterReactions(i)%max(j)) .OR. &
+								ClusterReactions(i)%max(j)==-1) then
 							count=count+1
 						end if
 					end if
-				else if(defectType2(j) /= 0 .AND. ClusterReactions(i,matNum)%reactants(j,2) /= 0) then
-					if((defectType2(j) <= ClusterReactions(i,matNum)%max(j+numSpecies)) .OR. &
-							ClusterReactions(i,matNum)%max(j+numSpecies)==-1) then
-						if((defectType1(j) <= ClusterReactions(i,matNum)%max(j)) .OR. &
-								ClusterReactions(i,matNum)%max(j)==-1) then
-							if(defectType2(j) >= ClusterReactions(i,matNum)%min(j+numSpecies) .AND. &
-									defectType1(j) >= ClusterReactions(i,matNum)%min(j)) then
+				else if(defectType2(j) /= 0 .AND. ClusterReactions(i)%reactants(j,2) /= 0) then
+					if((defectType2(j) <= ClusterReactions(i)%max(j+numSpecies)) .OR. &
+							ClusterReactions(i)%max(j+numSpecies)==-1) then
+						if((defectType1(j) <= ClusterReactions(i)%max(j)) .OR. &
+								ClusterReactions(i)%max(j)==-1) then
+							if(defectType2(j) >= ClusterReactions(i)%min(j+numSpecies) .AND. &
+									defectType1(j) >= ClusterReactions(i)%min(j)) then
 								count=count+1
 							end if
 						end if
@@ -938,7 +938,7 @@ subroutine addMultiDefectReactions(cell, defectType1, defectType2)
 			call findReactionInListMultiple(reactionUpdate, reactionPrev, cell, reactants, products, &
 					numReactants, numProducts)
 
-			reactionRate=findReactionRateMultiple(defectType1, defectType2, cell, ClusterReactions(i,matNum))
+			reactionRate=findReactionRateMultiple(defectType1, defectType2, cell, ClusterReactions(i))
 
 			!if reactionRate==0 and reaction already exists, then delete it. Subtract from totalRate.
 			if(associated(reactionUpdate) .AND. reactionRate==0d0) then
@@ -1018,40 +1018,40 @@ subroutine addMultiDefectReactions(cell, defectType1, defectType2)
 		end if
 
 		!*******************************************************
-		!defectType1 = ClusterReactions(i,matNum)%reactants(:,2)
-		!defectType2 = ClusterReactions(i,matNum)%reactants(:,1)
+		!defectType1 = ClusterReactions(i)%reactants(:,2)
+		!defectType2 = ClusterReactions(i)%reactants(:,1)
 		!*******************************************************
 		count=0
 		!Check if the defect type is accepted by this dissociation reaction
 		!NOTE: we must check if defectType1 matches with ClusterReactions%reactants(1) and reactants(2)
 		!and vice versa with defectType2. We only want to make one reaction rate per pair of reactants.
 		do j=1,numSpecies
-			if(defectType1(j)==0 .AND. ClusterReactions(i,matNum)%reactants(j,2)==0) then
-				if(defectType2(j)==0 .AND. ClusterReactions(i,matNum)%reactants(j,1)==0) then
+			if(defectType1(j)==0 .AND. ClusterReactions(i)%reactants(j,2)==0) then
+				if(defectType2(j)==0 .AND. ClusterReactions(i)%reactants(j,1)==0) then
 					count=count+1
-				else if(defectType2(j) /= 0 .AND. ClusterReactions(i,matNum)%reactants(j,1) /= 0) then
-					if(defectType2(j) >= ClusterReactions(i,matNum)%min(j)) then
-						if((defectType2(j) <= ClusterReactions(i,matNum)%max(j)) .OR. &
-								ClusterReactions(i,matNum)%max(j)==-1) then
+				else if(defectType2(j) /= 0 .AND. ClusterReactions(i)%reactants(j,1) /= 0) then
+					if(defectType2(j) >= ClusterReactions(i)%min(j)) then
+						if((defectType2(j) <= ClusterReactions(i)%max(j)) .OR. &
+								ClusterReactions(i)%max(j)==-1) then
 							count=count+1
 						end if
 					end if
 				end if
-			else if(defectType1(j) /= 0 .AND. ClusterReactions(i,matNum)%reactants(j,2) /= 0) then
-				if(defectType2(j)==0 .AND. ClusterReactions(i,matNum)%reactants(j,1)==0) then
-					if(defectType1(j) >= ClusterReactions(i,matNum)%min(j+numSpecies)) then
-						if((defectType1(j) <= ClusterReactions(i,matNum)%max(j+numSpecies)) .OR. &
-								ClusterReactions(i,matNum)%max(j+numSpecies)==-1) then
+			else if(defectType1(j) /= 0 .AND. ClusterReactions(i)%reactants(j,2) /= 0) then
+				if(defectType2(j)==0 .AND. ClusterReactions(i)%reactants(j,1)==0) then
+					if(defectType1(j) >= ClusterReactions(i)%min(j+numSpecies)) then
+						if((defectType1(j) <= ClusterReactions(i)%max(j+numSpecies)) .OR. &
+								ClusterReactions(i)%max(j+numSpecies)==-1) then
 							count=count+1
 						end if
 					end if
-				else if(defectType2(j) /= 0 .AND. ClusterReactions(i,matNum)%reactants(j,1) /= 0) then
-					if((defectType1(j) <= ClusterReactions(i,matNum)%max(j+numSpecies)) .OR. &
-							ClusterReactions(i,matNum)%max(j+numSpecies)==-1) then
-						if((defectType2(j) <= ClusterReactions(i,matNum)%max(j)) .OR. &
-								ClusterReactions(i,matNum)%max(j)==-1) then
-							if(defectType1(j) >= ClusterReactions(i,matNum)%min(j+numSpecies) .AND. &
-									defectType2(j) >= ClusterReactions(i,matNum)%min(j)) then
+				else if(defectType2(j) /= 0 .AND. ClusterReactions(i)%reactants(j,1) /= 0) then
+					if((defectType1(j) <= ClusterReactions(i)%max(j+numSpecies)) .OR. &
+							ClusterReactions(i)%max(j+numSpecies)==-1) then
+						if((defectType2(j) <= ClusterReactions(i)%max(j)) .OR. &
+								ClusterReactions(i)%max(j)==-1) then
+							if(defectType1(j) >= ClusterReactions(i)%min(j+numSpecies) .AND. &
+									defectType2(j) >= ClusterReactions(i)%min(j)) then
 								count=count+1
 							end if
 						end if
@@ -1202,7 +1202,7 @@ subroutine addMultiDefectReactions(cell, defectType1, defectType2)
 			call findReactionInListMultiple(reactionUpdate, reactionPrev, cell, reactants, products, &
 					numReactants, numProducts)
 
-			reactionRate=findReactionRateMultiple(defectType1, defectType2, cell, ClusterReactions(i,matNum))
+			reactionRate=findReactionRateMultiple(defectType1, defectType2, cell, ClusterReactions(i))
 
 			!if reactionRate==0 and reaction already exists, then delete it. Subtract from totalRate.
 			if(associated(reactionUpdate) .AND. reactionRate==0d0) then
@@ -1322,11 +1322,11 @@ subroutine addMultiDefectReactionsFine(cascadeID, cell, defectType1, defectType2
 	numReactants=2
 	numProducts=1
 	allocate(reactants(numSpecies,numReactants))
-	do i=1, numClusterReac(matNum)
+	do i=1, numClusterReac
 
 		!*******************************************************
-		!defectType1 = ClusterReactions(i,matNum)%reactants(:,1)
-		!defectType2 = ClusterReactions(i,matNum)%reactants(:,2)
+		!defectType1 = ClusterReactions(i)%reactants(:,1)
+		!defectType2 = ClusterReactions(i)%reactants(:,2)
 		!*******************************************************
 		count=0
 
@@ -1334,32 +1334,32 @@ subroutine addMultiDefectReactionsFine(cascadeID, cell, defectType1, defectType2
 		!NOTE: we must check if defectType1 matches with ClusterReactions%reactants(1) and reactants(2)
 		!and vice versa with defectType2. We only want to make one reaction rate per pair of reactants.
 		do j=1,numSpecies
-			if(defectType1(j)==0 .AND. ClusterReactions(i,matNum)%reactants(j,1)==0) then
-				if(defectType2(j)==0 .AND. ClusterReactions(i,matNum)%reactants(j,2)==0) then
+			if(defectType1(j)==0 .AND. ClusterReactions(i)%reactants(j,1)==0) then
+				if(defectType2(j)==0 .AND. ClusterReactions(i)%reactants(j,2)==0) then
 					count=count+1
-				else if(defectType2(j) /= 0 .AND. ClusterReactions(i,matNum)%reactants(j,2) /= 0) then
-					if(defectType2(j) >= ClusterReactions(i,matNum)%min(j+numSpecies)) then
-						if((defectType2(j) <= ClusterReactions(i,matNum)%max(j+numSpecies)) .OR. &
-								ClusterReactions(i,matNum)%max(j+numSpecies)==-1) then
+				else if(defectType2(j) /= 0 .AND. ClusterReactions(i)%reactants(j,2) /= 0) then
+					if(defectType2(j) >= ClusterReactions(i)%min(j+numSpecies)) then
+						if((defectType2(j) <= ClusterReactions(i)%max(j+numSpecies)) .OR. &
+								ClusterReactions(i)%max(j+numSpecies)==-1) then
 							count=count+1
 						end if
 					end if
 				end if
-			else if(defectType1(j) /= 0 .AND. ClusterReactions(i,matNum)%reactants(j,1) /= 0) then
-				if(defectType2(j)==0 .AND. ClusterReactions(i,matNum)%reactants(j,2)==0) then
-					if(defectType1(j) >= ClusterReactions(i,matNum)%min(j)) then
-						if((defectType1(j) <= ClusterReactions(i,matNum)%max(j)) .OR. &
-								ClusterReactions(i,matNum)%max(j)==-1) then
+			else if(defectType1(j) /= 0 .AND. ClusterReactions(i)%reactants(j,1) /= 0) then
+				if(defectType2(j)==0 .AND. ClusterReactions(i)%reactants(j,2)==0) then
+					if(defectType1(j) >= ClusterReactions(i)%min(j)) then
+						if((defectType1(j) <= ClusterReactions(i)%max(j)) .OR. &
+								ClusterReactions(i)%max(j)==-1) then
 							count=count+1
 						end if
 					end if
-				else if(defectType2(j) /= 0 .AND. ClusterReactions(i,matNum)%reactants(j,2) /= 0) then
-					if((defectType2(j) <= ClusterReactions(i,matNum)%max(j+numSpecies)) .OR. &
-							ClusterReactions(i,matNum)%max(j+numSpecies)==-1) then
-						if((defectType1(j) <= ClusterReactions(i,matNum)%max(j)) .OR. &
-								ClusterReactions(i,matNum)%max(j)==-1) then
-							if(defectType2(j) >= ClusterReactions(i,matNum)%min(j+numSpecies) .AND. &
-									defectType1(j) >= ClusterReactions(i,matNum)%min(j)) then
+				else if(defectType2(j) /= 0 .AND. ClusterReactions(i)%reactants(j,2) /= 0) then
+					if((defectType2(j) <= ClusterReactions(i)%max(j+numSpecies)) .OR. &
+							ClusterReactions(i)%max(j+numSpecies)==-1) then
+						if((defectType1(j) <= ClusterReactions(i)%max(j)) .OR. &
+								ClusterReactions(i)%max(j)==-1) then
+							if(defectType2(j) >= ClusterReactions(i)%min(j+numSpecies) .AND. &
+									defectType1(j) >= ClusterReactions(i)%min(j)) then
 								count=count+1
 							end if
 						end if
@@ -1507,11 +1507,9 @@ subroutine addMultiDefectReactionsFine(cascadeID, cell, defectType1, defectType2
 			!NOTE: if order of reactants is backwards, we might not recognize that we have already added
 			!this reaction. Thus we could double-add reactions. Will fix later.
 			reactionUpdate=>CascadeCurrent%reactionList(cell)
-			call findReactionInListMultiple(reactionUpdate, reactionPrev, cell, reactants, products, &
-					numReactants, numProducts)
+			call findReactionInListMultiple(reactionUpdate,reactionPrev,cell,reactants,products,numReactants,numProducts)
 
-			reactionRate=findReactionRateMultipleFine(CascadeCurrent, defectType1, defectType2, cell, &
-					ClusterReactions(i,matNum))
+			reactionRate=findReactionRateMultipleFine(CascadeCurrent,defectType1,defectType2,cell,ClusterReactions(i))
 
 			!if reactionRate==0 and reaction already exists, then delete it. Subtract from totalRate.
 			if(associated(reactionUpdate) .AND. reactionRate==0d0) then
@@ -1580,8 +1578,8 @@ subroutine addMultiDefectReactionsFine(cascadeID, cell, defectType1, defectType2
 		end if
 
 		!*******************************************************
-		!defectType1 = ClusterReactions(i,matNum)%reactants(:,2)
-		!defectType2 = ClusterReactions(i,matNum)%reactants(:,1)
+		!defectType1 = ClusterReactions(i)%reactants(:,2)
+		!defectType2 = ClusterReactions(i)%reactants(:,1)
 		!*******************************************************
 		count=0
 
@@ -1589,32 +1587,32 @@ subroutine addMultiDefectReactionsFine(cascadeID, cell, defectType1, defectType2
 		!NOTE: we must check if defectType1 matches with ClusterReactions%reactants(1) and reactants(2)
 		!and vice versa with defectType2. We only want to make one reaction rate per pair of reactants.
 		do j=1,numSpecies
-			if(defectType1(j)==0 .AND. ClusterReactions(i,matNum)%reactants(j,2)==0) then
-				if(defectType2(j)==0 .AND. ClusterReactions(i,matNum)%reactants(j,1)==0) then
+			if(defectType1(j)==0 .AND. ClusterReactions(i)%reactants(j,2)==0) then
+				if(defectType2(j)==0 .AND. ClusterReactions(i)%reactants(j,1)==0) then
 					count=count+1
-				else if(defectType2(j) /= 0 .AND. ClusterReactions(i,matNum)%reactants(j,1) /= 0) then
-					if(defectType2(j) >= ClusterReactions(i,matNum)%min(j)) then
-						if((defectType2(j) <= ClusterReactions(i,matNum)%max(j)) .OR. &
-								ClusterReactions(i,matNum)%max(j)==-1) then
+				else if(defectType2(j) /= 0 .AND. ClusterReactions(i)%reactants(j,1) /= 0) then
+					if(defectType2(j) >= ClusterReactions(i)%min(j)) then
+						if((defectType2(j) <= ClusterReactions(i)%max(j)) .OR. &
+								ClusterReactions(i)%max(j)==-1) then
 							count=count+1
 						end if
 					end if
 				end if
-			else if(defectType1(j) /= 0 .AND. ClusterReactions(i,matNum)%reactants(j,2) /= 0) then
-				if(defectType2(j)==0 .AND. ClusterReactions(i,matNum)%reactants(j,1)==0) then
-					if(defectType1(j) >= ClusterReactions(i,matNum)%min(j+numSpecies)) then
-						if((defectType1(j) <= ClusterReactions(i,matNum)%max(j+numSpecies)) .OR. &
-								ClusterReactions(i,matNum)%max(j+numSpecies)==-1) then
+			else if(defectType1(j) /= 0 .AND. ClusterReactions(i)%reactants(j,2) /= 0) then
+				if(defectType2(j)==0 .AND. ClusterReactions(i)%reactants(j,1)==0) then
+					if(defectType1(j) >= ClusterReactions(i)%min(j+numSpecies)) then
+						if((defectType1(j) <= ClusterReactions(i)%max(j+numSpecies)) .OR. &
+								ClusterReactions(i)%max(j+numSpecies)==-1) then
 							count=count+1
 						end if
 					end if
-				else if(defectType2(j) /= 0 .AND. ClusterReactions(i,matNum)%reactants(j,1) /= 0) then
-					if((defectType1(j) <= ClusterReactions(i,matNum)%max(j+numSpecies)) .OR. &
-							ClusterReactions(i,matNum)%max(j+numSpecies)==-1) then
-						if((defectType2(j) <= ClusterReactions(i,matNum)%max(j)) .OR. &
-								ClusterReactions(i,matNum)%max(j)==-1) then
-							if(defectType1(j) >= ClusterReactions(i,matNum)%min(j+numSpecies) .AND. &
-									defectType2(j) >= ClusterReactions(i,matNum)%min(j)) then
+				else if(defectType2(j) /= 0 .AND. ClusterReactions(i)%reactants(j,1) /= 0) then
+					if((defectType1(j) <= ClusterReactions(i)%max(j+numSpecies)) .OR. &
+							ClusterReactions(i)%max(j+numSpecies)==-1) then
+						if((defectType2(j) <= ClusterReactions(i)%max(j)) .OR. &
+								ClusterReactions(i)%max(j)==-1) then
+							if(defectType1(j) >= ClusterReactions(i)%min(j+numSpecies) .AND. &
+									defectType2(j) >= ClusterReactions(i)%min(j)) then
 								count=count+1
 							end if
 						end if
@@ -1760,11 +1758,9 @@ subroutine addMultiDefectReactionsFine(cascadeID, cell, defectType1, defectType2
 			!NOTE: if order of reactants is backwards, we might not recognize that we have already added
 			!this reaction. Thus we could double-add reactions. Will fix later.
 			reactionUpdate=>CascadeCurrent%reactionList(cell)
-			call findReactionInListMultiple(reactionUpdate, reactionPrev, cell, reactants, products, &
-					numReactants, numProducts)
+			call findReactionInListMultiple(reactionUpdate,reactionPrev,cell,reactants,products,numReactants,numProducts)
 
-			reactionRate=findReactionRateMultipleFine(CascadeCurrent, defectType1, defectType2, cell, &
-					ClusterReactions(i,matNum))
+			reactionRate=findReactionRateMultipleFine(CascadeCurrent,defectType1,defectType2,cell,ClusterReactions(i))
 
 			!if reactionRate==0 and reaction already exists, then delete it. Subtract from totalRate.
 			if(associated(reactionUpdate) .AND. reactionRate==0d0) then
@@ -1864,16 +1860,16 @@ subroutine addDiffusionReactions(cell1, cell2, proc1, proc2, dir, defectType)
 	numProducts=1
 	allocate(reactants(numSpecies,numReactants))
 	allocate(products(numSpecies,numProducts))
-	do i=1, numDiffReac(matNum)
+	do i=1, numDiffReac
 		count=0
 
 		!Check if the defect type is accepted by this diffusion reaction
 		do j=1,numSpecies
-			if(defectType(j) == 0 .AND. DiffReactions(i,matNum)%reactants(j,1) == 0) then
+			if(defectType(j) == 0 .AND. DiffReactions(i)%reactants(j,1) == 0) then
 				count=count+1
-			else if(defectType(j) /= 0 .AND. DiffReactions(i,matNum)%reactants(j,1) /= 0) then
-				if(defectType(j) >= DiffReactions(i,matNum)%min(j)) then
-					if((defectType(j) <= DiffReactions(i,matNum)%max(j)) .OR. DiffReactions(i,matNum)%max(j)==-1) then
+			else if(defectType(j) /= 0 .AND. DiffReactions(i)%reactants(j,1) /= 0) then
+				if(defectType(j) >= DiffReactions(i)%min(j)) then
+					if((defectType(j) <= DiffReactions(i)%max(j)) .OR. DiffReactions(i)%max(j)==-1) then
 						count=count+1
 					end if
 				end if
@@ -1896,7 +1892,7 @@ subroutine addDiffusionReactions(cell1, cell2, proc1, proc2, dir, defectType)
 			nullify(reactionPrev)
 			call findReactionInListDiff(reactionUpdate, reactionPrev, reactants, cell1, cell2, proc1, proc2)
 
-			reactionRate=findReactionRateDiff(defectType, cell1, proc1, cell2, proc2, dir, DiffReactions(i,matNum))
+			reactionRate=findReactionRateDiff(defectType, cell1, proc1, cell2, proc2, dir, DiffReactions(i))
 
 			!if reactionRate==0 and reaction already exists, then delete it. Subtract from totalRate.
 			if(associated(reactionUpdate) .AND. reactionRate==0d0) then
@@ -2002,16 +1998,16 @@ subroutine addDiffusionCoarseToFine(cell, proc, CascadeCurrent, defectType)
 	numProducts=1
 	allocate(reactants(numSpecies,numReactants))
 	allocate(products(numSpecies,numProducts))
-	do i=1, numDiffReac(matNum)
+	do i=1, numDiffReac
 		count=0
 
 		!Check if the defect type is accepted by this dissociation reaction
 		do j=1,numSpecies
-			if(defectType(j) == 0 .AND. DiffReactions(i,matNum)%reactants(j,1) == 0) then
+			if(defectType(j) == 0 .AND. DiffReactions(i)%reactants(j,1) == 0) then
 				count=count+1
-			else if(defectType(j) /= 0 .AND. DiffReactions(i,matNum)%reactants(j,1) /= 0) then
-				if(defectType(j) >= DiffReactions(i,matNum)%min(j)) then
-					if((defectType(j) <= DiffReactions(i,matNum)%max(j)) .OR. DiffReactions(i,matNum)%max(j)==-1) then
+			else if(defectType(j) /= 0 .AND. DiffReactions(i)%reactants(j,1) /= 0) then
+				if(defectType(j) >= DiffReactions(i)%min(j)) then
+					if((defectType(j) <= DiffReactions(i)%max(j)) .OR. DiffReactions(i)%max(j)==-1) then
 						count=count+1
 					end if
 				end if
@@ -2042,7 +2038,7 @@ subroutine addDiffusionCoarseToFine(cell, proc, CascadeCurrent, defectType)
 			numDefectsFine=findNumDefectTotalFine(defectType, CascadeCurrent)
 
 			!Find the reaction rate for diffusion from coarse to fine mesh
-			reactionRate=findReactionRateCoarseToFine(defectType, cell, proc, numDefectsFine, DiffReactions(i,matNum))
+			reactionRate=findReactionRateCoarseToFine(defectType, cell, proc, numDefectsFine, DiffReactions(i))
 
 			!Here, we update reactionList by either creating a new reaction or updating the current reaction
 
@@ -2149,16 +2145,16 @@ subroutine addDiffusionReactionsFine(cascadeID, cell1, cell2, proc1, proc2, dir,
 	numProducts=1
 	allocate(reactants(numSpecies,numReactants))
 	allocate(products(numSpecies,numProducts))
-	do i=1, numDiffReac(matNum)
+	do i=1, numDiffReac
 		count=0
 
 		!Check if the defect type is accepted by this dissociation reaction
 		do j=1,numSpecies
-			if(defectType(j) == 0 .AND. DiffReactions(i,matNum)%reactants(j,1) == 0) then
+			if(defectType(j) == 0 .AND. DiffReactions(i)%reactants(j,1) == 0) then
 				count=count+1
-			else if(defectType(j) /= 0 .AND. DiffReactions(i,matNum)%reactants(j,1) /= 0) then
-				if(defectType(j) >= DiffReactions(i,matNum)%min(j)) then
-					if((defectType(j) <= DiffReactions(i,matNum)%max(j)) .OR. DiffReactions(i,matNum)%max(j)==-1) then
+			else if(defectType(j) /= 0 .AND. DiffReactions(i)%reactants(j,1) /= 0) then
+				if(defectType(j) >= DiffReactions(i)%min(j)) then
+					if((defectType(j) <= DiffReactions(i)%max(j)) .OR. DiffReactions(i)%max(j)==-1) then
 						count=count+1
 					end if
 				end if
@@ -2182,7 +2178,7 @@ subroutine addDiffusionReactionsFine(cascadeID, cell1, cell2, proc1, proc2, dir,
 			call findReactionInListDiff(reactionUpdate, reactionPrev, reactants, cell1, cell2, proc1, proc2)
 
 			reactionRate=findReactionRateDiffFine(CascadeCurrent, defectType, cell1, proc1, cell2, proc2, dir, &
-					DiffReactions(i,matNum))
+					DiffReactions(i))
 
 			!if reactionRate==0 and reaction already exists, then delete it. Subtract from totalRate.
 			if(associated(reactionUpdate) .AND. reactionRate==0d0) then

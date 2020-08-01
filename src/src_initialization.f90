@@ -17,13 +17,13 @@ subroutine initializeVIdefect()
 	!Number of Cu atoms in every mesh
 	numCuCell = anint(CuContent*totalAtoms /dble(numTotal))
 
-	do i=1, numSingleForm(1)
-		if(FormSingle(i,1)%defectType(1)==0 .AND. FormSingle(i,1)%defectType(2)==1 .AND. &
-				FormSingle(i,1)%defectType(3)==0 .AND. FormSingle(i,1)%defectType(4)==0) then	!V
-			ceqV = dexp(-FormSingle(i,1)%Ef / (kboltzmann*temperature))
-		else if(FormSingle(i,1)%defectType(1)==0 .AND. FormSingle(i,1)%defectType(2)==0 .AND. &
-				FormSingle(i,1)%defectType(3)==1 .AND. FormSingle(i,1)%defectType(4)==0) then	!SIA
-			ceqI = dexp(-FormSingle(i,1)%Ef / (kboltzmann*temperature))
+	do i=1, numSingleForm
+		if(FormSingle(i)%defectType(1)==0 .AND. FormSingle(i)%defectType(2)==1 .AND. &
+				FormSingle(i)%defectType(3)==0 .AND. FormSingle(i)%defectType(4)==0) then	!V
+			ceqV = dexp(-FormSingle(i)%Ef / (kboltzmann*temperature))
+		else if(FormSingle(i)%defectType(1)==0 .AND. FormSingle(i)%defectType(2)==0 .AND. &
+				FormSingle(i)%defectType(3)==1 .AND. FormSingle(i)%defectType(4)==0) then	!SIA
+			ceqI = dexp(-FormSingle(i)%Ef / (kboltzmann*temperature))
 		end if
 	end do
 
@@ -313,19 +313,19 @@ subroutine initializeReactionList()
 				allocate(reactionList(cell)%taskid(reactionList(cell)%numProducts))
 
 				!search ImplantList for Frenkel Pair reactions
-				do reac=1,numImplantReac(matNum)
-					if(ImplantReactions(reac,matNum)%numReactants==0 .AND. &
-							ImplantReactions(reac,matNum)%numProducts==2) then	!we have found Frenkel pair implantation
+				do reac=1,numImplantReac
+					if(ImplantReactions(reac)%numReactants==0 .AND. &
+							ImplantReactions(reac)%numProducts==2) then	!we have found Frenkel pair implantation
 						exit	!leave ImplantReactions(reac) pointed at this element of ImplantReactions
 					end if
 				end do
 
-				do i=1,ImplantReactions(reac,matNum)%numProducts
-					reactionList(cell)%products(:,i)=ImplantReactions(reac,matNum)%products(:,i)
+				do i=1,ImplantReactions(reac)%numProducts
+					reactionList(cell)%products(:,i)=ImplantReactions(reac)%products(:,i)
 					reactionList(cell)%cellNumber(i)=cell
 					reactionList(cell)%taskid(i)=myMesh(cell)%proc
 				end do
-				reactionList(cell)%reactionRate=findReactionRate(cell, ImplantReactions(reac,matNum))
+				reactionList(cell)%reactionRate=findReactionRate(cell, ImplantReactions(reac))
 				nullify(reactionList(cell)%next)
 
 			else if(implantType=='Cascade') then
@@ -336,15 +336,15 @@ subroutine initializeReactionList()
 				reactionList(cell)%cellNumber(1)=cell
 				reactionList(cell)%taskid(1)=myMesh(cell)%proc
 
-				do reac=1,numImplantReac(matNum)
-					if(ImplantReactions(reac,matNum)%numReactants==-10 .AND. &
-							ImplantReactions(reac,matNum)%numProducts==0) then	!we have found cascade implantation
+				do reac=1,numImplantReac
+					if(ImplantReactions(reac)%numReactants==-10 .AND. &
+							ImplantReactions(reac)%numProducts==0) then	!we have found cascade implantation
 						exit
 					end if
 				end do
 
 				if(implantScheme=='MonteCarlo') then
-					reactionList(cell)%reactionRate=findReactionRate(cell, ImplantReactions(reac,matNum))
+					reactionList(cell)%reactionRate=findReactionRate(cell, ImplantReactions(reac))
 				else if(implantScheme=='explicit') then
 					reactionList(cell)%reactionRate=0d0
 				end if
@@ -370,20 +370,16 @@ subroutine initializeReactionList()
 			!*******************************************************
 			!clustering: Cu+Cu->2Cu
 			!*******************************************************
-			do reac=1,numClusterReac(matNum)
-				if(ClusterReactions(reac,matNum)%reactants(1,1)==1 .AND. &
-						ClusterReactions(reac,matNum)%reactants(2,1)==0 .AND. &
-						ClusterReactions(reac,matNum)%reactants(3,1)==0 .AND. &
-						ClusterReactions(reac,matNum)%reactants(4,1)==0 .AND. &
-						ClusterReactions(reac,matNum)%reactants(1,2)==1 .AND. &
-						ClusterReactions(reac,matNum)%reactants(2,2)==0 .AND. &
-						ClusterReactions(reac,matNum)%reactants(3,2)==0 .AND. &
-						ClusterReactions(reac,matNum)%reactants(4,2)==0) then
+			do reac=1,numClusterReac
+				if(ClusterReactions(reac)%reactants(1,1)==1 .AND. ClusterReactions(reac)%reactants(2,1)==0 .AND. &
+						ClusterReactions(reac)%reactants(3,1)==0 .AND. ClusterReactions(reac)%reactants(4,1)==0 .AND. &
+						ClusterReactions(reac)%reactants(1,2)==1 .AND. ClusterReactions(reac)%reactants(2,2)==0 .AND. &
+						ClusterReactions(reac)%reactants(3,2)==0 .AND. ClusterReactions(reac)%reactants(4,2)==0) then
 					exit
 				end if
 			end do
 
-			if(reac <= numClusterReac(matNum)) then
+			if(reac <= numClusterReac) then
 				allocate(reactionCurrent%next)
 				reactionCurrent=>reactionCurrent%next
 				reactionCurrent%numReactants=2
@@ -393,16 +389,16 @@ subroutine initializeReactionList()
 				allocate(reactionCurrent%cellNumber(reactionCurrent%numReactants + reactionCurrent%numProducts))
 				allocate(reactionCurrent%taskid(reactionCurrent%numReactants + reactionCurrent%numProducts))
 				do j=1, numSpecies
-					reactionCurrent%reactants(j,1)=ClusterReactions(reac,matNum)%reactants(j,1)
-					reactionCurrent%reactants(j,2)=ClusterReactions(reac,matNum)%reactants(j,2)
-					reactionCurrent%products(j,1)=ClusterReactions(reac,matNum)%products(j,1)
+					reactionCurrent%reactants(j,1)=ClusterReactions(reac)%reactants(j,1)
+					reactionCurrent%reactants(j,2)=ClusterReactions(reac)%reactants(j,2)
+					reactionCurrent%products(j,1)=ClusterReactions(reac)%products(j,1)
 				end do
 				do i=1,reactionCurrent%numReactants+reactionCurrent%numProducts
 					reactionCurrent%cellNumber(i)=cell
 					reactionCurrent%taskid(i)=myMesh(cell)%proc
 				end do
 				reactionCurrent%reactionRate=findReactionRateMultiple(reactionCurrent%reactants(:,1), &
-						reactionCurrent%reactants(:,2), cell, ClusterReactions(reac,matNum))
+						reactionCurrent%reactants(:,2), cell, ClusterReactions(reac))
 				nullify(reactionCurrent%next)
 			end if
 		end if
@@ -430,20 +426,16 @@ subroutine initializeReactionList()
 				!clustering: Cu+V->CuV
 				!*******************************************************
 				!search ClusterList for Cu+V->CuV
-				do reac=1,numClusterReac(matNum)
-					if(ClusterReactions(reac,matNum)%reactants(1,1)==1 .AND. &
-							ClusterReactions(reac,matNum)%reactants(2,1)==0 .AND. &
-							ClusterReactions(reac,matNum)%reactants(3,1)==0 .AND. &
-							ClusterReactions(reac,matNum)%reactants(4,1)==0 .AND. &
-							ClusterReactions(reac,matNum)%reactants(1,2)==0 .AND. &
-							ClusterReactions(reac,matNum)%reactants(2,2)==1 .AND. &
-							ClusterReactions(reac,matNum)%reactants(3,2)==0 .AND. &
-							ClusterReactions(reac,matNum)%reactants(4,2)==0) then
+				do reac=1,numClusterReac
+					if(ClusterReactions(reac)%reactants(1,1)==1 .AND. ClusterReactions(reac)%reactants(2,1)==0 .AND. &
+							ClusterReactions(reac)%reactants(3,1)==0 .AND. ClusterReactions(reac)%reactants(4,1)==0 .AND. &
+							ClusterReactions(reac)%reactants(1,2)==0 .AND. ClusterReactions(reac)%reactants(2,2)==1 .AND. &
+							ClusterReactions(reac)%reactants(3,2)==0 .AND. ClusterReactions(reac)%reactants(4,2)==0) then
 						exit
 					end if
 				end do
 
-				if(reac <= numClusterReac(matNum)) then
+				if(reac <= numClusterReac) then
 					allocate(reactionCurrent%next)
 					reactionCurrent=>reactionCurrent%next
 					reactionCurrent%numReactants=2
@@ -453,16 +445,16 @@ subroutine initializeReactionList()
 					allocate(reactionCurrent%cellNumber(reactionCurrent%numReactants+reactionCurrent%numProducts))
 					allocate(reactionCurrent%taskid(reactionCurrent%numReactants+reactionCurrent%numProducts))
 					do j=1, numSpecies
-						reactionCurrent%reactants(j,1)=ClusterReactions(reac,matNum)%reactants(j,1)
-						reactionCurrent%reactants(j,2)=ClusterReactions(reac,matNum)%reactants(j,2)
-						reactionCurrent%products(j,1)=ClusterReactions(reac,matNum)%products(j,1)
+						reactionCurrent%reactants(j,1)=ClusterReactions(reac)%reactants(j,1)
+						reactionCurrent%reactants(j,2)=ClusterReactions(reac)%reactants(j,2)
+						reactionCurrent%products(j,1)=ClusterReactions(reac)%products(j,1)
 					end do
 					do i=1,reactionCurrent%numReactants+reactionCurrent%numProducts
 						reactionCurrent%cellNumber(i)=cell
 						reactionCurrent%taskid(i)=myMesh(cell)%proc
 					end do
 					reactionCurrent%reactionRate=findReactionRateMultiple(reactionCurrent%reactants(:,1), &
-							reactionCurrent%reactants(:,2), cell, ClusterReactions(reac,matNum))
+							reactionCurrent%reactants(:,2), cell, ClusterReactions(reac))
 					nullify(reactionCurrent%next)
 				end if
 			end if
@@ -471,20 +463,16 @@ subroutine initializeReactionList()
 			!Diffusion: V->V
 			!*******************************************************************
 			!search DiffList for V->V
-			do reac=1,numDiffReac(matNum)
-				if(DiffReactions(reac,matNum)%reactants(1,1)==0 .AND. &
-						DiffReactions(reac,matNum)%reactants(2,1)==1 .AND.&
-						DiffReactions(reac,matNum)%reactants(3,1)==0 .AND.&
-						DiffReactions(reac,matNum)%reactants(4,1)==0 .AND.&
-						DiffReactions(reac,matNum)%products(1,1)==0 .AND. &
-						DiffReactions(reac,matNum)%products(2,1)==1 .AND. &
-						DiffReactions(reac,matNum)%products(3,1)==0 .AND. &
-						DiffReactions(reac,matNum)%products(4,1)==0) then
+			do reac=1,numDiffReac
+				if(DiffReactions(reac)%reactants(1,1)==0 .AND. DiffReactions(reac)%reactants(2,1)==1 .AND.&
+						DiffReactions(reac)%reactants(3,1)==0 .AND.DiffReactions(reac)%reactants(4,1)==0 .AND.&
+						DiffReactions(reac)%products(1,1)==0 .AND. DiffReactions(reac)%products(2,1)==1 .AND. &
+						DiffReactions(reac)%products(3,1)==0 .AND. DiffReactions(reac)%products(4,1)==0) then
 					exit
 				end if
 			end do
 
-			if(reac <= numDiffReac(matNum)) then
+			if(reac <= numDiffReac) then
 
 				do dir=1, 6
 					allocate(reactionCurrent%next)
@@ -497,8 +485,8 @@ subroutine initializeReactionList()
 					allocate(reactionCurrent%cellNumber(reactionCurrent%numReactants + reactionCurrent%numProducts))
 					allocate(reactionCurrent%taskid(reactionCurrent%numReactants + reactionCurrent%numProducts))
 					do j=1, numSpecies
-						reactionCurrent%reactants(j,1)=DiffReactions(reac,matNum)%reactants(j,1)
-						reactionCurrent%products(j,1)=DiffReactions(reac,matNum)%products(j,1)
+						reactionCurrent%reactants(j,1)=DiffReactions(reac)%reactants(j,1)
+						reactionCurrent%products(j,1)=DiffReactions(reac)%products(j,1)
 					end do
 					reactionCurrent%cellNumber(1)=cell
 					reactionCurrent%cellNumber(2)=myMesh(cell)%neighbors(1,dir)
@@ -506,7 +494,7 @@ subroutine initializeReactionList()
 					reactionCurrent%taskid(2)=myMesh(cell)%neighborProcs(1,dir)
 					reactionCurrent%reactionRate=findReactionRateDiff(reactionCurrent%reactants(:,1), cell, &
 							myProc%taskid, myMesh(cell)%neighbors(1,dir), myMesh(cell)%neighborProcs(1,dir), dir, &
-							DiffReactions(reac,matNum))
+							DiffReactions(reac))
 					nullify(reactionCurrent%next)
 				end do
 			end if
@@ -515,16 +503,16 @@ subroutine initializeReactionList()
 			!sinkRemoval: V->0
 			!*******************************************************************
 			!search sinkRemovalList for V->V
-			do reac=1,numSinkReac(matNum)
-				if(SinkReactions(reac,matNum)%reactants(1,1)==0 .AND. &
-						SinkReactions(reac,matNum)%reactants(2,1)==1 .AND. &
-						SinkReactions(reac,matNum)%reactants(3,1)==0 .AND. &
-						SinkReactions(reac,matNum)%reactants(4,1)==0) then
+			do reac=1,numSinkReac
+				if(SinkReactions(reac)%reactants(1,1)==0 .AND. &
+						SinkReactions(reac)%reactants(2,1)==1 .AND. &
+						SinkReactions(reac)%reactants(3,1)==0 .AND. &
+						SinkReactions(reac)%reactants(4,1)==0) then
 					exit
 				end if
 			end do
 
-			if(reac <= numSinkReac(matNum)) then
+			if(reac <= numSinkReac) then
 
 				allocate(reactionCurrent%next)
 				reactionCurrent=>reactionCurrent%next
@@ -535,12 +523,12 @@ subroutine initializeReactionList()
 				allocate(reactionCurrent%taskid(reactionCurrent%numReactants))
 
 				do i=1,reactionCurrent%numReactants
-					reactionCurrent%reactants(:,i)=SinkReactions(reac,matNum)%reactants(:,i)
+					reactionCurrent%reactants(:,i)=SinkReactions(reac)%reactants(:,i)
 					reactionCurrent%cellNumber(i)=cell
 					reactionCurrent%taskid(i)=myMesh(cell)%proc
 				end do
 				reactionCurrent%reactionRate=findReactionRateSink(reactionCurrent%reactants(:,1), cell, &
-						SinkReactions(reac,matNum))
+						SinkReactions(reac))
 				nullify(reactionCurrent%next)
 			end if
 
@@ -549,20 +537,16 @@ subroutine initializeReactionList()
 				!clustering: V+V->2V
 				!*******************************************************
 				!search ClusterList for V+V->2V
-				do reac=1,numClusterReac(matNum)
-					if(ClusterReactions(reac,matNum)%reactants(1,1)==0 .AND. &
-							ClusterReactions(reac,matNum)%reactants(2,1)==1 .AND. &
-							ClusterReactions(reac,matNum)%reactants(3,1)==0 .AND. &
-							ClusterReactions(reac,matNum)%reactants(4,1)==0 .AND. &
-							ClusterReactions(reac,matNum)%reactants(1,2)==0 .AND. &
-							ClusterReactions(reac,matNum)%reactants(2,2)==1 .AND. &
-							ClusterReactions(reac,matNum)%reactants(3,2)==0 .AND. &
-							ClusterReactions(reac,matNum)%reactants(4,2)==0) then
+				do reac=1,numClusterReac
+					if(ClusterReactions(reac)%reactants(1,1)==0 .AND. ClusterReactions(reac)%reactants(2,1)==1 .AND. &
+							ClusterReactions(reac)%reactants(3,1)==0 .AND. ClusterReactions(reac)%reactants(4,1)==0 .AND. &
+							ClusterReactions(reac)%reactants(1,2)==0 .AND. ClusterReactions(reac)%reactants(2,2)==1 .AND. &
+							ClusterReactions(reac)%reactants(3,2)==0 .AND. ClusterReactions(reac)%reactants(4,2)==0) then
 						exit
 					end if
 				end do
 
-				if(reac <= numClusterReac(matNum)) then
+				if(reac <= numClusterReac) then
 
 					allocate(reactionCurrent%next)
 					reactionCurrent=>reactionCurrent%next
@@ -574,16 +558,16 @@ subroutine initializeReactionList()
 					allocate(reactionCurrent%cellNumber(reactionCurrent%numReactants+reactionCurrent%numProducts))
 					allocate(reactionCurrent%taskid(reactionCurrent%numReactants+reactionCurrent%numProducts))
 					do j=1, numSpecies
-						reactionCurrent%reactants(j,1)=ClusterReactions(reac,matNum)%reactants(j,1)
-						reactionCurrent%reactants(j,2)=ClusterReactions(reac,matNum)%reactants(j,2)
-						reactionCurrent%products(j,1)=ClusterReactions(reac,matNum)%products(j,1)
+						reactionCurrent%reactants(j,1)=ClusterReactions(reac)%reactants(j,1)
+						reactionCurrent%reactants(j,2)=ClusterReactions(reac)%reactants(j,2)
+						reactionCurrent%products(j,1)=ClusterReactions(reac)%products(j,1)
 					end do
 					do i=1,reactionCurrent%numReactants+reactionCurrent%numProducts
 						reactionCurrent%cellNumber(i)=cell
 						reactionCurrent%taskid(i)=myMesh(cell)%proc
 					end do
 					reactionCurrent%reactionRate=findReactionRateMultiple(reactionCurrent%reactants(:,1), &
-							reactionCurrent%reactants(:,2), cell, ClusterReactions(reac,matNum))
+							reactionCurrent%reactants(:,2), cell, ClusterReactions(reac))
 					nullify(reactionCurrent%next)
 				end if
 			end if
@@ -609,20 +593,16 @@ subroutine initializeReactionList()
 			!Diffusion: SIA->SIA
 			!*******************************************************************
 			!search DiffList for SIA->SIA
-			do reac=1,numDiffReac(matNum)
-				if(DiffReactions(reac,matNum)%reactants(1,1)==0 .AND. &
-						DiffReactions(reac,matNum)%reactants(2,1)==0 .AND. &
-						DiffReactions(reac,matNum)%reactants(3,1)==1 .AND. &
-						DiffReactions(reac,matNum)%reactants(4,1)==0 .AND. &
-						DiffReactions(reac,matNum)%products(1,1)==0 .AND. &
-						DiffReactions(reac,matNum)%products(2,1)==0 .AND. &
-						DiffReactions(reac,matNum)%products(3,1)==1 .AND. &
-						DiffReactions(reac,matNum)%products(4,1)==0) then
+			do reac=1,numDiffReac
+				if(DiffReactions(reac)%reactants(1,1)==0 .AND. DiffReactions(reac)%reactants(2,1)==0 .AND. &
+						DiffReactions(reac)%reactants(3,1)==1 .AND. DiffReactions(reac)%reactants(4,1)==0 .AND. &
+						DiffReactions(reac)%products(1,1)==0 .AND. DiffReactions(reac)%products(2,1)==0 .AND. &
+						DiffReactions(reac)%products(3,1)==1 .AND. DiffReactions(reac)%products(4,1)==0) then
 					exit
 				end if
 			end do
 
-			if(reac <= numDiffReac(matNum)) then
+			if(reac <= numDiffReac) then
 
 				do dir=1, 6
 					allocate(reactionCurrent%next)
@@ -635,8 +615,8 @@ subroutine initializeReactionList()
 					allocate(reactionCurrent%cellNumber(reactionCurrent%numReactants+reactionCurrent%numProducts))
 					allocate(reactionCurrent%taskid(reactionCurrent%numReactants+reactionCurrent%numProducts))
 					do j=1, numSpecies
-						reactionCurrent%reactants(j,1)=DiffReactions(reac,matNum)%reactants(j,1)
-						reactionCurrent%products(j,1)=DiffReactions(reac,matNum)%products(j,1)
+						reactionCurrent%reactants(j,1)=DiffReactions(reac)%reactants(j,1)
+						reactionCurrent%products(j,1)=DiffReactions(reac)%products(j,1)
 					end do
 					reactionCurrent%cellNumber(1)=cell
 					reactionCurrent%cellNumber(2)=myMesh(cell)%neighbors(1,dir)
@@ -644,7 +624,7 @@ subroutine initializeReactionList()
 					reactionCurrent%taskid(2)=myMesh(cell)%neighborProcs(1,dir)
 					reactionCurrent%reactionRate=findReactionRateDiff(reactionCurrent%reactants(:,1), cell, &
 							myProc%taskid, myMesh(cell)%neighbors(1,dir), myMesh(cell)%neighborProcs(1,dir), dir, &
-							DiffReactions(reac,matNum))
+							DiffReactions(reac))
 					nullify(reactionCurrent%next)
 				end do
 			end if
@@ -653,16 +633,16 @@ subroutine initializeReactionList()
 			!sinkRemoval: SIA->0
 			!*******************************************************************
 			!search sinkRemovalList for SIA->0
-			do reac=1,numSinkReac(matNum)
-				if(SinkReactions(reac,matNum)%reactants(1,1)==0 .AND. &
-						SinkReactions(reac,matNum)%reactants(2,1)==0 .AND. &
-						SinkReactions(reac,matNum)%reactants(3,1)==1 .AND. &
-						SinkReactions(reac,matNum)%reactants(4,1)==0) then
+			do reac=1,numSinkReac
+				if(SinkReactions(reac)%reactants(1,1)==0 .AND. &
+						SinkReactions(reac)%reactants(2,1)==0 .AND. &
+						SinkReactions(reac)%reactants(3,1)==1 .AND. &
+						SinkReactions(reac)%reactants(4,1)==0) then
 					exit
 				end if
 			end do
 
-			if(reac <= numSinkReac(matNum)) then
+			if(reac <= numSinkReac) then
 
 				allocate(reactionCurrent%next)
 				reactionCurrent=>reactionCurrent%next
@@ -673,12 +653,12 @@ subroutine initializeReactionList()
 				allocate(reactionCurrent%taskid(reactionCurrent%numReactants))
 
 				do i=1,reactionCurrent%numReactants
-					reactionCurrent%reactants(:,i)=SinkReactions(reac,matNum)%reactants(:,i)
+					reactionCurrent%reactants(:,i)=SinkReactions(reac)%reactants(:,i)
 					reactionCurrent%cellNumber(i)=cell
 					reactionCurrent%taskid(i)=myMesh(cell)%proc
 				end do
 				reactionCurrent%reactionRate=findReactionRateSink(reactionCurrent%reactants(:,1), cell, &
-						SinkReactions(reac,matNum))
+						SinkReactions(reac))
 				nullify(reactionCurrent%next)
 
 			end if
@@ -688,20 +668,16 @@ subroutine initializeReactionList()
 				!clustering: SIA+SIA->2SIA
 				!*******************************************************
 				!search ClusterList for SIA+SIA->2SIA
-				do reac=1,numClusterReac(matNum)
-					if(ClusterReactions(reac,matNum)%reactants(1,1)==0 .AND. &
-							ClusterReactions(reac,matNum)%reactants(2,1)==0 .AND. &
-							ClusterReactions(reac,matNum)%reactants(3,1)==1 .AND. &
-							ClusterReactions(reac,matNum)%reactants(4,1)==0 .AND. &
-							ClusterReactions(reac,matNum)%reactants(1,2)==0 .AND. &
-							ClusterReactions(reac,matNum)%reactants(2,2)==0 .AND. &
-							ClusterReactions(reac,matNum)%reactants(3,2)==1 .AND. &
-							ClusterReactions(reac,matNum)%reactants(4,2)==0) then
+				do reac=1,numClusterReac
+					if(ClusterReactions(reac)%reactants(1,1)==0 .AND. ClusterReactions(reac)%reactants(2,1)==0 .AND. &
+							ClusterReactions(reac)%reactants(3,1)==1 .AND. ClusterReactions(reac)%reactants(4,1)==0 .AND. &
+							ClusterReactions(reac)%reactants(1,2)==0 .AND. ClusterReactions(reac)%reactants(2,2)==0 .AND. &
+							ClusterReactions(reac)%reactants(3,2)==1 .AND. ClusterReactions(reac)%reactants(4,2)==0) then
 						exit
 					end if
 				end do
 
-				if(reac <= numClusterReac(matNum)) then
+				if(reac <= numClusterReac) then
 
 					allocate(reactionCurrent%next)
 					reactionCurrent=>reactionCurrent%next
@@ -712,9 +688,9 @@ subroutine initializeReactionList()
 					allocate(reactionCurrent%cellNumber(reactionCurrent%numReactants+reactionCurrent%numProducts))
 					allocate(reactionCurrent%taskid(reactionCurrent%numReactants+reactionCurrent%numProducts))
 					do j=1, numSpecies
-						reactionCurrent%reactants(j,1)=ClusterReactions(reac,matNum)%reactants(j,1)
-						reactionCurrent%reactants(j,2)=ClusterReactions(reac,matNum)%reactants(j,2)
-						reactionCurrent%products(j,1)=ClusterReactions(reac,matNum)%products(j,1)
+						reactionCurrent%reactants(j,1)=ClusterReactions(reac)%reactants(j,1)
+						reactionCurrent%reactants(j,2)=ClusterReactions(reac)%reactants(j,2)
+						reactionCurrent%products(j,1)=ClusterReactions(reac)%products(j,1)
 					end do
 					if(pointDefectToggle=='yes') then
 						if(reactionCurrent%products(3,1) > max3DInt) then
@@ -728,7 +704,7 @@ subroutine initializeReactionList()
 						reactionCurrent%taskid(i)=myMesh(cell)%proc
 					end do
 					reactionCurrent%reactionRate=findReactionRateMultiple(reactionCurrent%reactants(:,1), &
-							reactionCurrent%reactants(:,2), cell, ClusterReactions(reac,matNum))
+							reactionCurrent%reactants(:,2), cell, ClusterReactions(reac))
 					nullify(reactionCurrent%next)
 				end if
 			end if
@@ -743,20 +719,16 @@ subroutine initializeReactionList()
 			!clustering: V+SIA->0
 			!*******************************************************
 			!search ClusterList for V+SIA->0
-			do reac=1,numClusterReac(matNum)
-				if(ClusterReactions(reac,matNum)%reactants(1,1)==0 .AND. &
-						ClusterReactions(reac,matNum)%reactants(2,1)==1 .AND. &
-						ClusterReactions(reac,matNum)%reactants(3,1)==0 .AND. &
-						ClusterReactions(reac,matNum)%reactants(4,1)==0 .AND. &
-						ClusterReactions(reac,matNum)%reactants(1,2)==0 .AND. &
-						ClusterReactions(reac,matNum)%reactants(2,2)==0 .AND. &
-						ClusterReactions(reac,matNum)%reactants(3,2)==1 .AND. &
-						ClusterReactions(reac,matNum)%reactants(4,2)==0) then
+			do reac=1,numClusterReac
+				if(ClusterReactions(reac)%reactants(1,1)==0 .AND. ClusterReactions(reac)%reactants(2,1)==1 .AND. &
+						ClusterReactions(reac)%reactants(3,1)==0 .AND. ClusterReactions(reac)%reactants(4,1)==0 .AND. &
+						ClusterReactions(reac)%reactants(1,2)==0 .AND. ClusterReactions(reac)%reactants(2,2)==0 .AND. &
+						ClusterReactions(reac)%reactants(3,2)==1 .AND. ClusterReactions(reac)%reactants(4,2)==0) then
 					exit
 				end if
 			end do
 
-			if(reac <= numClusterReac(matNum)) then
+			if(reac <= numClusterReac) then
 
 				allocate(reactionCurrent%next)
 				reactionCurrent=>reactionCurrent%next
@@ -767,8 +739,8 @@ subroutine initializeReactionList()
 				allocate(reactionCurrent%cellNumber(reactionCurrent%numReactants))
 				allocate(reactionCurrent%taskid(reactionCurrent%numReactants))
 				do j=1, numSpecies
-					reactionCurrent%reactants(j,1)=ClusterReactions(reac,matNum)%reactants(j,1)
-					reactionCurrent%reactants(j,2)=ClusterReactions(reac,matNum)%reactants(j,2)
+					reactionCurrent%reactants(j,1)=ClusterReactions(reac)%reactants(j,1)
+					reactionCurrent%reactants(j,2)=ClusterReactions(reac)%reactants(j,2)
 				end do
 				do i=1,reactionCurrent%numReactants
 					reactionCurrent%cellNumber(i)=cell
@@ -776,7 +748,7 @@ subroutine initializeReactionList()
 				end do
 				!Find reaction rate for Cu clustering using ClusterReactions(reac), which is input from file.
 				reactionCurrent%reactionRate=findReactionRateMultiple(reactionCurrent%reactants(:,1), &
-						reactionCurrent%reactants(:,2), cell, ClusterReactions(reac,matNum))
+						reactionCurrent%reactants(:,2), cell, ClusterReactions(reac))
 				nullify(reactionCurrent%next)
 			end if
 		end if

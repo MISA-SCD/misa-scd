@@ -80,74 +80,74 @@ subroutine deallocateMaterialInput()
 
 	do matNum=1,numMaterials
 
-		do i=1, numSingleForm(matNum)
-			deallocate(FormSingle(i,matNum)%defectType)
+		do i=1, numSingleForm
+			deallocate(FormSingle(i)%defectType)
 		end do
 
-		do i=1,numFuncDiff(matNum)
-			deallocate(DiffFunc(i,matNum)%defectType)
-			deallocate(DiffFunc(i,matNum)%min)
-			deallocate(DiffFunc(i,matNum)%max)
-			deallocate(DiffFunc(i,matNum)%parameters)
+		do i=1,numFuncDiff
+			deallocate(DiffFunc(i)%defectType)
+			deallocate(DiffFunc(i)%min)
+			deallocate(DiffFunc(i)%max)
+			deallocate(DiffFunc(i)%parameters)
 		end do
 
-		do i=1,numSingleDiff(matNum)
-			deallocate(DiffSingle(i,matNum)%defectType)
+		do i=1,numSingleDiff
+			deallocate(DiffSingle(i)%defectType)
 		end do
 
-		do i=1,numFuncBind(matNum)
-			deallocate(BindFunc(i,matNum)%defectType)
-			deallocate(BindFunc(i,matNum)%product)
-			deallocate(BindFunc(i,matNum)%min)
-			deallocate(BindFunc(i,matNum)%max)
-			deallocate(BindFunc(i,matNum)%parameters)
+		do i=1,numFuncBind
+			deallocate(BindFunc(i)%defectType)
+			deallocate(BindFunc(i)%product)
+			deallocate(BindFunc(i)%min)
+			deallocate(BindFunc(i)%max)
+			deallocate(BindFunc(i)%parameters)
 		end do
 
-		do i=1,numSingleBind(matNum)
-			deallocate(BindSingle(i,matNum)%defectType)
-			deallocate(BindSingle(i,matNum)%product)
+		do i=1,numSingleBind
+			deallocate(BindSingle(i)%defectType)
+			deallocate(BindSingle(i)%product)
 		end do
 
-		do i=1,numDissocReac(matNum)
-			deallocate(DissocReactions(i,matNum)%reactants)
-			deallocate(DissocReactions(i,matNum)%products)
-			deallocate(DissocReactions(i,matNum)%min)
-			deallocate(DissocReactions(i,matNum)%max)
+		do i=1,numDissocReac
+			deallocate(DissocReactions(i)%reactants)
+			deallocate(DissocReactions(i)%products)
+			deallocate(DissocReactions(i)%min)
+			deallocate(DissocReactions(i)%max)
 		end do
 
-		do i=1,numDiffReac(matNum)
-			deallocate(DiffReactions(i,matNum)%reactants)
-			deallocate(DiffReactions(i,matNum)%products)
-			deallocate(DiffReactions(i,matNum)%min)
-			deallocate(DiffReactions(i,matNum)%max)
+		do i=1,numDiffReac
+			deallocate(DiffReactions(i)%reactants)
+			deallocate(DiffReactions(i)%products)
+			deallocate(DiffReactions(i)%min)
+			deallocate(DiffReactions(i)%max)
 		end do
 
-		do i=1,numSinkReac(matNum)
-			deallocate(SinkReactions(i,matNum)%reactants)
-			!deallocate(SinkReactions(matNum,i)%products)	!no products
-			deallocate(SinkReactions(i,matNum)%min)
-			deallocate(SinkReactions(i,matNum)%max)
+		do i=1,numSinkReac
+			deallocate(SinkReactions(i)%reactants)
+			!deallocate(SinkReactions(i)%products)	!no products
+			deallocate(SinkReactions(i)%min)
+			deallocate(SinkReactions(i)%max)
 		end do
 
-		do i=1,numImpurityReac(matNum)
-			deallocate(ImpurityReactions(i,matNum)%reactants)
-			deallocate(ImpurityReactions(i,matNum)%products)
-			deallocate(ImpurityReactions(i,matNum)%min)
-			deallocate(ImpurityReactions(i,matNum)%max)
+		do i=1,numImpurityReac
+			deallocate(ImpurityReactions(i)%reactants)
+			deallocate(ImpurityReactions(i)%products)
+			deallocate(ImpurityReactions(i)%min)
+			deallocate(ImpurityReactions(i)%max)
 		end do
 
-		do i=1,numClusterReac(matNum)
-			deallocate(ClusterReactions(i,matNum)%reactants)
-			deallocate(ClusterReactions(i,matNum)%products)
-			deallocate(ClusterReactions(i,matNum)%min)
-			deallocate(ClusterReactions(i,matNum)%max)
+		do i=1,numClusterReac
+			deallocate(ClusterReactions(i)%reactants)
+			deallocate(ClusterReactions(i)%products)
+			deallocate(ClusterReactions(i)%min)
+			deallocate(ClusterReactions(i)%max)
 		end do
 
-		do i=1,numImplantReac(matNum)
-			if(allocated(ImplantReactions(i,matNum)%reactants)) deallocate(ImplantReactions(i,matNum)%reactants)
-			if(allocated(ImplantReactions(i,matNum)%products)) deallocate(ImplantReactions(i,matNum)%products)
-			if(allocated(ImplantReactions(i,matNum)%min)) deallocate(ImplantReactions(i,matNum)%min)
-			if(allocated(ImplantReactions(i,matNum)%max)) deallocate(ImplantReactions(i,matNum)%max)
+		do i=1,numImplantReac
+			if(allocated(ImplantReactions(i)%reactants)) deallocate(ImplantReactions(i)%reactants)
+			if(allocated(ImplantReactions(i)%products)) deallocate(ImplantReactions(i)%products)
+			if(allocated(ImplantReactions(i)%min)) deallocate(ImplantReactions(i)%min)
+			if(allocated(ImplantReactions(i)%max)) deallocate(ImplantReactions(i)%max)
 		end do
 	end do
 

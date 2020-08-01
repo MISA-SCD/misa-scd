@@ -173,23 +173,23 @@ subroutine updateImplantRateSingleCell(cell)
 
 	if(implantType=='FrenkelPair') then
 
-		do reac=1,numImplantReac(matNum)
-			if(ImplantReactions(reac,matNum)%numReactants==0 .AND. ImplantReactions(reac,matNum)%numProducts==2) then
+		do reac=1,numImplantReac
+			if(ImplantReactions(reac)%numReactants==0 .AND. ImplantReactions(reac)%numProducts==2) then
 				exit	!we have found FrenkelPair implantation
 			end if
 		end do
 
 		totalRate=totalRate-reactionList(cell)%reactionRate
 		totalRateVol(cell)=totalRateVol(cell)-reactionList(cell)%reactionRate
-		reactionList(cell)%reactionRate=findReactionRate(cell, ImplantReactions(reac,matNum))
+		reactionList(cell)%reactionRate=findReactionRate(cell, ImplantReactions(reac))
 
 		totalRate=totalRate+reactionList(cell)%reactionRate
 		totalRateVol(cell)=totalRateVol(cell)+reactionList(cell)%reactionRate
 
 	else if(implantType=='Cascade') then
 		!search ImplantList for cascade reactions
-		do reac=1,numImplantReac(matNum)
-			if(ImplantReactions(reac,matNum)%numReactants==-10 .AND. ImplantReactions(reac,matNum)%numProducts==0) then
+		do reac=1,numImplantReac
+			if(ImplantReactions(reac)%numReactants==-10 .AND. ImplantReactions(reac)%numProducts==0) then
 				exit	!we have found cascade implantation
 			end if
 		end do
@@ -198,7 +198,7 @@ subroutine updateImplantRateSingleCell(cell)
 		totalRateVol(cell)=totalRateVol(cell)-reactionList(cell)%reactionRate
 
 		if(implantScheme=='MonteCarlo') then
-			reactionList(cell)%reactionRate=findReactionRate(cell, ImplantReactions(reac,matNum))
+			reactionList(cell)%reactionRate=findReactionRate(cell, ImplantReactions(reac))
 
 			totalRate=totalRate+reactionList(cell)%reactionRate
 			totalRateVol(cell)=totalRateVol(cell)+reactionList(cell)%reactionRate

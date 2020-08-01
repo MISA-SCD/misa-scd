@@ -15,10 +15,10 @@ double precision function findDiffusivity(matNum, defectType)
 	!Temporary: used as a parameter to vary the diffusivity of all defects on GB
 	double precision, parameter :: Param=0d0
 
-	outer1: do i=1,numSingleDiff(matNum)
+	outer1: do i=1,numSingleDiff
 		numSame=0
 		do j=1,numSpecies
-			if(defectType(j)==DiffSingle(i,matNum)%defectType(j)) then
+			if(defectType(j)==DiffSingle(i)%defectType(j)) then
 				numSame=numSame+1
 			end if
 		end do
@@ -29,7 +29,7 @@ double precision function findDiffusivity(matNum, defectType)
 					Diff=diffusivityCu(matNum)
 					exit outer1
 				else
-					Diff=DiffSingle(i,matNum)%D*dexp(-(DiffSingle(i,matNum)%Em-Param)/(kboltzmann*temperature))
+					Diff=DiffSingle(i)%D*dexp(-(DiffSingle(i)%Em-Param)/(kboltzmann*temperature))
 					exit outer1
 				end if
 			else
@@ -38,34 +38,34 @@ double precision function findDiffusivity(matNum, defectType)
 					Diff=diffusivityCu(matNum)
 					exit  outer1
 				else
-					Diff=DiffSingle(i,matNum)%D*dexp(-DiffSingle(i,matNum)%Em/(kboltzmann*temperature))
+					Diff=DiffSingle(i)%D*dexp(-DiffSingle(i)%Em/(kboltzmann*temperature))
 					exit outer1
 				end if
 			end if
 		end if
 	end do outer1
 
-	if(i==numSingleDiff(matNum)+1) then	!did not find defect in single defect list
-		do i=1,numFuncDiff(matNum)
+	if(i==numSingleDiff+1) then	!did not find defect in single defect list
+		do i=1,numFuncDiff
 			numSame=0
 			do j=1,numSpecies
-				if(defectType(j)==0 .AND. DiffFunc(i,matNum)%defectType(j)==0) then
+				if(defectType(j)==0 .AND. DiffFunc(i)%defectType(j)==0) then
 					numSame=numSame+1
-				else if(defectType(j) /= 0 .AND. DiffFunc(i,matNum)%defectType(j)==1) then
-					if(defectType(j) >= DiffFunc(i,matNum)%min(j) .AND. &
-							(defectType(j) <= DiffFunc(i,matNum)%max(j) .OR. DiffFunc(i,matNum)%max(j)==-1)) then
+				else if(defectType(j) /= 0 .AND. DiffFunc(i)%defectType(j)==1) then
+					if(defectType(j) >= DiffFunc(i)%min(j) .AND. &
+							(defectType(j) <= DiffFunc(i)%max(j) .OR. DiffFunc(i)%max(j)==-1)) then
 						numSame=numSame+1
 					end if
 				end if
 			end do
 			if(numSame==numSpecies) then
 
-				Diff=DiffusivityCompute(defectType, DiffFunc(i,matNum)%functionType, DiffFunc(i,matNum)%numParam,&
-						DiffFunc(i,matNum)%parameters, matNum)
+				Diff=DiffusivityCompute(defectType, DiffFunc(i)%functionType, DiffFunc(i)%numParam,&
+						DiffFunc(i)%parameters, matNum)
 				exit
 			end if
 		end do
-		if(i==numFuncDiff(matNum)+1) then
+		if(i==numFuncDiff+1) then
 
 			Diff=0d0
 		end if
@@ -123,17 +123,17 @@ double precision function diffusivityCu(matNum)
 	integer DefectType(numSpecies)
 	integer matNum,i
 
-	outer: do i=1,numSingleDiff(matNum)
-		if(DiffSingle(i,matNum)%defectType(1)==1 .AND. DiffSingle(i,matNum)%defectType(2)==0 .AND. &
-				DiffSingle(i,matNum)%defectType(3)==0 .AND. DiffSingle(i,matNum)%defectType(4)==0) then
+	outer: do i=1,numSingleDiff
+		if(DiffSingle(i)%defectType(1)==1 .AND. DiffSingle(i)%defectType(2)==0 .AND. &
+				DiffSingle(i)%defectType(3)==0 .AND. DiffSingle(i)%defectType(4)==0) then
 
 			if(totalDPA > 0d0 .AND. dpaRate > 0d0) then
-			!	diffusivityCu=(DiffSingle(i,matNum)%D*dexp(-DiffSingle(i,matNum)%Em/(kboltzmann*temperature)))* &
+			!	diffusivityCu=(DiffSingle(i)%D*dexp(-DiffSingle(i)%Em/(kboltzmann*temperature)))* &
 			!			(Vconcent/initialCeqv)
-				diffusivityCu=(DiffSingle(i,matNum)%D*dexp(-DiffSingle(i,matNum)%Em/(kboltzmann*temperature)))* firr
+				diffusivityCu=(DiffSingle(i)%D*dexp(-DiffSingle(i)%Em/(kboltzmann*temperature)))* firr
 				exit outer
 			else
-				diffusivityCu=(DiffSingle(i,matNum)%D*dexp(-DiffSingle(i,matNum)%Em/(kboltzmann*temperature)))
+				diffusivityCu=(DiffSingle(i)%D*dexp(-DiffSingle(i)%Em/(kboltzmann*temperature)))
 				exit outer
 			end if
 		end if
@@ -158,14 +158,14 @@ double precision function findBinding(matNum, DefectType, productType)
 	!Temporary: used as a parameter to vary the binding energy of all defects on GB
 	double precision, parameter :: Param=0d0
 
-	do i=1,numSingleBind(matNum)
+	do i=1,numSingleBind
 		numSame=0
 		numSameProduct=0
 		do j=1,numSpecies
-			if(DefectType(j)==BindSingle(i,matNum)%defectType(j)) then
+			if(DefectType(j)==BindSingle(i)%defectType(j)) then
 				numSame=numSame+1
 			end if
-			if(productType(j)==BindSingle(i,matNum)%product(j)) then
+			if(productType(j)==BindSingle(i)%product(j)) then
 				numSameProduct=numSameProduct+1
 			end if
 		end do
@@ -173,34 +173,34 @@ double precision function findBinding(matNum, DefectType, productType)
 		if (numSame==numSpecies .AND. numSameProduct==numSpecies) then
 			if(matNum==2) then
 
-				Eb=BindSingle(i,matNum)%Eb-Param
+				Eb=BindSingle(i)%Eb-Param
 				exit
 			else
-				Eb=BindSingle(i,matNum)%Eb
+				Eb=BindSingle(i)%Eb
 				exit
 			end if
 		end if
 	end do
 
-	if(i==numSingleBind(matNum)+1) then	!did not find defect in single defect list
-		do i=1,numFuncBind(matNum)
+	if(i==numSingleBind+1) then	!did not find defect in single defect list
+		do i=1,numFuncBind
 			numSame=0
 			numSameProduct=0
 			do j=1,numSpecies
 
-				if(DefectType(j)==0 .AND. BindFunc(i,matNum)%defectType(j)==0) then
+				if(DefectType(j)==0 .AND. BindFunc(i)%defectType(j)==0) then
 					numSame=numSame+1
-				else if(DefectType(j) /= 0 .AND. BindFunc(i,matNum)%defectType(j)==1) then
-					if(DefectType(j) >= BindFunc(i,matNum)%min(j) .AND. &
-							(DefectType(j) <= BindFunc(i,matNum)%max(j) .OR. BindFunc(i,matNum)%max(j)==-1)) then
+				else if(DefectType(j) /= 0 .AND. BindFunc(i)%defectType(j)==1) then
+					if(DefectType(j) >= BindFunc(i)%min(j) .AND. &
+							(DefectType(j) <= BindFunc(i)%max(j) .OR. BindFunc(i)%max(j)==-1)) then
 
 						numSame=numSame+1
 					end if
 				end if
 
-				if(productType(j)==0 .AND. BindFunc(i,matNum)%product(j)==0) then
+				if(productType(j)==0 .AND. BindFunc(i)%product(j)==0) then
 					numSameProduct=numSameProduct+1
-				else if(productType(j) == 1 .AND. BindFunc(i,matNum)%product(j)==1) then	!used to find dissociation binding energy
+				else if(productType(j) == 1 .AND. BindFunc(i)%product(j)==1) then	!used to find dissociation binding energy
 					numSameProduct=numSameProduct+1
 				end if
 			end do
@@ -209,18 +209,18 @@ double precision function findBinding(matNum, DefectType, productType)
 
 				if(matNum==2) then	!Adjust binding energies on GB
 
-					Eb=BindingCompute(DefectType, productType, BindFunc(i,matNum)%functionType, &
-							BindFunc(i,matNum)%numParam,BindFunc(i,matNum)%parameters)-Param
+					Eb=BindingCompute(DefectType, productType, BindFunc(i)%functionType, &
+							BindFunc(i)%numParam,BindFunc(i)%parameters)-Param
 					exit
 
 				else
-					Eb=BindingCompute(DefectType, productType, BindFunc(i,matNum)%functionType, &
-							BindFunc(i,matNum)%numParam,BindFunc(i,matNum)%parameters)
+					Eb=BindingCompute(DefectType, productType, BindFunc(i)%functionType, &
+							BindFunc(i)%numParam,BindFunc(i)%parameters)
 					exit
 				end if
 			end if
 		end do
-		if(i==numFuncBind(matNum)+1) then
+		if(i==numFuncBind+1) then
 			Eb=0d0
 		end if
 	end if

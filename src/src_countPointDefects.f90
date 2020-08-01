@@ -173,16 +173,16 @@ double precision function permanentCv(matNum)
     double precision Kiv, diffV, diffI
     integer matNum, i
 
-    do i=1,numSingleDiff(matNum)
-        if(DiffSingle(i,matNum)%defectType(1)==0 .AND. DiffSingle(i,matNum)%defectType(2)==1 .AND. &
-                DiffSingle(i,matNum)%defectType(3)==0 .AND. DiffSingle(i,matNum)%defectType(4)==0) then
+    do i=1,numSingleDiff
+        if(DiffSingle(i)%defectType(1)==0 .AND. DiffSingle(i)%defectType(2)==1 .AND. &
+                DiffSingle(i)%defectType(3)==0 .AND. DiffSingle(i)%defectType(4)==0) then
 
-            diffV = DiffSingle(i,matNum)%D*dexp(-DiffSingle(2,matNum)%Em/(kboltzmann*temperature))
+            diffV = DiffSingle(i)%D*dexp(-DiffSingle(i)%Em/(kboltzmann*temperature))
 
-        else if(DiffSingle(i,matNum)%defectType(1)==0 .AND. DiffSingle(i,matNum)%defectType(2)==0 .AND. &
-                DiffSingle(i,matNum)%defectType(3)==1 .AND. DiffSingle(i,matNum)%defectType(4)==0) then
+        else if(DiffSingle(i)%defectType(1)==0 .AND. DiffSingle(i)%defectType(2)==0 .AND. &
+                DiffSingle(i)%defectType(3)==1 .AND. DiffSingle(i)%defectType(4)==0) then
 
-            diffI = DiffSingle(i,matNum)%D*dexp(-DiffSingle(2,matNum)%Em/(kboltzmann*temperature))
+            diffI = DiffSingle(i)%D*dexp(-DiffSingle(i)%Em/(kboltzmann*temperature))
 
         end if
 

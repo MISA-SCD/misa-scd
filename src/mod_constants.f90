@@ -62,30 +62,30 @@ double precision cascadeElementVol				    !<volume of a cascade element (nm^3)
 integer numMaterials						        !<Number of material types (eg. copper, niobium or bulk, grain boundary)
 integer numSpecies							        !<Number of chemical species (typically set to 4: He, V, SIA_glissile, SIA_sessile)
 
-type(formationSingle),allocatable :: FormSingle(:,:)                !<Parameters for formation of single defects--(numSingleForm(matNum),matNum)
-type(diffusionSingle),allocatable :: DiffSingle(:,:)			    !<Parameters for diffusion of single defects--(numSingleDiff(matNum),matNum)
-type(diffusionFunction), allocatable :: DiffFunc(:,:)			    !<Parameters for functional forms of diffusion rates for defects--(numFuncDiff(matNum),matNum)
-type(bindingSingle), allocatable :: BindSingle(:,:)				    !<Parameters for binding of single defects--(numSingleBind(matNum),matNum)
-type(bindingFunction), allocatable :: BindFunc(:,:)				    !<Parameters for functional forms of binding energies for defects--(numFuncBind(matNum),matNum)
-type(reactionParameters), allocatable :: DissocReactions(:,:)	    !<List of allowed dissociation reactions (and ref. to functional form of reaction rate)--(numDissocReac(matNum),matNum)
-type(reactionParameters), allocatable :: DiffReactions(:,:)		    !<List of allowed diffusion reactions (and ref. to functional form of reaction rate)--(numDiffReac(matNum),matNum)
-type(reactionParameters), allocatable :: SinkReactions(:,:)		    !<List of allowed sink reactions (and ref. to functional form of reaction rate)--(numSinkReac(matNum),matNum)
-type(reactionParameters), allocatable :: ImpurityReactions(:,:)	    !<List of allowed impurity reactions (and ref. to functional form of reaction rate)--(numImpurityReac(matNum),matNum)
-type(reactionParameters), allocatable :: ClusterReactions(:,:)	    !<List of allowed clustering reactions (and ref. to functional form of reaction rate)--(numClusterReac(matNum),matNum)
-type(reactionParameters), allocatable :: ImplantReactions(:,:)	    !<List of allowed implantation reactions (and ref. to functional form of reaction rate)--(numImplantReac(matNum),matNum)
+type(formationSingle),allocatable :: FormSingle(:)                !<Parameters for formation of single defects--(numSingleForm(matNum),matNum)
+type(diffusionSingle),allocatable :: DiffSingle(:)			    !<Parameters for diffusion of single defects--(numSingleDiff(matNum),matNum)
+type(diffusionFunction), allocatable :: DiffFunc(:)			    !<Parameters for functional forms of diffusion rates for defects--(numFuncDiff(matNum),matNum)
+type(bindingSingle), allocatable :: BindSingle(:)				    !<Parameters for binding of single defects--(numSingleBind(matNum),matNum)
+type(bindingFunction), allocatable :: BindFunc(:)				    !<Parameters for functional forms of binding energies for defects--(numFuncBind(matNum),matNum)
+type(reactionParameters), allocatable :: DissocReactions(:)	    !<List of allowed dissociation reactions (and ref. to functional form of reaction rate)--(numDissocReac(matNum),matNum)
+type(reactionParameters), allocatable :: DiffReactions(:)		    !<List of allowed diffusion reactions (and ref. to functional form of reaction rate)--(numDiffReac(matNum),matNum)
+type(reactionParameters), allocatable :: SinkReactions(:)		    !<List of allowed sink reactions (and ref. to functional form of reaction rate)--(numSinkReac(matNum),matNum)
+type(reactionParameters), allocatable :: ImpurityReactions(:)	    !<List of allowed impurity reactions (and ref. to functional form of reaction rate)--(numImpurityReac(matNum),matNum)
+type(reactionParameters), allocatable :: ClusterReactions(:)	    !<List of allowed clustering reactions (and ref. to functional form of reaction rate)--(numClusterReac(matNum),matNum)
+type(reactionParameters), allocatable :: ImplantReactions(:)	    !<List of allowed implantation reactions (and ref. to functional form of reaction rate)--(numImplantReac(matNum),matNum)
 
-integer, allocatable :: numSingleForm(:)                            !<Number of single defect formation energy in input file
-integer, allocatable :: numSingleDiff(:)	                        !<Number of single defect diffusion rates in input file
-integer, allocatable :: numFuncDiff(:)		                        !<Number of functional forms for diffusion rates in input files
-integer, allocatable :: numSingleBind(:)	                        !<Number of single defect binding energies in input file
-integer, allocatable :: numFuncBind(:)		                        !<Number of functional forms for binding energies in input files
+integer :: numSingleForm                                !<Number of single defect formation energy in input file
+integer :: numSingleDiff	                            !<Number of single defect diffusion rates in input file
+integer :: numFuncDiff		                            !<Number of functional forms for diffusion rates in input files
+integer :: numSingleBind                                !<Number of single defect binding energies in input file
+integer :: numFuncBind		                            !<Number of functional forms for binding energies in input files
 
-integer, allocatable :: numDissocReac(:)	                        !<Number of dissociation reactions in input file
-integer, allocatable :: numDiffReac(:)		                        !<Number of diffusion reactions in input file
-integer, allocatable :: numSinkReac(:)		                        !<Number of sink reactions in input file
-integer, allocatable :: numImpurityReac(:)	                        !<Number of impurity reactions in input file
-integer, allocatable :: numClusterReac(:)	                        !<Number of clustering reactions in input file
-integer, allocatable :: numImplantReac(:)	                        !<Number of implantation reactions in input file (cascade, Frenkel pair, He currently implemented)
+integer :: numDissocReac	                            !<Number of dissociation reactions in input file
+integer :: numDiffReac		                            !<Number of diffusion reactions in input file
+integer :: numSinkReac		                            !<Number of sink reactions in input file
+integer :: numImpurityReac	                            !<Number of impurity reactions in input file
+integer :: numClusterReac	                            !<Number of clustering reactions in input file
+integer :: numImplantReac	                            !<Number of implantation reactions in input file (cascade, Frenkel pair, He currently implemented)
 
 !constants
 double precision, parameter :: kboltzmann=8.625d-5	    !<Boltzmann's constant (eV/K)

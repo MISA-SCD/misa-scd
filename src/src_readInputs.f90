@@ -459,18 +459,18 @@ subroutine readDefectAttributes(filename)
 	matNum=1
 
 	!Allocate all of the counters for the number of reactions, etc...
-	allocate(numSingleForm(numMaterials))
-	allocate(numSingleDiff(numMaterials))
-	allocate(numFuncDiff(numMaterials))
-	allocate(numSingleBind(numMaterials))
-	allocate(numFuncBind(numMaterials))
+	!allocate(numSingleForm(numMaterials))
+	!allocate(numSingleDiff(numMaterials))
+	!allocate(numFuncDiff(numMaterials))
+	!allocate(numSingleBind(numMaterials))
+	!allocate(numFuncBind(numMaterials))
 
-	allocate(numDiffReac(numMaterials))
-	allocate(numClusterReac(numMaterials))
-	allocate(numSinkReac(numMaterials))
-	allocate(numImplantReac(numMaterials))
-	allocate(numDissocReac(numMaterials))
-	allocate(numImpurityReac(numMaterials))
+	!allocate(numDiffReac(numMaterials))
+	!allocate(numClusterReac(numMaterials))
+	!allocate(numSinkReac(numMaterials))
+	!allocate(numImplantReac(numMaterials))
+	!allocate(numDissocReac(numMaterials))
+	!allocate(numImpurityReac(numMaterials))
 
 	open(DEFFILE, file=filename,action='read', status='old')
 
@@ -498,16 +498,16 @@ subroutine readDefectAttributes(filename)
 		read(DEFFILE,*) char
 		if(char=='numSingle') then
 			flag=.TRUE.
-			read(DEFFILE,*) numSingleForm(matNum)
+			read(DEFFILE,*) numSingleForm
 		end if
 	end do
 	flag=.FALSE.
 
-	allocate(FormSingle(numSingleForm(matNum),numMaterials))
-	do i=1,numSingleForm(matNum)
-		allocate(FormSingle(i,matNum)%defectType(numSpecies))
-		read(DEFFILE,*) (FormSingle(i,matNum)%defectType(j),j=1,numSpecies)
-		read(DEFFILE,*) char, FormSingle(i,matNum)%Ef
+	allocate(FormSingle(numSingleForm))
+	do i=1,numSingleForm
+		allocate(FormSingle(i)%defectType(numSpecies))
+		read(DEFFILE,*) (FormSingle(i)%defectType(j),j=1,numSpecies)
+		read(DEFFILE,*) char, FormSingle(i)%Ef
 	end do
 
 	!*******************************************************
@@ -525,40 +525,40 @@ subroutine readDefectAttributes(filename)
 		read(DEFFILE,*) char
 		if(char=='numSingle') then
 			flag=.TRUE.
-			read(DEFFILE,*) numSingleDiff(matNum)
+			read(DEFFILE,*) numSingleDiff
 		end if
 	end do
 	flag=.FALSE.
 
-	allocate(DiffSingle(numSingleDiff(matNum),numMaterials))
-	do i=1,numSingleDiff(matNum)
-		allocate(DiffSingle(i,matNum)%defectType(numSpecies))
-		read(DEFFILE,*) (DiffSingle(i,matNum)%defectType(j),j=1,numSpecies)
-		read(DEFFILE,*) char, DiffSingle(i,matNum)%D, char, DiffSingle(i,matNum)%Em
+	allocate(DiffSingle(numSingleDiff))
+	do i=1,numSingleDiff
+		allocate(DiffSingle(i)%defectType(numSpecies))
+		read(DEFFILE,*) (DiffSingle(i)%defectType(j),j=1,numSpecies)
+		read(DEFFILE,*) char, DiffSingle(i)%D, char, DiffSingle(i)%Em
 	end do
 
 	do while(flag .eqv. .FALSE.)
 		read(DEFFILE,*) char
 		if(char=='numFunction') then
 			flag=.TRUE.
-			read(DEFFILE,*) numFuncDiff(matNum)
+			read(DEFFILE,*) numFuncDiff
 		end if
 	end do
 	flag=.FALSE.
 
-	allocate(DiffFunc(numFuncDiff(matNum),numMaterials))
-	do i=1,numFuncDiff(matNum)
-		allocate(DiffFunc(i,matNum)%defectType(numSpecies))
-		read(DEFFILE,*) (DiffFunc(i,matNum)%defectType(j),j=1,numSpecies)	!< read in defectTypes
-		allocate(DiffFunc(i,matNum)%min(numSpecies))
-		allocate(DiffFunc(i,matNum)%max(numSpecies))
-		read(DEFFILE,*) char, (DiffFunc(i,matNum)%min(j),j=1,numSpecies)
-		read(DEFFILE,*) char, (DiffFunc(i,matNum)%max(j),j=1,numSpecies)
-		read(DEFFILE,*) char, DiffFunc(i,matNum)%functionType
-		read(DEFFILE,*) char, DiffFunc(i,matNum)%numParam
-		allocate(DiffFunc(i,matNum)%parameters(DiffFunc(i,matNum)%numParam))
-		if(DiffFunc(i,matNum)%numParam /= 0) then
-			read(DEFFILE,*) (DiffFunc(i,matNum)%parameters(j),j=1,DiffFunc(i,matNum)%numParam)
+	allocate(DiffFunc(numFuncDiff))
+	do i=1,numFuncDiff
+		allocate(DiffFunc(i)%defectType(numSpecies))
+		read(DEFFILE,*) (DiffFunc(i)%defectType(j),j=1,numSpecies)	!< read in defectTypes
+		allocate(DiffFunc(i)%min(numSpecies))
+		allocate(DiffFunc(i)%max(numSpecies))
+		read(DEFFILE,*) char, (DiffFunc(i)%min(j),j=1,numSpecies)
+		read(DEFFILE,*) char, (DiffFunc(i)%max(j),j=1,numSpecies)
+		read(DEFFILE,*) char, DiffFunc(i)%functionType
+		read(DEFFILE,*) char, DiffFunc(i)%numParam
+		allocate(DiffFunc(i)%parameters(DiffFunc(i)%numParam))
+		if(DiffFunc(i)%numParam /= 0) then
+			read(DEFFILE,*) (DiffFunc(i)%parameters(j),j=1,DiffFunc(i)%numParam)
 		end if
 	end do
 
@@ -577,42 +577,42 @@ subroutine readDefectAttributes(filename)
 		read(DEFFILE,*) char
 		if(char=='numSingle') then
 			flag=.TRUE.
-			read(DEFFILE,*) numSingleBind(matNum)
+			read(DEFFILE,*) numSingleBind
 		end if
 	end do
 	flag=.FALSE.
 
-	allocate(BindSingle(numSingleBind(matNum),numMaterials))
-	do i=1,numSingleBind(matNum)
-		allocate(BindSingle(i,matNum)%defectType(numSpecies))
-		allocate(BindSingle(i,matNum)%product(numSpecies))
-		read(DEFFILE,*) (BindSingle(i,matNum)%defectType(j),j=1,numSpecies),(BindSingle(i,matNum)%product(j),j=1,numSpecies)
-		read(DEFFILE,*) char, BindSingle(i,matNum)%Eb
+	allocate(BindSingle(numSingleBind))
+	do i=1,numSingleBind
+		allocate(BindSingle(i)%defectType(numSpecies))
+		allocate(BindSingle(i)%product(numSpecies))
+		read(DEFFILE,*) (BindSingle(i)%defectType(j),j=1,numSpecies),(BindSingle(i)%product(j),j=1,numSpecies)
+		read(DEFFILE,*) char, BindSingle(i)%Eb
 	end do
 
 	do while(flag .eqv. .FALSE.)
 		read(DEFFILE,*) char
 		if(char=='numFunction') then
 			flag=.TRUE.
-			read(DEFFILE,*) numFuncBind(matNum)
+			read(DEFFILE,*) numFuncBind
 		end if
 	end do
 	flag=.FALSE.
 
-	allocate(BindFunc(numFuncBind(matNum),numMaterials))
-	do i=1,numFuncBind(matNum)
-		allocate(BindFunc(i,matNum)%defectType(numSpecies))
-		allocate(BindFunc(i,matNum)%product(numSpecies))
-		read(DEFFILE,*) (BindFunc(i,matNum)%defectType(j),j=1,numSpecies),(BindFunc(i,matNum)%product(j),j=1,numSpecies)
-		allocate(BindFunc(i,matNum)%min(numSpecies))
-		allocate(BindFunc(i,matNum)%max(numSpecies))
-		read(DEFFILE,*) char, (BindFunc(i,matNum)%min(j),j=1,numSpecies)
-		read(DEFFILE,*) char, (BindFunc(i,matNum)%max(j),j=1,numSpecies)
-		read(DEFFILE,*) char, BindFunc(i,matNum)%functionType
-		read(DEFFILE,*) char, BindFunc(i,matNum)%numParam
-		allocate(BindFunc(i,matNum)%parameters(BindFunc(i,matNum)%numParam))
-		if(BindFunc(i,matNum)%numParam /= 0) then
-			read(DEFFILE,*) (BindFunc(i,matNum)%parameters(j),j=1,BindFunc(i,matNum)%numParam)
+	allocate(BindFunc(numFuncBind))
+	do i=1,numFuncBind
+		allocate(BindFunc(i)%defectType(numSpecies))
+		allocate(BindFunc(i)%product(numSpecies))
+		read(DEFFILE,*) (BindFunc(i)%defectType(j),j=1,numSpecies),(BindFunc(i)%product(j),j=1,numSpecies)
+		allocate(BindFunc(i)%min(numSpecies))
+		allocate(BindFunc(i)%max(numSpecies))
+		read(DEFFILE,*) char, (BindFunc(i)%min(j),j=1,numSpecies)
+		read(DEFFILE,*) char, (BindFunc(i)%max(j),j=1,numSpecies)
+		read(DEFFILE,*) char, BindFunc(i)%functionType
+		read(DEFFILE,*) char, BindFunc(i)%numParam
+		allocate(BindFunc(i)%parameters(BindFunc(i)%numParam))
+		if(BindFunc(i)%numParam /= 0) then
+			read(DEFFILE,*) (BindFunc(i)%parameters(j),j=1,BindFunc(i)%numParam)
 		end if
 	end do
 
@@ -623,136 +623,136 @@ subroutine readDefectAttributes(filename)
 		read(DEFFILE,*) char
 		if(char=='dissociation') then
 			flag=.TRUE.
-			read(DEFFILE,*) numDissocReac(matNum)
+			read(DEFFILE,*) numDissocReac
 		end if
 	end do
 	flag=.FALSE.
 
-	allocate(DissocReactions(numDissocReac(matNum),numMaterials))
-	do i=1,numDissocReac(matNum)
-		DissocReactions(i,matNum)%numReactants=1
-		DissocReactions(i,matNum)%numProducts=1
-		allocate(DissocReactions(i,matNum)%reactants(numSpecies,DissocReactions(i,matNum)%numReactants))
-		allocate(DissocReactions(i,matNum)%products(numSpecies,DissocReactions(i,matNum)%numProducts))
-		read(DEFFILE,*) (DissocReactions(i,matNum)%reactants(j,1),j=1,numSpecies),&
-				(DissocReactions(i,matNum)%products(j,1),j=1,numSpecies)	!< read in defectType
-		allocate(DissocReactions(i,matNum)%min(numSpecies))
-		allocate(DissocReactions(i,matNum)%max(numSpecies))
-		read(DEFFILE,*) char, (DissocReactions(i,matNum)%min(j),j=1,numSpecies)
-		read(DEFFILE,*) char, (DissocReactions(i,matNum)%max(j),j=1,numSpecies)
-		read(DEFFILE,*) char, DissocReactions(i,matNum)%functionType
+	allocate(DissocReactions(numDissocReac))
+	do i=1,numDissocReac
+		DissocReactions(i)%numReactants=1
+		DissocReactions(i)%numProducts=1
+		allocate(DissocReactions(i)%reactants(numSpecies,DissocReactions(i)%numReactants))
+		allocate(DissocReactions(i)%products(numSpecies,DissocReactions(i)%numProducts))
+		read(DEFFILE,*) (DissocReactions(i)%reactants(j,1),j=1,numSpecies),&
+				(DissocReactions(i)%products(j,1),j=1,numSpecies)	!< read in defectType
+		allocate(DissocReactions(i)%min(numSpecies))
+		allocate(DissocReactions(i)%max(numSpecies))
+		read(DEFFILE,*) char, (DissocReactions(i)%min(j),j=1,numSpecies)
+		read(DEFFILE,*) char, (DissocReactions(i)%max(j),j=1,numSpecies)
+		read(DEFFILE,*) char, DissocReactions(i)%functionType
 	end do
 
 	do while(flag .eqv. .FALSE.)
 		read(DEFFILE,*) char
 		if(char=='diffusion') then
 			flag=.TRUE.
-			read(DEFFILE,*) numDiffReac(matNum)
+			read(DEFFILE,*) numDiffReac
 		end if
 	end do
 	flag=.FALSE.
 
-	allocate(DiffReactions(numDiffReac(matNum),numMaterials))
-	do i=1,numDiffReac(matNum)
-		DiffReactions(i,matNum)%numReactants=1
-		DiffReactions(i,matNum)%numProducts=1
-		allocate(DiffReactions(i,matNum)%reactants(numSpecies,DiffReactions(i,matNum)%numReactants))
-		allocate(DiffReactions(i,matNum)%products(numSpecies,DiffReactions(i,matNum)%numProducts))
-		read(DEFFILE,*) (DiffReactions(i,matNum)%reactants(j,1),j=1,numSpecies),&
-				(DiffReactions(i,matNum)%products(j,1),j=1,numSpecies)
-		allocate(DiffReactions(i,matNum)%min(numSpecies))
-		allocate(DiffReactions(i,matNum)%max(numSpecies))
-		read(DEFFILE,*) char, (DiffReactions(i,matNum)%min(j),j=1,numSpecies)
-		read(DEFFILE,*) char, (DiffReactions(i,matNum)%max(j),j=1,numSpecies)
-		read(DEFFILE,*) char, DiffReactions(i,matNum)%functionType
+	allocate(DiffReactions(numDiffReac))
+	do i=1,numDiffReac
+		DiffReactions(i)%numReactants=1
+		DiffReactions(i)%numProducts=1
+		allocate(DiffReactions(i)%reactants(numSpecies,DiffReactions(i)%numReactants))
+		allocate(DiffReactions(i)%products(numSpecies,DiffReactions(i)%numProducts))
+		read(DEFFILE,*) (DiffReactions(i)%reactants(j,1),j=1,numSpecies),&
+				(DiffReactions(i)%products(j,1),j=1,numSpecies)
+		allocate(DiffReactions(i)%min(numSpecies))
+		allocate(DiffReactions(i)%max(numSpecies))
+		read(DEFFILE,*) char, (DiffReactions(i)%min(j),j=1,numSpecies)
+		read(DEFFILE,*) char, (DiffReactions(i)%max(j),j=1,numSpecies)
+		read(DEFFILE,*) char, DiffReactions(i)%functionType
 	end do
 
 	do while(flag .eqv. .FALSE.)
 		read(DEFFILE,*) char
 		if(char=='sinkRemoval') then
 			flag=.TRUE.
-			read(DEFFILE,*) numSinkReac(matNum)
+			read(DEFFILE,*) numSinkReac
 		end if
 	end do
 	flag=.FALSE.
 
-	allocate(SinkReactions(numSinkReac(matNum),numMaterials))
+	allocate(SinkReactions(numSinkReac))
 
-	do i=1,numSinkReac(matNum)
-		SinkReactions(i,matNum)%numReactants=1
-		SinkReactions(i,matNum)%numProducts=0
-		allocate(SinkReactions(i,matNum)%reactants(numSpecies,SinkReactions(i,matNum)%numReactants))
-		read(DEFFILE,*) (SinkReactions(i,matNum)%reactants(j,1),j=1,numSpecies)
-		allocate(SinkReactions(i,matNum)%min(numSpecies))
-		allocate(SinkReactions(i,matNum)%max(numSpecies))
-		read(DEFFILE,*) char, (SinkReactions(i,matNum)%min(j),j=1,numSpecies)
-		read(DEFFILE,*) char, (SinkReactions(i,matNum)%max(j),j=1,numSpecies)
-		read(DEFFILE,*) char, SinkReactions(i,matNum)%functionType
+	do i=1,numSinkReac
+		SinkReactions(i)%numReactants=1
+		SinkReactions(i)%numProducts=0
+		allocate(SinkReactions(i)%reactants(numSpecies,SinkReactions(i)%numReactants))
+		read(DEFFILE,*) (SinkReactions(i)%reactants(j,1),j=1,numSpecies)
+		allocate(SinkReactions(i)%min(numSpecies))
+		allocate(SinkReactions(i)%max(numSpecies))
+		read(DEFFILE,*) char, (SinkReactions(i)%min(j),j=1,numSpecies)
+		read(DEFFILE,*) char, (SinkReactions(i)%max(j),j=1,numSpecies)
+		read(DEFFILE,*) char, SinkReactions(i)%functionType
 	end do
 
 	do while(flag .eqv. .FALSE.)
 		read(DEFFILE,*) char
 		if(char=='impurityTrapping') then
 			flag=.TRUE.
-			read(DEFFILE,*) numImpurityReac(matNum)
+			read(DEFFILE,*) numImpurityReac
 		end if
 	end do
 	flag=.FALSE.
 
-	allocate(ImpurityReactions(numImpurityReac(matNum),numMaterials))
-	do i=1,numImpurityReac(matNum)
-		ImpurityReactions(i,matNum)%numReactants=1
-		ImpurityReactions(i,matNum)%numProducts=1
-		allocate(ImpurityReactions(i,matNum)%reactants(numSpecies,ImpurityReactions(i,matNum)%numReactants))
-		allocate(ImpurityReactions(i,matNum)%products(numSpecies,ImpurityReactions(i,matNum)%numProducts))
-		read(DEFFILE,*) (ImpurityReactions(i,matNum)%reactants(j,1),j=1,numSpecies), &
-				(ImpurityReactions(i,matNum)%products(j,1),j=1,numSpecies)
-		allocate(ImpurityReactions(i,matNum)%min(numSpecies))
-		allocate(ImpurityReactions(i,matNum)%max(numSpecies))
-		read(DEFFILE,*) char, (ImpurityReactions(i,matNum)%min(j),j=1,numSpecies)
-		read(DEFFILE,*) char, (ImpurityReactions(i,matNum)%max(j),j=1,numSpecies)
-		read(DEFFILE,*) char, ImpurityReactions(i,matNum)%functionType
+	allocate(ImpurityReactions(numImpurityReac))
+	do i=1,numImpurityReac
+		ImpurityReactions(i)%numReactants=1
+		ImpurityReactions(i)%numProducts=1
+		allocate(ImpurityReactions(i)%reactants(numSpecies,ImpurityReactions(i)%numReactants))
+		allocate(ImpurityReactions(i)%products(numSpecies,ImpurityReactions(i)%numProducts))
+		read(DEFFILE,*) (ImpurityReactions(i)%reactants(j,1),j=1,numSpecies), &
+				(ImpurityReactions(i)%products(j,1),j=1,numSpecies)
+		allocate(ImpurityReactions(i)%min(numSpecies))
+		allocate(ImpurityReactions(i)%max(numSpecies))
+		read(DEFFILE,*) char, (ImpurityReactions(i)%min(j),j=1,numSpecies)
+		read(DEFFILE,*) char, (ImpurityReactions(i)%max(j),j=1,numSpecies)
+		read(DEFFILE,*) char, ImpurityReactions(i)%functionType
 	end do
 
 	do while(flag .eqv. .FALSE.)
 		read(DEFFILE,*) char
 		if(char=='clustering') then
 			flag=.TRUE.
-			read(DEFFILE,*) numClusterReac(matNum)
+			read(DEFFILE,*) numClusterReac
 		end if
 	end  do
 	flag=.FALSE.
 
-	allocate(ClusterReactions(numClusterReac(matNum),numMaterials))
-	do i=1,numClusterReac(matNum)
-		ClusterReactions(i,matNum)%numReactants=2
-		ClusterReactions(i,matNum)%numProducts=1
-		allocate(ClusterReactions(i,matNum)%reactants(numSpecies,ClusterReactions(i,matNum)%numReactants))
-		allocate(ClusterReactions(i,matNum)%products(numSpecies,ClusterReactions(i,matNum)%numProducts))
-		read(DEFFILE,*) (ClusterReactions(i,matNum)%reactants(j,1),j=1,numSpecies),&
-				(ClusterReactions(i,matNum)%reactants(j,2),j=1,numSpecies)
-		allocate(ClusterReactions(i,matNum)%min(numSpecies*ClusterReactions(i,matNum)%numReactants))
-		allocate(ClusterReactions(i,matNum)%max(numSpecies*ClusterReactions(i,matNum)%numReactants))
-		read(DEFFILE,*) char,(ClusterReactions(i,matNum)%min(j),j=1,numSpecies*ClusterReactions(i,matNum)%numReactants)
-		read(DEFFILE,*) char,(ClusterReactions(i,matNum)%max(j),j=1,numSpecies*ClusterReactions(i,matNum)%numReactants)
+	allocate(ClusterReactions(numClusterReac))
+	do i=1,numClusterReac
+		ClusterReactions(i)%numReactants=2
+		ClusterReactions(i)%numProducts=1
+		allocate(ClusterReactions(i)%reactants(numSpecies,ClusterReactions(i)%numReactants))
+		allocate(ClusterReactions(i)%products(numSpecies,ClusterReactions(i)%numProducts))
+		read(DEFFILE,*) (ClusterReactions(i)%reactants(j,1),j=1,numSpecies),&
+				(ClusterReactions(i)%reactants(j,2),j=1,numSpecies)
+		allocate(ClusterReactions(i)%min(numSpecies*ClusterReactions(i)%numReactants))
+		allocate(ClusterReactions(i)%max(numSpecies*ClusterReactions(i)%numReactants))
+		read(DEFFILE,*) char,(ClusterReactions(i)%min(j),j=1,numSpecies*ClusterReactions(i)%numReactants)
+		read(DEFFILE,*) char,(ClusterReactions(i)%max(j),j=1,numSpecies*ClusterReactions(i)%numReactants)
 		do j=1,numSpecies
-			ClusterReactions(i,matNum)%products(j,1)=ClusterReactions(i,matNum)%reactants(j,1)+&
-					ClusterReactions(i,matNum)%reactants(j,2)
+			ClusterReactions(i)%products(j,1)=ClusterReactions(i)%reactants(j,1)+&
+					ClusterReactions(i)%reactants(j,2)
 		end do
-		read(DEFFILE,*) char, ClusterReactions(i,matNum)%functionType
+		read(DEFFILE,*) char, ClusterReactions(i)%functionType
 	end do
 
 	do while(flag .eqv. .FALSE.)
 		read(DEFFILE,*) char
 		if(char=='Implantation') then
 			flag=.TRUE.
-			read(DEFFILE,*) numImplantReac(matNum)
+			read(DEFFILE,*) numImplantReac
 		end if
 	end do
 	flag=.FALSE.
 
-	allocate(ImplantReactions(numImplantReac(matNum),numMaterials))
-	do i=1,numImplantReac(matNum)
+	allocate(ImplantReactions(numImplantReac))
+	do i=1,numImplantReac
 		if(i==1) then	!Read in Frenkel pair reaction parameters
 			do while(flag .eqv. .FALSE.)
 				read(DEFFILE,*) char
@@ -762,12 +762,12 @@ subroutine readDefectAttributes(filename)
 			end do
 			flag=.FALSE.
 
-			ImplantReactions(i,matNum)%numReactants=0
-			ImplantReactions(i,matNum)%numProducts=2
-			allocate(ImplantReactions(i,matNum)%products(numSpecies,ImplantReactions(i,matNum)%numProducts))
-			read(DEFFILE,*) (ImplantReactions(i,matNum)%products(j,1),j=1,numSpecies),&
-					(ImplantReactions(i,matNum)%products(j,2),j=1,numSpecies)
-			read(DEFFILE,*) char, ImplantReactions(i,matNum)%functionType
+			ImplantReactions(i)%numReactants=0
+			ImplantReactions(i)%numProducts=2
+			allocate(ImplantReactions(i)%products(numSpecies,ImplantReactions(i)%numProducts))
+			read(DEFFILE,*) (ImplantReactions(i)%products(j,1),j=1,numSpecies),&
+					(ImplantReactions(i)%products(j,2),j=1,numSpecies)
+			read(DEFFILE,*) char, ImplantReactions(i)%functionType
 
 		else if(i==2) then !read in cascade reaction parameters
 			do while(flag .eqv. .FALSE.)
@@ -778,9 +778,9 @@ subroutine readDefectAttributes(filename)
 			end do
 			flag=.FALSE.
 
-			ImplantReactions(i,matNum)%numReactants=-10
-			ImplantReactions(i,matNum)%numProducts=0
-			read(DEFFILE,*) char, ImplantReactions(i,matNum)%functionType
+			ImplantReactions(i)%numReactants=-10
+			ImplantReactions(i)%numProducts=0
+			read(DEFFILE,*) char, ImplantReactions(i)%functionType
 		else
 			write(*,*) 'error numImplantReac'
 		end if
