@@ -286,7 +286,7 @@ subroutine initializeReactionList()
 	use mod_reactionrates
 	implicit none
 
-	integer cell, i, j, reac, matNum, count
+	integer cell, i, j, reac, count
 	integer dir
 	type(reaction), pointer :: reactionCurrent
 	type(defect), pointer :: defectCurrent
@@ -294,18 +294,9 @@ subroutine initializeReactionList()
 	type(defect), pointer :: defectCurrentTempI
 
 	do cell=1,numCells
-		!In the case of polycrystal simulations, myMesh(cell)%material is the grain ID, not the material number. Therefore
-		!we must set all values of matNum=1 in this case (only one material type in polycrystal simulations).
-		if(numMaterials==1) then
-			matNum=1
-		else
-			matNum=myMesh(cell)%material
-		end if
-
 		if(totalDPA > 0d0 .AND. dpaRate > 0d0) then
 
 			if(implantType=='FrenkelPair') then
-
 				reactionList(cell)%numReactants=0
 				reactionList(cell)%numProducts=2
 				allocate(reactionList(cell)%products(numSpecies,reactionList(cell)%numProducts))
@@ -872,7 +863,7 @@ subroutine initializeFineMesh(CascadeCurrent)
 
 	integer i, j, n, k, num, cell, binomial, factorial, count
 	double precision volumeRatio, r1, r2, lambda, rstore
-	integer products(numSpecies), matNum
+	integer products(numSpecies)
 
 	interface
 		subroutine findDefectInList(defectCurrent, defectPrev, products)
@@ -883,12 +874,6 @@ subroutine initializeFineMesh(CascadeCurrent)
 			integer products(numSpecies)
 		end subroutine
 	end interface
-
-	if(numMaterials==1) then
-		matNum=1
-	else
-		matNum=myMesh(CascadeCurrent%cellNumber)%material
-	end if
 
 	allocate(CascadeCurrent%localDefects(numCellsCascade))
 	allocate(CascadeCurrent%reactionList(numCellsCascade))

@@ -452,26 +452,9 @@ subroutine readDefectAttributes(filename)
 	character(len=50), intent(in) :: filename
 	character(len=20) :: char
 	logical flag
-	integer i,j, matNum
+	integer i,j
 
 	flag=.FALSE.
-	numMaterials=1
-	matNum=1
-
-	!Allocate all of the counters for the number of reactions, etc...
-	!allocate(numSingleForm(numMaterials))
-	!allocate(numSingleDiff(numMaterials))
-	!allocate(numFuncDiff(numMaterials))
-	!allocate(numSingleBind(numMaterials))
-	!allocate(numFuncBind(numMaterials))
-
-	!allocate(numDiffReac(numMaterials))
-	!allocate(numClusterReac(numMaterials))
-	!allocate(numSinkReac(numMaterials))
-	!allocate(numImplantReac(numMaterials))
-	!allocate(numDissocReac(numMaterials))
-	!allocate(numImpurityReac(numMaterials))
-
 	open(DEFFILE, file=filename,action='read', status='old')
 
 	do while(flag .eqv. .FALSE.)

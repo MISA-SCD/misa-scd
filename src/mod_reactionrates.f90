@@ -12,7 +12,7 @@ subroutine addSingleDefectReactions(cell, defectType)
 	use mod_structures
 	implicit none
 
-	integer cell, defectType(numSpecies), matNum
+	integer cell, defectType(numSpecies)
 	integer i, j, k, count, numReactants, numProducts, storeTemp
 	type(reaction), pointer :: reactionUpdate, reactionPrev
 	integer, allocatable :: reactants(:,:), products(:,:)
@@ -21,13 +21,6 @@ subroutine addSingleDefectReactions(cell, defectType)
 
 	nullify(reactionUpdate)
 	nullify(reactionPrev)
-
-	!Dissociation reactions.
-	if(numMaterials==1) then
-		matNum=1
-	else
-		matNum=myMesh(cell)%material
-	end if
 
 	!Dissociation reactions
 	numReactants=1
@@ -368,7 +361,7 @@ subroutine addSingleDefectReactionsFine(cascadeID, cell, defectType)
 	integer cascadeID,cell, defectType(numSpecies)
 	type(cascade), pointer :: CascadeCurrent
 
-	integer i, j, count, numReactants, numProducts, storeTemp, matNum
+	integer i, j, count, numReactants, numProducts, storeTemp
 	type(reaction), pointer :: reactionUpdate, reactionPrev
 	integer, allocatable :: reactants(:,:), products(:,:)
 	double precision reactionRate, totalRateCheck
@@ -385,14 +378,6 @@ subroutine addSingleDefectReactionsFine(cascadeID, cell, defectType)
 		end if
 		CascadeCurrent=>CascadeCurrent%next
 	end do
-
-	!In the case of polycrystal simulations, myMesh(cell)%material is the grain ID, not the material number. Therefore
-	!we must set all values of matNum=1 in this case (only one material type in polycrystal simulations).
-	if(numMaterials==1) then
-		matNum=1
-	else
-		matNum=myMesh(CascadeCurrent%cellNumber)%material
-	end if
 
 	!Dissociation reactions.
 	numReactants=1
@@ -731,7 +716,7 @@ subroutine addMultiDefectReactions(cell, defectType1, defectType2)
 	use mod_structures
 	implicit none
 
-	integer cell, defectType1(numSpecies), defectType2(numSpecies), matNum
+	integer cell, defectType1(numSpecies), defectType2(numSpecies)
 	type(reaction), pointer :: reactionUpdate, reactionPrev
 	integer i, j, count, count2, numReactants, numProducts
 	integer, allocatable :: reactants(:,:), products(:,:)
@@ -740,12 +725,6 @@ subroutine addMultiDefectReactions(cell, defectType1, defectType2)
 
 	nullify(reactionUpdate)
 	nullify(reactionPrev)
-
-	if(numMaterials==1) then
-		matNum=1
-	else
-		matNum=myMesh(cell)%material
-	endif
 	isLegalTemp =.TRUE.
 
 	!Clustering reactions.
@@ -1292,7 +1271,7 @@ subroutine addMultiDefectReactionsFine(cascadeID, cell, defectType1, defectType2
 	use mod_structures
 	implicit none
 
-	integer cascadeID, cell, defectType1(numSpecies), defectType2(numSpecies), matNum
+	integer cascadeID, cell, defectType1(numSpecies), defectType2(numSpecies)
 	type(cascade), pointer :: CascadeCurrent
 	type(reaction), pointer :: reactionUpdate, reactionPrev
 	integer i, j, count, count2, numReactants, numProducts
@@ -1311,12 +1290,6 @@ subroutine addMultiDefectReactionsFine(cascadeID, cell, defectType1, defectType2
 		end if
 		CascadeCurrent=>CascadeCurrent%next
 	end do
-
-	if(numMaterials==1) then
-		matNum=1
-	else
-		matNum=myMesh(CascadeCurrent%cellNumber)%material
-	end if
 
 	!Clustering reactions.
 	numReactants=2
@@ -1841,7 +1814,7 @@ subroutine addDiffusionReactions(cell1, cell2, proc1, proc2, dir, defectType)
 	use mod_structures
 	implicit none
 
-	integer cell1, cell2, proc1, proc2, defectType(numSpecies), dir, matNum
+	integer cell1, cell2, proc1, proc2, defectType(numSpecies), dir
 	integer numReactants, numProducts, i, j, count
 	integer, allocatable :: reactants(:,:), products(:,:)
 	type(reaction), pointer :: reactionUpdate, reactionPrev
@@ -1849,12 +1822,6 @@ subroutine addDiffusionReactions(cell1, cell2, proc1, proc2, dir, defectType)
 
 	nullify(reactionUpdate)
 	nullify(reactionPrev)
-
-	if(numMaterials==1) then
-		matNum=1
-	else
-		matNum=myMesh(cell1)%material		!For now, assuming that cell1 and cell2 are in the same material.
-	end if
 
 	numReactants=1
 	numProducts=1
@@ -1970,7 +1937,7 @@ subroutine addDiffusionCoarseToFine(cell, proc, CascadeCurrent, defectType)
 	use mod_structures
 	implicit none
 
-	integer cell, proc, defectType(numSpecies), matNum
+	integer cell, proc, defectType(numSpecies)
 	type(cascade), pointer :: CascadeCurrent
 	integer numReactants, numProducts, i, j, count, numDefectsFine
 	integer, allocatable :: reactants(:,:), products(:,:)
@@ -1987,12 +1954,6 @@ subroutine addDiffusionCoarseToFine(cell, proc, CascadeCurrent, defectType)
 
 	nullify(reactionUpdate)
 	nullify(reactionPrev)
-
-	if(numMaterials==1) then
-		matNum=1
-	else
-		matNum=myMesh(cell)%material
-	end if
 
 	numReactants=1
 	numProducts=1
@@ -2117,7 +2078,7 @@ subroutine addDiffusionReactionsFine(cascadeID, cell1, cell2, proc1, proc2, dir,
 	use mod_structures
 	implicit none
 
-	integer cascadeID, cell1, cell2, proc1, proc2, dir, defectType(numSpecies), matNum
+	integer cascadeID, cell1, cell2, proc1, proc2, dir, defectType(numSpecies)
 	type(cascade), pointer :: CascadeCurrent
 	integer numReactants, numProducts, i, j, count
 	integer, allocatable :: reactants(:,:), products(:,:)
@@ -2134,12 +2095,6 @@ subroutine addDiffusionReactionsFine(cascadeID, cell1, cell2, proc1, proc2, dir,
 
 	nullify(reactionUpdate)
 	nullify(reactionPrev)
-
-	if(numMaterials==1) then
-		matNum=1
-	else
-		matNum=myMesh(CascadeCurrent%cellNumber)%material
-	end if
 
 	numReactants=1
 	numProducts=1
@@ -2301,18 +2256,16 @@ double precision function findReactionRateImpurity(defectType, cell, reactionPar
 	type(reactionParameters) :: reactionParameter
 	double precision reactionRate, Diff
 	double precision findDiffusivity, findBinding, Eb
-	integer findDefectSize, findNumDefect, matNum, grainNum
+	integer findDefectSize, findNumDefect, grainNum
 
 	if(polycrystal=='yes') then
-		matNum=1
 		grainNum=myMesh(cell)%material
 	else
-		matNum=myMesh(cell)%material	!not worrying about diffusion between multiple material types right now
 		grainNum=myMesh(cell)%material
 	endif
 
 	if(reactionParameter%functionType==14) then	!impurityTrapping
-		Diff=findDiffusivity(matNum,defectType)
+		Diff=findDiffusivity(defectType)
 		num=findNumDefect(defectType,cell)
 		size=findDefectSize(defectType)
 
@@ -2341,7 +2294,7 @@ double precision function findReactionRateImpurityFine(CascadeCurrent, defectTyp
 	double precision reactionRate, Diff
 	type(cascade), pointer :: cascadeCurrent
 	double precision findDiffusivity, findBinding, Eb
-	integer findDefectSize, findNumDefect, matNum, grainNum
+	integer findDefectSize, findNumDefect, grainNum
 
 	interface
 		integer function findNumDefectFine(CascadeCurrent, defectType, cell)
@@ -2352,15 +2305,13 @@ double precision function findReactionRateImpurityFine(CascadeCurrent, defectTyp
 	end interface
 
 	if(polycrystal=='yes') then
-		matNum=1
 		grainNum=myMesh(CascadeCurrent%cellNumber)%material
 	else
-		matNum=myMesh(CascadeCurrent%cellNumber)%material	!not worrying about diffusion between multiple material types right now
 		grainNum=myMesh(CascadeCurrent%cellNumber)%material
-	endif
+	end if
 
 	if(reactionParameter%functionType==14) then		!impurityTrapping
-		Diff=findDiffusivity(matNum,defectType)
+		Diff=findDiffusivity(defectType)
 		num=findNumDefectFine(CascadeCurrent,defectType,cell)
 		size=findDefectSize(defectType)
 
@@ -2388,23 +2339,21 @@ double precision function findReactionRateDissoc(defectType, products, cell, rea
 	type(reactionParameters) :: reactionParameter
 	double precision reactionRate, Diff, Eb
 	double precision findDiffusivity, findBinding
-	integer findNumDefect, findDefectSize, matNum, grainNum
+	integer findNumDefect, findDefectSize, grainNum
 
 	if(polycrystal=='yes') then
-		matNum=1
 		grainNum=myMesh(cell)%material
 	else
-		matNum=myMesh(cell)%material	!not worrying about diffusion between multiple material types right now
 		grainNum=myMesh(cell)%material
-	endif
+	end if
 
 	!dissociation
 	if(reactionParameter%functionType==11) then
 
-		Diff=findDiffusivity(matNum,products(:,2))	!diffusivity of the defect dissociating from the cluster
+		Diff=findDiffusivity(products(:,2))	!diffusivity of the defect dissociating from the cluster
 		num=findNumDefect(defectType,cell)			!number of clusters
 		size=findDefectSize(defectType)				!Hard-coded, rules for determining which species governs the defect size
-		Eb=findBinding(matNum,defectType,products(:,2))
+		Eb=findBinding(defectType,products(:,2))
 		if(defectType(3)>max3DInt .OR. defectType(4)/=0) then	!1D SIA
 			reactionRate=omega2D*dble(size)**(1d0/2d0)*Diff*dexp(-Eb/(kboltzmann*temperature))*dble(num)
 		else	!3D defects
@@ -2436,7 +2385,7 @@ double precision function findReactionRateDissocFine(CascadeCurrent, defectType,
 	type(cascade), pointer :: CascadeCurrent
 	type(defect), pointer :: defectTemp
 	double precision findDiffusivity, findBinding
-	integer findDefectSize, matNum, grainNum
+	integer findDefectSize, grainNum
 
 	interface
 		integer function findNumDefectFine(CascadeCurrent, defectType, cell)
@@ -2447,10 +2396,8 @@ double precision function findReactionRateDissocFine(CascadeCurrent, defectType,
 	end interface
 
 	if(polycrystal=='yes') then
-		matNum=1
 		grainNum=myMesh(CascadeCurrent%cellNumber)%material
 	else
-		matNum=myMesh(CascadeCurrent%cellNumber)%material	!not worrying about diffusion between multiple material types right now
 		grainNum=myMesh(CascadeCurrent%cellNumber)%material
 	endif
 
@@ -2458,11 +2405,11 @@ double precision function findReactionRateDissocFine(CascadeCurrent, defectType,
 	if(reactionParameter%functionType==11) then
 
 		!dissocation reactions
-		Diff=findDiffusivity(matNum,products(:,2))						!diffusivity of the defect dissociating from the cluster
+		Diff=findDiffusivity(products(:,2))						!diffusivity of the defect dissociating from the cluster
 		defectTemp=>CascadeCurrent%localDefects(cell)
 		num=findNumDefectFine(CascadeCurrent, defectType,cell)			!number of clusters
 		size=findDefectSize(defectType)									!Hard-coded, rules for determining which species governs the defect size
-		Eb=findBinding(matNum,defectType,products(:,2))					!binding energy of single defect to cluster
+		Eb=findBinding(defectType,products(:,2))					!binding energy of single defect to cluster
 		if(defectType(3)>max3DInt .OR. defectType(4)/=0) then
 			reactionRate=omega2D*dble(size)**(1d0/2d0)*Diff*dexp(-Eb/(kboltzmann*temperature))*dble(num)
 		else
@@ -2491,21 +2438,19 @@ double precision function findReactionRateSink(defectType, cell, reactionParamet
 	type(reactionParameters) :: reactionParameter
 	double precision reactionRate, Diff
 	double precision findDiffusivity
-	integer findNumDefect, matNum, grainNum
+	integer findNumDefect, grainNum
 
 	if(polycrystal=='yes') then
-		matNum=1
 		grainNum=myMesh(cell)%material
 	else
-		matNum=myMesh(cell)%material	!not worrying about diffusion between multiple material types right now
 		grainNum=myMesh(cell)%material
-	endif
+	end if
 
 	!sink reaction function type=12
 	if(reactionParameter%functionType==12) then	!sinkRemoval
 
 		num=findNumDefect(defectType,cell)		!number of clusters of this type
-		Diff=findDiffusivity(matNum,defectType)		!diffusivity of clusters of this type
+		Diff=findDiffusivity(defectType)		!diffusivity of clusters of this type
 
 		if(defectType(3) /= 0) then !SIA_m
 			reactionRate=Zint*dislocationDensity*diff*dble(num)
@@ -2530,7 +2475,7 @@ double precision function findReactionRateSinkFine(CascadeCurrent, defectType, c
 	use mod_structures
 	implicit none
 
-	integer cell, defectType(numSpecies), num, matNum, grainNum
+	integer cell, defectType(numSpecies), num, grainNum
 	type(reactionParameters) :: reactionParameter
 	double precision reactionRate, Diff
 	type(cascade), pointer :: CascadeCurrent
@@ -2545,10 +2490,8 @@ double precision function findReactionRateSinkFine(CascadeCurrent, defectType, c
 	end interface
 
 	if(polycrystal=='yes') then
-		matNum=1
 		grainNum=myMesh(CascadeCurrent%cellNumber)%material
 	else
-		matNum=myMesh(CascadeCurrent%cellNumber)%material	!not worrying about diffusion between multiple material types right now
 		grainNum=myMesh(CascadeCurrent%cellNumber)%material
 	end if
 
@@ -2556,7 +2499,7 @@ double precision function findReactionRateSinkFine(CascadeCurrent, defectType, c
 	if(reactionParameter%functionType==12) then	!sinkRemoval
 
 		num=findNumDefectFine(CascadeCurrent, defectType,cell)		!number of clusters of this type
-		Diff=findDiffusivity(matNum,defectType)							!diffusivity of clusters of this type
+		Diff=findDiffusivity(defectType)							!diffusivity of clusters of this type
 
 		if(defectType(3) /= 0) then !SIA_m
 			reactionRate=Zint*dislocationDensity*diff*dble(num)
@@ -2585,22 +2528,20 @@ double precision function findReactionRateMultiple(defectType1, defectType2, cel
 	type(reactionParameters) :: reactionParameter
 	double precision reactionRate, Diff1, Diff2, vol
 	integer size1, size2, num1, num2
-	integer findNumDefect, findDefectSize, matNum, grainNum
+	integer findNumDefect, findDefectSize, grainNum
 	double precision findDiffusivity
 	double precision area
 
 	if(polycrystal=='yes') then
-		matNum=1
 		grainNum=myMesh(cell)%material
 	else
-		matNum=myMesh(cell)%material	!not worrying about diffusion between multiple material types right now
 		grainNum=myMesh(cell)%material
 	endif
 
 	size1=findDefectSize(defectType1)
 	size2=findDefectSize(defectType2)
-	Diff1=findDiffusivity(matNum,defectType1)
-	Diff2=findDiffusivity(matNum,defectType2)
+	Diff1=findDiffusivity(defectType1)
+	Diff2=findDiffusivity(defectType2)
 	num1=findNumDefect(defectType1,cell)
 	num2=findNumDefect(defectType2,cell)
 
@@ -2647,8 +2588,8 @@ double precision function findReactionRateMultiple(defectType1, defectType2, cel
 			!if the first defect is the 1D diffusing loop, we have to switch the order of the parameters in order to have the correct reaction rate.
 			size1=findDefectSize(defectType2)
 			size2=findDefectSize(defectType1)
-			Diff1=findDiffusivity(matNum,defectType2)
-			Diff2=findDiffusivity(matNum,defectType1)
+			Diff1=findDiffusivity(defectType2)
+			Diff2=findDiffusivity(defectType1)
 			num1=findNumDefect(defectType2,cell)
 			num2=findNumDefect(defectType1,cell)
 
@@ -2672,8 +2613,8 @@ double precision function findReactionRateMultiple(defectType1, defectType2, cel
 			!if the first defect is the 1-D diffusing loop, we have to switch the order of the parameters in order to have the correct reaction rate.
 			size1=findDefectSize(defectType2)
 			size2=findDefectSize(defectType1)
-			Diff1=findDiffusivity(matNum,defectType2)
-			Diff2=findDiffusivity(matNum,defectType1)
+			Diff1=findDiffusivity(defectType2)
+			Diff2=findDiffusivity(defectType1)
 			num1=findNumDefect(defectType2,cell)
 			num2=findNumDefect(defectType1,cell)
 
@@ -2724,7 +2665,7 @@ double precision function findReactionRateMultipleFine(CascadeCurrent,defectType
 	type(cascade), pointer :: CascadeCurrent
 	integer findDefectSize
 	double precision findDiffusivity
-	integer matNum, grainNum
+	integer grainNum
 
 	interface
 		integer function findNumDefectFine(CascadeCurrent, defectType, cell)
@@ -2735,17 +2676,15 @@ double precision function findReactionRateMultipleFine(CascadeCurrent,defectType
 	end interface
 
 	if(polycrystal=='yes') then
-		matNum=1
 		grainNum=myMesh(CascadeCurrent%cellNumber)%material
 	else
-		matNum=myMesh(CascadeCurrent%cellNumber)%material	!not worrying about diffusion between multiple material types right now
 		grainNum=myMesh(CascadeCurrent%cellNumber)%material
 	end if
 
 	size1=findDefectSize(defectType1)
 	size2=findDefectSize(defectType2)
-	Diff1=findDiffusivity(matNum,defectType1)
-	Diff2=findDiffusivity(matNum,defectType2)
+	Diff1=findDiffusivity(defectType1)
+	Diff2=findDiffusivity(defectType2)
 	num1=findNumDefectFine(CascadeCurrent, defectType1,cell)
 	num2=findNumDefectFine(CascadeCurrent, defectType2,cell)
 	vol=cascadeElementVol
@@ -2786,8 +2725,8 @@ double precision function findReactionRateMultipleFine(CascadeCurrent,defectType
 			!if the first defect is the 1-D diffusing loop, we have to switch the order of the parameters in order to have the correct reaction rate.
 			size1=findDefectSize(defectType2)
 			size2=findDefectSize(defectType1)
-			Diff1=findDiffusivity(matNum,defectType2)
-			Diff2=findDiffusivity(matNum,defectType1)
+			Diff1=findDiffusivity(defectType2)
+			Diff2=findDiffusivity(defectType1)
 			num1=findNumDefectFine(CascadeCurrent, defectType2,cell)
 			num2=findNumDefectFine(CascadeCurrent, defectType1,cell)
 
@@ -2812,8 +2751,8 @@ double precision function findReactionRateMultipleFine(CascadeCurrent,defectType
 			!if the first defect is the 1-D diffusing loop, we have to switch the order of the parameters in order to have the correct reaction rate.
 			size1=findDefectSize(defectType2)
 			size2=findDefectSize(defectType1)
-			Diff1=findDiffusivity(matNum,defectType2)
-			Diff2=findDiffusivity(matNum,defectType1)
+			Diff1=findDiffusivity(defectType2)
+			Diff2=findDiffusivity(defectType1)
 			num1=findNumDefectFine(CascadeCurrent, defectType2,cell)
 			num2=findNumDefectFine(CascadeCurrent, defectType1,cell)
 
@@ -2858,24 +2797,14 @@ double precision function findReactionRateDiff(defectType, cell1, proc1, cell2, 
 	integer findNumDefect, findNumDefectBoundary
 	double precision findStrainEnergy, findStrainEnergyBoundary
 	double precision findDiffusivity
-	integer matNum, grainNum, matNeighbor, size
+	integer grainNum, matNeighbor, size
 	double precision Eb, findBinding
 	double precision alpha
 
-	!If we are in a polycrystalline simulation, reactionParameter will already be
-	!chosen using matNum=1, and inside this subroutine we use matNum to indicate which
-	!grain we are inside (rather than which material type we are inside).
-	if(polycrystal=='yes') then
-		matNum=1
-	else
-		matNum=myMesh(cell1)%material	!not worrying about diffusion between multiple material types right now
-	end if
 	grainNum=myMesh(cell1)%material
-
-
 	if(reactionParameter%functionType==13) then	!3D diffusion
 
-		Diff=findDiffusivity(matNum,defectType)
+		Diff=findDiffusivity(defectType)
 		length1=myMesh(cell1)%length
 		area1=length1**2d0
 		Vol1=myMesh(cell1)%volume
@@ -2933,7 +2862,7 @@ double precision function findReactionRateDiff(defectType, cell1, proc1, cell2, 
 			end if
 		end if
 	elseif(reactionParameter%functionType==15) then	!2D diffusion on a plane (rather than 3D diffusion in a volume)
-		Diff=findDiffusivity(matNum,defectType)
+		Diff=findDiffusivity(defectType)
 		length1=myMesh(cell1)%length
 		area1=length1**2d0
 		num1=findNumDefect(defectType,cell1)
@@ -2999,14 +2928,12 @@ double precision function findReactionRateDiff(defectType, cell1, proc1, cell2, 
 			findReactionRateDiff=0d0		!no dissociation from grain boundary to itself
 		else
 
-			!5/31/2015: Diff should be the diffusivity of the defect type IN THE BULK, not on the GB. Therefore,
-			!use matNeighbor as input for findDiffusivity instead of matNum.
 			Diff=findDiffusivity(matNeighbor, defectType)		!diffusivity of the defect dissociating from the GB (in the bulk)
-			!Diff=findDiffusivity(matNum,defectType)			!diffusivity of the defect dissociating from the cluster
+			!Diff=findDiffusivity(defectType)			!diffusivity of the defect dissociating from the cluster
 
 			num1=findNumDefect(defectType,cell1)			!number of clusters
 			size=1										!not breaking up a cluster, but releasing from grain boundary
-			Eb=findBinding(matNum,defectType,defectType)	!binding energy of defect to grain boundary
+			Eb=findBinding(defectType,defectType)	!binding energy of defect to grain boundary
 			reactionRate=omega*dble(size)**(4d0/3d0)*Diff*dexp(-Eb/(kboltzmann*temperature))*dble(num1)
 
 			if(reactionRate > 0d0) then
@@ -3031,7 +2958,7 @@ double precision function findReactionRateCoarseToFine(defectType, cell, proc, n
 	use mod_structures
 	implicit none
 
-	integer defectType(numSpecies), cell, proc, numDefectsFine, num1, num2, matNum, grainNum
+	integer defectType(numSpecies), cell, proc, numDefectsFine, num1, num2, grainNum
 	type(ReactionParameters) :: reactionParameter
 
 	double precision Diff, areaShared, Vol1, Vol2, length1, reactionRate, coarseToFineLength
@@ -3039,10 +2966,8 @@ double precision function findReactionRateCoarseToFine(defectType, cell, proc, n
 	double precision findDiffusivity
 
 	if(polycrystal=='yes') then
-		matNum=1
 		grainNum=myMesh(cell)%material
 	else
-		matNum=myMesh(cell)%material	!not worrying about diffusion between multiple material types right now
 		grainNum=myMesh(cell)%material
 	end if
 
@@ -3055,7 +2980,7 @@ double precision function findReactionRateCoarseToFine(defectType, cell, proc, n
 		!NOTE: assuming cubic fine mesh (numxCascade=numyCascade=numzCascade). Can re-derive for non-cubic fine meshes.
 		CoarseToFineLength=(length1-numxCascade*fineLength)/(dlog(length1**2d0/(numxCascade*fineLength)**2d0))
 
-		Diff=findDiffusivity(matNum,defectType)
+		Diff=findDiffusivity(defectType)
 		Vol1=myMesh(cell)%volume			!Volume of coarse mesh element
 		num1=findNumDefect(defectType,cell)	!Number of defects in coarse mesh element
 		num2=numDefectsFine					!Number of defects in fine mesh (entire mesh)
@@ -3093,7 +3018,7 @@ double precision function findReactionRateDiffFine(CascadeCurrent,defectType,cel
 	type(cascade), pointer :: CascadeCurrent
 	double precision Diff, area1, area2, areaShared, Vol1, Vol2, length,length1, length2, reactionRate, coarseLength
 	double precision fineToCoarseLength, coarseVolume
-	integer findNumDefect, matNum, grainNum
+	integer findNumDefect, grainNum
 	double precision findDiffusivity
 
 	interface
@@ -3105,16 +3030,14 @@ double precision function findReactionRateDiffFine(CascadeCurrent,defectType,cel
 	end interface
 
 	if(polycrystal=='yes') then
-		matNum=1
 		grainNum=myMesh(CascadeCurrent%cellNumber)%material
 	else
-		matNum=myMesh(CascadeCurrent%cellNumber)%material	!not worrying about diffusion between multiple material types right now
 		grainNum=myMesh(CascadeCurrent%cellNumber)%material
 	end if
 
 	if(reactionParameter%functionType==13) then	!3D diffusion
 
-		Diff=findDiffusivity(matNum,defectType)		!function in MaterialInput
+		Diff=findDiffusivity(defectType)		!function in MaterialInput
 
 		length1=fineLength
 		area1=length1**2d0

@@ -1,14 +1,14 @@
 !*****************************************************************************************
-!>double precision function findDiffusivity(matNum, defectType):
+!>double precision function findDiffusivity(defectType):
 !returns the diffusivity of a given defect type
 !*****************************************************************************************
-double precision function findDiffusivity(matNum, defectType)
+double precision function findDiffusivity(defectType)
 	use mod_structures
 	use mod_constants
 	implicit none
 
 	integer defectType(numSpecies)
-	integer i, j, numSame, matNum
+	integer i, j, numSame
 	double precision Diff
 	double precision DiffusivityCompute, diffusivityCu
 
@@ -24,23 +24,13 @@ double precision function findDiffusivity(matNum, defectType)
 		end do
 
 		if (numSame==numSpecies) then
-			if(matNum==2) then
-				if(DefectType(1)==1 .AND. DefectType(2)==0 .AND. DefectType(3)==0 .AND. DefectType(4)==0) then
-					Diff=diffusivityCu(matNum)
-					exit outer1
-				else
-					Diff=DiffSingle(i)%D*dexp(-(DiffSingle(i)%Em-Param)/(kboltzmann*temperature))
-					exit outer1
-				end if
-			else
-				if(DefectType(1)==1 .AND. DefectType(2)==0 .AND. DefectType(3)==0 .AND. DefectType(4)==0) then
+			if(DefectType(1)==1 .AND. DefectType(2)==0 .AND. DefectType(3)==0 .AND. DefectType(4)==0) then
 
-					Diff=diffusivityCu(matNum)
-					exit  outer1
-				else
-					Diff=DiffSingle(i)%D*dexp(-DiffSingle(i)%Em/(kboltzmann*temperature))
-					exit outer1
-				end if
+				Diff=diffusivityCu()
+				exit  outer1
+			else
+				Diff=DiffSingle(i)%D*dexp(-DiffSingle(i)%Em/(kboltzmann*temperature))
+				exit outer1
 			end if
 		end if
 	end do outer1
@@ -60,8 +50,7 @@ double precision function findDiffusivity(matNum, defectType)
 			end do
 			if(numSame==numSpecies) then
 
-				Diff=DiffusivityCompute(defectType, DiffFunc(i)%functionType, DiffFunc(i)%numParam,&
-						DiffFunc(i)%parameters, matNum)
+				Diff=DiffusivityCompute(defectType,DiffFunc(i)%functionType,DiffFunc(i)%numParam,DiffFunc(i)%parameters)
 				exit
 			end if
 		end do
@@ -75,16 +64,16 @@ double precision function findDiffusivity(matNum, defectType)
 end function
 
 !*****************************************************************************************
-!>double precision function DiffusivityCompute(DefectType, functionType, numParameters, parameters,matNum)
+!>double precision function DiffusivityCompute(DefectType, functionType, numParameters, parameters)
 !computes diffusivity using a functional form for defects that don't have their diffusivity given by a value in a list.
 !*****************************************************************************************
-double precision function DiffusivityCompute(DefectType, functionType, numParameters, parameters,matNum)
+double precision function DiffusivityCompute(DefectType, functionType, numParameters, parameters)
 	use mod_constants
 	use mod_structures
 	implicit none
 
 	integer DefectType(numSpecies)
-	integer functionType, numParameters, matNum,i
+	integer functionType, numParameters,i
 	double precision parameters(numParameters)
 	double precision Diff
 	double precision D0, Em
@@ -100,7 +89,7 @@ double precision function DiffusivityCompute(DefectType, functionType, numParame
 		Diff=D0*dexp(-Em/(kboltzmann*temperature))
 	else if(functionType==4) then	!Cu diffusivity
 		!< Dcu(n) = Dcu(1)/n
-		Diff=diffusivityCu(matNum)/dble(DefectType(1))
+		Diff=diffusivityCu()/dble(DefectType(1))
 	else if(functionType==5) then	!mobile W atoms (2 parameters: D0 and Em of W atom)
 		D0=parameters(1)*dble(DefectType(3))**(-0.5d0)
 		Diff=D0*dexp(-parameters(2)/(kboltzmann*temperature))
@@ -115,13 +104,12 @@ end function
 !**********************************************************************************
 !This function is used to compute diffusivity of Cu atom
 !**********************************************************************************
-double precision function diffusivityCu(matNum)
+double precision function diffusivityCu()
 	use mod_structures
 	use mod_constants
 	implicit none
 
-	integer DefectType(numSpecies)
-	integer matNum,i
+	integer DefectType(numSpecies), i
 
 	outer: do i=1,numSingleDiff
 		if(DiffSingle(i)%defectType(1)==1 .AND. DiffSingle(i)%defectType(2)==0 .AND. &
@@ -142,16 +130,16 @@ double precision function diffusivityCu(matNum)
 end function
 
 !*****************************************************************************************
-!>double precision function findBinding(matNum, DefectType, productType)
+!>double precision function findBinding(DefectType, productType)
 !returns the binding energy of a given defect type
 !*****************************************************************************************
-double precision function findBinding(matNum, DefectType, productType)
+double precision function findBinding(DefectType, productType)
 	use mod_structures
 	use mod_constants
 	implicit none
 
 	integer DefectType(numSpecies), productType(numSpecies)
-	integer i, j, numSame, numSameProduct, matNum
+	integer i, j, numSame, numSameProduct
 	double precision Eb
 	double precision BindingCompute
 
@@ -171,14 +159,8 @@ double precision function findBinding(matNum, DefectType, productType)
 		end do
 
 		if (numSame==numSpecies .AND. numSameProduct==numSpecies) then
-			if(matNum==2) then
-
-				Eb=BindSingle(i)%Eb-Param
-				exit
-			else
-				Eb=BindSingle(i)%Eb
-				exit
-			end if
+			Eb=BindSingle(i)%Eb
+			exit
 		end if
 	end do
 
@@ -207,17 +189,9 @@ double precision function findBinding(matNum, DefectType, productType)
 
 			if(numSame==numSpecies .AND. numSameProduct==numSpecies) then
 
-				if(matNum==2) then	!Adjust binding energies on GB
-
-					Eb=BindingCompute(DefectType, productType, BindFunc(i)%functionType, &
-							BindFunc(i)%numParam,BindFunc(i)%parameters)-Param
-					exit
-
-				else
-					Eb=BindingCompute(DefectType, productType, BindFunc(i)%functionType, &
-							BindFunc(i)%numParam,BindFunc(i)%parameters)
-					exit
-				end if
+				Eb=BindingCompute(DefectType, productType, BindFunc(i)%functionType, &
+						BindFunc(i)%numParam,BindFunc(i)%parameters)
+				exit
 			end if
 		end do
 		if(i==numFuncBind+1) then

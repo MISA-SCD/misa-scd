@@ -161,15 +161,6 @@ subroutine updateImplantRateSingleCell(cell)
 
 	integer cell, reac
 	type(reaction), pointer :: reactionCurrent
-	integer matNum
-
-	!In the case of polycrystal simulations, myMesh(cell)%material is the grain ID, not the material number. Therefore
-	!we must set all values of matNum=1 in this case (only one material type in polycrystal simulations).
-	if(numMaterials==1) then
-		matNum=1
-	else
-		matNum=myMesh(cell)%material
-	endif
 
 	if(implantType=='FrenkelPair') then
 

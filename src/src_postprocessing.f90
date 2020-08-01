@@ -206,69 +206,64 @@ subroutine outputDefectsTotal()
 	numDefectsSend=0
 	do i=1,numCells
 
-		!Only output defects in bulk (not GBs)
-		if(numMaterials > 1 .AND. myMesh(i)%material /= 1) then
-			! Do nothing, no output of defects in grain boundaries
-		else
-			defectCurrent=>defectList(i)%next
-			do while(associated(defectCurrent))
+		defectCurrent=>defectList(i)%next
+		do while(associated(defectCurrent))
 
-				nullify(defectPrevList)
-				defectCurrentList=>outputDefectList
-				call findDefectInList(defectCurrentList, defectPrevList, defectCurrent%defectType)
+			nullify(defectPrevList)
+			defectCurrentList=>outputDefectList
+			call findDefectInList(defectCurrentList, defectPrevList, defectCurrent%defectType)
 
-				!Next update defects
-				if(associated(defectCurrentList)) then !if we aren't at the end of the list
-					same=0
-					do j=1,numSpecies
-						if(defectCurrentList%defectType(j)==defectCurrent%defectType(j)) then
-							same=same+1
-						end if
-					end do
-
-					if(same == numSpecies) then
-						!if the defect is already present in the list
-						defectCurrentList%num=defectCurrentList%num+defectCurrent%num
-					else    !add a defect to the middle of the list
-
-						!if the defect is to be inserted in the list
-						nullify(defectPrevList%next)
-						allocate(defectPrevList%next)
-						nullify(defectPrevList%next%next)
-						defectPrevList=>defectPrevList%next
-						allocate(defectPrevList%defectType(numSpecies))
-						defectPrevList%cellNumber=0	!no need for cell numbers in outputDefectList
-						defectPrevList%num=defectCurrent%num
-
-						do j=1,numSpecies
-							defectPrevList%defectType(j)=defectCurrent%defectType(j)
-						end do
-
-						!if inserted defect is in the middle of the list, point it to the next item in the list
-						defectPrevList%next=>defectCurrentList
-						numDefectsSend=numDefectsSend+1
+			!Next update defects
+			if(associated(defectCurrentList)) then !if we aren't at the end of the list
+				same=0
+				do j=1,numSpecies
+					if(defectCurrentList%defectType(j)==defectCurrent%defectType(j)) then
+						same=same+1
 					end if
-				else if(associated(defectPrevList)) then
+				end do
 
-					!add a defect to the end of the list
+				if(same == numSpecies) then
+					!if the defect is already present in the list
+					defectCurrentList%num=defectCurrentList%num+defectCurrent%num
+				else    !add a defect to the middle of the list
+
+					!if the defect is to be inserted in the list
 					nullify(defectPrevList%next)
 					allocate(defectPrevList%next)
 					nullify(defectPrevList%next%next)
 					defectPrevList=>defectPrevList%next
 					allocate(defectPrevList%defectType(numSpecies))
-					defectPrevList%cellNumber=0 !no need for cell numbers in outputDefectList
+					defectPrevList%cellNumber=0	!no need for cell numbers in outputDefectList
 					defectPrevList%num=defectCurrent%num
 
 					do j=1,numSpecies
 						defectPrevList%defectType(j)=defectCurrent%defectType(j)
 					end do
+
+					!if inserted defect is in the middle of the list, point it to the next item in the list
+					defectPrevList%next=>defectCurrentList
 					numDefectsSend=numDefectsSend+1
-				else
-					write(*,*) 'error tried to insert defect at beginning of output defect list'
 				end if
-				defectCurrent=>defectCurrent%next
-			end do
-		end if
+			else if(associated(defectPrevList)) then
+
+				!add a defect to the end of the list
+				nullify(defectPrevList%next)
+				allocate(defectPrevList%next)
+				nullify(defectPrevList%next%next)
+				defectPrevList=>defectPrevList%next
+				allocate(defectPrevList%defectType(numSpecies))
+				defectPrevList%cellNumber=0 !no need for cell numbers in outputDefectList
+				defectPrevList%num=defectCurrent%num
+
+				do j=1,numSpecies
+					defectPrevList%defectType(j)=defectCurrent%defectType(j)
+				end do
+				numDefectsSend=numDefectsSend+1
+			else
+				write(*,*) 'error tried to insert defect at beginning of output defect list'
+			end if
+			defectCurrent=>defectCurrent%next
+		end do
 	end do
 
 	!Count defects in fine mesh
@@ -675,76 +670,71 @@ subroutine outputTotal()
 
 	do i=1,numCells
 
-		!Only output defects in bulk (not GBs)
-		if(numMaterials > 1 .AND. myMesh(i)%material /= 1) then
-			! Do nothing, no output of defects in grain boundaries
-		else
-			defectCurrent=>defectList(i)%next
-			do while(associated(defectCurrent))
+		defectCurrent=>defectList(i)%next
+		do while(associated(defectCurrent))
 
-				if(defectCurrent%defectType(1) /= 0) then	!Cu/CuV cluster
-					if(defectCurrent%defectType(1)==1 .AND. defectCurrent%defectType(2)==0) then
-						pointS=defectCurrent%num
-					end if
+			if(defectCurrent%defectType(1) /= 0) then	!Cu/CuV cluster
+				if(defectCurrent%defectType(1)==1 .AND. defectCurrent%defectType(2)==0) then
+					pointS=defectCurrent%num
+				end if
 
-					if(defectCurrent%defectType(1) > minSCluster) then
-						numS=numS+defectCurrent%defectType(1)*defectCurrent%num
-						radiusScluster=radiusScluster+dble(defectCurrent%num)*&
-								(3*dble(defectCurrent%defectType(1))*atomSize/(4*pi))**(1d0/3d0)
-						numScluster=numScluster+defectCurrent%num
-					end if
+				if(defectCurrent%defectType(1) > minSCluster) then
+					numS=numS+defectCurrent%defectType(1)*defectCurrent%num
+					radiusScluster=radiusScluster+dble(defectCurrent%num)*&
+							(3*dble(defectCurrent%defectType(1))*atomSize/(4*pi))**(1d0/3d0)
+					numScluster=numScluster+defectCurrent%num
+				end if
 
-					if((defectCurrent%defectType(1)+defectCurrent%defectType(2)) > minSV) then
-						numSV=numSV+max(defectCurrent%defectType(1), defectCurrent%defectType(2))*defectCurrent%num
-						radiusSVcluster = radiusSVcluster+dble(defectCurrent%num)*&
-								(3*dble(max(defectCurrent%defectType(1), defectCurrent%defectType(2)))*&
-										atomSize/(4*pi))**(1d0/3d0)
-						numSVcluster=numSVcluster+defectCurrent%num
-						if(defectCurrent%defectType(2) /= 0) then
-							totalVac=totalVac+defectCurrent%defectType(2)*defectCurrent%num
-						end if
-					end if
-
-				else if(defectCurrent%defectType(2) /= 0) then !V cluster
-
-					totalVac=totalVac+defectCurrent%defectType(2)*defectCurrent%num
-
-					if(defectCurrent%defectType(2)==1) then
-						pointV=defectCurrent%num
-					end if
-
-					if(defectCurrent%defectType(2) > minVoid) then
-						numV=numV+defectCurrent%defectType(2)*defectCurrent%num
-						radiusVoid=radiusVoid+dble(defectCurrent%num)*&
-								(3d0*dble(defectCurrent%defectType(2))*atomSize/(4d0*pi))**(1d0/3d0)
-						numVoid=numVoid+defectCurrent%num
-					end if
-
-				else if(defectCurrent%defectType(3) /= 0) then	!Loop
-
-					if(defectCurrent%defectType(3) ==1) then
-						pointSIA=defectCurrent%num
-					end if
-
-					if(defectCurrent%defectType(3) > minLoop) then
-						numSIA=numSIA+defectCurrent%defectType(3)*defectCurrent%num
-						radiusLoop=radiusLoop+dble(defectCurrent%num)*&
-								(dble(defectCurrent%defectType(3))*atomSize/(pi*burgers))**(1d0/2d0)
-						numLoop=numLoop+defectCurrent%num
-					end if
-
-				else if(defectCurrent%defectType(4) /= 0) then
-
-					if(defectCurrent%defectType(4) > minLoop) then
-						numSIA=numSIA+defectCurrent%defectType(4)*defectCurrent%num
-						radiusLoop=radiusLoop+dble(defectCurrent%num)*&
-								(dble(defectCurrent%defectType(4))*atomSize/(pi*burgers))**(1d0/2d0)
-						numLoop=numLoop+defectCurrent%num
+				if((defectCurrent%defectType(1)+defectCurrent%defectType(2)) > minSV) then
+					numSV=numSV+max(defectCurrent%defectType(1), defectCurrent%defectType(2))*defectCurrent%num
+					radiusSVcluster = radiusSVcluster+dble(defectCurrent%num)*&
+							(3*dble(max(defectCurrent%defectType(1), defectCurrent%defectType(2)))*&
+									atomSize/(4*pi))**(1d0/3d0)
+					numSVcluster=numSVcluster+defectCurrent%num
+					if(defectCurrent%defectType(2) /= 0) then
+						totalVac=totalVac+defectCurrent%defectType(2)*defectCurrent%num
 					end if
 				end if
-				defectCurrent=>defectCurrent%next
-			end do
-		end if
+
+			else if(defectCurrent%defectType(2) /= 0) then !V cluster
+
+				totalVac=totalVac+defectCurrent%defectType(2)*defectCurrent%num
+
+				if(defectCurrent%defectType(2)==1) then
+					pointV=defectCurrent%num
+				end if
+
+				if(defectCurrent%defectType(2) > minVoid) then
+					numV=numV+defectCurrent%defectType(2)*defectCurrent%num
+					radiusVoid=radiusVoid+dble(defectCurrent%num)*&
+							(3d0*dble(defectCurrent%defectType(2))*atomSize/(4d0*pi))**(1d0/3d0)
+					numVoid=numVoid+defectCurrent%num
+				end if
+
+			else if(defectCurrent%defectType(3) /= 0) then	!Loop
+
+				if(defectCurrent%defectType(3) ==1) then
+					pointSIA=defectCurrent%num
+				end if
+
+				if(defectCurrent%defectType(3) > minLoop) then
+					numSIA=numSIA+defectCurrent%defectType(3)*defectCurrent%num
+					radiusLoop=radiusLoop+dble(defectCurrent%num)*&
+							(dble(defectCurrent%defectType(3))*atomSize/(pi*burgers))**(1d0/2d0)
+					numLoop=numLoop+defectCurrent%num
+				end if
+
+			else if(defectCurrent%defectType(4) /= 0) then
+
+				if(defectCurrent%defectType(4) > minLoop) then
+					numSIA=numSIA+defectCurrent%defectType(4)*defectCurrent%num
+					radiusLoop=radiusLoop+dble(defectCurrent%num)*&
+							(dble(defectCurrent%defectType(4))*atomSize/(pi*burgers))**(1d0/2d0)
+					numLoop=numLoop+defectCurrent%num
+				end if
+			end if
+			defectCurrent=>defectCurrent%next
+		end do
 	end do
 
 	!Count defects in fine mesh
@@ -947,80 +937,68 @@ if(myProc%taskid==MASTER) then
 	
 	!Create list of defects in processor 0
 	do i=1,numCells
-		
-		!ONLY OUTPUT DEFECTS IN THE BULK (NOT GBS)
-		if(numMaterials > 1 .AND. myMesh(i)%material /= 1) then
-			!Do nothing, no output of defects in grain boundaries
-		else
-	
-			defectCurrent=>defectList(i)%next
-			do while(associated(defectCurrent))
-				
-				nullify(defectPrevList)
-				
-				defectCurrentList=>outputDefectList
-				
-				call findDefectInList(defectCurrentList, defectPrevList, defectCurrent%defectType)
-				
-				!Next update defects
-				if(associated(defectCurrentList)) then !if we aren't at the end of the list
-					same=0
-					
-					do j=1,numSpecies
-						if(defectCurrentList%defectType(j)==defectCurrent%defectType(j)) then
-							same=same+1
-						endif
-					end do
-					
-					if(same==numSpecies) then	
-					
-						!if the defect is already present in the list
-						defectCurrentList%num=defectCurrentList%num+defectCurrent%num
-					
-					else		
-						
-						!if the defect is to be inserted in the list
-						nullify(defectPrevList%next)
-						allocate(defectPrevList%next)
-						nullify(defectPrevList%next%next)
-						defectPrevList=>defectPrevList%next
-						allocate(defectPrevList%defectType(numSpecies))
-						defectPrevList%cellNumber=0	!no need for cell numbers in outputDefectList
-						defectPrevList%num=defectCurrent%num
-						
-						do j=1,numSpecies
-							defectPrevList%defectType(j)=defectCurrent%defectType(j)
-						end do
-						
-						!if inserted defect is in the middle of the list, point it to the next item in the list
-						defectPrevList%next=>defectCurrentList
+		defectCurrent=>defectList(i)%next
+		do while(associated(defectCurrent))
+
+			nullify(defectPrevList)
+
+			defectCurrentList=>outputDefectList
+
+			call findDefectInList(defectCurrentList, defectPrevList, defectCurrent%defectType)
+
+			!Next update defects
+			if(associated(defectCurrentList)) then !if we aren't at the end of the list
+				same=0
+
+				do j=1,numSpecies
+					if(defectCurrentList%defectType(j)==defectCurrent%defectType(j)) then
+						same=same+1
 					endif
-				else if(associated(defectPrevList)) then			
-					
-					!add a defect to the end of the list
+				end do
+
+				if(same==numSpecies) then
+
+					!if the defect is already present in the list
+					defectCurrentList%num=defectCurrentList%num+defectCurrent%num
+
+				else
+
+					!if the defect is to be inserted in the list
 					nullify(defectPrevList%next)
 					allocate(defectPrevList%next)
 					nullify(defectPrevList%next%next)
 					defectPrevList=>defectPrevList%next
 					allocate(defectPrevList%defectType(numSpecies))
-					defectPrevList%cellNumber=0 !no need for cell numbers in outputDefectList
+					defectPrevList%cellNumber=0	!no need for cell numbers in outputDefectList
 					defectPrevList%num=defectCurrent%num
-					
+
 					do j=1,numSpecies
 						defectPrevList%defectType(j)=defectCurrent%defectType(j)
 					end do
-					
-				else
-					
-					write(*,*) 'error tried to insert defect at beginning of output defect list'
-	
+
+					!if inserted defect is in the middle of the list, point it to the next item in the list
+					defectPrevList%next=>defectCurrentList
 				endif
-				
-				defectCurrent=>defectCurrent%next
-			end do
-		
-		endif
-		
+			else if(associated(defectPrevList)) then
+
+				!add a defect to the end of the list
+				nullify(defectPrevList%next)
+				allocate(defectPrevList%next)
+				nullify(defectPrevList%next%next)
+				defectPrevList=>defectPrevList%next
+				allocate(defectPrevList%defectType(numSpecies))
+				defectPrevList%cellNumber=0 !no need for cell numbers in outputDefectList
+				defectPrevList%num=defectCurrent%num
+
+				do j=1,numSpecies
+					defectPrevList%defectType(j)=defectCurrent%defectType(j)
+				end do
+
+			else
+				write(*,*) 'error tried to insert defect at beginning of output defect list'
+			end if
+			defectCurrent=>defectCurrent%next
+		end do
 	end do
 	
 	!Other processors will send information about defects contained in their mesh. This processor 
@@ -1182,84 +1160,71 @@ else
 	
 	!Create list of defects in processor 
 	do i=1,numCells
-	
-		!ONLY OUTPUT DEFECTS IN BULK (NOT GBs)
-		if(numMaterials > 1 .AND. myMesh(i)%material /= 1) then
-			! Do nothing, no output of defects in grain boundaries
-		else
-	
-			defectCurrent=>defectList(i)%next
-			do while(associated(defectCurrent))
-				
-				nullify(defectPrevList)
-				
-				defectCurrentList=>outputDefectList
-				
-				call findDefectInList(defectCurrentList, defectPrevList, defectCurrent%defectType)
-				
-				!Next update defects
-				if(associated(defectCurrentList)) then !if we aren't at the end of the list
-					same=0
-					
-					do j=1,numSpecies
-						if(defectCurrentList%defectType(j)==defectCurrent%defectType(j)) then
-							same=same+1
-						endif
-					end do
-					
-					if(same==numSpecies) then	
-					
-						!if the defect is already present in the list
-						defectCurrentList%num=defectCurrentList%num+defectCurrent%num
-					
-					else		
-						
-						!if the defect is to be inserted in the list
-						nullify(defectPrevList%next)
-						allocate(defectPrevList%next)
-						nullify(defectPrevList%next%next)
-						defectPrevList=>defectPrevList%next
-						allocate(defectPrevList%defectType(numSpecies))
-						defectPrevList%cellNumber=0	!no need for cell numbers in outputDefectList
-						defectPrevList%num=defectCurrent%num
-						
-						do j=1,numSpecies
-							defectPrevList%defectType(j)=defectCurrent%defectType(j)
-						end do
-						
-						!if inserted defect is in the middle of the list, point it to the next item in the list
-						defectPrevList%next=>defectCurrentList
-						
-						numDefectsSend=numDefectsSend+1
-					end if
-				else if(associated(defectPrevList)) then			
-					
-					!add a defect to the end of the list
+		defectCurrent=>defectList(i)%next
+		do while(associated(defectCurrent))
+
+			nullify(defectPrevList)
+
+			defectCurrentList=>outputDefectList
+
+			call findDefectInList(defectCurrentList, defectPrevList, defectCurrent%defectType)
+
+			!Next update defects
+			if(associated(defectCurrentList)) then !if we aren't at the end of the list
+				same=0
+
+				do j=1,numSpecies
+					if(defectCurrentList%defectType(j)==defectCurrent%defectType(j)) then
+						same=same+1
+					endif
+				end do
+
+				if(same==numSpecies) then
+
+					!if the defect is already present in the list
+					defectCurrentList%num=defectCurrentList%num+defectCurrent%num
+
+				else
+
+					!if the defect is to be inserted in the list
 					nullify(defectPrevList%next)
 					allocate(defectPrevList%next)
 					nullify(defectPrevList%next%next)
 					defectPrevList=>defectPrevList%next
 					allocate(defectPrevList%defectType(numSpecies))
-					defectPrevList%cellNumber=0 !no need for cell numbers in outputDefectList
+					defectPrevList%cellNumber=0	!no need for cell numbers in outputDefectList
 					defectPrevList%num=defectCurrent%num
-					
+
 					do j=1,numSpecies
 						defectPrevList%defectType(j)=defectCurrent%defectType(j)
 					end do
-					
+
+					!if inserted defect is in the middle of the list, point it to the next item in the list
+					defectPrevList%next=>defectCurrentList
+
 					numDefectsSend=numDefectsSend+1
-					
-				else
-					
-					write(*,*) 'error tried to insert defect at beginning of output defect list'
-	
 				end if
-				
-				defectCurrent=>defectCurrent%next
-			end do
-		
-		end if
-		
+			else if(associated(defectPrevList)) then
+
+				!add a defect to the end of the list
+				nullify(defectPrevList%next)
+				allocate(defectPrevList%next)
+				nullify(defectPrevList%next%next)
+				defectPrevList=>defectPrevList%next
+				allocate(defectPrevList%defectType(numSpecies))
+				defectPrevList%cellNumber=0 !no need for cell numbers in outputDefectList
+				defectPrevList%num=defectCurrent%num
+
+				do j=1,numSpecies
+					defectPrevList%defectType(j)=defectCurrent%defectType(j)
+				end do
+
+				numDefectsSend=numDefectsSend+1
+			else
+				write(*,*) 'error tried to insert defect at beginning of output defect list'
+			end if
+			defectCurrent=>defectCurrent%next
+		end do
 	end do
 		
 	call MPI_SEND(numDefectsSend, 1, MPI_INTEGER, MASTER, 1399, comm, ierr)
@@ -1371,86 +1336,74 @@ if(myProc%taskid==MASTER) then
 	
 	!Create list of defects in processor 0
 	do i=1,numCells
-		
-		!ONLY OUTPUT DEFECTS IN THE BULK (NOT GBS)
-		if(numMaterials > 1 .AND. myMesh(i)%material /= 1) then
-			!Do nothing, no output of defects in grain boundaries
-		else
-	
-			defectCurrent=>defectList(i)%next
-			do while(associated(defectCurrent))
-				
-				nullify(defectPrevList)
-				
-				defectCurrentList=>outputDefectList
-				
-				call findDefectInList(defectCurrentList, defectPrevList, defectCurrent%defectType)
-				
-				!Next update defects
-				if(associated(defectCurrentList)) then !if we aren't at the end of the list
-					same=0
-					
-					do j=1,numSpecies
-						if(defectCurrentList%defectType(j)==defectCurrent%defectType(j)) then
-							same=same+1
-						endif
-					end do
-					
-					if(same==numSpecies) then	
-					
-						!if the defect is already present in the list
-						defectCurrentList%num=defectCurrentList%num+defectCurrent%num
-					
-					else		
-						
-						!if the defect is to be inserted in the list
-						nullify(defectPrevList%next)
-						allocate(defectPrevList%next)
-						nullify(defectPrevList%next%next)
-						defectPrevList=>defectPrevList%next
-						allocate(defectPrevList%defectType(numSpecies))
-						defectPrevList%cellNumber=0	!no need for cell numbers in outputDefectList
-						defectPrevList%num=defectCurrent%num
-						
-						do j=1,numSpecies
-							defectPrevList%defectType(j)=defectCurrent%defectType(j)
-						end do
-						
-						!if inserted defect is in the middle of the list, point it to the next item in the list
-						defectPrevList%next=>defectCurrentList
+		defectCurrent=>defectList(i)%next
+		do while(associated(defectCurrent))
+
+			nullify(defectPrevList)
+
+			defectCurrentList=>outputDefectList
+
+			call findDefectInList(defectCurrentList, defectPrevList, defectCurrent%defectType)
+
+			!Next update defects
+			if(associated(defectCurrentList)) then !if we aren't at the end of the list
+				same=0
+
+				do j=1,numSpecies
+					if(defectCurrentList%defectType(j)==defectCurrent%defectType(j)) then
+						same=same+1
 					endif
-				else if(associated(defectPrevList)) then			
-					
-					!add a defect to the end of the list
+				end do
+
+				if(same==numSpecies) then
+
+					!if the defect is already present in the list
+					defectCurrentList%num=defectCurrentList%num+defectCurrent%num
+
+				else
+
+					!if the defect is to be inserted in the list
 					nullify(defectPrevList%next)
 					allocate(defectPrevList%next)
 					nullify(defectPrevList%next%next)
 					defectPrevList=>defectPrevList%next
 					allocate(defectPrevList%defectType(numSpecies))
-					defectPrevList%cellNumber=0 !no need for cell numbers in outputDefectList
+					defectPrevList%cellNumber=0	!no need for cell numbers in outputDefectList
 					defectPrevList%num=defectCurrent%num
-					
+
 					do j=1,numSpecies
 						defectPrevList%defectType(j)=defectCurrent%defectType(j)
 					end do
-					
-				else
-					
-					write(*,*) 'error tried to insert defect at beginning of output defect list'
-	
+
+					!if inserted defect is in the middle of the list, point it to the next item in the list
+					defectPrevList%next=>defectCurrentList
 				endif
-				
-				defectCurrent=>defectCurrent%next
-			end do
-		
-		endif
-		
+			else if(associated(defectPrevList)) then
+
+				!add a defect to the end of the list
+				nullify(defectPrevList%next)
+				allocate(defectPrevList%next)
+				nullify(defectPrevList%next%next)
+				defectPrevList=>defectPrevList%next
+				allocate(defectPrevList%defectType(numSpecies))
+				defectPrevList%cellNumber=0 !no need for cell numbers in outputDefectList
+				defectPrevList%num=defectCurrent%num
+
+				do j=1,numSpecies
+					defectPrevList%defectType(j)=defectCurrent%defectType(j)
+				end do
+
+			else
+				write(*,*) 'error tried to insert defect at beginning of output defect list'
+			end if
+
+			defectCurrent=>defectCurrent%next
+		end do
 	end do
 	
 	!Other processors will send information about defects contained in their mesh. This processor 
 	!must output all information to data file (can't do it from other processors). Information should
 	!be output in the same format for the master and slave processors.
-	
 	do i=1,myProc%numtasks-1
 	
 		call MPI_RECV(numDefectsRecv,1,MPI_INTEGER,i,2399,comm,status,ierr)
@@ -1603,85 +1556,73 @@ else
 	
 	!Create list of defects in processor 
 	do i=1,numCells
-	
-		!ONLY OUTPUT DEFECTS IN BULK (NOT GBs)
-		if(numMaterials > 1 .AND. myMesh(i)%material /= 1) then
-			! Do nothing, no output of defects in grain boundaries
-		else
-	
-			defectCurrent=>defectList(i)%next
-			do while(associated(defectCurrent))
-				
-				nullify(defectPrevList)
-				
-				defectCurrentList=>outputDefectList
-				
-				call findDefectInList(defectCurrentList, defectPrevList, defectCurrent%defectType)
-				
-				!Next update defects
-				if(associated(defectCurrentList)) then !if we aren't at the end of the list
-					same=0
-					
-					do j=1,numSpecies
-						if(defectCurrentList%defectType(j)==defectCurrent%defectType(j)) then
-							same=same+1
-						endif
-					end do
-					
-					if(same==numSpecies) then	
-					
-						!if the defect is already present in the list
-						defectCurrentList%num=defectCurrentList%num+defectCurrent%num
-					
-					else		
-						
-						!if the defect is to be inserted in the list
-						nullify(defectPrevList%next)
-						allocate(defectPrevList%next)
-						nullify(defectPrevList%next%next)
-						defectPrevList=>defectPrevList%next
-						allocate(defectPrevList%defectType(numSpecies))
-						defectPrevList%cellNumber=0	!no need for cell numbers in outputDefectList
-						defectPrevList%num=defectCurrent%num
-						
-						do j=1,numSpecies
-							defectPrevList%defectType(j)=defectCurrent%defectType(j)
-						end do
-						
-						!if inserted defect is in the middle of the list, point it to the next item in the list
-						defectPrevList%next=>defectCurrentList
-						
-						numDefectsSend=numDefectsSend+1
+		defectCurrent=>defectList(i)%next
+		do while(associated(defectCurrent))
+
+			nullify(defectPrevList)
+
+			defectCurrentList=>outputDefectList
+
+			call findDefectInList(defectCurrentList, defectPrevList, defectCurrent%defectType)
+
+			!Next update defects
+			if(associated(defectCurrentList)) then !if we aren't at the end of the list
+				same=0
+
+				do j=1,numSpecies
+					if(defectCurrentList%defectType(j)==defectCurrent%defectType(j)) then
+						same=same+1
 					endif
-				else if(associated(defectPrevList)) then			
-					
-					!add a defect to the end of the list
-					
+				end do
+
+				if(same==numSpecies) then
+
+					!if the defect is already present in the list
+					defectCurrentList%num=defectCurrentList%num+defectCurrent%num
+
+				else
+
+					!if the defect is to be inserted in the list
 					nullify(defectPrevList%next)
 					allocate(defectPrevList%next)
 					nullify(defectPrevList%next%next)
 					defectPrevList=>defectPrevList%next
 					allocate(defectPrevList%defectType(numSpecies))
-					defectPrevList%cellNumber=0 !no need for cell numbers in outputDefectList
+					defectPrevList%cellNumber=0	!no need for cell numbers in outputDefectList
 					defectPrevList%num=defectCurrent%num
-					
+
 					do j=1,numSpecies
 						defectPrevList%defectType(j)=defectCurrent%defectType(j)
 					end do
-					
+
+					!if inserted defect is in the middle of the list, point it to the next item in the list
+					defectPrevList%next=>defectCurrentList
+
 					numDefectsSend=numDefectsSend+1
-					
-				else
-					
-					write(*,*) 'error tried to insert defect at beginning of output defect list'
-	
 				endif
-				
-				defectCurrent=>defectCurrent%next
-			end do
-		
-		endif
-		
+			else if(associated(defectPrevList)) then
+
+				!add a defect to the end of the list
+
+				nullify(defectPrevList%next)
+				allocate(defectPrevList%next)
+				nullify(defectPrevList%next%next)
+				defectPrevList=>defectPrevList%next
+				allocate(defectPrevList%defectType(numSpecies))
+				defectPrevList%cellNumber=0 !no need for cell numbers in outputDefectList
+				defectPrevList%num=defectCurrent%num
+
+				do j=1,numSpecies
+					defectPrevList%defectType(j)=defectCurrent%defectType(j)
+				end do
+
+				numDefectsSend=numDefectsSend+1
+
+			else
+				write(*,*) 'error tried to insert defect at beginning of output defect list'
+			end if
+			defectCurrent=>defectCurrent%next
+		end do
 	end do
 		
 	call MPI_SEND(numDefectsSend, 1, MPI_INTEGER, MASTER, 2399, comm, ierr)

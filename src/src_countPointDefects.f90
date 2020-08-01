@@ -165,13 +165,13 @@ end subroutine
 !This function is used to compute the vacancy concentration at this time
 !This function will not be used
 !**********************************************************************************
-double precision function permanentCv(matNum)
+double precision function permanentCv()
     use mod_structures
     use mod_constants
     implicit none
 
     double precision Kiv, diffV, diffI
-    integer matNum, i
+    integer i
 
     do i=1,numSingleDiff
         if(DiffSingle(i)%defectType(1)==0 .AND. DiffSingle(i)%defectType(2)==1 .AND. &

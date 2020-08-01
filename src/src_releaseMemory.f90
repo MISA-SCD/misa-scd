@@ -75,80 +75,76 @@ subroutine deallocateMaterialInput()
 	use mod_constants
 	implicit none
 
-	integer matNum
 	integer i
 
-	do matNum=1,numMaterials
+	do i=1, numSingleForm
+		deallocate(FormSingle(i)%defectType)
+	end do
 
-		do i=1, numSingleForm
-			deallocate(FormSingle(i)%defectType)
-		end do
+	do i=1,numFuncDiff
+		deallocate(DiffFunc(i)%defectType)
+		deallocate(DiffFunc(i)%min)
+		deallocate(DiffFunc(i)%max)
+		deallocate(DiffFunc(i)%parameters)
+	end do
 
-		do i=1,numFuncDiff
-			deallocate(DiffFunc(i)%defectType)
-			deallocate(DiffFunc(i)%min)
-			deallocate(DiffFunc(i)%max)
-			deallocate(DiffFunc(i)%parameters)
-		end do
+	do i=1,numSingleDiff
+		deallocate(DiffSingle(i)%defectType)
+	end do
 
-		do i=1,numSingleDiff
-			deallocate(DiffSingle(i)%defectType)
-		end do
+	do i=1,numFuncBind
+		deallocate(BindFunc(i)%defectType)
+		deallocate(BindFunc(i)%product)
+		deallocate(BindFunc(i)%min)
+		deallocate(BindFunc(i)%max)
+		deallocate(BindFunc(i)%parameters)
+	end do
 
-		do i=1,numFuncBind
-			deallocate(BindFunc(i)%defectType)
-			deallocate(BindFunc(i)%product)
-			deallocate(BindFunc(i)%min)
-			deallocate(BindFunc(i)%max)
-			deallocate(BindFunc(i)%parameters)
-		end do
+	do i=1,numSingleBind
+		deallocate(BindSingle(i)%defectType)
+		deallocate(BindSingle(i)%product)
+	end do
 
-		do i=1,numSingleBind
-			deallocate(BindSingle(i)%defectType)
-			deallocate(BindSingle(i)%product)
-		end do
+	do i=1,numDissocReac
+		deallocate(DissocReactions(i)%reactants)
+		deallocate(DissocReactions(i)%products)
+		deallocate(DissocReactions(i)%min)
+		deallocate(DissocReactions(i)%max)
+	end do
 
-		do i=1,numDissocReac
-			deallocate(DissocReactions(i)%reactants)
-			deallocate(DissocReactions(i)%products)
-			deallocate(DissocReactions(i)%min)
-			deallocate(DissocReactions(i)%max)
-		end do
+	do i=1,numDiffReac
+		deallocate(DiffReactions(i)%reactants)
+		deallocate(DiffReactions(i)%products)
+		deallocate(DiffReactions(i)%min)
+		deallocate(DiffReactions(i)%max)
+	end do
 
-		do i=1,numDiffReac
-			deallocate(DiffReactions(i)%reactants)
-			deallocate(DiffReactions(i)%products)
-			deallocate(DiffReactions(i)%min)
-			deallocate(DiffReactions(i)%max)
-		end do
+	do i=1,numSinkReac
+		deallocate(SinkReactions(i)%reactants)
+		!deallocate(SinkReactions(i)%products)	!no products
+		deallocate(SinkReactions(i)%min)
+		deallocate(SinkReactions(i)%max)
+	end do
 
-		do i=1,numSinkReac
-			deallocate(SinkReactions(i)%reactants)
-			!deallocate(SinkReactions(i)%products)	!no products
-			deallocate(SinkReactions(i)%min)
-			deallocate(SinkReactions(i)%max)
-		end do
+	do i=1,numImpurityReac
+		deallocate(ImpurityReactions(i)%reactants)
+		deallocate(ImpurityReactions(i)%products)
+		deallocate(ImpurityReactions(i)%min)
+		deallocate(ImpurityReactions(i)%max)
+	end do
 
-		do i=1,numImpurityReac
-			deallocate(ImpurityReactions(i)%reactants)
-			deallocate(ImpurityReactions(i)%products)
-			deallocate(ImpurityReactions(i)%min)
-			deallocate(ImpurityReactions(i)%max)
-		end do
+	do i=1,numClusterReac
+		deallocate(ClusterReactions(i)%reactants)
+		deallocate(ClusterReactions(i)%products)
+		deallocate(ClusterReactions(i)%min)
+		deallocate(ClusterReactions(i)%max)
+	end do
 
-		do i=1,numClusterReac
-			deallocate(ClusterReactions(i)%reactants)
-			deallocate(ClusterReactions(i)%products)
-			deallocate(ClusterReactions(i)%min)
-			deallocate(ClusterReactions(i)%max)
-		end do
-
-		do i=1,numImplantReac
-			if(allocated(ImplantReactions(i)%reactants)) deallocate(ImplantReactions(i)%reactants)
-			if(allocated(ImplantReactions(i)%products)) deallocate(ImplantReactions(i)%products)
-			if(allocated(ImplantReactions(i)%min)) deallocate(ImplantReactions(i)%min)
-			if(allocated(ImplantReactions(i)%max)) deallocate(ImplantReactions(i)%max)
-		end do
+	do i=1,numImplantReac
+		if(allocated(ImplantReactions(i)%reactants)) deallocate(ImplantReactions(i)%reactants)
+		if(allocated(ImplantReactions(i)%products)) deallocate(ImplantReactions(i)%products)
+		if(allocated(ImplantReactions(i)%min)) deallocate(ImplantReactions(i)%min)
+		if(allocated(ImplantReactions(i)%max)) deallocate(ImplantReactions(i)%max)
 	end do
 
 	if(allocated(FormSingle)) deallocate(FormSingle)
