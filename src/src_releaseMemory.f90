@@ -6,7 +6,7 @@ subroutine deallocateBoundaryDefectList()
 	use mod_constants
 	implicit none
 
-	integer cell, dir
+	integer :: cell, dir
 	type(defect), pointer :: defectCurrent, defectPrev
 
 	do cell=1,numCells
@@ -32,7 +32,6 @@ subroutine deallocateBoundaryDefectList()
 	end do
 
 end subroutine
-
 
 !***********************************************************************
 !> Subroutine deallocateCascadeList(): deallocates all stored cascade data
@@ -75,7 +74,7 @@ subroutine deallocateMaterialInput()
 	use mod_constants
 	implicit none
 
-	integer i
+	integer :: i
 
 	do i=1, numSingleForm
 		deallocate(FormSingle(i)%defectType)
@@ -170,7 +169,7 @@ subroutine deallocateDefectList()
 	implicit none
 
 	type(defect), pointer :: defectCurrent, defectPrev
-	integer cell, i, j
+	integer :: cell, i, j
 
 	do cell=1,numCells
 		defectCurrent=>defectList(cell)%next
@@ -205,7 +204,7 @@ subroutine deallocateReactionList()
 	implicit none
 
 	type(reaction), pointer :: reactionCurrent, reactionPrev
-	integer cell, i, j
+	integer :: cell, i, j
 
 	do cell=1,numCells
 		reactionCurrent=>reactionList(cell)%next

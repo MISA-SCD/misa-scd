@@ -59,14 +59,14 @@ double precision fineLength						    !<length of a cascade volume element (nm)
 double precision cascadeElementVol				    !<volume of a cascade element (nm^3)
 
 !Material input information, created in MaterialInput.f90
-integer numSpecies							        !<Number of chemical species (typically set to 4: He, V, SIA_glissile, SIA_sessile)
+integer numSpecies							        !<Number of chemical species (typically set to 4: Cu, V, SIA_m, SIA_im)
 
-type(formationSingle),allocatable :: FormSingle(:)                !<Parameters for formation of single defects--(numSingleForm)
-type(diffusionSingle),allocatable :: DiffSingle(:)			    !<Parameters for diffusion of single defects--(numSingleDiff)
-type(diffusionFunction), allocatable :: DiffFunc(:)			    !<Parameters for functional forms of diffusion rates for defects--(numFuncDiff)
+type(formationSingle),allocatable :: FormSingle(:)                  !<Parameters for formation of single defects--(numSingleForm)
+type(diffusionSingle),allocatable :: DiffSingle(:)			        !<Parameters for diffusion of single defects--(numSingleDiff)
+type(diffusionFunction), allocatable :: DiffFunc(:)			        !<Parameters for functional forms of diffusion rates for defects--(numFuncDiff)
 type(bindingSingle), allocatable :: BindSingle(:)				    !<Parameters for binding of single defects--(numSingleBind)
 type(bindingFunction), allocatable :: BindFunc(:)				    !<Parameters for functional forms of binding energies for defects--(numFuncBind)
-type(reactionParameters), allocatable :: DissocReactions(:)	    !<List of allowed dissociation reactions (and ref. to functional form of reaction rate)--(numDissocReac)
+type(reactionParameters), allocatable :: DissocReactions(:)         !<List of allowed dissociation reactions (and ref. to functional form of reaction rate)--(numDissocReac)
 type(reactionParameters), allocatable :: DiffReactions(:)		    !<List of allowed diffusion reactions (and ref. to functional form of reaction rate)--(numDiffReac)
 type(reactionParameters), allocatable :: SinkReactions(:)		    !<List of allowed sink reactions (and ref. to functional form of reaction rate)--(numSinkReac)
 type(reactionParameters), allocatable :: ImpurityReactions(:)	    !<List of allowed impurity reactions (and ref. to functional form of reaction rate)--(numImpurityReac)
@@ -84,7 +84,7 @@ integer :: numDiffReac		                            !<Number of diffusion reacti
 integer :: numSinkReac		                            !<Number of sink reactions in input file
 integer :: numImpurityReac	                            !<Number of impurity reactions in input file
 integer :: numClusterReac	                            !<Number of clustering reactions in input file
-integer :: numImplantReac	                            !<Number of implantation reactions in input file (cascade, Frenkel pair, He currently implemented)
+integer :: numImplantReac	                            !<Number of implantation reactions in input file (cascade, Frenkel pair currently implemented)
 
 !constants
 double precision, parameter :: kboltzmann=8.625d-5	    !<Boltzmann's constant (eV/K)
@@ -95,7 +95,6 @@ double precision, parameter :: Zv = 1.0d0
 !double precision, parameter :: lattice = 0.316d0       !<lattice constant (nm) (Fe: 0.2876d0; W: 0.316)
 double precision, parameter :: atomSize_Cu = 8.79d-3    !<Cu (nm^3)
 
-!2019.04.30 Add
 !Cu solubility CeqCu(T) = exp(DelatS/kB)*exp(-Omega/(kB*T))  Reference: (F. Christien and A. Barbu, 2004)
 double precision ceqV                   !Thermal equilibrium concentration of vacancy
 double precision ceqI                   !Thermal equilibrium concentration of SIA
@@ -166,7 +165,6 @@ integer minVoid                         !<Only n>minVoid Vn clusters are counted
 integer minLoop                         !<Only n>minLoop SIAn clusters are counted
 integer minSV                           !<Only (n+m)>minCuV SnVm clusters are counted
 
-!add 2020.07.14
 !<input files
 integer, parameter :: PARAFILE = 10                     !<Used to read parameter.txtx file
 integer, parameter :: DEFFILE = 11                      !<Used to read Defects.txtx file
@@ -176,7 +174,6 @@ integer, parameter :: CASFILE = 13                      !<Used to read cascades.
 integer, parameter :: RAWDAT = 82
 integer, parameter :: TOTDAT = 83
 
-!(hard-coded) constants used for clustering rates
 double precision omega					!<Geometric constant for 3D spherical clustering (see Dunn et al. JNM 2013)
 double precision omega2D				!<Geometric constant for clustering with dislocation loops (see Dunn et al. JNM 2013)
 double precision omega1D				!<Geometric constant for clustering with dislocation loops (see Dunn et al. JNM 2013)

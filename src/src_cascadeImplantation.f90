@@ -9,8 +9,8 @@ subroutine chooseCascade(CascadeTemp)
     use mod_constants
     implicit none
 
-    type(cascadeEvent), pointer :: cascadeTemp
-    double precision r, atemp
+    type(cascadeEvent), pointer, intent(inout) :: cascadeTemp
+    double precision :: r, atemp
 
     r=dprand()
     atemp=0d0
@@ -37,7 +37,7 @@ integer function CascadeCount()
     implicit none
 
     type(cascade), pointer :: CascadeCurrent
-    integer count
+    integer :: count
 
     CascadeCurrent=>ActiveCascades
     count=0
@@ -62,9 +62,9 @@ subroutine addCascadeExplicit(reactionCurrent)
     use mod_randdp
     implicit none
 
-    type(reaction), pointer :: reactionCurrent
-    double precision r2, atemp, r2timesa
-    integer i
+    type(reaction), pointer, intent(inout) :: reactionCurrent
+    double precision :: r2, atemp, r2timesa
+    integer :: i
 
     atemp=0d0
     r2=dprand()
@@ -100,8 +100,8 @@ logical function cascadeMixingCheck()
     use mod_randdp
     implicit none
 
-    double precision r1, probability
-    logical boolean
+    double precision :: r1, probability
+    logical :: boolean
 
     !step 1: calculate the volume fraction of defectTemp in the cell
     !Current version (n cascade mixing checks)
@@ -136,28 +136,16 @@ subroutine cascadeUpdateStep(releaseToggle, cascadeCell)
     implicit none
     include 'mpif.h'
 
-    integer cascadeCell
-    logical releaseToggle
+    logical, intent(in) :: releaseToggle
+    integer, intent(in) :: cascadeCell
     type(defect), pointer :: defectCurrent, defectPrev
-
-    integer i, j, k, dir, count, recvDir
-    integer cellNumber, bndryCellNumber, localGrainID, neighborGrainID
-
+    integer :: j, dir, count, recvDir
+    integer :: cellNumber, bndryCellNumber, localGrainID, neighborGrainID
     !Used for communication between processors
-    integer numSend,numSendTemp, numRecv
+    integer :: numSend,numSendTemp, numRecv
     integer, allocatable :: defectSend(:,:), defectRecv(:,:)
-    integer status(MPI_STATUS_SIZE), sendStatus(MPI_STATUS_SIZE),recvStatus(MPI_STATUS_SIZE)
-    integer sendRequest, recvRequest
-
-    interface
-        subroutine findDefectInList(defectCurrent, defectPrev, defectType)
-            use mod_structures
-            use mod_constants
-            implicit none
-            type(defect), pointer :: defectCurrent, defectPrev
-            integer defectType(numSpecies)
-        end subroutine
-    end interface
+    integer :: status(MPI_STATUS_SIZE), sendStatus(MPI_STATUS_SIZE),recvStatus(MPI_STATUS_SIZE)
+    integer :: sendRequest, recvRequest
 
     !Fill send buffer
     if(cascadeCell==0) then
@@ -346,7 +334,7 @@ subroutine createCascadeConnectivity()
     use mod_constants
     implicit none
 
-    integer cell
+    integer :: cell
 
     do cell=1,numCellsCascade
         if(mod(cell,numxcascade)==0) then !identify cell to the right

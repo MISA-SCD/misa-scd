@@ -19,83 +19,68 @@ program MISASCD
 	type(reaction), pointer :: reactionChoiceList, reactionChoiceCurrent	!<used to create a list of chosen reactions (for one KMC domain per volume element case)
 	type(reaction), pointer :: reactionTemp
 	type(cascade), pointer :: CascadeCurrent								!<used to find defects/reactions in fine mesh
-
-	double precision  GenerateTimestep, TotalRateCheck, tau
-	integer status(MPI_STATUS_SIZE), sim, outputCounter, nullSteps
-	integer cascadeCell, i, j, cell
-	real time1, time2
-	logical releaseToggle, impCascadeToggle
-	integer CascadeCount, TotalCascades 									!<Used to count the number of cascades present in the simulation
-	character(12) filename, filename2
+	double precision :: tau
+	integer :: status(MPI_STATUS_SIZE), sim, outputCounter, nullSteps
+	integer :: cascadeCell, i, CascadeCount, TotalCascades
+	real :: time1, time2
+	logical :: releaseToggle, impCascadeToggle
+	character(12) :: filename, filename2
+	double precision, external :: GenerateTimestep, TotalRateCheck
 
 	interface
-		subroutine chooseImplantReaction(reactionCurrent, CascadeCurrent)
+		subroutine chooseImplantReaction(reactionCurrent)
 			use mod_structures
 			implicit none
-			type(reaction), pointer :: reactionCurrent
-			type(cascade), pointer :: CascadeCurrent
+			type(reaction), pointer, intent(inout) :: reactionCurrent
 		end subroutine
 
 		subroutine chooseReaction(reactionCurrent, CascadeCurrent)
 			use mod_structures
 			implicit none
-			type(reaction), pointer :: reactionCurrent
-			type(cascade), pointer :: CascadeCurrent
+			type(reaction), pointer, intent(inout) :: reactionCurrent
+			type(cascade), pointer, intent(inout) :: CascadeCurrent
 		end subroutine
 
 		subroutine addCascadeExplicit(reactionCurrent)
 			use mod_structures
 			implicit none
-			type(reaction), pointer :: reactionCurrent
+			type(reaction), pointer, intent(inout) :: reactionCurrent
 		end subroutine
 
 		subroutine updateDefectList(reactionCurrent, defectUpdateCurrent, CascadeCurrent)
 			use mod_structures
 			implicit none
-			type(reaction), pointer :: reactionCurrent
-			type(DefectUpdateTracker), pointer :: defectUpdateCurrent
-			type(cascade), pointer :: CascadeCurrent
+			type(reaction), pointer, intent(in) :: reactionCurrent
+			type(DefectUpdateTracker), pointer, intent(inout) :: defectUpdateCurrent
+			type(cascade), pointer, intent(inout) :: CascadeCurrent
 		end subroutine
 
 		subroutine updateReactionList(defectUpdate)
 			use mod_structures
 			implicit none
-			type(DefectUpdateTracker), pointer :: defectUpdate
+			type(DefectUpdateTracker), pointer, intent(inout) :: defectUpdate
 		end subroutine
 
 		subroutine DEBUGPrintReaction(reactionCurrent)
 			use mod_structures
 			implicit none
-			type(reaction), pointer :: reactionCurrent
-		end subroutine
-
-		subroutine DEBUGPrintDefectUpdate(defectUpdate)
-			use mod_structures
-			implicit none
-			type(defectUpdateTracker), pointer :: defectUpdate
-		end subroutine
-
-		subroutine DEBUGcheckForUnadmissible(reactionCurrent)
-			use mod_structures
-			implicit none
-			type(Reaction), pointer :: reactionCurrent
+			type(reaction), pointer, intent(inout) :: reactionCurrent
 		end subroutine
 
 		subroutine releaseFineMeshDefects(CascadeCurrent)
 			use mod_structures
 			implicit none
-			type(cascade), pointer :: CascadeCurrent
+			type(cascade), pointer, intent(inout) :: CascadeCurrent
 		end subroutine
 
 		double precision function totalRateCascade(CascadeCurrent)
 			use mod_structures
 			implicit none
-			type(Cascade), pointer :: CascadeCurrent
+			type(Cascade), pointer, intent(in) :: CascadeCurrent
 		end function
 	end interface
 
 	call cpu_time(time1)
-
 	!***********************************************************************
 	!<Initialize MPI interface
 	!***********************************************************************
@@ -282,7 +267,7 @@ program MISASCD
 			else if(implantScheme=='MonteCarlo') then
 				if(test3 == 'yes') then
 					call initializeOneCascade()
-					call chooseImplantReaction(reactionCurrent, CascadeCurrent)
+					call chooseImplantReaction(reactionCurrent)
 				else
 					call chooseReaction(reactionCurrent, CascadeCurrent)
 				end if

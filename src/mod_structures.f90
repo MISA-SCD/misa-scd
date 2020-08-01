@@ -43,13 +43,13 @@ module mod_structures
 	end type
 
 	type bindingFunction
-		integer, allocatable :: defectType(:)	!<Type of cluster that is dissociating (1's and 0's only)
-		integer, allocatable :: product(:)		!<Type of defect that dissociates from cluster
-		integer, allocatable :: min(:)			!<Minimum cluster size allowed to use this functional form for binding energy (size numSpecies)
-		integer, allocatable :: max(:)			!<Maximum cluster size allowed to use this functional form for binding energy (size numSpecies)
+		integer, allocatable :: defectType(:)			!<Type of cluster that is dissociating (1's and 0's only)
+		integer, allocatable :: product(:)				!<Type of defect that dissociates from cluster
+		integer, allocatable :: min(:)					!<Minimum cluster size allowed to use this functional form for binding energy (size numSpecies)
+		integer, allocatable :: max(:)					!<Maximum cluster size allowed to use this functional form for binding energy (size numSpecies)
 		double precision, allocatable :: parameters(:)	!<Parameters to input into this functional form (read in from input file)
-		integer functionType					!<ID number of functional form, function is hard coded into Defect_Attributes.f90
-		integer numParam						!<Number of parameters needed to input into this functional form
+		integer functionType							!<ID number of functional form, function is hard coded into Defect_Attributes.f90
+		integer numParam								!<Number of parameters needed to input into this functional form
 	end type
 
 	type reactionParameters
@@ -78,7 +78,6 @@ module mod_structures
 		double precision coordinates(3)				!<Coordinates of center of volume element
 		double precision length						!<Side length of this volume element (assuming cubic elements)
 		double precision volume						!<Volume of this volume element
-		double precision strain(6)					!<Strain tensor at the center of this volume element (e11, e22, e33, e12, e23, e13)
 		integer globalCell							!<Global ID of the mesh
 		integer proc								!<Processor ID number that this element is located inside
 		integer material							!<Material ID number that this element is composed of (currently only set up for one material type)
@@ -95,28 +94,26 @@ module mod_structures
 		double precision length				!<Side length of this volume element (cubic assumption)
 		double precision volume				!<Volume of this element
 		type(defect), pointer :: defectList	!<List of defects present in this volume element (See defect derived type)
-		double precision strain(6)			!<Strain tensor at the center of this volume element
 	end type boundaryMesh
 
 	!**********************************************************************
 	!>defect and reaction
 	!**********************************************************************
 	type defect
-		integer, allocatable :: defectType(:) !<Array containing the number of particles of each defect species in this defect type.
-												!!(Example: here, 3	2 0 0 indicates He_3V_2 and 0 0 20 0 indicates SIA_20 (glissile)
+		integer, allocatable :: defectType(:) 	!<Array containing the number of particles of each defect species in this defect type.
 		integer num								!<Number of defects of this type inside this volume element
 		integer cellNumber						!<Volume element that these defects are located in
 		type(defect), pointer :: next			!<Pointer to the next defect in the same volume element (sorted list)
 	end type defect
 
 	type defectUpdateTracker
-		integer, allocatable :: defectType(:) 	!<Type of defect that needs to be updated (see description of defect type for format)
-		integer num								!<Number of defects of this type in the volume element
-		integer cellNumber						!<Volume element number that this defect is located in
-		integer proc							!<Processor ID # that this volume element is located inside
-		integer dir								!<If defect diffused from a different volume element, indicates direction from which defect came
-		integer neighbor						!<If defect diffused from a different volume element, indicates volume element number from which defect came
-		integer cascadeNumber					!<If defect is inside a cascade, indicates cascade ID # that defect is located inside
+		integer, allocatable :: defectType(:) 		!<Type of defect that needs to be updated (see description of defect type for format)
+		integer num									!<Number of defects of this type in the volume element
+		integer cellNumber							!<Volume element number that this defect is located in
+		integer proc								!<Processor ID # that this volume element is located inside
+		integer dir									!<If defect diffused from a different volume element, indicates direction from which defect came
+		integer neighbor							!<If defect diffused from a different volume element, indicates volume element number from which defect came
+		integer cascadeNumber						!<If defect is inside a cascade, indicates cascade ID # that defect is located inside
 		type(defectUpdateTracker), pointer :: next	!<Pointer to the next defect that needs to have its reaction rate updated
 	end type defectUpdateTracker
 
@@ -132,8 +129,8 @@ module mod_structures
 	end type reaction
 
 	type cascadeEvent
-		integer NumDefectsTotal			!<Number of total defects in the cascade list
-		integer numDisplacedAtoms		!<How much this cascade contributes to the DPA (how many lattice atoms are displaced)
+		integer NumDefectsTotal							!<Number of total defects in the cascade list
+		integer numDisplacedAtoms						!<How much this cascade contributes to the DPA (how many lattice atoms are displaced)
 		type(cascadeDefect), pointer :: ListOfDefects	!<Pointer pointing to the list of defects in this cascade
 		type(cascadeEvent), pointer:: nextCascade		!<Pointer pointing to the next cascade in the list
 	end type cascadeEvent

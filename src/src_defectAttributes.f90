@@ -7,10 +7,10 @@ double precision function findDiffusivity(defectType)
 	use mod_constants
 	implicit none
 
-	integer defectType(numSpecies)
-	integer i, j, numSame
-	double precision Diff
-	double precision DiffusivityCompute, diffusivityCu
+	integer, intent(in) :: defectType(numSpecies)
+	integer :: i, j, numSame
+	double precision :: Diff
+	double precision, external :: DiffusivityCompute, diffusivityCu
 
 	!Temporary: used as a parameter to vary the diffusivity of all defects on GB
 	double precision, parameter :: Param=0d0
@@ -72,12 +72,10 @@ double precision function DiffusivityCompute(DefectType, functionType, numParame
 	use mod_structures
 	implicit none
 
-	integer DefectType(numSpecies)
-	integer functionType, numParameters,i
-	double precision parameters(numParameters)
-	double precision Diff
-	double precision D0, Em
-	double precision diffusivityCu
+	integer, intent(in) :: DefectType(numSpecies), functionType, numParameters
+	double precision, intent(in) :: parameters(numParameters)
+	double precision :: Diff, D0, Em
+	double precision, external :: diffusivityCu
 
 	if(functionType==1) then		!used for immobile defects
 		Diff=0d0
@@ -95,7 +93,7 @@ double precision function DiffusivityCompute(DefectType, functionType, numParame
 		Diff=D0*dexp(-parameters(2)/(kboltzmann*temperature))
 	else
 		write(*,*) 'error incorrect diffusivity function chosen'
-	endif
+	end if
 
 	DiffusivityCompute=Diff
 
@@ -109,7 +107,7 @@ double precision function diffusivityCu()
 	use mod_constants
 	implicit none
 
-	integer DefectType(numSpecies), i
+	integer :: DefectType(numSpecies), i
 
 	outer: do i=1,numSingleDiff
 		if(DiffSingle(i)%defectType(1)==1 .AND. DiffSingle(i)%defectType(2)==0 .AND. &
@@ -138,10 +136,10 @@ double precision function findBinding(DefectType, productType)
 	use mod_constants
 	implicit none
 
-	integer DefectType(numSpecies), productType(numSpecies)
-	integer i, j, numSame, numSameProduct
-	double precision Eb
-	double precision BindingCompute
+	integer, intent(in) :: DefectType(numSpecies), productType(numSpecies)
+	integer :: i, j, numSame, numSameProduct
+	double precision :: Eb
+	double precision, external :: BindingCompute
 
 	!Temporary: used as a parameter to vary the binding energy of all defects on GB
 	double precision, parameter :: Param=0d0
@@ -214,10 +212,10 @@ double precision function BindingCompute(DefectType, product, functionType, numP
 	use mod_constants
 	implicit none
 
-	integer DefectType(numSpecies), product(numSpecies)
-	integer functionType, numParameters, num, CuNum, VNum, SIANum, i
-	double precision parameters(numParameters)
-	double precision Eb
+	integer, intent(in) :: DefectType(numSpecies), product(numSpecies), functionType, numParameters
+	double precision, intent(in) :: parameters(numParameters)
+	integer :: num, CuNum, VNum, SIANum, i
+	double precision :: Eb
 
 	if(functionType==12) then	!V / SIA cluster dislocation
 		num=0
@@ -260,7 +258,8 @@ integer function findDefectSize(defectType)
 	use mod_constants
 	implicit none
 
-	integer defectType(numSpecies), max, i
+	integer, intent(in) :: defectType(numSpecies)
+	integer :: max, i
 
 	!Hard-coded below and may be changed if the rules for defect size change.
 	max=0

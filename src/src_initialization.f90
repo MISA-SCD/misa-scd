@@ -8,9 +8,8 @@ subroutine initializeVIdefect()
 	implicit none
 	include 'mpif.h'
 
-	integer cell, i,j, maxNumTemp
-	double precision totalAtoms
-	double precision rtemp, r1
+	integer :: cell, i, maxNumTemp
+	double precision :: totalAtoms, rtemp, r1
 
 	!Total atoms in the whole system
 	totalAtoms = systemVol/atomSize
@@ -113,8 +112,8 @@ subroutine initializeOneCascade()
 	implicit none
 	include 'mpif.h'
 
-	double precision rtemp, r1
-	integer cell
+	double precision :: rtemp, r1
+	integer :: cell
 
 	rtemp = 0d0
 	r1 = dprand()
@@ -140,11 +139,10 @@ subroutine initializeDefectList()
 	use mod_constants
 	implicit none
 
-	integer cell, i, j
+	integer :: cell, i, j
 	type(defect), pointer :: defectCurrent, defectPrev
 
 	nullify(defectCurrent)
-
 	do cell=1,numCells
 		allocate(defectList(cell)%defectType(numSpecies))
 		do i=1,numSpecies
@@ -231,8 +229,8 @@ subroutine initializeRandomSeeds()
 	implicit none
 	include 'mpif.h'
 
-	integer randseed, i, irand
-	integer status(MPI_STATUS_SIZE)
+	integer :: randseed, i, irand
+	integer :: status(MPI_STATUS_SIZE)
 
 	if(myProc%taskid == MASTER) then
 		call system_clock(Count=randseed)	!return randseed (integer, unit:ms)
@@ -258,8 +256,8 @@ subroutine initializeTotalRate()
 	implicit none
 
 	type(Reaction), pointer :: reactionCurrent
-	double precision rate, rateCell
-	integer cell
+	double precision :: rate, rateCell
+	integer :: cell
 
 	rate=0d0
 	do cell=1,numCells
@@ -286,8 +284,7 @@ subroutine initializeReactionList()
 	use mod_reactionrates
 	implicit none
 
-	integer cell, i, j, reac, count
-	integer dir
+	integer :: cell, i, j, reac, dir
 	type(reaction), pointer :: reactionCurrent
 	type(defect), pointer :: defectCurrent
 	type(defect), pointer :: defectCurrentTempV
@@ -756,9 +753,9 @@ subroutine initializeBoundaryDefectList()
 	use mod_constants
 	implicit none
 
-	integer cell, dir, i, j, gCell,gNeighor
+	integer :: cell, dir, i, j, gCell, gNeighor
 	type(defect), pointer :: defectCurrent
-	integer findgNeighborPeriodic
+	integer, external :: findgNeighborPeriodic
 
 	do cell=1,numCells
 		do dir=1,6
@@ -857,13 +854,13 @@ subroutine initializeFineMesh(CascadeCurrent)
 	use mod_reactionrates
 	implicit none
 
-	type(cascade), pointer :: CascadeCurrent
+	type(cascade), pointer, intent(inout) :: CascadeCurrent
 	type(defect), pointer :: defectCurrentCoarse, defectCurrentFine
 	type(defect), pointer :: defectPrevCoarse, defectPrevFine
-
-	integer i, j, n, k, num, cell, binomial, factorial, count
-	double precision volumeRatio, r1, r2, lambda, rstore
-	integer products(numSpecies)
+	integer :: j, n, k, num, cell, count
+	double precision :: volumeRatio, r1, r2, lambda, rstore
+	integer :: products(numSpecies)
+	integer, external :: binomial, factorial
 
 	interface
 		subroutine findDefectInList(defectCurrent, defectPrev, products)
@@ -1069,7 +1066,7 @@ subroutine annealInitialization()
 	use mod_constants
 	implicit none
 
-	integer cell
+	integer :: cell
 	type(reaction), pointer :: reactionCurrent
 	type(cascade), pointer :: CascadeCurrent
 

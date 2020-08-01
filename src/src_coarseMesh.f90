@@ -9,8 +9,9 @@ subroutine findDefectInList(defectCurrent, defectPrev, products)
 	use mod_constants
 	implicit none
 
-	type(defect), pointer :: defectCurrent, defectPrev
-	integer products(numSpecies), same, j
+	type(defect), pointer, intent(inout) :: defectCurrent, defectPrev
+	integer, intent(in) :: products(numSpecies)
+	integer :: same, j
 
 	if(.NOT. associated(defectCurrent)) then
 		write(*,*) 'error defectCurrent not associated in findDefectInList'
@@ -51,8 +52,9 @@ integer function findNumDefect(defectType, cellNumber)
 	use mod_constants
 	implicit none
 
-	type(defect), pointer :: defectCurrent
-	integer defectType(numSpecies), cellNumber, numDefects, i, count
+	integer, intent(in) :: defectType(numSpecies)
+	type(defect), pointer, intent(inout) :: defectCurrent
+	integer :: cellNumber, numDefects, i, count
 
 	numDefects=0
 	defectCurrent=>defectList(cellNumber)%next
@@ -62,14 +64,14 @@ integer function findNumDefect(defectType, cellNumber)
 		do i=1,numSpecies
 			if(defectType(i)==defectCurrent%defectType(i)) then
 				count=count+1
-			endif
+			end if
 		end do
 		if(count==numSpecies) then
 			numDefects=defectCurrent%num
 			exit
 		else
 			defectCurrent=>defectCurrent%next
-		endif
+		end if
 	end do
 
 	findNumDefect=numDefects
@@ -86,8 +88,9 @@ integer function findNumDefectBoundary(defectType, cellNumber, dir)
 	use mod_constants
 	implicit none
 
+	integer, intent(in) :: defectType(numSpecies), cellNumber, dir
 	type(defect), pointer :: defectCurrent
-	integer defectType(numSpecies), cellNumber, numDefects, i, count, dir
+	integer :: defectType(numSpecies), numDefects, i, count
 
 	if(cellNumber==-1) then
 		write(*,*) 'trying to find number of defects on free surface'
@@ -125,10 +128,9 @@ subroutine countReactionsCoarse(reactionsCoarse)
 	implicit none
 	include 'mpif.h'
 
+	integer, intent(inout) :: reactionsCoarse
 	type(Reaction), pointer :: reactionCurrent
-	integer cell
-	integer reactionsCoarse, reactionCounter, reactionsTemp
-	integer proc
+	integer :: cell, reactionCounter
 
 	reactionCounter=0
 
@@ -159,11 +161,11 @@ subroutine updateImplantRateSingleCell(cell)
 	use mod_constants
 	implicit none
 
-	integer cell, reac
+	integer, intent(in) :: cell
+	integer :: reac
 	type(reaction), pointer :: reactionCurrent
 
 	if(implantType=='FrenkelPair') then
-
 		do reac=1,numImplantReac
 			if(ImplantReactions(reac)%numReactants==0 .AND. ImplantReactions(reac)%numProducts==2) then
 				exit	!we have found FrenkelPair implantation
@@ -216,11 +218,11 @@ subroutine resetReactionListSingleCell(cell)
 	use mod_reactionrates
 	implicit none
 
+	integer, intent(in) :: cell
 	type(defect), pointer :: defectCurrent, defectUpdate
 	type(cascade), pointer :: cascadeCurrent
-	integer numElements, numNeighbors, i, j, k, dir, count, defectTemp(numSpecies)
-	integer cell
-	integer localGrainID, neighborGrainID
+	integer :: i, j, dir, defectTemp(numSpecies)
+	integer :: localGrainID, neighborGrainID
 
 	!First reset the reaction list in this coarse volume element.
 	call clearReactionListSingleCell(cell)
@@ -326,7 +328,7 @@ subroutine clearReactionListSingleCell(cellNumber)
 	use mod_constants
 	implicit none
 
-	integer cellNumber
+	integer, intent(in) :: cellNumber
 	type(reaction), pointer :: reactionCurrent, reactionPrev
 
 	reactionCurrent=>reactionList(cellNumber)%next

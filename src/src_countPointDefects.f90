@@ -8,9 +8,7 @@ subroutine computeVconcent()
     implicit none
     include 'mpif.h'
 
-    integer i,j
-    integer numVacancy, totalVacancy
-
+    integer :: i,j, numVacancy, totalVacancy
     type(defect), pointer :: defectCurrent
     type(cascade), pointer :: CascadeCurrent
 
@@ -91,9 +89,7 @@ subroutine computeSIAconcent()
     implicit none
     include 'mpif.h'
 
-    integer i,j
-    integer numSIA, totalSIA
-
+    integer :: i,j, numSIA, totalSIA
     type(defect), pointer :: defectCurrent
     type(cascade), pointer :: CascadeCurrent
 
@@ -170,8 +166,8 @@ double precision function permanentCv()
     use mod_constants
     implicit none
 
-    double precision Kiv, diffV, diffI
-    integer i
+    double precision :: Kiv, diffV, diffI
+    integer :: i
 
     do i=1,numSingleDiff
         if(DiffSingle(i)%defectType(1)==0 .AND. DiffSingle(i)%defectType(2)==1 .AND. &

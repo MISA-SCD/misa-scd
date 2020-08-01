@@ -11,12 +11,10 @@ subroutine initialMesh()
 	implicit none
 	include 'mpif.h'
 
-	integer status(MPI_STATUS_SIZE), i, j, k, dir
-	double precision length
-	integer localElem
-	integer x, y, z, numXmin,numXmax,numYmin,numYmax,numZmin,numZmax	!used to determine numxLocal, numyLocal, numzLocal
-
-	double precision tempCenter(6)
+	integer :: status(MPI_STATUS_SIZE), i, j, k, dir, localElem
+	double precision :: length
+	integer :: x, y, z, numXmin,numXmax,numYmin,numYmax,numZmin,numZmax	!used to determine numxLocal, numyLocal, numzLocal
+	double precision :: tempCenter(6)
 
 	length=meshLength
 	numTotal=numx*numy*numz	!total cell in the system
@@ -298,22 +296,17 @@ subroutine createConnectLocalPeriodic(length)
 	implicit none
 	include 'mpif.h'
 
-	integer cell, localCell, maxElement
-	double precision length
-	!buffer lists to send all information at the end
-	integer i, dir, tag
-
+	double precision, intent(in) :: length
+	integer :: cell, localCell, maxElement
+	integer :: i, dir, tag
 	integer, allocatable :: send(:,:,:), recv(:,:)
 	integer, allocatable :: sendBuffer(:,:), recvBuffer(:,:)
-	integer materialBuff(numCells,6)
+	integer :: materialBuff(numCells,6)
 	integer :: numSend(6)=0, numRecv(6)=0
-
-	integer sendRequest(6), recvRequest(6)
-	integer sendStatus(MPI_STATUS_SIZE,6), recvStatus(MPI_STATUS_SIZE,6)
-	integer status(MPI_STATUS_SIZE)
-
-	integer tempRecv
-	logical flagProbe
+	integer :: sendRequest(6), recvRequest(6)
+	integer :: sendStatus(MPI_STATUS_SIZE,6), recvStatus(MPI_STATUS_SIZE,6), status(MPI_STATUS_SIZE)
+	integer :: tempRecv
+	logical :: flagProbe
 	!************************************************
 	!periodic boundary condition version
 	!************************************************
@@ -545,22 +538,19 @@ subroutine createConnectLocalFreeSurf(length)
 	implicit none
 	include 'mpif.h'
 
-	integer cell, maxElement,localCell
-	double precision length
-	integer globalCell, globalNeighbor, status(MPI_STATUS_SIZE)
-
-	!buffer lists to send all information at the end
-	integer i,j, dir, tag
-	integer numSend(6), numRecv(6)
+	double precision, intent(in) :: length
+	integer :: cell, maxElement,localCell
+	integer :: globalCell, globalNeighbor
+	integer :: i,j, dir, tag
+	integer :: numSend(6), numRecv(6)
 	integer, allocatable :: sendBuffer(:,:,:)
 	integer, allocatable :: recvBuffer(:,:)
-	integer materialBuff(numxLocal*numyLocal*numzLocal,6)	!materialID of boundary meshes
-	integer sendRequest(6), recvRequest(6)
-	integer sendStatus(MPI_STATUS_SIZE,6), recvStatus(MPI_STATUS_SIZE,6)
-	integer tempRecv
-	logical flagProbe
-
-	integer findgNeighborFreeSurf
+	integer :: materialBuff(numxLocal*numyLocal*numzLocal,6)	!materialID of boundary meshes
+	integer :: sendRequest(6), recvRequest(6)
+	integer :: sendStatus(MPI_STATUS_SIZE,6), recvStatus(MPI_STATUS_SIZE,6), status(MPI_STATUS_SIZE)
+	integer :: tempRecv
+	logical :: flagProbe
+	integer, external :: findgNeighborFreeSurf
 
 	numSend(1:6)=0
 	numRecv(1:6)=0
@@ -784,7 +774,8 @@ integer function findgNeighborPeriodic(globalID, dir)
 	use mod_constants
 	implicit none
 
-	integer globalID, dir, neighborID
+	integer, intent(in) :: globalID, dir
+	integer :: neighborID
 
 	!************************************************
 	!periodic boundary condition version
@@ -841,7 +832,8 @@ integer function findgNeighborFreeSurf(globalID, dir)
 	use mod_constants
 	implicit none
 
-	integer globalID, dir, neighborID
+	integer, intent(in) :: globalID, dir
+	integer :: neighborID
 
 	!************************************************
 	!PBCs in x and y, free in z (cell 0 represents free surface)

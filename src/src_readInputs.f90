@@ -13,7 +13,7 @@ subroutine ReadInputs()
 	character(len=50) :: defectFilename                 !<Filename of defect attributes file
 	character(len=50) :: meshFilename                   !<Filename of mesh file
 	character(len=50) :: cascadeFilename                !<Filename of cascade file
-	logical alive1, alive2, flag, flag1
+	logical :: alive1, alive2, flag, flag1
 
 	flag= .false.
 	!<read in filename of defectFile
@@ -451,8 +451,8 @@ subroutine readDefectAttributes(filename)
 
 	character(len=50), intent(in) :: filename
 	character(len=20) :: char
-	logical flag
-	integer i,j
+	logical :: flag
+	integer :: i,j
 
 	flag=.FALSE.
 	open(DEFFILE, file=filename,action='read', status='old')
@@ -786,8 +786,8 @@ subroutine readCascadeList(filename)
 	character(len=20) :: char
 	type(cascadeEvent), pointer :: cascadeCurrent
 	type(cascadeDefect), pointer :: defectCurrent
-	integer i, numDefects, j, k
-	logical flag
+	integer :: i, numDefects, j, k
+	logical :: flag
 
 	open(CASFILE, file=filename, status='old', action='read')
 

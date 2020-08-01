@@ -18,17 +18,16 @@ use mod_constants
 use mod_structures
 implicit none
 
-type(reaction), pointer :: reactionCurrent
+type(reaction), pointer, intent(inout) :: reactionCurrent
 type(defect), pointer :: defectCurrent
 type(cascade), pointer :: cascadeCurrent
-
-integer i,j,k,count
+integer :: i, j, count
 
 interface
 	subroutine DEBUGPrintReaction(reactionCurrent)
 		use mod_structures
 		implicit none
-		type(Reaction), pointer :: reactionCurrent
+		type(Reaction), pointer, intent(inout) :: reactionCurrent
 	end subroutine
 end interface
 
@@ -86,7 +85,8 @@ use mod_constants
 use mod_structures
 implicit none
 
-type(defectUpdateTracker), pointer :: defectUpdate, defectUpdateCurrent
+type(defectUpdateTracker), pointer, intent(in) :: defectUpdate
+type(defectUpdateTracker), pointer :: defectUpdateCurrent
 	
 !output list of defects to update (for updating reaction list)
 if(myProc%taskid==MASTER) then
@@ -115,7 +115,7 @@ use mod_constants
 use mod_structures
 implicit none
 
-integer i, j, k
+integer :: i, j
 type(reaction), pointer :: reactionCurrent
 type(cascade), pointer :: CascadeCurrent
 
@@ -234,7 +234,7 @@ use mod_structures
 use mod_constants
 implicit none
 
-integer i, j, k, count
+integer :: i, j
 type(defect), pointer :: defectCurrent
 type(Cascade), pointer :: CascadeCurrent
 
@@ -312,8 +312,8 @@ use mod_constants
 use mod_structures
 implicit none
 
-type(Reaction), pointer :: reactionCurrent
-double precision totalRateCheck
+type(Reaction), pointer, intent(in) :: reactionCurrent
+double precision, external :: totalRateCheck
 
 if(myProc%taskid==MASTER) then	
 	write(*,*) 'reaction chosen processor', myProc%taskid, 'step', step
@@ -352,7 +352,7 @@ subroutine DEBUGPrintDefectList()
 	use mod_structures
 	implicit none
 
-	integer i
+	integer :: i
 	type(defect), pointer :: defectCurrent
 
 	!output reaction list

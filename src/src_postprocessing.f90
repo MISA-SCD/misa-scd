@@ -9,10 +9,9 @@ subroutine outputDefectsXYZ()
 	implicit none
 	include 'mpif.h'
 
-	integer i, j, k,l, status(MPI_STATUS_SIZE), defectCount, numRecv
-	integer numScluster, numVoid, numLoop	!total number of solute/V/SIA/mSnV clusters in per volume element
-	double precision volTemp
-
+	integer :: i, j, k, status(MPI_STATUS_SIZE), defectCount, numRecv
+	integer :: numScluster, numVoid, numLoop	!total number of solute/V/SIA/mSnV clusters in per volume element
+	double precision :: volTemp
 	type(defect), pointer :: defectCurrent
 	integer, allocatable :: cellSend(:,:)
 	integer, allocatable :: cellRecv(:,:)
@@ -154,39 +153,37 @@ subroutine outputDefectsTotal()
 	implicit none
 	include 'mpif.h'
 
-	integer i, j, k, status(MPI_STATUS_SIZE)
-	integer products(numSpecies), same
+	integer :: i, j, k, status(MPI_STATUS_SIZE)
+	integer :: products(numSpecies), same
 	type(defect), pointer :: defectCurrent, defectPrevList, defectCurrentList, outputDefectList
 	type(cascade), pointer :: cascadeCurrent
 	integer, allocatable :: defectsRecv(:,:)
 	integer, allocatable :: defectsSend(:,:)
-	integer numDefectsSend
+	integer :: numDefectsSend
 	integer, allocatable :: numDefectsRecv(:)
-
 	!number of point defects (solute atom, vacancy, self-interstitial atom)
-	integer pointS, pointV, pointSIA
+	integer :: pointS, pointV, pointSIA
 	!total retained vacancies/self-interstitial atoms in the whole system
-	integer totalVac, totalSIA
+	integer :: totalVac, totalSIA
 	!total number of solute atoms/vacancies/SIAs in clusters
-	integer numS, numV, numSIA, numSV
+	integer :: numS, numV, numSIA, numSV
 	!total number of solute/V/SIA/mSnV clusters in the whole system
-	integer numScluster, numVoid, numLoop, numSVcluster
+	integer :: numScluster, numVoid, numLoop, numSVcluster
 	!Number density of clusters
-	double precision denScluster, denVoid, denLoop, denSVcluster
+	double precision :: denScluster, denVoid, denLoop, denSVcluster
 	!Average radius of clusters
-	double precision radiusScluster, radiusVoid, radiusLoop, radiusSVcluster
+	double precision :: radiusScluster, radiusVoid, radiusLoop, radiusSVcluster
 	!Average size of clusters
-	double precision sizeScluster, sizeVoid, sizeLoop, sizeSVcluster
-
-	double precision VRetained, VAnnihilated, conPointV, conPointSIA
+	double precision :: sizeScluster, sizeVoid, sizeLoop, sizeSVcluster
+	double precision :: VRetained, VAnnihilated, conPointV, conPointSIA
 
 	interface
 		subroutine findDefectInList(defectCurrent, defectPrev, products)
 			use mod_structures
 			use mod_constants
 			implicit none
-			type(defect), pointer :: defectCurrent, defectPrev
-			integer products(numSpecies)
+			type(defect), pointer, intent(inout) :: defectCurrent, defectPrev
+			integer, intent(in) :: products(numSpecies)
 		end subroutine
 	end interface
 
@@ -605,27 +602,25 @@ subroutine outputTotal()
 	implicit none
 	include 'mpif.h'
 
-	integer i
+	integer :: i
 	type(defect), pointer :: defectCurrent
 	type(cascade), pointer :: cascadeCurrent
 	integer :: sendBuff(8), recvBuff(8)
-
 	!number of point defects (solute atom, vacancy, self-interstitial atom)
-	integer pointS, pointV, pointSIA
+	integer :: pointS, pointV, pointSIA
 	!total retained vacancies/self-interstitial atoms in the whole system
-	integer totalVac, totalSIA
+	integer :: totalVac, totalSIA
 	!total number of solute atoms/vacancies/SIAs in clusters
-	integer numS, numV, numSIA, numSV
+	integer :: numS, numV, numSIA, numSV
 	!total number of solute/V/SIA/mSnV clusters in the whole system
-	integer numScluster, numVoid, numLoop, numSVcluster
+	integer :: numScluster, numVoid, numLoop, numSVcluster
 	!Number density of clusters
-	double precision denScluster, denVoid, denLoop, denSVcluster
+	double precision :: denScluster, denVoid, denLoop, denSVcluster
 	!Average radius of clusters
-	double precision radiusScluster, radiusVoid, radiusLoop, radiusSVcluster
+	double precision :: radiusScluster, radiusVoid, radiusLoop, radiusSVcluster
 	!Average size of clusters
-	double precision sizeScluster, sizeVoid, sizeLoop, sizeSVcluster
-
-	double precision VRetained, VAnnihilated, conPointV, conPointSIA
+	double precision :: sizeScluster, sizeVoid, sizeLoop, sizeSVcluster
+	double precision :: VRetained, VAnnihilated, conPointV, conPointSIA
 
 	!number of point defects
 	pointS=0
@@ -894,44 +889,41 @@ end subroutine
 !function: computeVConc
 !*****************************************************
 double precision function computeVConc()
-use mod_structures
-use mod_constants
-implicit none
-include 'mpif.h'
+	use mod_structures
+	use mod_constants
+	implicit none
+	include 'mpif.h'
 
-integer i, j, k, same, status(MPI_STATUS_SIZE), numDefectsRecv, numDefectsSend
-integer products(numSpecies)
-type(defect), pointer :: defectCurrent, defectPrevList, defectCurrentList, outputDefectList
+	integer :: i, j, k, same, status(MPI_STATUS_SIZE), numDefectsRecv, numDefectsSend
+	integer :: products(numSpecies)
+	type(defect), pointer :: defectCurrent, defectPrevList, defectCurrentList, outputDefectList
+	double precision, allocatable :: defectsRecv(:,:)
+	double precision, allocatable :: defectsSend(:,:)
+	!variables for computation statistics
+	integer :: reactionsCoarse, reactionsFine
+	!Variables for defect counting and concentration
+	integer :: VNum, SIANum, LoopSize(3), totalVac, totalSIA, CuNum, totalCu
+	integer :: totalVoid, totalLoop, VoidNum
 
-double precision, allocatable :: defectsRecv(:,:)
-double precision, allocatable :: defectsSend(:,:)
+	interface
+		subroutine findDefectInList(defectCurrent, defectPrev, products)
+			use mod_structures
+			use mod_constants
+			implicit none
+			type(defect), pointer, intent(inout) :: defectCurrent, defectPrev
+			integer, intent(in) :: products(numSpecies)
+		end subroutine
+	end interface
 
-!variables for computation statistics
-integer reactionsCoarse, reactionsFine
-
-!Variables for defect counting and concentration
-integer VNum, SIANum, LoopSize(3), totalVac, totalSIA, CuNum, totalCu
-integer totalVoid, totalLoop, VoidNum
-
-interface
-	subroutine findDefectInList(defectCurrent, defectPrev, products)
-		use mod_structures
-		use mod_constants
-		implicit none
-		type(defect), pointer :: defectCurrent, defectPrev
-		integer products(numSpecies)
-	end subroutine
-end interface
-
-!initialize outputDefectList
-allocate(outputDefectList)
-allocate(outputDefectList%defectType(numSpecies))
-nullify(outputDefectList%next)
-do i=1,numSpecies
-	outputDefectList%defectType(i)=0
-end do
-outputDefectList%cellNumber=0
-outputDefectList%num=0
+	!initialize outputDefectList
+	allocate(outputDefectList)
+	allocate(outputDefectList%defectType(numSpecies))
+	nullify(outputDefectList%next)
+	do i=1,numSpecies
+		outputDefectList%defectType(i)=0
+	end do
+	outputDefectList%cellNumber=0
+	outputDefectList%num=0
 
 if(myProc%taskid==MASTER) then
 	
@@ -943,7 +935,6 @@ if(myProc%taskid==MASTER) then
 			nullify(defectPrevList)
 
 			defectCurrentList=>outputDefectList
-
 			call findDefectInList(defectCurrentList, defectPrevList, defectCurrent%defectType)
 
 			!Next update defects
@@ -953,16 +944,13 @@ if(myProc%taskid==MASTER) then
 				do j=1,numSpecies
 					if(defectCurrentList%defectType(j)==defectCurrent%defectType(j)) then
 						same=same+1
-					endif
+					end if
 				end do
 
 				if(same==numSpecies) then
-
 					!if the defect is already present in the list
 					defectCurrentList%num=defectCurrentList%num+defectCurrent%num
-
 				else
-
 					!if the defect is to be inserted in the list
 					nullify(defectPrevList%next)
 					allocate(defectPrevList%next)
@@ -975,12 +963,10 @@ if(myProc%taskid==MASTER) then
 					do j=1,numSpecies
 						defectPrevList%defectType(j)=defectCurrent%defectType(j)
 					end do
-
 					!if inserted defect is in the middle of the list, point it to the next item in the list
 					defectPrevList%next=>defectCurrentList
 				endif
 			else if(associated(defectPrevList)) then
-
 				!add a defect to the end of the list
 				nullify(defectPrevList%next)
 				allocate(defectPrevList%next)
@@ -993,7 +979,6 @@ if(myProc%taskid==MASTER) then
 				do j=1,numSpecies
 					defectPrevList%defectType(j)=defectCurrent%defectType(j)
 				end do
-
 			else
 				write(*,*) 'error tried to insert defect at beginning of output defect list'
 			end if
@@ -1004,7 +989,6 @@ if(myProc%taskid==MASTER) then
 	!Other processors will send information about defects contained in their mesh. This processor 
 	!must output all information to data file (can't do it from other processors). Information should
 	!be output in the same format for the master and slave processors.
-	
 	do i=1,myProc%numtasks-1
 	
 		call MPI_RECV(numDefectsRecv,1,MPI_INTEGER,i,1399,comm,status,ierr)
@@ -1020,29 +1004,22 @@ if(myProc%taskid==MASTER) then
 			end do
 			
 			nullify(defectPrevList)
-			
 			defectCurrentList=>outputDefectList
-			
 			call findDefectInList(defectCurrentList, defectPrevList, products)
 			
 			!Next update defects
 			if(associated(defectCurrentList)) then !if we aren't at the end of the list
 				same=0
-				
 				do k=1,numSpecies
 					if(defectCurrentList%defectType(k)==products(k)) then
 						same=same+1
 					end if
 				end do
 				
-				if(same==numSpecies) then	
-				
+				if(same==numSpecies) then
 					!if the defect is already present in the list
-				
 					defectCurrentList%num=defectCurrentList%num+defectsRecv(numSpecies+1,j)
-				
-				else		
-					
+				else
 					!if the defect is to be inserted in the list
 					nullify(defectPrevList%next)
 					allocate(defectPrevList%next)
@@ -1075,15 +1052,10 @@ if(myProc%taskid==MASTER) then
 				end do
 				
 			else
-				
 				write(*,*) 'error tried to insert defect at beginning of output defect list'
-
 			end if
-
 		end do
-
 		deallocate(defectsRecv)
-		
 	end do
 	
 	defectCurrentList=>outputDefectList
@@ -1107,19 +1079,13 @@ if(myProc%taskid==MASTER) then
 		
 		!Compile statistics for vacancy and SIA concentrations
 		if(defectCurrentList%defectType(1) /= 0) then
-			
 			CuNum=CuNum+defectCurrentList%num
-			
 			totalCu=totalCu+defectCurrentList%defectType(1)*defectCurrentList%num
-		
 		end if
 		
 		if(defectCurrentList%defectType(2) /= 0) then
-		
 			VNum=VNum+defectCurrentList%num
-			
 			totalVac=totalVac+defectCurrentList%defectType(2)*defectCurrentList%num
-			
 			if(defectCurrentList%defectType(2) >= 45) then
 				VoidNum=VoidNum+defectCurrentList%num
 				totalVoid = totalVoid + defectCurrentList%defectType(2)*defectCurrentList%num
@@ -1127,9 +1093,7 @@ if(myProc%taskid==MASTER) then
 		end if
 		
 		if(defectCurrentList%defectType(4) /= 0 .OR. defectCurrentList%defectType(3) /= 0) then
-		
 			SIANum=SIANum+defectCurrentList%num
-			
 			totalSIA=totalSIA+defectCurrentList%defectType(4)*defectCurrentList%num
 			totalSIA=totalSIA+defectCurrentList%defectType(3)*defectCurrentList%num
 		
@@ -1176,16 +1140,13 @@ else
 				do j=1,numSpecies
 					if(defectCurrentList%defectType(j)==defectCurrent%defectType(j)) then
 						same=same+1
-					endif
+					end if
 				end do
 
 				if(same==numSpecies) then
-
 					!if the defect is already present in the list
 					defectCurrentList%num=defectCurrentList%num+defectCurrent%num
-
 				else
-
 					!if the defect is to be inserted in the list
 					nullify(defectPrevList%next)
 					allocate(defectPrevList%next)
@@ -1244,7 +1205,6 @@ else
 		defectsSend(numSpecies+1,i)=defectCurrentList%num
 		
 		!call MPI_SEND(defectsSend, numSpecies+1, MPI_DOUBLE_PRECISION, MASTER, 1400, comm, ierr)
-		
 		!This just pauses the sending until the master has recieved all of the above information
 		!call MPI_RECV(buffer,1,MPI_INTEGER,MASTER,1405,comm,status,ierr)
 		
@@ -1293,30 +1253,26 @@ double precision function computeIConc()
 use mod_structures
 use mod_constants
 implicit none
-
 include 'mpif.h'
 
-integer i, j, k, same, status(MPI_STATUS_SIZE), numDefectsRecv, numDefectsSend
-integer products(numSpecies)
+integer :: i, j, k, same, status(MPI_STATUS_SIZE), numDefectsRecv, numDefectsSend
+integer :: products(numSpecies)
 type(defect), pointer :: defectCurrent, defectPrevList, defectCurrentList, outputDefectList
-
 double precision, allocatable :: defectsRecv(:,:)
 double precision, allocatable :: defectsSend(:,:)
-
 !variables for computation statistics
-integer reactionsCoarse, reactionsFine
-
+integer :: reactionsCoarse, reactionsFine
 !Variables for defect counting and concentration
-integer VNum, SIANum, LoopSize(3), totalVac, totalSIA, CuNum, totalCu
-integer totalVoid, totalLoop, VoidNum
+integer :: VNum, SIANum, LoopSize(3), totalVac, totalSIA, CuNum, totalCu
+integer :: totalVoid, totalLoop, VoidNum
 
 interface
 	subroutine findDefectInList(defectCurrent, defectPrev, products)
 		use mod_structures
 		use mod_constants
 		implicit none
-		type(defect), pointer :: defectCurrent, defectPrev
-		integer products(numSpecies)
+		type(defect), pointer, intent(inout) :: defectCurrent, defectPrev
+		integer, intent(in) :: products(numSpecies)
 	end subroutine
 end interface
 

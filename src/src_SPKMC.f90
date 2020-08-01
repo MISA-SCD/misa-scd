@@ -8,7 +8,7 @@ double precision function GenerateTimestep()
 	use mod_randdp
 	implicit none
 
-	double precision r1
+	double precision :: r1
 
 	r1=dprand()
 	GenerateTimestep=dlog(1d0/r1)/maxRate
@@ -18,17 +18,15 @@ end function
 !*****************************************************************************************
 !>subroutine
 !*****************************************************************************************
-subroutine chooseImplantReaction(reactionCurrent, CascadeCurrent)
+subroutine chooseImplantReaction(reactionCurrent)
 	use mod_structures
 	use mod_constants
 	implicit none
 
-	type(reaction), pointer :: reactionCurrent
-	type(cascade), pointer :: cascadeCurrent
-	integer i
+	type(reaction), pointer, intent(inout) :: reactionCurrent
+	integer :: i
 
 	write(*,*) 'step', step, 'oneCascadeGCell',oneCascadeGCell
-	nullify(CascadeCurrent)		!These are default pointed at nothing, indicating null event
 	nullify(reactionCurrent)	!These are default pointed at nothing, indicating null event
 
 	!***********************************************************************
@@ -75,12 +73,12 @@ subroutine chooseReaction(reactionCurrent, CascadeCurrent)
 	use mod_randdp
 	implicit none
 
-	type(reaction), pointer :: reactionCurrent, reactionTemp
-	type(cascade), pointer :: cascadeCurrent
+	type(reaction), pointer, intent(inout) :: reactionCurrent
+	type(cascade), pointer, intent(inout) :: cascadeCurrent
+	type(reaction), pointer :: reactionTemp
 	type(defect), pointer :: defectTemp
-	double precision r2, atemp, atemp_cell, r2timesa, atemp_test
-	integer i, j
-	double precision totalRateCells
+	double precision :: r2, atemp, atemp_cell, r2timesa, atemp_test
+	integer :: i
 
 	atemp=0d0
 	atemp_cell=0d0
@@ -216,71 +214,66 @@ subroutine updateDefectList(reactionCurrent, defectUpdateCurrent, CascadeCurrent
 	implicit none
 	include 'mpif.h'
 
-	type(reaction), pointer :: reactionCurrent
+	type(reaction), pointer, intent(in) :: reactionCurrent
+	type(defectUpdateTracker), pointer, intent(inout) :: defectUpdateCurrent
+	type(cascade), pointer, intent(inout) :: CascadeCurrent
 	type(defect), pointer :: defectCurrent, defectPrev, defectTemp, defectStoreList, defectStore, defectStorePrev
 	type(cascadeDefect), pointer :: cascadeDefectTemp
-	type(defectUpdateTracker), pointer :: defectUpdateCurrent
-	type(cascade), pointer :: CascadeCurrent, CascadePrev, CascadeTest
+	type(cascade), pointer :: CascadePrev, CascadeTest
 	type(cascadeEvent), pointer :: cascadeTemp
-
-	!just for testing
-	type(defect),pointer :: defectTest
-	type(reaction),pointer :: reactionTest
-
 	!Used for cascade
-	double precision coordinatesTemp(3)
-	integer cellNumber, mixingEvents, mixingTemp
-	logical combineBoolean, isCombined
+	double precision :: coordinatesTemp(3)
+	integer :: cellNumber, mixingEvents, mixingTemp
+	logical :: combineBoolean, isCombined
 	!Used for cascade recombination
-	double precision r1, atemp
-
-	integer i, j1, j, k, l, m, same, products(numSpecies), product2(numSpecies), totalLocalRecv, countTest
-	double precision diffusionRandom
-	logical flag, flagTemp
-	integer count
-	!Function
-	integer findCellWithCoordinatesFineMesh, chooseRandomCell
-	logical cascadeMixingCheck
-
+	double precision :: r1, atemp
+	integer :: i, j1, j, k, l, m, same, products(numSpecies), product2(numSpecies), totalLocalRecv, count
+	double precision :: diffusionRandom
+	logical :: flag, flagTemp
 	!Used for communication between processors
-	integer numUpdateSend(6), numUpdateRecv(6)	!the number of defects being sent to (recived from) each processor neighbor
-	integer numLocalRecv, numBndryRecv			!the number of (loceal/bndry) defects being recieved from each proc neighbor
-
+	integer :: numUpdateSend(6), numUpdateRecv(6)	!the number of defects being sent to (recived from) each processor neighbor
+	integer :: numLocalRecv, numBndryRecv			!the number of (loceal/bndry) defects being recieved from each proc neighbor
 	!NOTE: this final step could be eliminated by keeping the global mesh in each local processor
 	!(thus each element could be identified as being part of the local mesh of one proc and the boundary of any other procs)
-	integer numUpdateFinal(6), numUpdateFinalRecv(6)	!number of defects being sent/recieved in final update step
-	integer recvDir
-
+	integer :: numUpdateFinal(6), numUpdateFinalRecv(6)	!number of defects being sent/recieved in final update step
+	integer :: recvDir
 	!create buffers of information to send to neighboring elements (Contains local defects and boundary defects)
 	integer, allocatable :: firstSend(:,:,:)
 	integer, allocatable :: firstRecv(:,:,:)
 	integer, allocatable :: finalSend(:,:,:)	!Only contains local defects
 	integer, allocatable :: finalBufferRecv(:,:)
+	integer :: status(MPI_STATUS_SIZE)
+	integer :: sendFirstStatus(MPI_STATUS_SIZE), recvFirstStatus(MPI_STATUS_SIZE)
+	integer :: sendFinalStatus(MPI_STATUS_SIZE), recvFinalStatus(MPI_STATUS_SIZE)
+	integer :: sendFirstRequest(6), recvFirstRequest(6)
+	integer :: sendFinalRequest(6), recvFinalRequest(6)
+	!Function
+	integer, external :: findCellWithCoordinatesFineMesh, chooseRandomCell
+	logical, external :: cascadeMixingCheck
 
-	integer status(MPI_STATUS_SIZE)
-	integer sendFirstStatus(MPI_STATUS_SIZE), recvFirstStatus(MPI_STATUS_SIZE)
-	integer sendFinalStatus(MPI_STATUS_SIZE), recvFinalStatus(MPI_STATUS_SIZE)
-	integer sendFirstRequest(6), recvFirstRequest(6)
-	integer sendFinalRequest(6), recvFinalRequest(6)
+	!just for testing
+	type(defect),pointer :: defectTest
+	type(reaction),pointer :: reactionTest
+	integer :: countTest
 
 	interface
 		subroutine findDefectInList(defectCurrent, defectPrev, products)
 			use mod_structures
 			use mod_constants
 			implicit none
-			type(defect), pointer :: defectCurrent, defectPrev
-			integer products(numSpecies)
+			type(defect), pointer, intent(inout) :: defectCurrent, defectPrev
+			integer, intent(in) :: products(numSpecies)
 		end subroutine
 
 		subroutine chooseCascade(CascadeTemp)
 			use mod_structures
 			implicit none
-			type(cascadeEvent), pointer :: CascadeTemp
+			type(cascadeEvent), pointer, intent(inout) :: CascadeTemp
 		end subroutine
 
 		subroutine initializeFineMesh(CascadeCurrent)
 			use mod_structures
-			type(cascade), pointer :: CascadeCurrent
+			type(cascade), pointer, intent(inout) :: CascadeCurrent
 		end subroutine
 	end interface
 
@@ -2289,15 +2282,16 @@ subroutine updateReactionList(defectUpdate)
 	implicit none
 	include 'mpif.h'
 
-	type(defectUpdateTracker), pointer :: defectUpdate, defectUpdateCurrent, defectUpdatePrev, defectUpdateNext
+	type(defectUpdateTracker), pointer, intent(inout) :: defectUpdate
+	type(defectUpdateTracker), pointer :: defectUpdateCurrent, defectUpdatePrev, defectUpdateNext
 	type(defect), pointer :: defectCurrent
 	type(cascade), pointer :: cascadeCurrent
-	integer i, j, dir, defectTemp(numSpecies)
-	integer localGrainID, neighborGrainID
+	integer :: i, j, dir, defectTemp(numSpecies)
+	integer :: localGrainID, neighborGrainID
 
 	!just for testing
 	type(defect), pointer :: defectTest
-	integer same
+	integer :: same
 
 	nullify(defectTest)
 

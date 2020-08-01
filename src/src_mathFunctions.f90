@@ -6,7 +6,8 @@
 integer function factorial(n)
 	implicit none
 
-	integer n, i, temp
+	integer, intent(in) :: n
+	integer :: i, temp
 
 	if(n >= 17) then
 		write(*,*) 'error factorial too large'
@@ -26,7 +27,8 @@ end function
 integer function binomial(n,k)
 	implicit none
 
-	integer n, k, factorial
+	integer, intent(in) :: n, k
+	integer, external :: factorial
 
 	binomial=factorial(n)/(factorial(k)*factorial(n-k))
 
@@ -42,8 +44,8 @@ double precision function TotalRateCheck()
 	use mod_structures
 	implicit none
 
-	integer cell, i, j, k
-	double precision rate, rateCell, rateCascade
+	integer :: i
+	double precision :: rate, rateCell, rateCascade
 	type(reaction), pointer :: reactionCurrent
 	type(cascade), pointer :: cascadeCurrent
 
@@ -111,9 +113,9 @@ double precision function totalRateCascade(CascadeCurrent)
 	use mod_constants
 	implicit none
 
-	type(cascade), pointer :: CascadeCurrent
-	integer i
-	double precision rateSum
+	type(cascade), pointer, intent(in) :: CascadeCurrent
+	integer :: i
+	double precision :: rateSum
 
 	rateSum=0d0
 	do i=1,numCellsCascade

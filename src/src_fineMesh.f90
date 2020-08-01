@@ -8,18 +8,18 @@ subroutine releaseFineMeshDefects(CascadeCurrent)
 	implicit none
 
 	!Data structures used:
-	type(cascade), pointer :: CascadeCurrent
+	type(cascade), pointer, intent(inout) :: CascadeCurrent
 	type(defect), pointer :: defectCurrentCoarse, defectCurrentFine, defectPrevCoarse
 	type(defect), pointer :: defectCurrent, defectPrev
 	type(reaction), pointer :: reactionCurrent, reactionPrev
-	integer i, j, count
+	integer :: i, j, count
 
 	interface
 		subroutine findDefectInList(defectCurrent, defectPrev, products)
 			use mod_structures
 			use mod_constants
-			type(defect), pointer :: defectCurrent, defectPrev
-			integer products(numSpecies)
+			type(defect), pointer, intent(inout) :: defectCurrent, defectPrev
+			integer, intent(in) :: products(numSpecies)
 		end subroutine
 	end interface
 
@@ -259,9 +259,11 @@ integer function findNumDefectFine(CascadeCurrent, defectType, cellNumber)
 	use mod_constants
 	implicit none
 
+	type(cascade), pointer, intent(in) :: CascadeCurrent
+	integer, intent(in) :: defectType(numSpecies), cellNumber
 	type(defect), pointer :: defectCurrent
-	integer defectType(numSpecies), cellNumber, numDefects, i, count
-	type(cascade), pointer :: CascadeCurrent
+	integer :: numDefects, i, count
+
 
 	numDefects=0
 	defectCurrent=>CascadeCurrent%localDefects(cellNumber)
@@ -294,16 +296,16 @@ integer function findNumDefectTotalFine(defectType, CascadeCurrent)
 	use mod_structures
 	implicit none
 
-	integer defectType(numSpecies)
-	type(cascade), pointer :: CascadeCurrent
+	integer, intent(in) :: defectType(numSpecies)
+	type(cascade), pointer, intent(in) :: CascadeCurrent
 	type(defect), pointer :: defectCurrent
-	integer cell, count
+	integer :: cell, count
 
 	interface
 		integer function findNumDefectFine(CascadeCurrent, defectType, cell)
 			use mod_constants
-			type(cascade), pointer :: CascadeCurrent
-			integer defectType(numSpecies), cell
+			type(cascade), pointer, intent(in) :: CascadeCurrent
+			integer, intent(in) :: defectType(numSpecies), cell
 		end function
 	end interface
 
@@ -326,8 +328,8 @@ integer function findCellWithCoordinatesFineMesh(coordinates)
 	use mod_structures
 	implicit none
 
-	double precision coordinates(3)
-	integer i,j,k,cellNumber
+	double precision, intent(in) :: coordinates(3)
+	integer :: i,j,k,cellNumber
 
 	do i=1,numxcascade
 		if(coordinates(1)+numxcascade*fineLength/2d0 <= i*fineLength) then
@@ -362,8 +364,8 @@ integer function chooseRandomCell()
 	use mod_constants
 	implicit none
 
-	double precision r, a
-	integer i
+	double precision :: r, a
+	integer :: i
 
 	r=dprand()
 	a=0d0
@@ -387,11 +389,10 @@ subroutine countReactionsFine(reactionsFine)
 	implicit none
 	include 'mpif.h'
 
+	integer, intent(inout) :: reactionsFine
 	type(Reaction), pointer :: reactionCurrent
 	type(cascade), pointer :: CascadeCurrent
-	integer cell
-	integer reactionsFine, reactionCounter, reactionsTemp
-	integer proc
+	integer :: cell, reactionCounter
 
 	reactionCounter=0
 	CascadeCurrent=>ActiveCascades
