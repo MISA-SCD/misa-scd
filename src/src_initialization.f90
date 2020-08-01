@@ -477,12 +477,11 @@ subroutine initializeReactionList()
 						reactionCurrent%products(j,1)=DiffReactions(reac)%products(j,1)
 					end do
 					reactionCurrent%cellNumber(1)=cell
-					reactionCurrent%cellNumber(2)=myMesh(cell)%neighbors(1,dir)
+					reactionCurrent%cellNumber(2)=myMesh(cell)%neighbors(dir)
 					reactionCurrent%taskid(1)=myMesh(cell)%proc
-					reactionCurrent%taskid(2)=myMesh(cell)%neighborProcs(1,dir)
-					reactionCurrent%reactionRate=findReactionRateDiff(reactionCurrent%reactants(:,1), cell, &
-							myProc%taskid, myMesh(cell)%neighbors(1,dir), myMesh(cell)%neighborProcs(1,dir), dir, &
-							DiffReactions(reac))
+					reactionCurrent%taskid(2)=myMesh(cell)%neighborProcs(dir)
+					reactionCurrent%reactionRate=findReactionRateDiff(reactionCurrent%reactants(:,1),cell,myProc%taskid,&
+							myMesh(cell)%neighbors(dir),myMesh(cell)%neighborProcs(dir),dir,DiffReactions(reac))
 					nullify(reactionCurrent%next)
 				end do
 			end if
@@ -607,11 +606,11 @@ subroutine initializeReactionList()
 						reactionCurrent%products(j,1)=DiffReactions(reac)%products(j,1)
 					end do
 					reactionCurrent%cellNumber(1)=cell
-					reactionCurrent%cellNumber(2)=myMesh(cell)%neighbors(1,dir)
+					reactionCurrent%cellNumber(2)=myMesh(cell)%neighbors(dir)
 					reactionCurrent%taskid(1)=myMesh(cell)%proc
-					reactionCurrent%taskid(2)=myMesh(cell)%neighborProcs(1,dir)
+					reactionCurrent%taskid(2)=myMesh(cell)%neighborProcs(dir)
 					reactionCurrent%reactionRate=findReactionRateDiff(reactionCurrent%reactants(:,1), cell, &
-							myProc%taskid, myMesh(cell)%neighbors(1,dir), myMesh(cell)%neighborProcs(1,dir), dir, &
+							myProc%taskid, myMesh(cell)%neighbors(dir), myMesh(cell)%neighborProcs(dir), dir, &
 							DiffReactions(reac))
 					nullify(reactionCurrent%next)
 				end do
@@ -760,19 +759,19 @@ subroutine initializeBoundaryDefectList()
 	do cell=1,numCells
 		do dir=1,6
 			!neighbor cell is in different proc, not free surface (taskid=-1)
-			if(myMesh(cell)%neighborProcs(1,dir) /= myProc%taskid .AND. &
-					myMesh(cell)%neighborProcs(1,dir) == myProc%procNeighbor(dir) .AND. &
-					myMesh(cell)%neighborProcs(1,dir) /= -1) then
+			if(myMesh(cell)%neighborProcs(dir) /= myProc%taskid .AND. &
+					myMesh(cell)%neighborProcs(dir) == myProc%procNeighbor(dir) .AND. &
+					myMesh(cell)%neighborProcs(dir) /= -1) then
 
-				allocate(myBoundary(myMesh(cell)%neighbors(1,dir),dir)%defectList)
-				defectCurrent=>myBoundary(myMesh(cell)%neighbors(1,dir),dir)%defectList
+				allocate(myBoundary(myMesh(cell)%neighbors(dir),dir)%defectList)
+				defectCurrent=>myBoundary(myMesh(cell)%neighbors(dir),dir)%defectList
 				allocate(defectCurrent%defectType(numSpecies))
 				do i=1, numSpecies
 					defectCurrent%defectType(i)=0
 				end do
 				defectCurrent%num=0
-				defectCurrent%cellNumber=myMesh(cell)%neighbors(1,dir)
-				nullify(myBoundary(myMesh(cell)%neighbors(1,dir),dir)%defectList%next)
+				defectCurrent%cellNumber=myMesh(cell)%neighbors(dir)
+				nullify(myBoundary(myMesh(cell)%neighbors(dir),dir)%defectList%next)
 
 				!SIA_1
 				if(initialNumI > 0) then
@@ -792,7 +791,7 @@ subroutine initializeBoundaryDefectList()
 								end do
 								defectCurrent%defectType(3)=1
 								defectCurrent%num=1
-								defectCurrent%cellNumber=myMesh(cell)%neighbors(1,dir)
+								defectCurrent%cellNumber=myMesh(cell)%neighbors(dir)
 							end if
 						end if
 					end do
@@ -816,7 +815,7 @@ subroutine initializeBoundaryDefectList()
 								end do
 								defectCurrent%defectType(2)=1
 								defectCurrent%num=1
-								defectCurrent%cellNumber=myMesh(cell)%neighbors(1,dir)
+								defectCurrent%cellNumber=myMesh(cell)%neighbors(dir)
 							end if
 						end if
 					end do
@@ -834,10 +833,10 @@ subroutine initializeBoundaryDefectList()
 					end do
 					defectCurrent%defectType(1)=1
 					defectCurrent%num=numCuCell
-					defectCurrent%cellNumber=myMesh(cell)%neighbors(1,dir)
+					defectCurrent%cellNumber=myMesh(cell)%neighbors(dir)
 					nullify(defectCurrent%next)
 				end if
-			end if  !myMesh(cell)%neighborProcs(dir,1) /= myProc%taskid
+			end if  !myMesh(cell)%neighborProcs(dir) /= myProc%taskid
 		end do
 	end do
 

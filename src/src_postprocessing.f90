@@ -880,7 +880,6 @@ subroutine outputTotal()
 		!write(TOTDAT,*) 'PercentVRetained',VRetained,'PercentVAnnihilated',VAnnihilated
 		write(TOTDAT,*)
 		write(TOTDAT,*)
-
 	end if
 
 end subroutine

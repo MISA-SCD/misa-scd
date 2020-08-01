@@ -267,8 +267,8 @@ subroutine initialMesh()
 				myMesh(localElem)%volume=length**3d0
 
 				!uniform mesh: all elements have 1 neighbor in each direction
-				allocate(myMesh(localElem)%neighbors(1,6))
-				allocate(myMesh(localElem)%neighborProcs(1,6))
+				allocate(myMesh(localElem)%neighbors(6))
+				allocate(myMesh(localElem)%neighborProcs(6))
 				do dir=1,6
 					myMesh(localElem)%numNeighbors(dir)=1
 				end do
@@ -319,11 +319,11 @@ subroutine createConnectLocalPeriodic(length)
 		if(mod(cell,numxLocal)==0) then !identify cell to the right
 
 			!If we are on the right edge of the local mesh, identify the neighboring processor
-			myMesh(cell)%neighborProcs(1,1)=myProc%procNeighbor(1)
+			myMesh(cell)%neighborProcs(1)=myProc%procNeighbor(1)
 
 			!If the mesh is only one processor thick, then the neighboring processor is the same as this processor
-			if(myMesh(cell)%neighborProcs(1,1)==myProc%taskid) then
-				myMesh(cell)%neighbors(1,1)=cell-numxLocal+1	!use periodic rules from uniform cubic mesh
+			if(myMesh(cell)%neighborProcs(1)==myProc%taskid) then
+				myMesh(cell)%neighbors(1)=cell-numxLocal+1	!use periodic rules from uniform cubic mesh
 			else
 				!add these items to sendList, a buffer that is used at the end of this subroutine to communicate
 				!with other processors via MPI about which elements have neighbors in other cells
@@ -336,34 +336,34 @@ subroutine createConnectLocalPeriodic(length)
 		else
 			!if we are still inside the local mesh, don't need to communicate with neighboring cells and
 			!just use the uniform cubic connectivity rules (increase x, then y, then z)
-			myMesh(cell)%neighbors(1,1)=cell+1
-			myMesh(cell)%neighborProcs(1,1)=myProc%taskid
+			myMesh(cell)%neighbors(1)=cell+1
+			myMesh(cell)%neighborProcs(1)=myProc%taskid
 		end if
 
 		!Left (-x)
 		if(mod(cell+numxLocal-1,numxLocal)==0) then !identify cell to the left
 
-			myMesh(cell)%neighborProcs(1,2)=myProc%procNeighbor(2)
+			myMesh(cell)%neighborProcs(2)=myProc%procNeighbor(2)
 
-			if(myMesh(cell)%neighborProcs(1,2)==myProc%taskid) then
-				myMesh(cell)%neighbors(1,2)=cell+numxLocal-1
+			if(myMesh(cell)%neighborProcs(2)==myProc%taskid) then
+				myMesh(cell)%neighbors(2)=cell+numxLocal-1
 			else
 				numSend(2)=numSend(2)+1
 				send(1,numSend(2),2)=cell
 				send(2,numSend(2),2)=myMesh(cell)%material
 			end if
 		else
-			myMesh(cell)%neighbors(1,2)=cell-1
-			myMesh(cell)%neighborProcs(1,2)=myProc%taskid
+			myMesh(cell)%neighbors(2)=cell-1
+			myMesh(cell)%neighborProcs(2)=myProc%taskid
 		end if
 
 		!Front (+y)
 		if(mod(cell,numxLocal*numyLocal) > numxLocal*(numyLocal-1) .OR. mod(cell,numxLocal*numyLocal)==0) then
 
-			myMesh(cell)%neighborProcs(1,3)=myProc%procNeighbor(3)
+			myMesh(cell)%neighborProcs(3)=myProc%procNeighbor(3)
 
-			if(myMesh(cell)%neighborProcs(1,3)==myProc%taskid) then
-				myMesh(cell)%neighbors(1,3)=cell-(numxLocal*(numyLocal-1))
+			if(myMesh(cell)%neighborProcs(3)==myProc%taskid) then
+				myMesh(cell)%neighbors(3)=cell-(numxLocal*(numyLocal-1))
 			else
 				numSend(3)=numSend(3)+1
 				send(1,numSend(3),3)=cell
@@ -371,18 +371,18 @@ subroutine createConnectLocalPeriodic(length)
 			end if
 
 		else
-			myMesh(cell)%neighbors(1,3)=cell+numxLocal
-			myMesh(cell)%neighborProcs(1,3)=myProc%taskid
+			myMesh(cell)%neighbors(3)=cell+numxLocal
+			myMesh(cell)%neighborProcs(3)=myProc%taskid
 		end if
 
 		!Back (-y)
 		if(mod(cell,numxLocal*numyLocal) <= numxLocal .AND. (mod(cell, numxLocal*numyLocal) /= 0 &
 				.OR. numyLocal==1)) then
 
-			myMesh(cell)%neighborProcs(1,4)=myProc%procNeighbor(4)
+			myMesh(cell)%neighborProcs(4)=myProc%procNeighbor(4)
 
-			if(myMesh(cell)%neighborProcs(1,4)==myProc%taskid) then
-				myMesh(cell)%neighbors(1,4)=cell+(numxLocal*(numyLocal-1))
+			if(myMesh(cell)%neighborProcs(4)==myProc%taskid) then
+				myMesh(cell)%neighbors(4)=cell+(numxLocal*(numyLocal-1))
 			else
 				numSend(4)=numSend(4)+1
 				send(1,numSend(4),4)=cell
@@ -390,18 +390,18 @@ subroutine createConnectLocalPeriodic(length)
 			end if
 
 		else
-			myMesh(cell)%neighbors(1,4)=cell-numxLocal
-			myMesh(cell)%neighborProcs(1,4)=myProc%taskid
+			myMesh(cell)%neighbors(4)=cell-numxLocal
+			myMesh(cell)%neighborProcs(4)=myProc%taskid
 		end if
 
 		!Up (+z)
 		if(mod(cell,numxLocal*numyLocal*numzLocal) > numxLocal*numyLocal*(numzLocal-1) &
 				.OR. mod(cell, numxLocal*numyLocal*numzLocal)==0) then
 
-			myMesh(cell)%neighborProcs(1,5)=myProc%procNeighbor(5)
+			myMesh(cell)%neighborProcs(5)=myProc%procNeighbor(5)
 
-			if(myMesh(cell)%neighborProcs(1,5)==myProc%taskid) then
-				myMesh(cell)%neighbors(1,5)=cell-(numxLocal*numyLocal*(numzLocal-1))
+			if(myMesh(cell)%neighborProcs(5)==myProc%taskid) then
+				myMesh(cell)%neighbors(5)=cell-(numxLocal*numyLocal*(numzLocal-1))
 			else
 				numSend(5)=numSend(5)+1
 				send(1,numSend(5),5)=cell
@@ -409,18 +409,18 @@ subroutine createConnectLocalPeriodic(length)
 			end if
 
 		else
-			myMesh(cell)%neighbors(1,5)=cell+numxLocal*numyLocal
-			myMesh(cell)%neighborProcs(1,5)=myProc%taskid
+			myMesh(cell)%neighbors(5)=cell+numxLocal*numyLocal
+			myMesh(cell)%neighborProcs(5)=myProc%taskid
 		end if
 
 		!Down (-z)
 		if(mod(cell,numxLocal*numyLocal*numzLocal) <= numxLocal*numyLocal &
 				.AND. (mod(cell,numxLocal*numyLocal*numzLocal) /= 0 .OR. numzLocal==1)) then
 
-			myMesh(cell)%neighborProcs(1,6)=myProc%procNeighbor(6)
+			myMesh(cell)%neighborProcs(6)=myProc%procNeighbor(6)
 
-			if(myMesh(cell)%neighborProcs(1,6)==myProc%taskid) then
-				myMesh(cell)%neighbors(1,6)=cell+(numxLocal*numyLocal*(numzLocal-1))
+			if(myMesh(cell)%neighborProcs(6)==myProc%taskid) then
+				myMesh(cell)%neighbors(6)=cell+(numxLocal*numyLocal*(numzLocal-1))
 			else
 				numSend(6)=numSend(6)+1
 				send(1,numSend(6),6)=cell
@@ -428,8 +428,8 @@ subroutine createConnectLocalPeriodic(length)
 			end if
 
 		else
-			myMesh(cell)%neighbors(1,6)=cell-numxLocal*numyLocal
-			myMesh(cell)%neighborProcs(1,6)=myProc%taskid
+			myMesh(cell)%neighbors(6)=cell-numxLocal*numyLocal
+			myMesh(cell)%neighborProcs(6)=myProc%taskid
 		end if
 
 	end do
@@ -474,9 +474,9 @@ subroutine createConnectLocalPeriodic(length)
 					comm,status,ierr)
 			do i=1, numRecv(dir)
 				localCell=send(1,i,dir)
-				!	myMesh(localCell)%neighbors(1,dir)=recvBuffer(1,i)
+				!	myMesh(localCell)%neighbors(dir)=recvBuffer(1,i)
 				!	materialBuff(localCell,dir)=recvBuffer(2,i)
-				myMesh(localCell)%neighbors(1,dir)=recv(1,i)
+				myMesh(localCell)%neighbors(dir)=recv(1,i)
 				materialBuff(localCell,dir)=recv(2,i)
 			end do
 			deallocate(recv)
@@ -489,9 +489,9 @@ subroutine createConnectLocalPeriodic(length)
 	maxElement=0
 	do i=1, numCells
 		do dir=1, 6
-			if(myMesh(i)%neighborProcs(1,dir) /= myProc%taskid) then	!we are pointing to a different proc
-				if(myMesh(i)%neighbors(1,dir) > maxElement) then		!searching for the max element number in a neighbor
-					maxElement=myMesh(i)%neighbors(1,dir)
+			if(myMesh(i)%neighborProcs(dir) /= myProc%taskid) then	!we are pointing to a different proc
+				if(myMesh(i)%neighbors(dir) > maxElement) then		!searching for the max element number in a neighbor
+					maxElement=myMesh(i)%neighbors(dir)
 				end if
 			end if
 		end do
@@ -512,14 +512,14 @@ subroutine createConnectLocalPeriodic(length)
 
 	do i=1,numCells
 		do dir=1,6
-			if(myMesh(i)%neighborProcs(1,dir) == -1) then										!this is a free surface
+			if(myMesh(i)%neighborProcs(dir) == -1) then										!this is a free surface
 				!do nothing
-			else if(myMesh(i)%neighborProcs(1,dir) /= myProc%taskid) then
-				myBoundary(myMesh(i)%neighbors(1,dir),dir)%proc=myMesh(i)%neighborProcs(1,dir)	!set proc # of elements in myBoundary
-				myBoundary(myMesh(i)%neighbors(1,dir),dir)%length=length						!set length of elements in myBoundary
-				myBoundary(myMesh(i)%neighbors(1,dir),dir)%volume=length**3d0					!set volume of elements in myBoundary (changes with cascade addition)
-				myBoundary(myMesh(i)%neighbors(1,dir),dir)%material=materialBuff(i,dir)
-				myBoundary(myMesh(i)%neighbors(1,dir),dir)%localNeighbor=i
+			else if(myMesh(i)%neighborProcs(dir) /= myProc%taskid) then
+				myBoundary(myMesh(i)%neighbors(dir),dir)%proc=myMesh(i)%neighborProcs(dir)	!set proc # of elements in myBoundary
+				myBoundary(myMesh(i)%neighbors(dir),dir)%length=length						!set length of elements in myBoundary
+				myBoundary(myMesh(i)%neighbors(dir),dir)%volume=length**3d0					!set volume of elements in myBoundary (changes with cascade addition)
+				myBoundary(myMesh(i)%neighbors(dir),dir)%material=materialBuff(i,dir)
+				myBoundary(myMesh(i)%neighbors(dir),dir)%localNeighbor=i
 			end if
 		end do
 	end do
@@ -562,9 +562,9 @@ subroutine createConnectLocalFreeSurf(length)
 	do cell=1,numCells
 		if(mod(cell,numxLocal)==0) then !identify cell to the right
 
-			myMesh(cell)%neighborProcs(1,1)=myProc%procNeighbor(1)
-			if(myMesh(cell)%neighborProcs(1,1)==myProc%taskid) then
-				myMesh(cell)%neighbors(1,1)=cell-numxLocal+1
+			myMesh(cell)%neighborProcs(1)=myProc%procNeighbor(1)
+			if(myMesh(cell)%neighborProcs(1)==myProc%taskid) then
+				myMesh(cell)%neighbors(1)=cell-numxLocal+1
 			else
 				numSend(1)=numSend(1)+1				!count the number of items in buffer
 				sendBuffer(1,numSend(1),1)=cell		!localCellID in this processor
@@ -572,15 +572,15 @@ subroutine createConnectLocalFreeSurf(length)
 
 			end if
 		else
-			myMesh(cell)%neighbors(1,1)=cell+1
-			myMesh(cell)%neighborProcs(1,1)=myProc%taskid
+			myMesh(cell)%neighbors(1)=cell+1
+			myMesh(cell)%neighborProcs(1)=myProc%taskid
 		end if
 
 		if(mod(cell+numxLocal-1,numxLocal)==0) then !identify cell to the left
 
-			myMesh(cell)%neighborProcs(1,2)=myProc%procNeighbor(2)
-			if(myMesh(cell)%neighborProcs(1,2)==myProc%taskid) then
-				myMesh(cell)%neighbors(1,2)=cell+numxLocal-1
+			myMesh(cell)%neighborProcs(2)=myProc%procNeighbor(2)
+			if(myMesh(cell)%neighborProcs(2)==myProc%taskid) then
+				myMesh(cell)%neighbors(2)=cell+numxLocal-1
 			else
 				numSend(2)=numSend(2)+1
 				sendBuffer(1,numSend(2),2)=cell
@@ -588,15 +588,15 @@ subroutine createConnectLocalFreeSurf(length)
 
 			end if
 		else
-			myMesh(cell)%neighbors(1,2)=cell-1
-			myMesh(cell)%neighborProcs(1,2)=myProc%taskid
+			myMesh(cell)%neighbors(2)=cell-1
+			myMesh(cell)%neighborProcs(2)=myProc%taskid
 		end if
 
 		if(mod(cell,numxLocal*numyLocal) > numxLocal*(numyLocal-1) .OR. mod(cell,numxLocal*numyLocal)==0) then
 
-			myMesh(cell)%neighborProcs(1,3)=myProc%procNeighbor(3)
-			if(myMesh(cell)%neighborProcs(1,3)==myProc%taskid) then
-				myMesh(cell)%neighbors(1,3)=cell-(numxLocal*(numyLocal-1))
+			myMesh(cell)%neighborProcs(3)=myProc%procNeighbor(3)
+			if(myMesh(cell)%neighborProcs(3)==myProc%taskid) then
+				myMesh(cell)%neighbors(3)=cell-(numxLocal*(numyLocal-1))
 			else
 				numSend(3)=numSend(3)+1
 				sendBuffer(1,numSend(3),3)=cell
@@ -604,16 +604,16 @@ subroutine createConnectLocalFreeSurf(length)
 
 			end if
 		else
-			myMesh(cell)%neighbors(1,3)=cell+numxLocal
-			myMesh(cell)%neighborProcs(1,3)=myProc%taskid
+			myMesh(cell)%neighbors(3)=cell+numxLocal
+			myMesh(cell)%neighborProcs(3)=myProc%taskid
 		end if
 
 
 		if(mod(cell,numxLocal*numyLocal) <= numxLocal .AND. (mod(cell, numxLocal*numyLocal) /= 0 &
 				.OR. numyLocal==1)) then
-			myMesh(cell)%neighborProcs(1,4)=myProc%procNeighbor(4)
-			if(myMesh(cell)%neighborProcs(1,4)==myProc%taskid) then
-				myMesh(cell)%neighbors(1,4)=cell+(numxLocal*(numyLocal-1))
+			myMesh(cell)%neighborProcs(4)=myProc%procNeighbor(4)
+			if(myMesh(cell)%neighborProcs(4)==myProc%taskid) then
+				myMesh(cell)%neighbors(4)=cell+(numxLocal*(numyLocal-1))
 			else
 				numSend(4)=numSend(4)+1
 				sendBuffer(1,numSend(4),4)=cell
@@ -621,23 +621,23 @@ subroutine createConnectLocalFreeSurf(length)
 
 			end if
 		else
-			myMesh(cell)%neighbors(1,4)=cell-numxLocal
-			myMesh(cell)%neighborProcs(1,4)=myProc%taskid
+			myMesh(cell)%neighbors(4)=cell-numxLocal
+			myMesh(cell)%neighborProcs(4)=myProc%taskid
 		end if
 
 		if(mod(cell,numxLocal*numyLocal*numzLocal) > numxLocal*numyLocal*(numzLocal-1) .OR. &
 				mod(cell, numxLocal*numyLocal*numzLocal)==0) then
 
-			myMesh(cell)%neighborProcs(1,5)=myProc%procNeighbor(5)
+			myMesh(cell)%neighborProcs(5)=myProc%procNeighbor(5)
 			globalCell=myMesh(cell)%globalCell
 			globalNeighbor=findgNeighborFreeSurf(globalCell, 5)
 			if(globalNeighbor==0) then
 				!free surface, set proc id to -1 and cell id to 0 to indicate free surface
-				myMesh(cell)%neighbors(1,5)=0
-				myMesh(cell)%neighborProcs(1,5)=-1
+				myMesh(cell)%neighbors(5)=0
+				myMesh(cell)%neighborProcs(5)=-1
 			else
-				if(myMesh(cell)%neighborProcs(1,5)==myProc%taskid) then
-					myMesh(cell)%neighbors(1,5)=cell-(numxLocal*numyLocal*(numzLocal-1))
+				if(myMesh(cell)%neighborProcs(5)==myProc%taskid) then
+					myMesh(cell)%neighbors(5)=cell-(numxLocal*numyLocal*(numzLocal-1))
 				else
 					numSend(5)=numSend(5)+1
 					sendBuffer(1,numSend(5),5)=cell
@@ -646,23 +646,23 @@ subroutine createConnectLocalFreeSurf(length)
 				end if
 			end if
 		else
-			myMesh(cell)%neighbors(1,5)=cell+numxLocal*numyLocal
-			myMesh(cell)%neighborProcs(1,5)=myProc%taskid
+			myMesh(cell)%neighbors(5)=cell+numxLocal*numyLocal
+			myMesh(cell)%neighborProcs(5)=myProc%taskid
 		end if
 
 		if(mod(cell,numxLocal*numyLocal*numzLocal) <= numxLocal*numyLocal .AND. &
 				(mod(cell,numxLocal*numyLocal*numzLocal) /= 0 .OR. numzLocal==1)) then
 
-			myMesh(cell)%neighborProcs(1,6)=myProc%procNeighbor(6)
+			myMesh(cell)%neighborProcs(6)=myProc%procNeighbor(6)
 			globalCell=myMesh(cell)%globalCell
 			globalNeighbor=findgNeighborFreeSurf(globalCell, 6)
 			if(globalNeighbor==0) then
 				!free surface, set proc id to -1 and cell id to 0 to indicate free surface
-				myMesh(cell)%neighbors(1,6)=0
-				myMesh(cell)%neighborProcs(1,6)=-1
+				myMesh(cell)%neighbors(6)=0
+				myMesh(cell)%neighborProcs(6)=-1
 			else
-				if(myMesh(cell)%neighborProcs(1,6)==myProc%taskid) then
-					myMesh(cell)%neighbors(1,6)=cell+(numxLocal*numyLocal*(numzLocal-1))
+				if(myMesh(cell)%neighborProcs(6)==myProc%taskid) then
+					myMesh(cell)%neighbors(6)=cell+(numxLocal*numyLocal*(numzLocal-1))
 				else
 					numSend(6)=numSend(6)+1
 					sendBuffer(1,numSend(6),6)=cell
@@ -671,8 +671,8 @@ subroutine createConnectLocalFreeSurf(length)
 				end if
 			end if
 		else
-			myMesh(cell)%neighbors(1,6)=cell-numxLocal*numyLocal
-			myMesh(cell)%neighborProcs(1,6)=myProc%taskid
+			myMesh(cell)%neighbors(6)=cell-numxLocal*numyLocal
+			myMesh(cell)%neighborProcs(6)=myProc%taskid
 		end if
 	end do
 
@@ -704,7 +704,7 @@ subroutine createConnectLocalFreeSurf(length)
 
 			do i=1, numRecv(dir)
 				localCell=sendBuffer(1,i,dir)
-				myMesh(localCell)%neighbors(1,dir)=recvBuffer(1,i)
+				myMesh(localCell)%neighbors(dir)=recvBuffer(1,i)
 				materialBuff(localCell,dir)=recvBuffer(2,i)
 
 			end do
@@ -726,9 +726,9 @@ subroutine createConnectLocalFreeSurf(length)
 	maxElement=0
 	do i=1, numCells
 		do dir=1, 6
-			if(myMesh(i)%neighborProcs(1,dir) /= myProc%taskid) then	!we are pointing to a different proc
-				if(myMesh(i)%neighbors(1,dir) > maxElement) then		!searching for the max element number in a neighbor
-					maxElement=myMesh(i)%neighbors(1,dir)
+			if(myMesh(i)%neighborProcs(dir) /= myProc%taskid) then	!we are pointing to a different proc
+				if(myMesh(i)%neighbors(dir) > maxElement) then		!searching for the max element number in a neighbor
+					maxElement=myMesh(i)%neighbors(dir)
 				end if
 			end if
 		end do
@@ -749,14 +749,14 @@ subroutine createConnectLocalFreeSurf(length)
 
 	do i=1,numCells
 		do dir=1,6
-			if(myMesh(i)%neighborProcs(1,dir) == -1) then										!this is a free surface
+			if(myMesh(i)%neighborProcs(dir) == -1) then										!this is a free surface
 				!do nothing
-			else if(myMesh(i)%neighborProcs(1,dir) /= myProc%taskid .AND. myMesh(i)%neighborProcs(1,dir) /= -1) then
-				myBoundary(myMesh(i)%neighbors(1,dir),dir)%proc=myMesh(i)%neighborProcs(1,dir)	!set proc # of elements in myBoundary
-				myBoundary(myMesh(i)%neighbors(1,dir),dir)%length=length						!set length of elements in myBoundary
-				myBoundary(myMesh(i)%neighbors(1,dir),dir)%volume=length**3d0					!set volume of elements in myBoundary (changes with cascade addition)
-				myBoundary(myMesh(i)%neighbors(1,dir),dir)%material=materialBuff(i,dir)
-				myBoundary(myMesh(i)%neighbors(1,dir),dir)%localNeighbor=i
+			else if(myMesh(i)%neighborProcs(dir) /= myProc%taskid .AND. myMesh(i)%neighborProcs(dir) /= -1) then
+				myBoundary(myMesh(i)%neighbors(dir),dir)%proc=myMesh(i)%neighborProcs(dir)	!set proc # of elements in myBoundary
+				myBoundary(myMesh(i)%neighbors(dir),dir)%length=length						!set length of elements in myBoundary
+				myBoundary(myMesh(i)%neighbors(dir),dir)%volume=length**3d0					!set volume of elements in myBoundary (changes with cascade addition)
+				myBoundary(myMesh(i)%neighbors(dir),dir)%material=materialBuff(i,dir)
+				myBoundary(myMesh(i)%neighbors(dir),dir)%localNeighbor=i
 
 			end if
 		end do

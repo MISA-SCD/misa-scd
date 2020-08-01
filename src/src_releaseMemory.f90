@@ -11,12 +11,12 @@ subroutine deallocateBoundaryDefectList()
 
 	do cell=1,numCells
 		do dir=1,6
-			if(myMesh(cell)%neighborProcs(1,dir) /= myProc%taskid .AND. myMesh(cell)%neighborProcs(1,dir) /= -1) then !neighbor cell is in different proc, not free surface (taskid=-1)
+			if(myMesh(cell)%neighborProcs(dir) /= myProc%taskid .AND. myMesh(cell)%neighborProcs(dir) /= -1) then !neighbor cell is in different proc, not free surface (taskid=-1)
 
-				if(myMesh(cell)%neighborProcs(1,dir) /= myProc%procNeighbor(dir)) then
+				if(myMesh(cell)%neighborProcs(dir) /= myProc%procNeighbor(dir)) then
 					write(*,*) 'error neighbor not correct during boundary mesh initialization'
 				else
-					defectCurrent=>myBoundary(myMesh(cell)%neighbors(1,dir),dir)%defectList%next
+					defectCurrent=>myBoundary(myMesh(cell)%neighbors(dir),dir)%defectList%next
 
 					do while(associated(defectCurrent))
 						defectPrev=>defectCurrent

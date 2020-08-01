@@ -261,25 +261,25 @@ subroutine resetReactionListSingleCell(cell)
 				localGrainID=myMesh(cell)%material
 
 				!Find the grain ID number of the neighboring volume element
-				if(myMesh(cell)%neighborProcs(1,j) /= myProc%taskid .AND. myMesh(cell)%neighborProcs(1,j) /= -1) then
-					neighborGrainID=myBoundary(myMesh(cell)%neighbors(1,j),j)%material
-				else if(myMesh(cell)%neighborProcs(1,j) == -1) then
+				if(myMesh(cell)%neighborProcs(j) /= myProc%taskid .AND. myMesh(cell)%neighborProcs(j) /= -1) then
+					neighborGrainID=myBoundary(myMesh(cell)%neighbors(j),j)%material
+				else if(myMesh(cell)%neighborProcs(j) == -1) then
 					neighborGrainID=localGrainID
 				else
-					neighborGrainID=myMesh(myMesh(cell)%neighbors(1,j))%material
+					neighborGrainID=myMesh(myMesh(cell)%neighbors(j))%material
 				end if
 
 				if(localGrainID==neighborGrainID) then
 					!Allow diffusion between elements in the same grain
-					call addDiffusionReactions(cell, myMesh(cell)%neighbors(1,j),&
-							myProc%taskid, myMesh(cell)%neighborProcs(1,j),j,defectTemp)
+					call addDiffusionReactions(cell, myMesh(cell)%neighbors(j),&
+							myProc%taskid, myMesh(cell)%neighborProcs(j),j,defectTemp)
 				else
 					!Assume perfect sinks at grain boundaries - treat grain boundaries like free surfaces for now
 					call addDiffusionReactions(cell, 0, myProc%taskid, -1, j, defectTemp)
 				end if
 			else
-				call addDiffusionReactions(cell, myMesh(cell)%neighbors(1,j), myProc%taskid, &
-						myMesh(cell)%neighborProcs(1,j), j, defectTemp)
+				call addDiffusionReactions(cell, myMesh(cell)%neighbors(j), myProc%taskid, &
+						myMesh(cell)%neighborProcs(j), j, defectTemp)
 			end if
 
 			if(mod(j,2)==0) then
@@ -289,16 +289,16 @@ subroutine resetReactionListSingleCell(cell)
 			end if
 
 			!Add diffusion reactions from the neighboring cell into this one
-			if(myMesh(cell)%neighborProcs(1,j)==myProc%taskid) then
-				if(polycrystal=='yes' .AND. myMesh(myMesh(cell)%neighbors(1,j))%material == myMesh(cell)%material) then
-					!call addDiffusionReactions(myMesh(cell)%neighbors(1,j), cell, myProc%taskid, &
+			if(myMesh(cell)%neighborProcs(j)==myProc%taskid) then
+				if(polycrystal=='yes' .AND. myMesh(myMesh(cell)%neighbors(j))%material == myMesh(cell)%material) then
+					!call addDiffusionReactions(myMesh(cell)%neighbors(j), cell, myProc%taskid, &
 					!		myProc%taskid, j, defectTemp)
-					call addDiffusionReactions(myMesh(cell)%neighbors(1,j),cell,myProc%taskid,myProc%taskid,dir,&
+					call addDiffusionReactions(myMesh(cell)%neighbors(j),cell,myProc%taskid,myProc%taskid,dir,&
 							defectTemp)
 				else if(polycrystal=='no') then
-					!call addDiffusionReactions(myMesh(cell)%neighbors(1,j), cell, myProc%taskid, &
+					!call addDiffusionReactions(myMesh(cell)%neighbors(j), cell, myProc%taskid, &
 					!		myProc%taskid, j, defectTemp)
-					call addDiffusionReactions(myMesh(cell)%neighbors(1,j),cell,myProc%taskid,myProc%taskid,dir,&
+					call addDiffusionReactions(myMesh(cell)%neighbors(j),cell,myProc%taskid,myProc%taskid,dir,&
 							defectTemp)
 				end if
 			end if

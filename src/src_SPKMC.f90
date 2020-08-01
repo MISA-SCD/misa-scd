@@ -1066,8 +1066,8 @@ subroutine updateDefectList(reactionCurrent, defectUpdateCurrent, CascadeCurrent
 					if(reactionCurrent%taskid(i+reactionCurrent%numReactants) /= -1 .AND. &
 							reactionCurrent%cellNumber(i+reactionCurrent%numReactants)==0) then
 						do j=1,6	!directions
-							if(myMesh(cascadeCurrent%cellNumber)%neighborProcs(1,j) /= myProc%taskid .AND. &
-									myMesh(cascadeCurrent%cellNumber)%neighborProcs(1,j)/=-1) then
+							if(myMesh(cascadeCurrent%cellNumber)%neighborProcs(j) /= myProc%taskid .AND. &
+									myMesh(cascadeCurrent%cellNumber)%neighborProcs(j)/=-1) then
 
 								!neighboring element not in this proc
 								numUpdateSend(j)=numUpdateSend(j)+1
@@ -1079,7 +1079,7 @@ subroutine updateDefectList(reactionCurrent, defectUpdateCurrent, CascadeCurrent
 								!number of defects to be increased by 1
 								firstSend(numSpecies+2,numUpdateSend(j),j)=1
 								!cell number of neighbor (in different proc)
-								firstSend(numSpecies+3,numUpdateSend(j),j)=myMesh(cascadeCurrent%cellNumber)%neighbors(1,j)
+								firstSend(numSpecies+3,numUpdateSend(j),j)=myMesh(cascadeCurrent%cellNumber)%neighbors(j)
 							end if
 						end do
 					end if
@@ -1345,8 +1345,8 @@ subroutine updateDefectList(reactionCurrent, defectUpdateCurrent, CascadeCurrent
 				end do
 
 				do j=1,6
-					if(myMesh(reactionCurrent%cellNumber(i))%neighborProcs(1,j) /= myProc%taskid .AND. &
-							myMesh(reactionCurrent%cellNumber(i))%neighborProcs(1,j) /= -1) then	!neighboring element not in this proc
+					if(myMesh(reactionCurrent%cellNumber(i))%neighborProcs(j) /= myProc%taskid .AND. &
+							myMesh(reactionCurrent%cellNumber(i))%neighborProcs(j) /= -1) then	!neighboring element not in this proc
 
 						numUpdateSend(j)=numUpdateSend(j)+1
 
@@ -1374,7 +1374,7 @@ subroutine updateDefectList(reactionCurrent, defectUpdateCurrent, CascadeCurrent
 						end if
 
 						!Cell number in boundary mesh
-						firstSend(numSpecies+3,numUpdateSend(j),j)=myMesh(reactionCurrent%cellNumber(i))%neighbors(1,j)
+						firstSend(numSpecies+3,numUpdateSend(j),j)=myMesh(reactionCurrent%cellNumber(i))%neighbors(j)
 
 					end if
 				end do
@@ -1429,9 +1429,9 @@ subroutine updateDefectList(reactionCurrent, defectUpdateCurrent, CascadeCurrent
 							flagTemp=.FALSE.
 							do j=1,6
 								if(flagTemp .EQV. .FALSE.) then
-									if(myMesh(reactionCurrent%cellNumber(1))%neighbors(1,j)==&
+									if(myMesh(reactionCurrent%cellNumber(1))%neighbors(j)==&
 											reactionCurrent%cellNumber(i+reactionCurrent%numReactants) .AND. &
-											myMesh(reactionCurrent%cellNumber(1))%neighborProcs(1,j)==&
+											myMesh(reactionCurrent%cellNumber(1))%neighborProcs(j)==&
 													reactionCurrent%taskid(i+reactionCurrent%numReactants)) then
 
 										numUpdateSend(j)=numUpdateSend(j)+1
@@ -1454,9 +1454,9 @@ subroutine updateDefectList(reactionCurrent, defectUpdateCurrent, CascadeCurrent
 							!First update local buffer if needed
 							do j=1,6
 								if(myMesh(reactionCurrent%cellNumber(i+reactionCurrent%numReactants))%&
-										neighborProcs(1,j) /= myProc%taskid .AND. &
+										neighborProcs(j) /= myProc%taskid .AND. &
 										myMesh(reactionCurrent%cellNumber(i+reactionCurrent%numReactants))%&
-												neighborProcs(1,j)/=-1) then	!neighboring element not in this proc
+												neighborProcs(j)/=-1) then	!neighboring element not in this proc
 
 									numUpdateSend(j)=numUpdateSend(j)+1
 
@@ -1474,8 +1474,7 @@ subroutine updateDefectList(reactionCurrent, defectUpdateCurrent, CascadeCurrent
 
 									!cell number of neighbor (in different proc)
 									firstSend(numSpecies+3,numUpdateSend(j),j)=&
-											myMesh(reactionCurrent%cellNumber(i+&
-													reactionCurrent%numReactants))%neighbors(1,j)
+											myMesh(reactionCurrent%cellNumber(i+reactionCurrent%numReactants))%neighbors(j)
 								end if
 							end do
 						end if
@@ -2108,9 +2107,9 @@ subroutine updateDefectList(reactionCurrent, defectUpdateCurrent, CascadeCurrent
 			do k=1,6
 
 				!if a neighbor of this element is not in this proc or in the proc that just communicated with it
-				if (myMesh(firstRecv(numSpecies+1,j,i))%neighborProcs(1,k) /= myProc%taskid .AND. &
-						myMesh(firstRecv(numSpecies+1,j,i))%neighborProcs(1,k) /= myProc%procNeighbor(i) .AND. &
-						myMesh(firstRecv(numSpecies+1,j,i))%neighborProcs(1,k) /= -1) then
+				if (myMesh(firstRecv(numSpecies+1,j,i))%neighborProcs(k) /= myProc%taskid .AND. &
+						myMesh(firstRecv(numSpecies+1,j,i))%neighborProcs(k) /= myProc%procNeighbor(i) .AND. &
+						myMesh(firstRecv(numSpecies+1,j,i))%neighborProcs(k) /= -1) then
 
 					!Add this defect to a final buffer
 					numUpdateFinal(k)=numUpdateFinal(k)+1
@@ -2120,7 +2119,7 @@ subroutine updateDefectList(reactionCurrent, defectUpdateCurrent, CascadeCurrent
 					end do
 					finalSend(numSpecies+1,numUpdateFinal(k),k)=firstRecv(numSpecies+1,j,i)	!local cell number
 					finalSend(numSpecies+2,numUpdateFinal(k),k)=firstRecv(numSpecies+2,j,i) !This should be +1 only
-					finalSend(numSpecies+3,numUpdateFinal(k),k)=myMesh(firstRecv(numSpecies+1,j,i))%neighbors(1,k)	!cell number in neighboring proc
+					finalSend(numSpecies+3,numUpdateFinal(k),k)=myMesh(firstRecv(numSpecies+1,j,i))%neighbors(k)	!cell number in neighboring proc
 
 					if(firstRecv(numSpecies+2,j,i)==-1) then
 						write(*,*) 'error: cell in boundary of multiple procs removing defect'
@@ -2363,21 +2362,21 @@ subroutine updateReactionList(defectUpdate)
 						localGrainID=myMesh(defectUpdateCurrent%cellNumber)%material
 
 						!Find the grain ID number of the neighboring volume element
-						if(myMesh(defectUpdateCurrent%cellNumber)%neighborProcs(1,j) /= myProc%taskid .AND. &
-								myMesh(defectUpdateCurrent%cellNumber)%neighborProcs(1,j) /= -1) then
+						if(myMesh(defectUpdateCurrent%cellNumber)%neighborProcs(j) /= myProc%taskid .AND. &
+								myMesh(defectUpdateCurrent%cellNumber)%neighborProcs(j) /= -1) then
 
-							neighborGrainID=myBoundary(myMesh(defectUpdateCurrent%cellNumber)%neighbors(1,j),j)%material
-						else if(myMesh(defectUpdateCurrent%cellNumber)%neighborProcs(1,j) == -1) then
+							neighborGrainID=myBoundary(myMesh(defectUpdateCurrent%cellNumber)%neighbors(j),j)%material
+						else if(myMesh(defectUpdateCurrent%cellNumber)%neighborProcs(j) == -1) then
 							neighborGrainID=localGrainID	!free surface release, don't need to do anything special
 						else
-							neighborGrainID=myMesh(myMesh(defectUpdateCurrent%cellNumber)%neighbors(1,j))%material
+							neighborGrainID=myMesh(myMesh(defectUpdateCurrent%cellNumber)%neighbors(j))%material
 						endif
 
 						if(localGrainID==neighborGrainID) then
 							!Allow diffusion between elements in the same grain
 							call addDiffusionReactions(defectUpdateCurrent%cellNumber, &
-									myMesh(defectUpdateCurrent%cellNumber)%neighbors(1,j),&
-									myProc%taskid, myMesh(defectUpdateCurrent%cellNumber)%neighborProcs(1,j),&
+									myMesh(defectUpdateCurrent%cellNumber)%neighbors(j),&
+									myProc%taskid, myMesh(defectUpdateCurrent%cellNumber)%neighborProcs(j),&
 									j,defectTemp)
 						else
 							!Assume perfect sinks at grain boundaries - treat grain boundaries like free surfaces for now
@@ -2385,8 +2384,8 @@ subroutine updateReactionList(defectUpdate)
 						end if
 					else
 						call addDiffusionReactions(defectUpdateCurrent%cellNumber, &
-								myMesh(defectUpdateCurrent%cellNumber)%neighbors(1,j),&
-								myProc%taskid, myMesh(defectUpdateCurrent%cellNumber)%neighborProcs(1,j),j,defectTemp)
+								myMesh(defectUpdateCurrent%cellNumber)%neighbors(j),&
+								myProc%taskid, myMesh(defectUpdateCurrent%cellNumber)%neighborProcs(j),j,defectTemp)
 					end if
 
 					!If the neighboring volume element is in the same processor as this element, add
@@ -2399,18 +2398,18 @@ subroutine updateReactionList(defectUpdate)
 						dir=j+1
 					end if
 
-					if(myMesh(defectUpdateCurrent%cellNumber)%neighborProcs(1,j)==myProc%taskid) then
+					if(myMesh(defectUpdateCurrent%cellNumber)%neighborProcs(j)==myProc%taskid) then
 						!Don't need to do this for diffusion between different grains
-						if(polycrystal=='yes' .AND. myMesh(myMesh(defectUpdateCurrent%cellNumber)%neighbors(1,&
-								j))%material == myMesh(defectUpdateCurrent%cellNumber)%material) then
-							!call addDiffusionReactions(myMesh(defectUpdateCurrent%cellNumber)%neighbors(1,j), defectUpdateCurrent%cellNumber, &
+						if(polycrystal=='yes' .AND. myMesh(myMesh(defectUpdateCurrent%cellNumber)%neighbors(j))&
+								%material == myMesh(defectUpdateCurrent%cellNumber)%material) then
+							!call addDiffusionReactions(myMesh(defectUpdateCurrent%cellNumber)%neighbors(j), defectUpdateCurrent%cellNumber, &
 							!		myProc%taskid, myProc%taskid, j, defectTemp)
-							call addDiffusionReactions(myMesh(defectUpdateCurrent%cellNumber)%neighbors(1,j), &
+							call addDiffusionReactions(myMesh(defectUpdateCurrent%cellNumber)%neighbors(j), &
 									defectUpdateCurrent%cellNumber, myProc%taskid, myProc%taskid, dir, defectTemp)
 						else if(polycrystal=='no') then
-							!call addDiffusionReactions(myMesh(defectUpdateCurrent%cellNumber)%neighbors(1,j), defectUpdateCurrent%cellNumber, &
+							!call addDiffusionReactions(myMesh(defectUpdateCurrent%cellNumber)%neighbors(j), defectUpdateCurrent%cellNumber, &
 							!		myProc%taskid, myProc%taskid, j, defectTemp)
-							call addDiffusionReactions(myMesh(defectUpdateCurrent%cellNumber)%neighbors(1,j), &
+							call addDiffusionReactions(myMesh(defectUpdateCurrent%cellNumber)%neighbors(j), &
 									defectUpdateCurrent%cellNumber, myProc%taskid, myProc%taskid, dir, defectTemp)
 						end if
 					end if

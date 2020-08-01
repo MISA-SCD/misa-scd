@@ -156,8 +156,8 @@ subroutine cascadeUpdateStep(releaseToggle, cascadeCell)
         defectCurrent=>defectList(cascadeCell)%next
 
         do dir=1,6
-            if(myMesh(cascadeCell)%neighborProcs(1,dir) /= myProc%taskid .AND. &
-                    myMesh(cascadeCell)%neighborProcs(1,dir) /= -1) then
+            if(myMesh(cascadeCell)%neighborProcs(dir) /= myProc%taskid .AND. &
+                    myMesh(cascadeCell)%neighborProcs(dir) /= -1) then
 
                 do while(associated(defectCurrent))
                     numSend=numSend+1
@@ -209,9 +209,9 @@ subroutine cascadeUpdateStep(releaseToggle, cascadeCell)
         end if
         numSendTemp = numSend
         if(cascadeCell /= 0) then
-            if(myMesh(cascadeCell)%neighborProcs(1,dir) /= myProc%taskid .AND. &
-                    myMesh(cascadeCell)%neighborProcs(1,dir) /= -1 .AND. numSend /=0)  then
-                defectSend(1,1)=myMesh(cascadeCell)%neighbors(1,dir)
+            if(myMesh(cascadeCell)%neighborProcs(dir) /= myProc%taskid .AND. &
+                    myMesh(cascadeCell)%neighborProcs(dir) /= -1 .AND. numSend /=0)  then
+                defectSend(1,1)=myMesh(cascadeCell)%neighbors(dir)
             else
                 numSendTemp = 0
             end if
@@ -293,9 +293,9 @@ subroutine cascadeUpdateStep(releaseToggle, cascadeCell)
 
                         localGrainID=myMesh(cellNumber)%material
                         if(myProc%procNeighbor(recvDir)/=myProc%taskid .AND. myProc%procNeighbor(recvDir)/=-1) then
-                            neighborGrainID=myBoundary(myMesh(cellNumber)%neighbors(1,recvDir),recvDir)%material
+                            neighborGrainID=myBoundary(myMesh(cellNumber)%neighbors(recvDir),recvDir)%material
                         else
-                            neighborGrainID=myMesh(myMesh(cellNumber)%neighbors(1,recvDir))%material
+                            neighborGrainID=myMesh(myMesh(cellNumber)%neighbors(recvDir))%material
                         end if
 
                         if(localGrainID==neighborGrainID) then
