@@ -53,8 +53,9 @@ integer function findNumDefect(defectType, cellNumber)
 	implicit none
 
 	integer, intent(in) :: defectType(numSpecies)
-	type(defect), pointer, intent(inout) :: defectCurrent
-	integer :: cellNumber, numDefects, i, count
+	integer, intent(in) :: cellNumber
+	type(defect), pointer :: defectCurrent
+	integer :: numDefects, i, count
 
 	numDefects=0
 	defectCurrent=>defectList(cellNumber)%next
@@ -90,7 +91,7 @@ integer function findNumDefectBoundary(defectType, cellNumber, dir)
 
 	integer, intent(in) :: defectType(numSpecies), cellNumber, dir
 	type(defect), pointer :: defectCurrent
-	integer :: defectType(numSpecies), numDefects, i, count
+	integer :: numDefects, i, count
 
 	if(cellNumber==-1) then
 		write(*,*) 'trying to find number of defects on free surface'

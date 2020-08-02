@@ -2641,7 +2641,7 @@ double precision function findReactionRateMultiple(defectType1, defectType2, cel
 				(Diff1*dble(num2)+Diff2*dble(num1))*dble(num1*num2)*(atomSize/vol)**(2d0)
 
 	else
-		write(*,*) 'error clustering function type only admits 6-9'
+		write(*,*) 'error clustering function type only admits 21~24'
 		reactionRate=0d0
 	endif
 

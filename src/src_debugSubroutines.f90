@@ -27,7 +27,7 @@ interface
 	subroutine DEBUGPrintReaction(reactionCurrent)
 		use mod_structures
 		implicit none
-		type(Reaction), pointer, intent(inout) :: reactionCurrent
+		type(reaction), pointer, intent(in) :: reactionCurrent
 	end subroutine
 end interface
 
@@ -312,7 +312,7 @@ use mod_constants
 use mod_structures
 implicit none
 
-type(Reaction), pointer, intent(in) :: reactionCurrent
+type(reaction), pointer, intent(in) :: reactionCurrent
 double precision, external :: totalRateCheck
 
 if(myProc%taskid==MASTER) then	
