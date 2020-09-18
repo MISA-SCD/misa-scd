@@ -929,7 +929,9 @@ subroutine addMultiDefectReactions(cell, defectType1, defectType2)
 				!deleting reactionUpdate
 				reactionPrev%next=>reactionUpdate%next
 				deallocate(reactionUpdate%reactants)
-				deallocate(reactionUpdate%products)
+				if(allocated(reactionUpdate%products)) then
+					deallocate(reactionUpdate%products)
+				end if
 				deallocate(reactionUpdate%cellNumber)
 				deallocate(reactionUpdate%taskid)
 				nullify(reactionUpdate%next)
@@ -1193,7 +1195,9 @@ subroutine addMultiDefectReactions(cell, defectType1, defectType2)
 				!deleting reactionUpdate
 				reactionPrev%next=>reactionUpdate%next
 				deallocate(reactionUpdate%reactants)
-				deallocate(reactionUpdate%products)
+				if(allocated(reactionUpdate%products)) then
+					deallocate(reactionUpdate%products)
+				end if
 				deallocate(reactionUpdate%cellNumber)
 				deallocate(reactionUpdate%taskid)
 				nullify(reactionUpdate%next)

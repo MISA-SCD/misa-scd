@@ -28,11 +28,14 @@ subroutine initializeVIdefect()
 
 	if(numVac==0) then
 		initialNumV = nint(ceqV * totalAtoms)
-		initialNumI = nint(ceqI * totalAtoms)
 	else
 		initialNumV = numVac
-		initialNumI = 0
 		firr=dble(numVac)/systemVol*atomSize
+	end if
+	if(numInt==0) then
+		initialNumI = nint(ceqI * totalAtoms)
+	else
+		initialNumI = numInt
 	end if
 
 	if(initialNumV >= initialNumI) then
@@ -197,7 +200,6 @@ subroutine initializeDefectList()
 				end if
 			end do
 			nullify(defectCurrent%next)
-
 		end if
 
 		!Cu_1

@@ -114,6 +114,7 @@ module mod_constants
     double precision tempStore				!<Temperature read in (K) - used when temp. changes several times during a simulation
     double precision CuContent              !<The initial content of Cu in iron
     integer numVac                          !<The number of vacancies put in
+    integer numInt                          !<The number of interstitials put in
     double precision dpaRate				!<DPA rate in dpa/s
     double precision totalDPA				!<total DPA in simulation
     double precision firr                   !firr = Vconcent / initialCeqv. Radiation enhanced factor

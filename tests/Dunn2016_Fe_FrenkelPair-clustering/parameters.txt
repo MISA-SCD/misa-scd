@@ -1,0 +1,140 @@
+!***************************************************************************************************
+!This is the overall parameters file that will be used for MISA-SCD1.0
+!It necessary simulation parameters and some filenames of various other input files used in the simulation.
+!>Description:
+!>Cu precipitation under electron irradiation in a Fe-1.34at.%Cu at 563K.
+!***************************************************************************************************
+defectFile              !Location of the defect attributes file
+'../../inputs/Fe_Defects_FP_clustering.txt'
+
+meshFile                !Location of the mesh file
+'../../meshes/Mesh_SingleCrystal.txt'
+
+implantType             !('Cascade': neutron irradiation, 'FrenkelPair': electron irradiation, 'None': no irradiation)
+FrenkelPair
+
+implantScheme           !('MonteCarlo' for MC cascade implantation, 'explicit' for explicit cascade implantation)
+MonteCarlo
+
+cascadeFile             !Location of the cascade file
+'../../inputs/Fe_Cascades.txt'
+
+meshingType             !Whether we are using adaptive meshing protocol or not (adaptive for yes, nonAdaptive for no)
+nonAdaptive
+
+implantDist             !('uniform' or 'nonUniform') Implant defects uniformly or separately at each material point
+uniform
+
+grainBoundaries	        !('yes' or 'no') Toggle whether or not we are going to include the effect of grain boundaries (Removing defects that travel too far)
+no
+
+pointDefect             !('yes' or 'no') Toggle whether or not point defects are allowed to move only
+no
+
+!***************************************************************************************************
+!Simulation Parameters
+!The order of these parameters can be adjusted but each parameter must come directly after the tag
+!for it. For example, the temperature must come directly after 'temperature'.
+!***************************************************************************************************
+start			        !begin parameters
+
+temperature		        !Temperature, in K
+293d0
+
+CuContent               !Initial content of Cu in iron
+0d0
+
+numVac                  !The number of initial vacancies put in
+0
+
+numInt
+0
+
+numFP                   !initial number of frenkel pairs in one process
+0
+
+dpaRate			        !NOTE: if the implant profile is non-uniform, this should be the AVERAGE DPA rate.
+1.0d-8
+
+totalDPA
+9.0d-4			        !total DPA in simulation 1
+
+firr                    !firr = Vconcent / initialCeqv. Radiation enhanced factor
+1d0
+
+atomSize
+1.18d-2 		        !(Fe) (nm^3)
+
+lattice                 !lattice constant (nm)  atomVolume = lattice^3/2
+0.2867d0
+
+burgers                 !dislocation loop burgers vector (nm)
+0.287d0
+
+reactionRadius          !<Material parameter used for reaction distances (impacts reaction rates) (nm)
+0.5065d0
+
+grainSize               !Mean free path for interstitial clusters to travel before removal (nm)
+33d3
+
+dislocDensity           !dislocation density (nm^-2)
+1d-5
+
+impurityConc            !carbon impurity concentration (atomic fraction)
+0d0
+
+cascadeVolume           !volume of cascade (nm^3) - used for cascade-defect interactions
+1000d0
+
+max3DInt                !maximum size for SIA defect to diffuse in 3D
+4
+
+numSims                 !number of times to repeat simulation
+1
+
+end				        !Tag for the end of the parameters file
+
+!***************************************************************************************************
+!Output parameters
+!***************************************************************************************************
+OutputStart
+
+totdatToggle    !‘yes’ or ‘no’: toggles output of totdat.txt file
+no             !If you want to output totdat.txt file, both postprToggle and totdatToggle should be set 'yes'
+
+rawdatToggle    !‘yes’ or ‘no’: toggles output of raw data files
+no              !Default 'no'
+
+minSCluster      !Only n>minSCluster SnVm and Sn clusters are counted
+10
+
+minVoid         !Only n>minVoid Vn clusters are counted
+10
+
+minLoop         !Only n>minLoop SIAn clusters are counted
+10
+
+minSV           !Only (n+m)>minCuV SnVm clusters are counted
+10
+
+end            !Tag for the end of the Output parameters file
+
+!***************************************************************************************************
+!Adaptive meshing parameters
+!***************************************************************************************************
+fineStart		! Begin fine mesh parameters (for adaptive meshing only, not used if adaptive meshing turned off)
+
+fineLength
+5				! Length of one fine mesh (nm)
+
+numxFine
+6				! number of fine meshes in x-direction
+
+numyFine
+6				! number of fine meshes in y-direction
+
+numzFine
+6				! number of fine meshes in z-direction
+
+end				! The end of meshing parameters
+

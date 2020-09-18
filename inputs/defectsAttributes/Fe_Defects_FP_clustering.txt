@@ -1,6 +1,6 @@
 !***************************************************************************************************
 !************************************DEFECT ATTRIBUTES**********************************************
-!This is the input file for pure Fe, includes:
+!This is the input file for Fe-Cu alloy, includes:
 ! 1) Component species: defectType(SPECIES), default: SPECIES = 4
 !               defectType(1): number of slutes atoms (Cu)
 !               defectType(2): number of vacancies
@@ -15,15 +15,13 @@
 !    1th:        dissociation
 !                sinkRemoval (absorption at sinks, include dislocation and grain boundary, sink strength: S=Sd+Sg)
 !                diffusion
-!                impurityTrapping
 !    2th:        clustering
 ! 6) Identify the function form with ftype, including:
 !    6a)ftype   1~10 are used to calculate diffusivities
 !               1: immobile (0 parameters)
 !               2: constant (1 parameters)
-!               3: mobile SIA loops (6 parameters, Fe)
+!               3: mobile SIA loops (6 parameters)
 !               4: mobile solute clusters (Cu) (2 parameters: D0 and Em of Cu monomer, D(n)=D(1)/n)
-!               5: mobile W atoms (2 parameters: D0 and Em of W atom)
 !    6b)ftype   11~20 are used to calculate binding energies
 !               11: constant (1 parameters)
 !               12: Eb of SIA/V clusters (2 parameters: Eb(2) and Ef(1))
@@ -41,9 +39,6 @@
 !               11: dissociation
 !               12: sinkRemoval
 !               13: diffusion (3D diffusion)
-!               14: impurityTrapping
-!               15: 2D diffusion
-!               16: Dissociation from grain boundary into bulk volume element
 !    7c) 21~30 are used for 2th reaction, including:
 !               21: 3D-3D
 !               22: 3D (V/S) -1D (SIA)
@@ -54,17 +49,17 @@
 species         !Default: 4 species: Cu, V, SIA_mobile, SIA_mobile
 4
 
-formationEnergies
+formationEnergies           !<List of formation energies (eV)
 
 numSingle
 2
 
-0	1	0	0           !V_1
-Ef	1.6d0
-0	0	1	0           !SIA_1
-Ef	4.3d0
+0   0   1   0
+Ef  3.77d0   !I1
+0   1   0   0
+Ef  2.07d0   !V1
 
-diffusionPrefactors
+diffusionPrefactors               !<List of diffusion prefactors D0 (nm^2/s), and migration energies Em (eV)
 
 numSingle
 8
@@ -85,6 +80,7 @@ D0	8.2d11	Em	0.42d0
 D0	8.2d11	Em	0.43d0
 0	0	4	0			!SIA_m 4
 D0	8.2d11	Em	0.43d0
+
 
 numFunction
 3
@@ -108,7 +104,7 @@ max 0   0   0   -1
 fType	1
 param	0
 
-bindingEnergies
+bindingEnergies			        !<List of binding energies
 
 numSingle
 5
@@ -132,68 +128,43 @@ min 0   5   0   0
 max 0   -1  0   0
 ftype	12
 param	2
-2.07d0	3.01d0
+2.07d0	0.3d0
 
 0	0	1	0		0	0	1	0	!nSIA->SIA+(n-1)SIA
 min 0   0   4   0
 max 0   0   -1  0
 ftype	12
 param	2
-3.77d0	5.05d0
+3.77d0	0.8d0
 
 0	0	0	1		0	0	1	0	!nSIA->SIA+(n-1)SIA
 min 0   0   0   4
 max 0   0   0   -1
 ftype	12
 param	2
-3.77d0	5.05d0
+3.77d0	0.8d0
 
 !***************************************************************************************************
 !Reactions
 !***************************************************************************************************
 dissociation
-3						            !Number of defect dissociation types
-
-0	1	0	0		0	1	0	0	!nV->V+(n-1)V
-min 0   2   0   0
-max 0   -1  0   0
-fType   11
-
-0	0	1	0		0	0	1	0	!nSIA->SIA+(n-1)SIA
-min 0   0   2   0
-max 0   0   -1  0
-fType   11
-
-0	0	0	1		0	0	1	0	!nSIA->SIA+(n-1)SIA
-min 0   0   0   2
-max 0   0   0   -1
-fType   11
+0                               !Number of defect dissociation types
 
 diffusion
-2							        !number of defect types that can diffuse
+2					            !number of defect types that can diffuse
 
 0	1	0	0		0	1	0	0	!V diffusion
 min 0   1   0   0
-max 0   4   0   0
+max 0   1   0   0
 fType   13
 
 0	0	1	0		0	0	1	0	!SIA_mobile diffusion
 min 0   0   1   0
-max 0   0   -1  0
+max 0   0   1  0
 fType   13
 
 sinkRemoval
-2							        !number of defect types that can be removed this way
-
-0	1	0	0				        !V trapping
-min 0   1   0   0
-max 0   4   0   0
-fType   12
-
-0	0	1	0				        !SIA_mobile trapping
-min 0   0   1   0
-max 0   0   -1  0
-fType   12
+0					            !These reactions involve removing defects from the mesh by dislocations
 
 impurityTrapping			        !These reactions involve changing mobile SIA loops to sessile SIA loops via trapping by impurities
 0
@@ -211,7 +182,7 @@ min 0   1   0   0       0   1   0   0
 max 0   -1  0   0       0   -1  0   0
 fType   21
 
-0	1	0	0		0	0	1	0		!V-SIA_mobile (annihilation) 3D-3D
+0   1   0   0		0   0   1   0		!V+I_m (annihilation) 3D+3D
 min 0   1   0   0       0   0   1   0
 max 0   -1  0   0       0   0   4   0
 fType   21
@@ -226,6 +197,7 @@ min 0   1   0   0       0   0   0   5
 max 0   -1  0   0       0   0   0   -1
 fType   22
 
+
 0	0	1	0		0	0	1	0		!SIA_mobile-SIA_mobile 3D-3D
 min 0   0   1   0       0   0   1   0
 max 0   0   4   0       0   0   4   0
@@ -236,15 +208,15 @@ min 0   0   1   0       0   0   5   0
 max 0   0   4   0       0   0   -1  0
 fType   23
 
-0	0	1	0		0	0	1	0		!SIA_mobile(loop)-SIA_mobile(loop) 1D-1D
-min 0   0   5   0       0   0   5   0
-max 0   0   -1  0       0   0   -1  0
-fType   24
-
 0	0	1	0		0	0	0	1		!SIA_mobile-SIA_immobile(loop) 3D-1D
 min 0   0   1   0       0   0   0   5
 max 0   0   4   0       0   0   0   -1
 fType   23
+
+0	0	1	0		0	0	1	0		!SIA_mobile(loop)-SIA_mobile(loop) 1D-1D
+min 0   0   5   0       0   0   5   0
+max 0   0   -1  0       0   0   -1  0
+fType   24
 
 0	0	1	0		0	0	0	1		!SIA_mobile(loop)-SIA_immobile(loop) 1D-1D
 min 0   0   5   0       0   0   0   5
@@ -260,4 +232,5 @@ fType   1
 
 Cascade						            !Cascade implantation
 fType   2
+
 

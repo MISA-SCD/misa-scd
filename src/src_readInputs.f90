@@ -192,6 +192,7 @@ subroutine ReadInputs()
 	tempStore		=273d0
 	CuContent		=0.5d-2
 	numVac			=0
+	numInt			=0
 	dpaRate			=1d-4
 	totalDPA		=1d-1
 	firr			=1d0
@@ -247,6 +248,9 @@ subroutine ReadInputs()
 			else if(char=='numVac') then
 				flag1=.TRUE.
 				read(PARAFILE,*) numVac
+			else if(char=='numInt') then
+				flag1=.TRUE.
+				read(PARAFILE,*) numInt
 			else if(char=='dpaRate') then
 				flag1=.TRUE.
 				read(PARAFILE,*) dpaRate
