@@ -25,7 +25,8 @@ program MISASCD
 	real :: time1, time2, time3
 	logical :: releaseToggle, impCascadeToggle
 	integer :: timeCounter
-	character(12) :: filename, filename2
+	character(14) :: filename, filename1, filename2, filename3
+	integer :: simStatus	!<1: 'irradiation', 0: 'anneal'
 	double precision, external :: GenerateTimestep, TotalRateCheck
 
 	interface
@@ -115,24 +116,45 @@ program MISASCD
 	!***********************************************************************
 	!Multiple simulations begin.
 	!***********************************************************************
-	do sim=1,numSims
+	do sim=1, numSims
 
 		temperature=tempStore	!< Temperature read in (K)
+		!*******************************************************
+		!<Initialize outputfile
+		!*******************************************************
 		if(myProc%taskid==MASTER) then
-			write(*,*) 'Initializing trial', sim, 'proc', myProc%taskid, 'temperature', temperature
+			if(totdatToggle=='yes') then
+				filename1(1:7)='totdat_'
+				write(unit=filename1(8:10), fmt='(I3.3)') sim
+				filename1(11:14)='.out'
+				open(TOTFILE, file=filename1, action='write', status='Unknown')
+			end if
+
+			if(defectToggle=='yes') then
+				filename2(1:7)='defect_'
+				write(unit=filename2(8:10), fmt='(I3.3)') sim
+				filename2(11:14)='.out'
+				open(DEFFILE , file=filename2, action='write', status='Unknown')
+			end if
+
+			if(stadatToggle=='yes') then
+				filename3(1:7)='stadat_'
+				write(unit=filename3(8:10), fmt='(I3.3)') sim
+				filename3(11:14)='.out'
+				open(STAFILE , file=filename3, action='write', status='Unknown')
+			end if
 		end if
 
-		!<Initialize output files
-		if(myProc%taskid==MASTER) then
-			filename(1:6)='rawdat'
-			filename2(1:6)='totdat'
-			write(unit=filename(7:8), fmt='(I2)') sim
-			write(unit=filename2(7:8), fmt='(I2)') sim
-			filename(9:12)='.out'
-			filename2(9:12)='.out'
-			if(rawdatToggle=='yes') open(RAWDAT, file=filename, action='write', status='Unknown')
-			if(totdatToggle=='yes') open(TOTDAT, file=filename2, action='write', status='Unknown')
-		end if
+		!if(myProc%taskid==MASTER) then
+		!	filename(1:6)='rawdat'
+		!	filename2(1:6)='totdat'
+		!	write(unit=filename(7:8), fmt='(I2)') sim
+		!	write(unit=filename2(7:8), fmt='(I2)') sim
+		!	filename(9:12)='.out'
+		!	filename2(9:12)='.out'
+		!	if(rawdatToggle=='yes') open(RAWDAT, file=filename, action='write', status='Unknown')
+		!	if(totdatToggle=='yes') open(TOTDAT, file=filename2, action='write', status='Unknown')
+		!end if
 
 		call initializeRandomSeeds()		!<set unique random number seeds in each processor
 		allocate(defectList(numCells))		!<Create list of defects - array
@@ -156,7 +178,7 @@ program MISASCD
 			write(*,*) 'Initial number of SIA', initialNumI
 			write(*,*) 'Equilibrium concentration of V', ceqV
 			write(*,*) 'Equilibrium concentration of SIA', ceqI
-			write(*,*) 'firr',firr
+			!write(*,*) 'firr',firr
 			write(*,*) 'totalRate', totalRate
 		end if
 
@@ -188,7 +210,6 @@ program MISASCD
 		outputCounter=0
 		nullify(ActiveCascades)		! pointer ActiveCascades=NULL
 		annealIdentify=.FALSE.		!(.TRUE. if in annealing phase, .FALSE. otherwise) used to determine how to reset reaction rates (should we include implantation or not)
-
 		!<Initizlize maxRate and tau. rateTau(1)=maxRate, rateTau(2)=tau
 		rateTau=0d0
 
@@ -359,41 +380,34 @@ program MISASCD
 			!********************************************************************************
 			! Output according to outputCounter
 			!********************************************************************************
-		!	if(elapsedTime >= totalTime/2.0d6*(2.0d0)**(outputCounter)) then
+			if(elapsedTime >= totalTime/2.0d6*(2.0d0)**(outputCounter)) then
 			!if(elapsedTime >= totalTime/50d0*(outputCounter)) then
 			!if(mod(step,100000)==0) then
-		!		call MPI_REDUCE(numImpAnn,totalImpAnn, 2, MPI_INTEGER, MPI_SUM, 0,comm, ierr)
-
-		!		if(myProc%taskid==MASTER) then
-		!			DPA=dble(totalImpAnn(1))/(systemVol/(numDisplacedAtoms*atomSize))
-		!			call cpu_time(time2)
-		!			write(*,*)
-		!			write(*,*) 'time', elapsedTime, 'DPA', DPA, 'steps', step, 'AverageTimeStep', elapsedTime/dble(step)
-		!			write(TOTDAT,*) '*********************************************************************************************'
-		!			write(TOTDAT,*) 'time', elapsedTime, 'DPA', DPA, 'steps', step, 'AverageTimeStep', elapsedTime/dble(step)
-
-		!			if(implantType=='FrenkelPair') then
-		!				write(*,*) 'FrenkelPairs', totalImpAnn(1), 'computationTime', time2-time1
-		!				write(TOTDAT,*) 'FrenkelPairs', totalImpAnn(1), 'computationTime', time2-time1
-		!			else if(implantType=='Cascade')	then
-		!				write(*,*) 'Cascades', totalImpAnn(1), 'computationTime', time2-time1
-		!				write(TOTDAT,*) 'Cascades', totalImpAnn(1), 'computationTime', time2-time1
-		!			else	!Thermal aging
-		!				write(*,*) 'noImplantation', totalImpAnn(1), 'computationTime', time2-time1
-		!				write(TOTDAT,*) 'noImplantation', totalImpAnn(1), 'computationTime', time2-time1
-		!			end if
-					!Optional: output fraction of steps that are null events
-		!			write(TOTDAT,*) 'Fraction null steps', dble(nullSteps)/dble(step)
-		!			write(*,*)
-		!		end if
+				simStatus=1	!<1: 'irradiation', 0: 'anneal'
+				call MPI_REDUCE(numImpAnn,totalImpAnn, 2, MPI_INTEGER, MPI_SUM, 0,comm, ierr)
+				call outputDefectsTotal(simStatus)	!write totdat.out, defect.out, stadat.out
+				call cpu_time(time2)
+				if(myProc%taskid==MASTER) then
+					DPA=dble(totalImpAnn(1))/(systemVol/(numDisplacedAtoms*atomSize))
+					write(*,*)
+					write(*,*) 'time', elapsedTime, 'DPA', DPA, 'steps', step, 'AverageTimeStep', elapsedTime/dble(step)
+					if(implantType=='FrenkelPair') then
+						write(*,*) 'FrenkelPairs', totalImpAnn(1), 'computationTime', time2-time1
+					else if(implantType=='Cascade')	then
+						write(*,*) 'Cascades', totalImpAnn(1), 'computationTime', time2-time1
+					else	!Thermal aging
+						write(*,*) 'noImplantation', totalImpAnn(1), 'computationTime', time2-time1
+					end if
+					write(*,*)
+				end if
 
 				!Several defect output optionas available.
-		!		if(rawdatToggle=='yes') call outputDefectsXYZ()		!write(RAWDAT,*): rawdat
-		!		if(totdatToggle=='yes') call outputDefectsTotal()	!write(TOTDAT,*): totdat.out
+				if(rawdatToggle=='yes') call outputDefectsXYZ()		!write(RAWDAT,*): rawdat
+				!if(totdatToggle=='yes') call outputDefectsTotal()	!write totdat.out, defect.out, stadat.out
 
-		!		outputCounter=outputCounter+1
-		!		call MPI_BARRIER(comm,ierr)
-		!	end if
+				outputCounter=outputCounter+1
+				call MPI_BARRIER(comm,ierr)
+			end if
 
 			!******************************************
 			!used for test 3
@@ -415,33 +429,28 @@ program MISASCD
 		!***********************************************************************
 		!Output defects at the end of the implantation loop
 		!***********************************************************************
-	!	call MPI_REDUCE(numImpAnn, totalImpAnn, 2, MPI_INTEGER, MPI_SUM,0, comm, ierr)
-
-	!	if(myProc%taskid==MASTER) then
-	!		DPA=dble(totalImpAnn(1))/(systemVol/(numDisplacedAtoms*atomSize))
-	!		call cpu_time(time2)
-	!		write(*,*)
-	!		write(*,*) 'Final  step'
-	!		write(*,*) 'time', elapsedTime, 'DPA', DPA, 'steps', step, 'AverageTimeStep', elapsedTime/dble(step)
-	!		write(TOTDAT,*) '*********************************************************************************************'
-	!		write(TOTDAT,*) 'elapsedTime', elapsedTime, 'DPA', DPA, 'steps', step, 'AverageTimeStep', elapsedTime/dble(step)
-	!		if(implantType=='FrenkelPair') then
-	!			write(*,*) 'FrenkelPairs', totalImpAnn(1), 'computationTime', time2-time1
-	!			write(TOTDAT,*) 'FrenkelPairs', totalImpAnn(1), 'computationTime', time2-time1
-	!		else if(implantType=='Cascade')	then
-	!			write(*,*) 'Cascades', totalImpAnn(1), 'computationTime', time2-time1
-	!			write(TOTDAT,*) 'Cascades', totalImpAnn(1), 'computationTime', time2-time1
-	!		else
-	!			write(*,*) 'noImplantation', totalImpAnn(1), 'computationTime', time2-time1
-	!			write(TOTDAT,*) 'noImplantation', totalImpAnn(1), 'computationTime', time2-time1
-	!		end if
-	!		write(*,*)
-	!		write(TOTDAT,*) 'Final  step'
-	!	end if
+		simStatus=1	!<1: 'irradiation', 0: 'anneal'
+		call MPI_REDUCE(numImpAnn, totalImpAnn, 2, MPI_INTEGER, MPI_SUM,0, comm, ierr)
+		call outputDefectsTotal(simStatus)	!write totdat.out, defect.out, stadat.out
+		call cpu_time(time2)
+		if(myProc%taskid==MASTER) then
+			DPA=dble(totalImpAnn(1))/(systemVol/(numDisplacedAtoms*atomSize))
+			write(*,*)
+			write(*,*) 'Final  step'
+			write(*,*) 'time', elapsedTime, 'DPA', DPA, 'steps', step, 'AverageTimeStep', elapsedTime/dble(step)
+			if(implantType=='FrenkelPair') then
+				write(*,*) 'FrenkelPairs', totalImpAnn(1), 'computationTime', time2-time1
+			else if(implantType=='Cascade')	then
+				write(*,*) 'Cascades', totalImpAnn(1), 'computationTime', time2-time1
+			else
+				write(*,*) 'noImplantation', totalImpAnn(1), 'computationTime', time2-time1
+			end if
+			write(*,*)
+		end if
 
 		!Final output
-	!	if(totdatToggle=='yes') call outputDefectsTotal()
-	!	if(rawdatToggle=='yes') call outputDefectsXYZ()
+		!if(totdatToggle=='yes') call outputDefectsTotal()
+		if(rawdatToggle=='yes') call outputDefectsXYZ()
 
 		!*************************************************************************************************************
 		!*************************************************************************************************************
@@ -465,13 +474,6 @@ program MISASCD
 			totalTime=annealTime
 			step=0
 			nullSteps=0
-
-			if(myProc%taskid==MASTER ) then
-				write(*,*) '************************************'
-				write(*,*) 'Entering Annealing Phase'
-				write(TOTDAT,*) '************************************'
-				write(TOTDAT,*) 'Entering Annealing Phase'
-			end if
 		end if
 
 		totalRate=TotalRateCheck()
@@ -566,36 +568,20 @@ program MISASCD
 			!******************************************
 			!!if((elapsedTime-totalTime) >= annealTime/dble(annealSteps)*outputCounter) then
 			if(elapsedTime >= totalTime/2.0d6*(2.0d0)**(outputCounter)) then
-
-				call MPI_REDUCE(numImpAnn,totalImpAnn, 2, MPI_INTEGER, MPI_SUM,0,comm, ierr)
-
+				simStatus=0	!<1: 'irradiation', 0: 'anneal'
+				!call MPI_REDUCE(numImpAnn, totalImpAnn, 2, MPI_INTEGER, MPI_SUM,0,comm, ierr)
+				call outputDefectsTotal(simStatus)	!write totdat.out, defect.out, stadat.out
+				call cpu_time(time2)
 				if(myProc%taskid==MASTER) then
-					DPA=dble(totalImpAnn(1))/(systemVol/(numDisplacedAtoms*atomSize))
-					call cpu_time(time2)
+					!DPA=dble(totalImpAnn(1))/(systemVol/(numDisplacedAtoms*atomSize))
 					write(*,*)
-					write(*,*) 'Anneal time', elapsedTime, 'DPA',DPA, 'steps',step, 'AverageTimeStep', elapsedTime/dble(step)
-					write(TOTDAT,*) '*********************************************************************************************'
-					write(TOTDAT,*) 'Anneal time', elapsedTime, 'DPA', DPA, 'steps', step, 'AverageTimeStep', elapsedTime/dble(step)
-
-					if(implantType=='FrenkelPair') then
-						write(*,*) 'FrenkelPairs', totalImpAnn(1), 'computationTime', time2-time1
-						write(TOTDAT,*) 'FrenkelPairs', totalImpAnn(1), 'computationTime', time2-time1
-					else if(implantType=='Cascade')	then
-						write(*,*) 'Cascades', totalImpAnn(1), 'computationTime', time2-time1
-						write(TOTDAT,*) 'Cascades', totalImpAnn(1), 'computationTime', time2-time1
-					else	!Thermal aging
-						write(*,*) 'noImplantation', totalImpAnn(1), 'computationTime', time2-time1
-						write(TOTDAT,*) 'noImplantation', totalImpAnn(1), 'computationTime', time2-time1
-					end if
-
-					!Optional: output fraction of steps that are null events
-					write(TOTDAT,*) 'Fraction null steps', dble(nullSteps)/dble(step)
-					write(TOTDAT,*)
+					write(*,*) 'Annealing process'
+					write(*,*) 'Anneal time', elapsedTime, 'steps',step, 'AverageTimeStep', elapsedTime/dble(step)
 					write(*,*)
 				end if
 
 				!Several defect output optionas available.
-				if(totdatToggle=='yes') call outputDefectsTotal()	!write(TOTDAT,*): totdat.out
+				!if(totdatToggle=='yes') call outputDefectsTotal()	!write(TOTDAT,*): totdat.out
 				if(rawdatToggle=='yes') call outputDefectsXYZ()		!write(RAWDAT,*): rawdat
 
 				outputCounter=outputCounter+1
@@ -607,38 +593,22 @@ program MISASCD
 		!Output final defect state
 		!***********************************************************************
 		if(annealTime > 0d0) then
-
-			call MPI_REDUCE(numImpAnn,totalImpAnn, 2, MPI_INTEGER, MPI_SUM, 0, comm, ierr)
-
-			write(*,*) 'Fraction null steps', dble(nullSteps)/dble(step), 'Proc', myProc%taskid
+			simStatus=0	!<1: 'irradiation', 0: 'anneal'
+			!call MPI_REDUCE(numImpAnn,totalImpAnn, 2, MPI_INTEGER, MPI_SUM, 0, comm, ierr)
+			call outputDefectsTotal(simStatus)	!write totdat.out, defect.out, stadat.out
+			call cpu_time(time2)
+			!write(*,*) 'Fraction null steps', dble(nullSteps)/dble(step), 'Proc', myProc%taskid
 			if(myProc%taskid==MASTER) then
-				DPA=dble(totalImpAnn(1))/(systemVol/(numDisplacedAtoms*atomSize))
-				call cpu_time(time2)
-
-				write(*,*) 'Final Defect State'
-				write(TOTDAT,*) 'Final Defect State'
-
-				write(*,*) 'Anneal time', elapsedTime, 'DPA', DPA, 'steps', step, 'AverageTimeStep', elapsedTime/dble(step)
-				write(TOTDAT,*) '*********************************************************************************************'
-				write(TOTDAT,*) 'Anneal time', elapsedTime, 'DPA', DPA, 'steps', step, 'AverageTimeStep', elapsedTime/dble(step)
-				if(implantType=='FrenkelPair') then
-					write(*,*) 'FrenkelPairs', totalImpAnn(1), 'computationTime', time2-time1
-					write(TOTDAT,*) 'FrenkelPairs', totalImpAnn(1), 'computationTime', time2-time1
-				else if(implantType=='Cascade')	then
-					write(*,*) 'Cascades', totalImpAnn(1), 'computationTime', time2-time1
-					write(TOTDAT,*) 'Cascades', totalImpAnn(1), 'computationTime', time2-time1
-				else
-					write(*,*) 'noImplantation', totalImpAnn(1), 'computationTime', time2-time1
-					write(TOTDAT,*) 'noImplantation', totalImpAnn(1), 'computationTime', time2-time1
-				end if
+				!DPA=dble(totalImpAnn(1))/(systemVol/(numDisplacedAtoms*atomSize))
 				write(*,*)
-				write(TOTDAT,*) 'Final  step'
-				write(TOTDAT,*) 'Fraction null steps', dble(nullSteps)/dble(step)
-
+				write(*,*) 'Annealing process'
+				write(*,*) 'Final Defect State'
+				write(*,*) 'Anneal time', elapsedTime, 'steps', step, 'AverageTimeStep', elapsedTime/dble(step)
+				write(*,*)
 			end if
 
 			!Final output
-			if(totdatToggle=='yes') call outputDefectsTotal()
+			!if(totdatToggle=='yes') call outputDefectsTotal()
 			if(rawdatToggle=='yes') call outputDefectsXYZ()
 
 		end if
@@ -647,16 +617,6 @@ program MISASCD
 		!Final step: release all cascades into coarse mesh
 		!(deallocate all extra memory here)
 		!***********************************************************************
-	!	call cpu_time(time2)
-
-	!	if(myProc%taskid==MASTER) then
-	!		write(*,*) 'computation time', time2-time1
-	!		write(*,*) 'total steps', step
-	!		write(TOTDAT,*) 'computation time', time2-time1
-	!		write(TOTDAT,*) 'total steps', step
-	!		write(*,*) 'Deallocating memory: fine mesh defects and reactions'
-	!	end if
-
 		!<delete defects in fine mesh
 		do while(associated(ActiveCascades))
 			CascadeCurrent=>ActiveCascades
@@ -664,11 +624,6 @@ program MISASCD
 			call releaseFineMeshDefects(CascadeCurrent)
 			call resetReactionListSingleCell(cascadeCell)
 		end do
-
-		if(myProc%taskid==MASTER) then
-			write(TOTDAT,*) 'Released all fine mesh defects'
-			write(*,*) 'Deallocating memory: coarse mesh defects and reactions'
-		end if
 
 		call deallocateDefectList()
 		call deallocateReactionList()
@@ -679,8 +634,10 @@ program MISASCD
 		end if
 
 		if(myProc%taskid==MASTER) then
+			if(totdatToggle=='yes') close(TOTFILE)
+			if(defectToggle=='yes') close(DEFFILE)
+			if(stadatToggle=='yes') close(STAFILE)
 			close(RAWDAT)
-			close(TOTDAT)
 		end if
 
 	end do	!End of loop for multiple trials
@@ -695,8 +652,7 @@ program MISASCD
 	call cpu_time(time2)
 	if(myProc%taskid==MASTER) then
 		write(*,*) 'computation time', time2-time1
-		write(*,*) 'Deallocating memory: cascade list'
-		write(*,*) 'Deallocating material input data'
+		write(*,*) 'Deallocating memory'
 	end if
 
 	call MPI_FINALIZE(ierr)		!must be performed at end of simulation to have no error

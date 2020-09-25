@@ -10,9 +10,9 @@ subroutine ReadInputs()
 
 	character(len=20) :: char
 	integer :: i
-	character(len=50) :: defectFilename                 !<Filename of defect attributes file
-	character(len=50) :: meshFilename                   !<Filename of mesh file
-	character(len=50) :: cascadeFilename                !<Filename of cascade file
+	character(len=100) :: defectFilename                 !<Filename of defect attributes file
+	character(len=100) :: meshFilename                   !<Filename of mesh file
+	character(len=100) :: cascadeFilename                !<Filename of cascade file
 	logical :: alive1, alive2, flag, flag1
 
 	flag= .false.
@@ -329,8 +329,10 @@ subroutine ReadInputs()
 	!<read in output parameters
 	!*******************************************************
 	!<set default valuse for output parameters
-	totdatToggle		='yes'
-	rawdatToggle		='no'
+	totdatToggle ='yes'
+	defectToggle ='no'
+	stadatToggle ='no'
+	rawdatToggle ='no'
 	minSCluster = 10
 	minVoid = 10
 	minLoop = 10
@@ -354,6 +356,12 @@ subroutine ReadInputs()
 			else if(char=='totdatToggle') then
 				flag1=.TRUE.
 				read(PARAFILE,*) totdatToggle
+			else if(char=='defectToggle') then
+				flag1=.TRUE.
+				read(PARAFILE,*) defectToggle
+			else if(char=='stadatToggle') then
+				flag1=.TRUE.
+				read(PARAFILE,*) stadatToggle
 			else if(char=='rawdatToggle') then
 				flag1=.TRUE.
 				read(PARAFILE,*) rawdatToggle
@@ -453,19 +461,19 @@ subroutine readDefectAttributes(filename)
 	use mod_structures
 	implicit none
 
-	character(len=50), intent(in) :: filename
+	character(len=100), intent(in) :: filename
 	character(len=20) :: char
 	logical :: flag
 	integer :: i,j
 
 	flag=.FALSE.
-	open(DEFFILE, file=filename,action='read', status='old')
+	open(ATTRFILE, file=filename,action='read', status='old')
 
 	do while(flag .eqv. .FALSE.)
-		read(DEFFILE,*) char
+		read(ATTRFILE,*) char
 		if(char=='species') then
 			flag=.TRUE.
-			read(DEFFILE,*) numSpecies	!< numSpecies = 4
+			read(ATTRFILE,*) numSpecies	!< numSpecies = 4
 		end if
 	end do
 	flag=.FALSE.
@@ -474,7 +482,7 @@ subroutine readDefectAttributes(filename)
 	!<Read in formation energies
 	!*******************************************************
 	do while(flag .eqv. .false.)
-		read(DEFFILE,*) char
+		read(ATTRFILE,*) char
 		if(char=='formationEnergies') then
 			flag=.true.
 		end if
@@ -482,10 +490,10 @@ subroutine readDefectAttributes(filename)
 	flag=.false.
 
 	do while(flag .eqv. .FALSE.)
-		read(DEFFILE,*) char
+		read(ATTRFILE,*) char
 		if(char=='numSingle') then
 			flag=.TRUE.
-			read(DEFFILE,*) numSingleForm
+			read(ATTRFILE,*) numSingleForm
 		end if
 	end do
 	flag=.FALSE.
@@ -493,15 +501,15 @@ subroutine readDefectAttributes(filename)
 	allocate(FormSingle(numSingleForm))
 	do i=1,numSingleForm
 		allocate(FormSingle(i)%defectType(numSpecies))
-		read(DEFFILE,*) (FormSingle(i)%defectType(j),j=1,numSpecies)
-		read(DEFFILE,*) char, FormSingle(i)%Ef
+		read(ATTRFILE,*) (FormSingle(i)%defectType(j),j=1,numSpecies)
+		read(ATTRFILE,*) char, FormSingle(i)%Ef
 	end do
 
 	!*******************************************************
 	!<Read in diffusion prefactors and migration energies
 	!*******************************************************
 	do while(flag .eqv. .FALSE.)
-		read(DEFFILE,*) char
+		read(ATTRFILE,*) char
 		if(char=='diffusionPrefactors') then
 			flag=.TRUE.
 		end if
@@ -509,10 +517,10 @@ subroutine readDefectAttributes(filename)
 	flag=.FALSE.
 
 	do while(flag .eqv. .FALSE.)
-		read(DEFFILE,*) char
+		read(ATTRFILE,*) char
 		if(char=='numSingle') then
 			flag=.TRUE.
-			read(DEFFILE,*) numSingleDiff
+			read(ATTRFILE,*) numSingleDiff
 		end if
 	end do
 	flag=.FALSE.
@@ -520,15 +528,15 @@ subroutine readDefectAttributes(filename)
 	allocate(DiffSingle(numSingleDiff))
 	do i=1,numSingleDiff
 		allocate(DiffSingle(i)%defectType(numSpecies))
-		read(DEFFILE,*) (DiffSingle(i)%defectType(j),j=1,numSpecies)
-		read(DEFFILE,*) char, DiffSingle(i)%D, char, DiffSingle(i)%Em
+		read(ATTRFILE,*) (DiffSingle(i)%defectType(j),j=1,numSpecies)
+		read(ATTRFILE,*) char, DiffSingle(i)%D, char, DiffSingle(i)%Em
 	end do
 
 	do while(flag .eqv. .FALSE.)
-		read(DEFFILE,*) char
+		read(ATTRFILE,*) char
 		if(char=='numFunction') then
 			flag=.TRUE.
-			read(DEFFILE,*) numFuncDiff
+			read(ATTRFILE,*) numFuncDiff
 		end if
 	end do
 	flag=.FALSE.
@@ -536,16 +544,16 @@ subroutine readDefectAttributes(filename)
 	allocate(DiffFunc(numFuncDiff))
 	do i=1,numFuncDiff
 		allocate(DiffFunc(i)%defectType(numSpecies))
-		read(DEFFILE,*) (DiffFunc(i)%defectType(j),j=1,numSpecies)	!< read in defectTypes
+		read(ATTRFILE,*) (DiffFunc(i)%defectType(j),j=1,numSpecies)	!< read in defectTypes
 		allocate(DiffFunc(i)%min(numSpecies))
 		allocate(DiffFunc(i)%max(numSpecies))
-		read(DEFFILE,*) char, (DiffFunc(i)%min(j),j=1,numSpecies)
-		read(DEFFILE,*) char, (DiffFunc(i)%max(j),j=1,numSpecies)
-		read(DEFFILE,*) char, DiffFunc(i)%functionType
-		read(DEFFILE,*) char, DiffFunc(i)%numParam
+		read(ATTRFILE,*) char, (DiffFunc(i)%min(j),j=1,numSpecies)
+		read(ATTRFILE,*) char, (DiffFunc(i)%max(j),j=1,numSpecies)
+		read(ATTRFILE,*) char, DiffFunc(i)%functionType
+		read(ATTRFILE,*) char, DiffFunc(i)%numParam
 		allocate(DiffFunc(i)%parameters(DiffFunc(i)%numParam))
 		if(DiffFunc(i)%numParam /= 0) then
-			read(DEFFILE,*) (DiffFunc(i)%parameters(j),j=1,DiffFunc(i)%numParam)
+			read(ATTRFILE,*) (DiffFunc(i)%parameters(j),j=1,DiffFunc(i)%numParam)
 		end if
 	end do
 
@@ -553,7 +561,7 @@ subroutine readDefectAttributes(filename)
 	!<Read in binding energies
 	!*******************************************************
 	do while(flag .eqv. .FALSE.)
-		read(DEFFILE,*) char
+		read(ATTRFILE,*) char
 		if(char=='bindingEnergies') then
 			flag=.TRUE.
 		end if
@@ -561,10 +569,10 @@ subroutine readDefectAttributes(filename)
 	flag=.FALSE.
 
 	do while(flag .eqv. .FALSE.)
-		read(DEFFILE,*) char
+		read(ATTRFILE,*) char
 		if(char=='numSingle') then
 			flag=.TRUE.
-			read(DEFFILE,*) numSingleBind
+			read(ATTRFILE,*) numSingleBind
 		end if
 	end do
 	flag=.FALSE.
@@ -573,15 +581,15 @@ subroutine readDefectAttributes(filename)
 	do i=1,numSingleBind
 		allocate(BindSingle(i)%defectType(numSpecies))
 		allocate(BindSingle(i)%product(numSpecies))
-		read(DEFFILE,*) (BindSingle(i)%defectType(j),j=1,numSpecies),(BindSingle(i)%product(j),j=1,numSpecies)
-		read(DEFFILE,*) char, BindSingle(i)%Eb
+		read(ATTRFILE,*) (BindSingle(i)%defectType(j),j=1,numSpecies),(BindSingle(i)%product(j),j=1,numSpecies)
+		read(ATTRFILE,*) char, BindSingle(i)%Eb
 	end do
 
 	do while(flag .eqv. .FALSE.)
-		read(DEFFILE,*) char
+		read(ATTRFILE,*) char
 		if(char=='numFunction') then
 			flag=.TRUE.
-			read(DEFFILE,*) numFuncBind
+			read(ATTRFILE,*) numFuncBind
 		end if
 	end do
 	flag=.FALSE.
@@ -590,16 +598,16 @@ subroutine readDefectAttributes(filename)
 	do i=1,numFuncBind
 		allocate(BindFunc(i)%defectType(numSpecies))
 		allocate(BindFunc(i)%product(numSpecies))
-		read(DEFFILE,*) (BindFunc(i)%defectType(j),j=1,numSpecies),(BindFunc(i)%product(j),j=1,numSpecies)
+		read(ATTRFILE,*) (BindFunc(i)%defectType(j),j=1,numSpecies),(BindFunc(i)%product(j),j=1,numSpecies)
 		allocate(BindFunc(i)%min(numSpecies))
 		allocate(BindFunc(i)%max(numSpecies))
-		read(DEFFILE,*) char, (BindFunc(i)%min(j),j=1,numSpecies)
-		read(DEFFILE,*) char, (BindFunc(i)%max(j),j=1,numSpecies)
-		read(DEFFILE,*) char, BindFunc(i)%functionType
-		read(DEFFILE,*) char, BindFunc(i)%numParam
+		read(ATTRFILE,*) char, (BindFunc(i)%min(j),j=1,numSpecies)
+		read(ATTRFILE,*) char, (BindFunc(i)%max(j),j=1,numSpecies)
+		read(ATTRFILE,*) char, BindFunc(i)%functionType
+		read(ATTRFILE,*) char, BindFunc(i)%numParam
 		allocate(BindFunc(i)%parameters(BindFunc(i)%numParam))
 		if(BindFunc(i)%numParam /= 0) then
-			read(DEFFILE,*) (BindFunc(i)%parameters(j),j=1,BindFunc(i)%numParam)
+			read(ATTRFILE,*) (BindFunc(i)%parameters(j),j=1,BindFunc(i)%numParam)
 		end if
 	end do
 
@@ -607,10 +615,10 @@ subroutine readDefectAttributes(filename)
 	!<Read in reactions
 	!*******************************************************
 	do while(flag .eqv. .FALSE.)
-		read(DEFFILE,*) char
+		read(ATTRFILE,*) char
 		if(char=='dissociation') then
 			flag=.TRUE.
-			read(DEFFILE,*) numDissocReac
+			read(ATTRFILE,*) numDissocReac
 		end if
 	end do
 	flag=.FALSE.
@@ -621,20 +629,20 @@ subroutine readDefectAttributes(filename)
 		DissocReactions(i)%numProducts=1
 		allocate(DissocReactions(i)%reactants(numSpecies,DissocReactions(i)%numReactants))
 		allocate(DissocReactions(i)%products(numSpecies,DissocReactions(i)%numProducts))
-		read(DEFFILE,*) (DissocReactions(i)%reactants(j,1),j=1,numSpecies),&
+		read(ATTRFILE,*) (DissocReactions(i)%reactants(j,1),j=1,numSpecies),&
 				(DissocReactions(i)%products(j,1),j=1,numSpecies)	!< read in defectType
 		allocate(DissocReactions(i)%min(numSpecies))
 		allocate(DissocReactions(i)%max(numSpecies))
-		read(DEFFILE,*) char, (DissocReactions(i)%min(j),j=1,numSpecies)
-		read(DEFFILE,*) char, (DissocReactions(i)%max(j),j=1,numSpecies)
-		read(DEFFILE,*) char, DissocReactions(i)%functionType
+		read(ATTRFILE,*) char, (DissocReactions(i)%min(j),j=1,numSpecies)
+		read(ATTRFILE,*) char, (DissocReactions(i)%max(j),j=1,numSpecies)
+		read(ATTRFILE,*) char, DissocReactions(i)%functionType
 	end do
 
 	do while(flag .eqv. .FALSE.)
-		read(DEFFILE,*) char
+		read(ATTRFILE,*) char
 		if(char=='diffusion') then
 			flag=.TRUE.
-			read(DEFFILE,*) numDiffReac
+			read(ATTRFILE,*) numDiffReac
 		end if
 	end do
 	flag=.FALSE.
@@ -645,20 +653,20 @@ subroutine readDefectAttributes(filename)
 		DiffReactions(i)%numProducts=1
 		allocate(DiffReactions(i)%reactants(numSpecies,DiffReactions(i)%numReactants))
 		allocate(DiffReactions(i)%products(numSpecies,DiffReactions(i)%numProducts))
-		read(DEFFILE,*) (DiffReactions(i)%reactants(j,1),j=1,numSpecies),&
+		read(ATTRFILE,*) (DiffReactions(i)%reactants(j,1),j=1,numSpecies),&
 				(DiffReactions(i)%products(j,1),j=1,numSpecies)
 		allocate(DiffReactions(i)%min(numSpecies))
 		allocate(DiffReactions(i)%max(numSpecies))
-		read(DEFFILE,*) char, (DiffReactions(i)%min(j),j=1,numSpecies)
-		read(DEFFILE,*) char, (DiffReactions(i)%max(j),j=1,numSpecies)
-		read(DEFFILE,*) char, DiffReactions(i)%functionType
+		read(ATTRFILE,*) char, (DiffReactions(i)%min(j),j=1,numSpecies)
+		read(ATTRFILE,*) char, (DiffReactions(i)%max(j),j=1,numSpecies)
+		read(ATTRFILE,*) char, DiffReactions(i)%functionType
 	end do
 
 	do while(flag .eqv. .FALSE.)
-		read(DEFFILE,*) char
+		read(ATTRFILE,*) char
 		if(char=='sinkRemoval') then
 			flag=.TRUE.
-			read(DEFFILE,*) numSinkReac
+			read(ATTRFILE,*) numSinkReac
 		end if
 	end do
 	flag=.FALSE.
@@ -669,19 +677,19 @@ subroutine readDefectAttributes(filename)
 		SinkReactions(i)%numReactants=1
 		SinkReactions(i)%numProducts=0
 		allocate(SinkReactions(i)%reactants(numSpecies,SinkReactions(i)%numReactants))
-		read(DEFFILE,*) (SinkReactions(i)%reactants(j,1),j=1,numSpecies)
+		read(ATTRFILE,*) (SinkReactions(i)%reactants(j,1),j=1,numSpecies)
 		allocate(SinkReactions(i)%min(numSpecies))
 		allocate(SinkReactions(i)%max(numSpecies))
-		read(DEFFILE,*) char, (SinkReactions(i)%min(j),j=1,numSpecies)
-		read(DEFFILE,*) char, (SinkReactions(i)%max(j),j=1,numSpecies)
-		read(DEFFILE,*) char, SinkReactions(i)%functionType
+		read(ATTRFILE,*) char, (SinkReactions(i)%min(j),j=1,numSpecies)
+		read(ATTRFILE,*) char, (SinkReactions(i)%max(j),j=1,numSpecies)
+		read(ATTRFILE,*) char, SinkReactions(i)%functionType
 	end do
 
 	do while(flag .eqv. .FALSE.)
-		read(DEFFILE,*) char
+		read(ATTRFILE,*) char
 		if(char=='impurityTrapping') then
 			flag=.TRUE.
-			read(DEFFILE,*) numImpurityReac
+			read(ATTRFILE,*) numImpurityReac
 		end if
 	end do
 	flag=.FALSE.
@@ -692,20 +700,20 @@ subroutine readDefectAttributes(filename)
 		ImpurityReactions(i)%numProducts=1
 		allocate(ImpurityReactions(i)%reactants(numSpecies,ImpurityReactions(i)%numReactants))
 		allocate(ImpurityReactions(i)%products(numSpecies,ImpurityReactions(i)%numProducts))
-		read(DEFFILE,*) (ImpurityReactions(i)%reactants(j,1),j=1,numSpecies), &
+		read(ATTRFILE,*) (ImpurityReactions(i)%reactants(j,1),j=1,numSpecies), &
 				(ImpurityReactions(i)%products(j,1),j=1,numSpecies)
 		allocate(ImpurityReactions(i)%min(numSpecies))
 		allocate(ImpurityReactions(i)%max(numSpecies))
-		read(DEFFILE,*) char, (ImpurityReactions(i)%min(j),j=1,numSpecies)
-		read(DEFFILE,*) char, (ImpurityReactions(i)%max(j),j=1,numSpecies)
-		read(DEFFILE,*) char, ImpurityReactions(i)%functionType
+		read(ATTRFILE,*) char, (ImpurityReactions(i)%min(j),j=1,numSpecies)
+		read(ATTRFILE,*) char, (ImpurityReactions(i)%max(j),j=1,numSpecies)
+		read(ATTRFILE,*) char, ImpurityReactions(i)%functionType
 	end do
 
 	do while(flag .eqv. .FALSE.)
-		read(DEFFILE,*) char
+		read(ATTRFILE,*) char
 		if(char=='clustering') then
 			flag=.TRUE.
-			read(DEFFILE,*) numClusterReac
+			read(ATTRFILE,*) numClusterReac
 		end if
 	end  do
 	flag=.FALSE.
@@ -716,24 +724,24 @@ subroutine readDefectAttributes(filename)
 		ClusterReactions(i)%numProducts=1
 		allocate(ClusterReactions(i)%reactants(numSpecies,ClusterReactions(i)%numReactants))
 		allocate(ClusterReactions(i)%products(numSpecies,ClusterReactions(i)%numProducts))
-		read(DEFFILE,*) (ClusterReactions(i)%reactants(j,1),j=1,numSpecies),&
+		read(ATTRFILE,*) (ClusterReactions(i)%reactants(j,1),j=1,numSpecies),&
 				(ClusterReactions(i)%reactants(j,2),j=1,numSpecies)
 		allocate(ClusterReactions(i)%min(numSpecies*ClusterReactions(i)%numReactants))
 		allocate(ClusterReactions(i)%max(numSpecies*ClusterReactions(i)%numReactants))
-		read(DEFFILE,*) char,(ClusterReactions(i)%min(j),j=1,numSpecies*ClusterReactions(i)%numReactants)
-		read(DEFFILE,*) char,(ClusterReactions(i)%max(j),j=1,numSpecies*ClusterReactions(i)%numReactants)
+		read(ATTRFILE,*) char,(ClusterReactions(i)%min(j),j=1,numSpecies*ClusterReactions(i)%numReactants)
+		read(ATTRFILE,*) char,(ClusterReactions(i)%max(j),j=1,numSpecies*ClusterReactions(i)%numReactants)
 		do j=1,numSpecies
 			ClusterReactions(i)%products(j,1)=ClusterReactions(i)%reactants(j,1)+&
 					ClusterReactions(i)%reactants(j,2)
 		end do
-		read(DEFFILE,*) char, ClusterReactions(i)%functionType
+		read(ATTRFILE,*) char, ClusterReactions(i)%functionType
 	end do
 
 	do while(flag .eqv. .FALSE.)
-		read(DEFFILE,*) char
+		read(ATTRFILE,*) char
 		if(char=='Implantation') then
 			flag=.TRUE.
-			read(DEFFILE,*) numImplantReac
+			read(ATTRFILE,*) numImplantReac
 		end if
 	end do
 	flag=.FALSE.
@@ -742,7 +750,7 @@ subroutine readDefectAttributes(filename)
 	do i=1,numImplantReac
 		if(i==1) then	!Read in Frenkel pair reaction parameters
 			do while(flag .eqv. .FALSE.)
-				read(DEFFILE,*) char
+				read(ATTRFILE,*) char
 				if(char=='FrenkelPair') then
 					flag=.TRUE.
 				end if
@@ -752,13 +760,13 @@ subroutine readDefectAttributes(filename)
 			ImplantReactions(i)%numReactants=0
 			ImplantReactions(i)%numProducts=2
 			allocate(ImplantReactions(i)%products(numSpecies,ImplantReactions(i)%numProducts))
-			read(DEFFILE,*) (ImplantReactions(i)%products(j,1),j=1,numSpecies),&
+			read(ATTRFILE,*) (ImplantReactions(i)%products(j,1),j=1,numSpecies),&
 					(ImplantReactions(i)%products(j,2),j=1,numSpecies)
-			read(DEFFILE,*) char, ImplantReactions(i)%functionType
+			read(ATTRFILE,*) char, ImplantReactions(i)%functionType
 
 		else if(i==2) then !read in cascade reaction parameters
 			do while(flag .eqv. .FALSE.)
-				read(DEFFILE,*) char
+				read(ATTRFILE,*) char
 				if(char=='Cascade') then
 					flag=.TRUE.
 				end if
@@ -767,13 +775,13 @@ subroutine readDefectAttributes(filename)
 
 			ImplantReactions(i)%numReactants=-10
 			ImplantReactions(i)%numProducts=0
-			read(DEFFILE,*) char, ImplantReactions(i)%functionType
+			read(ATTRFILE,*) char, ImplantReactions(i)%functionType
 		else
 			write(*,*) 'error numImplantReac'
 		end if
 	end do
 
-	close(DEFFILE)
+	close(ATTRFILE)
 
 end subroutine
 
@@ -786,7 +794,7 @@ subroutine readCascadeList(filename)
 	use mod_structures
 	implicit none
 
-	character(len=50), intent(in) :: filename
+	character(len=100), intent(in) :: filename
 	character(len=20) :: char
 	type(cascadeEvent), pointer :: cascadeCurrent
 	type(cascadeDefect), pointer :: defectCurrent

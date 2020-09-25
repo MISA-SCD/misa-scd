@@ -142,17 +142,18 @@ subroutine outputDefectsXYZ()
 end subroutine
 
 !*******************************************************************************************************
-!> Subroutine outputDefectsTotal()
+!> Subroutine outputDefectsTotal(simStatus)
 !Outputs into file: totdat.out. Outputs a list of all defects in system (defect type, num), regardless of volume element.
 !Compiles such a list using message passing between processors.
 !Used to find total defect populations in simulation volume, not spatial distribution of defects.
 !*******************************************************************************************************
-subroutine outputDefectsTotal()
+subroutine outputDefectsTotal(simStatus)
 	use mod_structures
 	use mod_constants
 	implicit none
 	include 'mpif.h'
 
+	integer, intent(in) :: simStatus		!<1: 'irradiation', 0: 'anneal'
 	integer :: i, j, k, status(MPI_STATUS_SIZE)
 	integer :: products(numSpecies), same
 	type(defect), pointer :: defectCurrent, defectPrevList, defectCurrentList, outputDefectList
@@ -462,7 +463,65 @@ subroutine outputDefectsTotal()
 		VRetained=0d0
 		VAnnihilated=0d0
 
-		write(TOTDAT,*) 'defects (Cu, V, SIA_m, SIA_im, num)'
+		!<Output time information
+		DPA=dble(totalImpAnn(1))/(systemVol/(numDisplacedAtoms*atomSize))
+		if(totdatToggle=='yes') then
+			write(TOTFILE,*)
+			write(TOTFILE,*)
+			write(TOTFILE,*) '***********************************************************************'
+			if(simStatus == 1) then		!<1: 'irradiation', 0: 'anneal'
+				write(TOTFILE,*) 'Time', elapsedTime, 'Steps', step
+				if(implantType=='FrenkelPair') then
+					write(TOTFILE,*) 'FrenkelPairs', totalImpAnn(1), 'DPA', DPA
+				else if(implantType=='Cascade')	then
+					write(TOTFILE,*) 'Cascades', totalImpAnn(1), 'DPA', DPA
+				else	!Thermal aging
+					write(TOTFILE,*) 'noImplantation', totalImpAnn(1), 'DPA', DPA
+				end if
+			else if(simStatus == 0) then
+				write(TOTFILE,*) 'Annealing process'
+				write(TOTFILE,*) 'Anneal time', elapsedTime, 'Steps', step
+			end if
+			write(TOTFILE,*) 'Defects (Cu V I_m I_im[defectType] _ [number]):'
+		end if
+		if(defectToggle=='yes') then
+			write(DEFFILE,*)
+			write(DEFFILE,*)
+			write(DEFFILE,*) '***********************************************************************'
+			if(simStatus == 1) then		!<1: 'irradiation', 0: 'anneal'
+				write(DEFFILE,*) 'Time', elapsedTime, 'Steps', step
+				if(implantType=='FrenkelPair') then
+					write(DEFFILE,*) 'FrenkelPairs', totalImpAnn(1), 'DPA', DPA
+				else if(implantType=='Cascade')	then
+					write(DEFFILE,*) 'Cascades', totalImpAnn(1), 'DPA', DPA
+				else	!Thermal aging
+					write(DEFFILE,*) 'noImplantation', totalImpAnn(1), 'DPA', DPA
+				end if
+			else if(simStatus == 0) then
+				write(DEFFILE,*) 'Annealing process'
+				write(DEFFILE,*) 'Anneal time', elapsedTime, 'Steps', step
+			end if
+			write(DEFFILE,*) 'Defects (Cu V I_m I_im[defectType] _ [number]):'
+		end if
+		if(stadatToggle=='yes') then
+			write(STAFILE,*)
+			write(STAFILE,*)
+			write(STAFILE,*) '***********************************************************************'
+			if(simStatus == 1) then		!<1: 'irradiation', 0: 'anneal'
+				write(STAFILE,*) 'Time', elapsedTime, 'Steps', step
+				if(implantType=='FrenkelPair') then
+					write(STAFILE,*) 'FrenkelPairs', totalImpAnn(1), 'DPA', DPA
+				else if(implantType=='Cascade')	then
+					write(STAFILE,*) 'Cascades', totalImpAnn(1), 'DPA', DPA
+				else	!Thermal aging
+					write(STAFILE,*) 'noImplantation', totalImpAnn(1), 'DPA', DPA
+				end if
+			else if(simStatus == 0) then
+				write(STAFILE,*) 'Annealing process'
+				write(STAFILE,*) 'Anneal time', elapsedTime, 'Steps', step
+			end if
+		end if
+
 		defectCurrentList=>outputDefectList%next
 		do while(associated(defectCurrentList))
 
@@ -530,8 +589,13 @@ subroutine outputDefectsTotal()
 
 			end if
 
-			!Output defects
-			write(TOTDAT,*) defectCurrentList%defectType, defectCurrentList%num
+			!<Output defects
+			if(totdatToggle=='yes') then
+				write(TOTFILE,*) defectCurrentList%defectType, defectCurrentList%num
+			end if
+			if(defectToggle=='yes') then
+				write(DEFFILE,*) defectCurrentList%defectType, defectCurrentList%num
+			end if
 
 			defectCurrentList=>defectCurrentList%next
 		end do
@@ -561,17 +625,45 @@ subroutine outputDefectsTotal()
 		VRetained = dble(totalVac)/(dble(numDisplacedAtoms)*dble(totalImpAnn(1)))
 		VAnnihilated = dble(totalImpAnn(2))/(dble(numDisplacedAtoms)*dble(totalImpAnn(1)))
 
-		!Output totdat.out
-		write(TOTDAT,*)	'numCluster (S/Void/Loop/SV):', numScluster, numVoid, numLoop, numSVcluster
-		write(TOTDAT,*)	'NumberDensity (m-3) (S/Void/Loop/SV):',denScluster*1d27,denVoid*1d27,denLoop*1d27,denSVcluster*1d27
-		write(TOTDAT,*)	'Concentration (S/Void/Loop/SV):', denScluster*atomSize_Cu, denVoid*atomSize, denLoop*atomSize,&
-				denSVcluster*atomSize_Cu
-		write(TOTDAT,*)	'AverageRadius (nm) (S/Void/Loop/SV):', radiusScluster, radiusVoid, radiusLoop, radiusSVcluster
-		write(TOTDAT,*)	'AverageSize (S/Void/Loop/SV):', sizeScluster, sizeVoid, sizeLoop, sizeSVcluster
-		write(TOTDAT,*) 'ConcenPointDefects (V/SIA):', conPointV, conPointSIA
-		write(TOTDAT,*) 'PercentVRetained',VRetained,'PercentVAnnihilated',VAnnihilated
-		write(TOTDAT,*)
-		write(TOTDAT,*)
+		!<Output totdat.out
+		if(totdatToggle=='yes') then
+			!<writa file
+			write(TOTFILE,*) 'numCluster (S/Void/Loop/SV):', numScluster, numVoid, numLoop, numSVcluster
+			write(TOTFILE,*) 'numCluster (S/Void/Loop/SV):', numScluster, numVoid, numLoop, numSVcluster
+			write(TOTFILE,*) 'NumberDensity (m-3) (S/Void/Loop/SV):', denScluster*1d27, denVoid*1d27, denLoop*1d27, &
+					denSVcluster*1d27
+			write(TOTFILE,*) 'Concentration (S/Void/Loop/SV):', denScluster*atomSize_Cu, denVoid*atomSize, &
+					denLoop*atomSize, denSVcluster*atomSize_Cu
+			write(TOTFILE,*) 'AverageRadius (nm) (S/Void/Loop/SV):', radiusScluster, radiusVoid, radiusLoop, &
+					radiusSVcluster
+			write(TOTFILE,*) 'AverageSize (S/Void/Loop/SV):', sizeScluster, sizeVoid, sizeLoop, sizeSVcluster
+			write(TOTFILE,*) 'ConcenPointDefects (V/SIA):', conPointV, conPointSIA
+			write(TOTFILE,*) 'PercentVRetained',VRetained,'PercentVAnnihilated',VAnnihilated
+		end if
+		if(stadatToggle=='yes') then
+			write(STAFILE,*) 'numCluster (S/Void/Loop/SV):', numScluster, numVoid, numLoop, numSVcluster
+			write(STAFILE,*) 'numCluster (S/Void/Loop/SV):', numScluster, numVoid, numLoop, numSVcluster
+			write(STAFILE,*) 'NumberDensity (m-3) (S/Void/Loop/SV):', denScluster*1d27, denVoid*1d27, denLoop*1d27, &
+					denSVcluster*1d27
+			write(STAFILE,*) 'Concentration (S/Void/Loop/SV):', denScluster*atomSize_Cu, denVoid*atomSize, &
+					denLoop*atomSize, denSVcluster*atomSize_Cu
+			write(STAFILE,*) 'AverageRadius (nm) (S/Void/Loop/SV):', radiusScluster, radiusVoid, radiusLoop, &
+					radiusSVcluster
+			write(STAFILE,*) 'AverageSize (S/Void/Loop/SV):', sizeScluster, sizeVoid, sizeLoop, sizeSVcluster
+			write(STAFILE,*) 'ConcenPointDefects (V/SIA):', conPointV, conPointSIA
+			write(STAFILE,*) 'PercentVRetained',VRetained,'PercentVAnnihilated',VAnnihilated
+		end if
+
+		!write(TOTDAT,*)	'numCluster (S/Void/Loop/SV):', numScluster, numVoid, numLoop, numSVcluster
+		!write(TOTDAT,*)	'NumberDensity (m-3) (S/Void/Loop/SV):',denScluster*1d27,denVoid*1d27,denLoop*1d27,denSVcluster*1d27
+		!write(TOTDAT,*)	'Concentration (S/Void/Loop/SV):', denScluster*atomSize_Cu, denVoid*atomSize, denLoop*atomSize,&
+		!		denSVcluster*atomSize_Cu
+		!write(TOTDAT,*)	'AverageRadius (nm) (S/Void/Loop/SV):', radiusScluster, radiusVoid, radiusLoop, radiusSVcluster
+		!write(TOTDAT,*)	'AverageSize (S/Void/Loop/SV):', sizeScluster, sizeVoid, sizeLoop, sizeSVcluster
+		!write(TOTDAT,*) 'ConcenPointDefects (V/SIA):', conPointV, conPointSIA
+		!write(TOTDAT,*) 'PercentVRetained',VRetained,'PercentVAnnihilated',VAnnihilated
+		!write(TOTDAT,*)
+		!write(TOTDAT,*)
 
 	end if
 
@@ -593,293 +685,3 @@ subroutine outputDefectsTotal()
 
 end subroutine
 
-!***********************************************************************
-!***********************************************************************
-!***********************************************************************
-subroutine outputTotal()
-	use mod_structures
-	use mod_constants
-	implicit none
-	include 'mpif.h'
-
-	integer :: i
-	type(defect), pointer :: defectCurrent
-	type(cascade), pointer :: cascadeCurrent
-	integer :: sendBuff(8), recvBuff(8)
-	!number of point defects (solute atom, vacancy, self-interstitial atom)
-	integer :: pointS, pointV, pointSIA
-	!total retained vacancies/self-interstitial atoms in the whole system
-	integer :: totalVac, totalSIA
-	!total number of solute atoms/vacancies/SIAs in clusters
-	integer :: numS, numV, numSIA, numSV
-	!total number of solute/V/SIA/mSnV clusters in the whole system
-	integer :: numScluster, numVoid, numLoop, numSVcluster
-	!Number density of clusters
-	double precision :: denScluster, denVoid, denLoop, denSVcluster
-	!Average radius of clusters
-	double precision :: radiusScluster, radiusVoid, radiusLoop, radiusSVcluster
-	!Average size of clusters
-	double precision :: sizeScluster, sizeVoid, sizeLoop, sizeSVcluster
-	double precision :: VRetained, VAnnihilated, conPointV, conPointSIA
-
-	!number of point defects
-	pointS=0
-	pointV=0
-	pointSIA=0
-
-	totalVac=0
-	totalSIA=0
-
-	!total number of solute (Cu) atoms/vacancies/self-interstitial atoms in clusters
-	numS=0
-	numV=0
-	numSIA=0
-	numSV=0
-
-	!total number of solute (Cu)/V/SIA clusters in the whole system
-	numScluster=0
-	numVoid=0
-	numLoop=0
-	numSVcluster=0
-
-	!number density of clusters
-	denScluster=0d0
-	denVoid=0d0
-	denLoop=0d0
-	denSVcluster=0d0
-
-	!average radius of clusters
-	radiusScluster=0d0
-	radiusVoid=0d0
-	radiusLoop=0d0
-	radiusSVcluster=0d0
-
-	!average size of clusters
-	sizeScluster=0d0
-	sizeVoid=0d0
-	sizeLoop=0d0
-	sizeSVcluster=0d0
-
-	VRetained=0d0
-	VAnnihilated=0d0
-
-	do i=1,numCells
-
-		defectCurrent=>defectList(i)%next
-		do while(associated(defectCurrent))
-
-			if(defectCurrent%defectType(1) /= 0) then	!Cu/CuV cluster
-				if(defectCurrent%defectType(1)==1 .AND. defectCurrent%defectType(2)==0) then
-					pointS=defectCurrent%num
-				end if
-
-				if(defectCurrent%defectType(1) > minSCluster) then
-					numS=numS+defectCurrent%defectType(1)*defectCurrent%num
-					radiusScluster=radiusScluster+dble(defectCurrent%num)*&
-							(3*dble(defectCurrent%defectType(1))*atomSize/(4*pi))**(1d0/3d0)
-					numScluster=numScluster+defectCurrent%num
-				end if
-
-				if((defectCurrent%defectType(1)+defectCurrent%defectType(2)) > minSV) then
-					numSV=numSV+max(defectCurrent%defectType(1), defectCurrent%defectType(2))*defectCurrent%num
-					radiusSVcluster = radiusSVcluster+dble(defectCurrent%num)*&
-							(3*dble(max(defectCurrent%defectType(1), defectCurrent%defectType(2)))*&
-									atomSize/(4*pi))**(1d0/3d0)
-					numSVcluster=numSVcluster+defectCurrent%num
-					if(defectCurrent%defectType(2) /= 0) then
-						totalVac=totalVac+defectCurrent%defectType(2)*defectCurrent%num
-					end if
-				end if
-
-			else if(defectCurrent%defectType(2) /= 0) then !V cluster
-
-				totalVac=totalVac+defectCurrent%defectType(2)*defectCurrent%num
-
-				if(defectCurrent%defectType(2)==1) then
-					pointV=defectCurrent%num
-				end if
-
-				if(defectCurrent%defectType(2) > minVoid) then
-					numV=numV+defectCurrent%defectType(2)*defectCurrent%num
-					radiusVoid=radiusVoid+dble(defectCurrent%num)*&
-							(3d0*dble(defectCurrent%defectType(2))*atomSize/(4d0*pi))**(1d0/3d0)
-					numVoid=numVoid+defectCurrent%num
-				end if
-
-			else if(defectCurrent%defectType(3) /= 0) then	!Loop
-
-				if(defectCurrent%defectType(3) ==1) then
-					pointSIA=defectCurrent%num
-				end if
-
-				if(defectCurrent%defectType(3) > minLoop) then
-					numSIA=numSIA+defectCurrent%defectType(3)*defectCurrent%num
-					radiusLoop=radiusLoop+dble(defectCurrent%num)*&
-							(dble(defectCurrent%defectType(3))*atomSize/(pi*burgers))**(1d0/2d0)
-					numLoop=numLoop+defectCurrent%num
-				end if
-
-			else if(defectCurrent%defectType(4) /= 0) then
-
-				if(defectCurrent%defectType(4) > minLoop) then
-					numSIA=numSIA+defectCurrent%defectType(4)*defectCurrent%num
-					radiusLoop=radiusLoop+dble(defectCurrent%num)*&
-							(dble(defectCurrent%defectType(4))*atomSize/(pi*burgers))**(1d0/2d0)
-					numLoop=numLoop+defectCurrent%num
-				end if
-			end if
-			defectCurrent=>defectCurrent%next
-		end do
-	end do
-
-	!Count defects in fine mesh
-	if(meshingType=='adaptive') then
-		cascadeCurrent=>ActiveCascades
-		do while(associated(cascadeCurrent))
-			do i=1,numCellsCascade
-				defectCurrent=>cascadeCurrent%localDefects(i)%next
-				do while(associated(defectCurrent))
-
-					if(defectCurrent%defectType(1) /= 0) then	!Cu/CuV cluster
-						if(defectCurrent%defectType(1)==1 .AND. defectCurrent%defectType(2)==0) then
-							pointS=defectCurrent%num
-						end if
-
-						if(defectCurrent%defectType(1) > minSCluster) then
-							numS=numS+defectCurrent%defectType(1)*defectCurrent%num
-							radiusScluster=radiusScluster+dble(defectCurrent%num)*&
-									(3*dble(defectCurrent%defectType(1))*atomSize/(4*pi))**(1d0/3d0)
-							numScluster=numScluster+defectCurrent%num
-						end if
-
-						if((defectCurrent%defectType(1)+defectCurrent%defectType(2)) > minSV) then
-							numSV=numSV+max(defectCurrent%defectType(1), defectCurrent%defectType(2))*defectCurrent%num
-							radiusSVcluster = radiusSVcluster+dble(defectCurrent%num)*&
-									(3*dble(max(defectCurrent%defectType(1), defectCurrent%defectType(2)))*&
-											atomSize/(4*pi))**(1d0/3d0)
-							numSVcluster=numSVcluster+defectCurrent%num
-							if(defectCurrent%defectType(2) /= 0) then
-								totalVac=totalVac+defectCurrent%defectType(2)*defectCurrent%num
-							end if
-						end if
-
-					else if(defectCurrent%defectType(2) /= 0) then !V cluster
-
-						totalVac=totalVac+defectCurrent%defectType(2)*defectCurrent%num
-
-						if(defectCurrent%defectType(2)==1) then
-							pointV=defectCurrent%num
-						end if
-
-						if(defectCurrent%defectType(2) > minVoid) then
-							numV=numV+defectCurrent%defectType(2)*defectCurrent%num
-							radiusVoid=radiusVoid+dble(defectCurrent%num)*&
-									(3d0*dble(defectCurrent%defectType(2))*atomSize/(4d0*pi))**(1d0/3d0)
-							numVoid=numVoid+defectCurrent%num
-						end if
-
-					else if(defectCurrent%defectType(3) /= 0) then	!Loop
-
-						if(defectCurrent%defectType(3) ==1) then
-							pointSIA=defectCurrent%num
-						end if
-
-						if(defectCurrent%defectType(3) > minLoop) then
-							numSIA=numSIA+defectCurrent%defectType(3)*defectCurrent%num
-							radiusLoop=radiusLoop+dble(defectCurrent%num)*&
-									(dble(defectCurrent%defectType(3))*atomSize/(pi*burgers))**(1d0/2d0)
-							numLoop=numLoop+defectCurrent%num
-						end if
-
-					else if(defectCurrent%defectType(4) /= 0) then
-
-						if(defectCurrent%defectType(4) > minLoop) then
-							numSIA=numSIA+defectCurrent%defectType(4)*defectCurrent%num
-							radiusLoop=radiusLoop+dble(defectCurrent%num)*&
-									(dble(defectCurrent%defectType(4))*atomSize/(pi*burgers))**(1d0/2d0)
-							numLoop=numLoop+defectCurrent%num
-						end if
-					end if
-
-					defectCurrent=>defectCurrent%next
-				end do
-			end do
-			cascadeCurrent=>cascadeCurrent%next
-		end do
-	end if
-
-	sendBuff(1)=pointV	!number of vacancies
-	sendBuff(2)=pointSIA	!number of SIAs
-	sendBuff(3)=numS
-	sendBuff(4)=numScluster
-	sendBuff(5)=numV
-	sendBuff(6)=numVoid
-	sendBuff(7)=numSIA
-	sendBuff(8)=numLoop
-
-	call MPI_REDUCE(sendBuff,recvBuff, 8, MPI_INTEGER, MPI_SUM, 0,comm, ierr)
-
-	!Output totdat.out
-	if(myProc%taskid==MASTER) then
-
-		!number of point defects
-		!pointS=0
-		pointV=recvBuff(1)
-		pointSIA=recvBuff(2)
-
-		!totalVac=0
-		!totalSIA=0
-
-		!total number of solute (Cu) atoms/vacancies/self-interstitial atoms in clusters
-		numS=recvBuff(3)
-		numV=recvBuff(5)
-		numSIA=recvBuff(7)
-
-		!total number of solute (Cu)/V/SIA clusters in the whole system
-		numScluster=recvBuff(4)
-		numVoid=recvBuff(6)
-		numLoop=recvBuff(8)
-
-		!VRetained=0d0
-		!VAnnihilated=0d0
-
-
-
-		denScluster = dble(numScluster)/systemVol
-		denVoid = dble(numVoid)/systemVol
-		denLoop = dble(numLoop)/systemVol
-		!denSVcluster = dble(numSVcluster)/systemVol
-
-		radiusScluster=(3*(dble(numS)/dble(numScluster))*atomSize/(4*pi))**(1d0/3d0)
-		radiusVoid=(3d0*(dble(numV)/dble(numVoid))*atomSize/(4d0*pi))**(1d0/3d0)
-		radiusLoop=((dble(numSIA)/dble(numLoop))*atomSize/(pi*burgers))**(1d0/2d0)
-		!radiusSVcluster=(3d0*(dble(numSV)/dble(numSVcluster))*atomSize/(4d0*pi))**(1d0/3d0)
-		!radiusScluster=radiusScluster/dble(numScluster)
-		!radiusVoid=radiusVoid/dble(numVoid)
-		!radiusLoop=radiusLoop/dble(numLoop)
-		!radiusSVcluster=radiusSVcluster/dble(numSVcluster)
-
-		sizeScluster=dble(numS)/dble(numScluster)
-		sizeVoid=dble(numV)/dble(numVoid)
-		sizeLoop=dble(numSIA)/dble(numLoop)
-		!sizeSVcluster=dble(numSV)/dble(numSVcluster)
-
-		conPointV=dble(pointV)/systemVol*atomSize
-		conPointSIA=dble(pointSIA)/systemVol*atomSize
-
-		!VRetained = dble(totalVac)/(dble(numDisplacedAtoms)*dble(totalImpAnn(1)))
-		!VAnnihilated = dble(totalImpAnn(2))/(dble(numDisplacedAtoms)*dble(totalImpAnn(1)))
-
-		!Output totdat.out
-		write(TOTDAT,*)	'numCluster (S/Void/Loop):', numScluster, numVoid, numLoop
-		write(TOTDAT,*)	'NumberDensity (m-3) (S/Void/Loop):', denScluster*1d27, denVoid*1d27,denLoop*1d27
-		write(TOTDAT,*)	'Concentration (S/Void/Loop):', denScluster*atomSize, denVoid*atomSize, denLoop*atomSize
-		write(TOTDAT,*)	'AverageRadius (nm) (S/Void/Loop):', radiusScluster, radiusVoid, radiusLoop
-		write(TOTDAT,*)	'AverageSize (S/Void/Loop):', sizeScluster, sizeVoid, sizeLoop
-		write(TOTDAT,*) 'ConcenPointDefects (V/SIA):', conPointV, conPointSIA
-		!write(TOTDAT,*) 'PercentVRetained',VRetained,'PercentVAnnihilated',VAnnihilated
-		write(TOTDAT,*)
-		write(TOTDAT,*)
-	end if
-
-end subroutine

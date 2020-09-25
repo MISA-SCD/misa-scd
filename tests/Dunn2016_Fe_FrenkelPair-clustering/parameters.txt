@@ -5,10 +5,10 @@
 !>Cu precipitation under electron irradiation in a Fe-1.34at.%Cu at 563K.
 !***************************************************************************************************
 defectFile              !Location of the defect attributes file
-'../../inputs/Fe_Defects_FP_clustering.txt'
+'../../inputs/defectsAttributes/Fe_Defects_FP_clustering.txt'
 
 meshFile                !Location of the mesh file
-'../../meshes/Mesh_SingleCrystal.txt'
+'../../inputs/meshes/Mesh_clustering.txt'
 
 implantType             !('Cascade': neutron irradiation, 'FrenkelPair': electron irradiation, 'None': no irradiation)
 FrenkelPair
@@ -17,7 +17,7 @@ implantScheme           !('MonteCarlo' for MC cascade implantation, 'explicit' f
 MonteCarlo
 
 cascadeFile             !Location of the cascade file
-'../../inputs/Fe_Cascades.txt'
+'../../inputs/cascades/Fe_20KeV_Cascades.txt'
 
 meshingType             !Whether we are using adaptive meshing protocol or not (adaptive for yes, nonAdaptive for no)
 nonAdaptive
@@ -99,13 +99,19 @@ end				        !Tag for the end of the parameters file
 !***************************************************************************************************
 OutputStart
 
-totdatToggle    !‘yes’ or ‘no’: toggles output of totdat.txt file
-no             !If you want to output totdat.txt file, both postprToggle and totdatToggle should be set 'yes'
+totdatToggle    !‘yes’ or ‘no’: toggles output of totdat.out file
+yes
+
+defectToggle    !‘yes’ or ‘no’: toggles output of defect.out file
+no
+
+stadatToggle    !‘yes’ or ‘no’: toggles output of stadat.out file
+no
 
 rawdatToggle    !‘yes’ or ‘no’: toggles output of raw data files
-no              !Default 'no'
+no
 
-minSCluster      !Only n>minSCluster SnVm and Sn clusters are counted
+minSCluster     !Only n>minSCluster SnVm and Sn clusters are counted
 10
 
 minVoid         !Only n>minVoid Vn clusters are counted

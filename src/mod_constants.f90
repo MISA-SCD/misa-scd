@@ -11,7 +11,6 @@
 !! 7) Other miscellaneous variables used for MPI, debugging, or postprocessing
 !****************************************************************************************
 module mod_constants
-
     use mod_structures
     implicit none
 
@@ -71,18 +70,18 @@ module mod_constants
     type(reactionParameters), allocatable :: ClusterReactions(:)	    !<List of allowed clustering reactions (and ref. to functional form of reaction rate)--(numClusterReac)
     type(reactionParameters), allocatable :: ImplantReactions(:)	    !<List of allowed implantation reactions (and ref. to functional form of reaction rate)--(numImplantReac)
 
-    integer :: numSingleForm                                !<Number of single defect formation energy in input file
-    integer :: numSingleDiff	                            !<Number of single defect diffusion rates in input file
-    integer :: numFuncDiff		                            !<Number of functional forms for diffusion rates in input files
-    integer :: numSingleBind                                !<Number of single defect binding energies in input file
-    integer :: numFuncBind		                            !<Number of functional forms for binding energies in input files
+    integer :: numSingleForm                !<Number of single defect formation energy in input file
+    integer :: numSingleDiff	            !<Number of single defect diffusion rates in input file
+    integer :: numFuncDiff		            !<Number of functional forms for diffusion rates in input files
+    integer :: numSingleBind                !<Number of single defect binding energies in input file
+    integer :: numFuncBind		            !<Number of functional forms for binding energies in input files
 
-    integer :: numDissocReac	                            !<Number of dissociation reactions in input file
-    integer :: numDiffReac		                            !<Number of diffusion reactions in input file
-    integer :: numSinkReac		                            !<Number of sink reactions in input file
-    integer :: numImpurityReac	                            !<Number of impurity reactions in input file
-    integer :: numClusterReac	                            !<Number of clustering reactions in input file
-    integer :: numImplantReac	                            !<Number of implantation reactions in input file (cascade, Frenkel pair currently implemented)
+    integer :: numDissocReac	            !<Number of dissociation reactions in input file
+    integer :: numDiffReac		            !<Number of diffusion reactions in input file
+    integer :: numSinkReac		            !<Number of sink reactions in input file
+    integer :: numImpurityReac	            !<Number of impurity reactions in input file
+    integer :: numClusterReac	            !<Number of clustering reactions in input file
+    integer :: numImplantReac	            !<Number of implantation reactions in input file (cascade, Frenkel pair currently implemented)
 
     !constants
     double precision, parameter :: kboltzmann=8.625d-5	    !<Boltzmann's constant (eV/K)
@@ -158,6 +157,8 @@ module mod_constants
 
     !Output  parameters
     character(len=20) totdatToggle			!<(yes or no), used to toggle whether we output the totdat.out data file
+    character(len=20) defectToggle			!<(yes or no), used to toggle whether we output the totdat.out data file
+    character(len=20) stadatToggle			!<(yes or no), used to toggle whether we output the stadat.out data file
     character(len=20) rawdatToggle			!<(yes or no), used to toggle whether we output the rawdat.out data file
     integer minSCluster                     !<Only n>minSCluster SnVm and Sn clusters are counted
     integer minVoid                         !<Only n>minVoid Vn clusters are counted
@@ -165,13 +166,16 @@ module mod_constants
     integer minSV                           !<Only (n+m)>minCuV SnVm clusters are counted
 
     !<input files
-    integer, parameter :: PARAFILE = 10                     !<Used to read parameter.txtx file
-    integer, parameter :: DEFFILE = 11                      !<Used to read Defects.txtx file
-    integer, parameter :: MESHFILE = 12                     !<Used to read Mesh_*.txt file
-    integer, parameter :: CASFILE = 13                      !<Used to read cascades.txt File
+    integer, parameter :: PARAFILE = 10     !<Used to read parameter.txtx file
+    integer, parameter :: ATTRFILE = 11      !<Used to read Defects.txtx file
+    integer, parameter :: MESHFILE = 12     !<Used to read Mesh_*.txt file
+    integer, parameter :: CASFILE = 13      !<Used to read cascades.txt File
     !<output file
-    integer, parameter :: RAWDAT = 82
-    integer, parameter :: TOTDAT = 83
+    integer, parameter :: TOTFILE = 81      !<Used to write totdat.out file, 即TOTDAT
+    integer, parameter :: DEFFILE = 82      !<Used to write defect.out file
+    integer, parameter :: STAFILE = 83      !<Used to write stadat.out file,即RAWDAT
+
+    integer, parameter :: RAWDAT = 84
 
     double precision omega					!<Geometric constant for 3D spherical clustering (see Dunn et al. JNM 2013)
     double precision omega2D				!<Geometric constant for clustering with dislocation loops (see Dunn et al. JNM 2013)
