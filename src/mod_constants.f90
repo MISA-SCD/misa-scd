@@ -1,14 +1,14 @@
 !****************************************************************************************
 !> Module mod_constants (list of globally shared variables and pointers)
-!!
-!! This module contains the list of all globally shared variables. This includes:
-!! 1) Processor and mesh information (code backbone)
-!! 2) Reaction lists, defect lists, and cascade lists, both in coarse and fine meshes
-!! 3) Global reaction rates
-!! 4) Material input information, in the form of derived types (diffusion and binding energies, etc)
-!! 5) Universal constants
-!! 6) Simulation parameters read in from parameters.txt
-!! 7) Other miscellaneous variables used for MPI, debugging, or postprocessing
+!
+! This module contains the list of all globally shared variables. This includes:
+! 1) Processor and mesh information (code backbone)
+! 2) Reaction lists, defect lists, and cascade lists, both in coarse and fine meshes
+! 3) Global reaction rates
+! 4) Material input information, in the form of derived types (diffusion and binding energies, etc)
+! 5) Universal constants
+! 6) Simulation parameters read in from parameters.txt
+! 7) Other miscellaneous variables used for MPI, debugging, or postprocessing
 !****************************************************************************************
 module mod_constants
     use mod_structures
@@ -88,8 +88,6 @@ module mod_constants
     double precision, parameter :: pi=3.141592653589793d0	!<Pi
     double precision, parameter :: Zint = 1.2d0				!<Constant representing preference for clustering of interstitials by interstitial clusters (increases clustering cross-section)
     double precision, parameter :: Zv = 1.0d0
-    !double precision, parameter :: reactionRadius=0.65d0	!<Material parameter used for reaction distances (impacts reaction rates) (nm)
-    !double precision, parameter :: lattice = 0.316d0       !<lattice constant (nm) (Fe: 0.2876d0; W: 0.316)
     double precision, parameter :: atomSize_Cu = 8.79d-3    !<Cu (nm^3)
 
     !Cu solubility CeqCu(T) = exp(DelatS/kB)*exp(-Omega/(kB*T))  Reference: (F. Christien and A. Barbu, 2004)
@@ -159,7 +157,7 @@ module mod_constants
     character(len=20) totdatToggle			!<(yes or no), used to toggle whether we output the totdat.out data file
     character(len=20) defectToggle			!<(yes or no), used to toggle whether we output the totdat.out data file
     character(len=20) stadatToggle			!<(yes or no), used to toggle whether we output the stadat.out data file
-    character(len=20) rawdatToggle			!<(yes or no), used to toggle whether we output the rawdat.out data file
+    character(len=20) xyzdatToggle			!<(yes or no), used to toggle whether we output the xyzdat.out data file
     integer minSCluster                     !<Only n>minSCluster SnVm and Sn clusters are counted
     integer minVoid                         !<Only n>minVoid Vn clusters are counted
     integer minLoop                         !<Only n>minLoop SIAn clusters are counted
@@ -171,11 +169,10 @@ module mod_constants
     integer, parameter :: MESHFILE = 12     !<Used to read Mesh_*.txt file
     integer, parameter :: CASFILE = 13      !<Used to read cascades.txt File
     !<output file
-    integer, parameter :: TOTFILE = 81      !<Used to write totdat.out file, 即TOTDAT
-    integer, parameter :: DEFFILE = 82      !<Used to write defect.out file
-    integer, parameter :: STAFILE = 83      !<Used to write stadat.out file,即RAWDAT
-
-    integer, parameter :: RAWDAT = 84
+    integer, parameter :: TOTFILE = 81      !<Used to write totdat.out file, contains defects (type and number) and  statistical data
+    integer, parameter :: DEFFILE = 82      !<Used to write defect.out file, contains onle defects (type and number)
+    integer, parameter :: STAFILE = 83      !<Used to write stadat.out file, contains only statistical data
+    integer, parameter :: XYZFILE = 84      !<Used to write xyzdat.out file, contains defects (type and number) in each mesh
 
     double precision omega					!<Geometric constant for 3D spherical clustering (see Dunn et al. JNM 2013)
     double precision omega2D				!<Geometric constant for clustering with dislocation loops (see Dunn et al. JNM 2013)

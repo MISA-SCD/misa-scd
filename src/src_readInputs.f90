@@ -329,10 +329,10 @@ subroutine ReadInputs()
 	!<read in output parameters
 	!*******************************************************
 	!<set default valuse for output parameters
-	totdatToggle ='yes'
-	defectToggle ='no'
-	stadatToggle ='no'
-	rawdatToggle ='no'
+	totdatToggle = 'yes'
+	defectToggle = 'no'
+	stadatToggle = 'no'
+	xyzdatToggle = 'no'
 	minSCluster = 10
 	minVoid = 10
 	minLoop = 10
@@ -362,9 +362,9 @@ subroutine ReadInputs()
 			else if(char=='stadatToggle') then
 				flag1=.TRUE.
 				read(PARAFILE,*) stadatToggle
-			else if(char=='rawdatToggle') then
+			else if(char=='xyzdatToggle') then
 				flag1=.TRUE.
-				read(PARAFILE,*) rawdatToggle
+				read(PARAFILE,*) xyzdatToggle
 			else if(char=='minSCluster') then
 				flag1=.TRUE.
 				read(PARAFILE,*) minSCluster

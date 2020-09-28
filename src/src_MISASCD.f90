@@ -25,7 +25,7 @@ program MISASCD
 	real :: time1, time2, time3
 	logical :: releaseToggle, impCascadeToggle
 	integer :: timeCounter
-	character(14) :: filename, filename1, filename2, filename3
+	character(14) :: filename, filename1, filename2, filename3, filename4
 	integer :: simStatus	!<1: 'irradiation', 0: 'anneal'
 	double precision, external :: GenerateTimestep, TotalRateCheck
 
@@ -143,18 +143,14 @@ program MISASCD
 				filename3(11:14)='.out'
 				open(STAFILE , file=filename3, action='write', status='Unknown')
 			end if
-		end if
 
-		!if(myProc%taskid==MASTER) then
-		!	filename(1:6)='rawdat'
-		!	filename2(1:6)='totdat'
-		!	write(unit=filename(7:8), fmt='(I2)') sim
-		!	write(unit=filename2(7:8), fmt='(I2)') sim
-		!	filename(9:12)='.out'
-		!	filename2(9:12)='.out'
-		!	if(rawdatToggle=='yes') open(RAWDAT, file=filename, action='write', status='Unknown')
-		!	if(totdatToggle=='yes') open(TOTDAT, file=filename2, action='write', status='Unknown')
-		!end if
+			if(xyzdatToggle=='yes') then
+				filename4(1:7)='xyzdat_'
+				write(unit=filename4(8:10), fmt='(I3.3)') sim
+				filename4(11:14)='.out'
+				open(XYZFILE , file=filename4, action='write', status='Unknown')
+			end if
+		end if
 
 		call initializeRandomSeeds()		!<set unique random number seeds in each processor
 		allocate(defectList(numCells))		!<Create list of defects - array
@@ -385,6 +381,7 @@ program MISASCD
 			!if(mod(step,100000)==0) then
 				simStatus=1	!<1: 'irradiation', 0: 'anneal'
 				call MPI_REDUCE(numImpAnn,totalImpAnn, 2, MPI_INTEGER, MPI_SUM, 0,comm, ierr)
+				if(xyzdatToggle=='yes') call outputDefectsXYZ()	!write xyzdat.out
 				call outputDefectsTotal(simStatus)	!write totdat.out, defect.out, stadat.out
 				call cpu_time(time2)
 				if(myProc%taskid==MASTER) then
@@ -402,7 +399,7 @@ program MISASCD
 				end if
 
 				!Several defect output optionas available.
-				if(rawdatToggle=='yes') call outputDefectsXYZ()		!write(RAWDAT,*): rawdat
+				!if(rawdatToggle=='yes') call outputDefectsXYZ()		!write(RAWDAT,*): rawdat
 				!if(totdatToggle=='yes') call outputDefectsTotal()	!write totdat.out, defect.out, stadat.out
 
 				outputCounter=outputCounter+1
@@ -431,6 +428,7 @@ program MISASCD
 		!***********************************************************************
 		simStatus=1	!<1: 'irradiation', 0: 'anneal'
 		call MPI_REDUCE(numImpAnn, totalImpAnn, 2, MPI_INTEGER, MPI_SUM,0, comm, ierr)
+		if(xyzdatToggle=='yes') call outputDefectsXYZ()	!write xyzdat.out
 		call outputDefectsTotal(simStatus)	!write totdat.out, defect.out, stadat.out
 		call cpu_time(time2)
 		if(myProc%taskid==MASTER) then
@@ -450,7 +448,7 @@ program MISASCD
 
 		!Final output
 		!if(totdatToggle=='yes') call outputDefectsTotal()
-		if(rawdatToggle=='yes') call outputDefectsXYZ()
+		!if(rawdatToggle=='yes') call outputDefectsXYZ()
 
 		!*************************************************************************************************************
 		!*************************************************************************************************************
@@ -570,6 +568,7 @@ program MISASCD
 			if(elapsedTime >= totalTime/2.0d6*(2.0d0)**(outputCounter)) then
 				simStatus=0	!<1: 'irradiation', 0: 'anneal'
 				!call MPI_REDUCE(numImpAnn, totalImpAnn, 2, MPI_INTEGER, MPI_SUM,0,comm, ierr)
+				if(xyzdatToggle=='yes') call outputDefectsXYZ()	!write xyzdat.out
 				call outputDefectsTotal(simStatus)	!write totdat.out, defect.out, stadat.out
 				call cpu_time(time2)
 				if(myProc%taskid==MASTER) then
@@ -582,7 +581,7 @@ program MISASCD
 
 				!Several defect output optionas available.
 				!if(totdatToggle=='yes') call outputDefectsTotal()	!write(TOTDAT,*): totdat.out
-				if(rawdatToggle=='yes') call outputDefectsXYZ()		!write(RAWDAT,*): rawdat
+				!if(rawdatToggle=='yes') call outputDefectsXYZ()		!write(RAWDAT,*): rawdat
 
 				outputCounter=outputCounter+1
 				!call MPI_BARRIER(comm，ierr)
@@ -595,6 +594,7 @@ program MISASCD
 		if(annealTime > 0d0) then
 			simStatus=0	!<1: 'irradiation', 0: 'anneal'
 			!call MPI_REDUCE(numImpAnn,totalImpAnn, 2, MPI_INTEGER, MPI_SUM, 0, comm, ierr)
+			if(xyzdatToggle=='yes') call outputDefectsXYZ()	!write xyzdat.out
 			call outputDefectsTotal(simStatus)	!write totdat.out, defect.out, stadat.out
 			call cpu_time(time2)
 			!write(*,*) 'Fraction null steps', dble(nullSteps)/dble(step), 'Proc', myProc%taskid
@@ -609,7 +609,7 @@ program MISASCD
 
 			!Final output
 			!if(totdatToggle=='yes') call outputDefectsTotal()
-			if(rawdatToggle=='yes') call outputDefectsXYZ()
+			!if(rawdatToggle=='yes') call outputDefectsXYZ()
 
 		end if
 
@@ -637,7 +637,7 @@ program MISASCD
 			if(totdatToggle=='yes') close(TOTFILE)
 			if(defectToggle=='yes') close(DEFFILE)
 			if(stadatToggle=='yes') close(STAFILE)
-			close(RAWDAT)
+			if(xyzdatToggle=='yes') close(XYZFILE)
 		end if
 
 	end do	!End of loop for multiple trials
