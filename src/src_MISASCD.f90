@@ -7,8 +7,9 @@
 !Amendant Record: original code
 !***************************************************************************************************
 program MISASCD
+	use mod_constants
 	use mod_structures			!<variable classes for MISASCD
-	use mod_constants		!<module containing all global variables
+	use mod_globalVariables		!<module containing all global variables
 	use mod_randdp			!<module for double precision random number generation
 	implicit none
 	include 'mpif.h'
@@ -87,7 +88,7 @@ program MISASCD
 	!***********************************************************************
 	!<Initialize MPI interface
 	!***********************************************************************
-	periods = .true.
+	!periods = .true.
 	call MPI_INIT(ierr)
 	call MPI_COMM_SIZE(MPI_COMM_WORLD, myProc%numtasks, ierr)		!read number of processors
 	call MPI_DIMS_CREATE(myProc%numtasks,3,dims, ierr)

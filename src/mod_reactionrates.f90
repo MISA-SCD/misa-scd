@@ -8,7 +8,7 @@ contains
 !Examples: dissociation, trapping, sinks. Diffusion reactions are not included in this subroutine.
 !***************************************************************************************************
 subroutine addSingleDefectReactions(cell, defectType)
-	use mod_constants
+	use mod_globalVariables
 	use mod_structures
 	implicit none
 
@@ -354,7 +354,7 @@ end subroutine
 !Examples: dissociation, trapping, sinks. Diffusion reactions are not included in this subroutine.
 !***************************************************************************************************
 subroutine addSingleDefectReactionsFine(cascadeID, cell, defectType)
-	use mod_constants
+	use mod_globalVariables
 	use mod_structures
 	implicit none
 
@@ -712,7 +712,7 @@ end subroutine
 !This refers mainly to clustering reactions or pinning reactions.
 !***************************************************************************************************
 subroutine addMultiDefectReactions(cell, defectType1, defectType2)
-	use mod_constants
+	use mod_globalVariables
 	use mod_structures
 	implicit none
 
@@ -1271,7 +1271,7 @@ end subroutine
 !This refers mainly to clustering reactions or pinning reactions.
 !***************************************************************************************************
 subroutine addMultiDefectReactionsFine(cascadeID, cell, defectType1, defectType2)
-	use mod_constants
+	use mod_globalVariables
 	use mod_structures
 	implicit none
 
@@ -1814,7 +1814,7 @@ end subroutine
 !adds reactions to a reaction list representing diffusion between volume elements.
 !***********************************************************************************************
 subroutine addDiffusionReactions(cell1, cell2, proc1, proc2, dir, defectType)
-	use mod_constants
+	use mod_globalVariables
 	use mod_structures
 	implicit none
 
@@ -1937,7 +1937,7 @@ end subroutine
 !adds reactions to a reaction list representing diffusion between volume elements.
 !***************************************************************************************************
 subroutine addDiffusionCoarseToFine(cell, proc, CascadeCurrent, defectType)
-	use mod_constants
+	use mod_globalVariables
 	use mod_structures
 	implicit none
 
@@ -1950,7 +1950,7 @@ subroutine addDiffusionCoarseToFine(cell, proc, CascadeCurrent, defectType)
 
 	interface
 		integer function findNumDefectTotalFine(defectType, CascadeCurrent)
-			use mod_constants
+			use mod_globalVariables
 			integer defectType(numSpecies)
 			type(cascade), pointer :: CascadeCurrent
 		end function
@@ -2078,7 +2078,7 @@ end subroutine
 !adds reactions to a reaction list representing diffusion between volume elements inside a cascade mesh.
 !***************************************************************************************************
 subroutine addDiffusionReactionsFine(cascadeID, cell1, cell2, proc1, proc2, dir, defectType)
-	use mod_constants
+	use mod_globalVariables
 	use mod_structures
 	implicit none
 
@@ -2210,7 +2210,7 @@ end subroutine
 !finds reaction rate for implantation reaction (Frenkel pairs, cascades).
 !***************************************************************************************************
 double precision function findReactionRate(cell, reactionParameter)
-	use mod_constants
+	use mod_globalVariables
 	use mod_structures
 	implicit none
 
@@ -2252,7 +2252,7 @@ end function
 !finds reaction rate for trapping of SIA loops by impurities (Carbon).
 !***************************************************************************************************
 double precision function findReactionRateImpurity(defectType, cell, reactionParameter)
-	use mod_constants
+	use mod_globalVariables
 	use mod_structures
 	implicit none
 
@@ -2289,7 +2289,7 @@ end function
 !finds reaction rate for trapping of SIA loops by impurities (Carbon) inside a fine mesh (Cascade).
 !***************************************************************************************************
 double precision function findReactionRateImpurityFine(CascadeCurrent, defectType, cell, reactionParameter)
-	use mod_constants
+	use mod_globalVariables
 	use mod_structures
 	implicit none
 
@@ -2302,7 +2302,7 @@ double precision function findReactionRateImpurityFine(CascadeCurrent, defectTyp
 
 	interface
 		integer function findNumDefectFine(CascadeCurrent, defectType, cell)
-			use mod_constants
+			use mod_globalVariables
 			type(cascade), pointer :: CascadeCurrent
 			integer defectType(numSpecies), cell
 		end function
@@ -2336,6 +2336,7 @@ end function
 !**************************************************************************************************************
 double precision function findReactionRateDissoc(defectType, products, cell, reactionParameter)
 	use mod_constants
+	use mod_globalVariables
 	use mod_structures
 	implicit none
 
@@ -2380,6 +2381,7 @@ end function
 !***************************************************************************************************
 double precision function findReactionRateDissocFine(CascadeCurrent, defectType, products, cell, reactionParameter)
 	use mod_constants
+	use mod_globalVariables
 	use mod_structures
 	implicit none
 
@@ -2393,7 +2395,7 @@ double precision function findReactionRateDissocFine(CascadeCurrent, defectType,
 
 	interface
 		integer function findNumDefectFine(CascadeCurrent, defectType, cell)
-			use mod_constants
+			use mod_globalVariables
 			integer cell, defectType(numSpecies)
 			type(cascade), pointer :: CascadeCurrent
 		end function
@@ -2435,6 +2437,7 @@ end function
 !***************************************************************************************************
 double precision function findReactionRateSink(defectType, cell, reactionParameter)
 	use mod_constants
+	use mod_globalVariables
 	use mod_structures
 	implicit none
 
@@ -2476,6 +2479,7 @@ end function
 !***************************************************************************************************
 double precision function findReactionRateSinkFine(CascadeCurrent, defectType, cell, reactionParameter)
 	use mod_constants
+	use mod_globalVariables
 	use mod_structures
 	implicit none
 
@@ -2487,7 +2491,7 @@ double precision function findReactionRateSinkFine(CascadeCurrent, defectType, c
 
 	interface
 		integer function findNumDefectFine(CascadeCurrent, defectType, cell)
-			use mod_constants
+			use mod_globalVariables
 			integer cell, defectType(numSpecies)
 			type(cascade), pointer :: CascadeCurrent
 		end function
@@ -2525,6 +2529,7 @@ end function
 !***************************************************************************************************
 double precision function findReactionRateMultiple(defectType1, defectType2, cell, reactionParameter)
 	use mod_constants
+	use mod_globalVariables
 	use mod_structures
 	implicit none
 
@@ -2659,6 +2664,7 @@ end function
 !***************************************************************************************************
 double precision function findReactionRateMultipleFine(CascadeCurrent,defectType1,defectType2,cell,reactionParameter)
 	use mod_constants
+	use mod_globalVariables
 	use mod_structures
 	implicit none
 
@@ -2673,7 +2679,7 @@ double precision function findReactionRateMultipleFine(CascadeCurrent,defectType
 
 	interface
 		integer function findNumDefectFine(CascadeCurrent, defectType, cell)
-			use mod_constants
+			use mod_globalVariables
 			integer cell, defectType(numSpecies)
 			type(cascade), pointer :: CascadeCurrent
 		end function
@@ -2792,6 +2798,7 @@ end function
 !***************************************************************************************************
 double precision function findReactionRateDiff(defectType, cell1, proc1, cell2, proc2, dir, reactionParameter)
 	use mod_constants
+	use mod_globalVariables
 	use mod_structures
 	implicit none
 
@@ -2958,7 +2965,7 @@ end function
 !finds reaction rate for defect diffusion between a coarse mesh element and a fine (cascade) mesh
 !***************************************************************************************************
 double precision function findReactionRateCoarseToFine(defectType, cell, proc, numDefectsFine, reactionParameter)
-	use mod_constants
+	use mod_globalVariables
 	use mod_structures
 	implicit none
 
@@ -3013,7 +3020,7 @@ end function
 !finds reaction rate for defect diffusion between elements in the fine mesh (inside a cascade)
 !***************************************************************************************************
 double precision function findReactionRateDiffFine(CascadeCurrent,defectType,cell1,proc1,cell2,proc2,dir,reactionParameter)
-	use mod_constants
+	use mod_globalVariables
 	use mod_structures
 	implicit none
 
@@ -3027,7 +3034,7 @@ double precision function findReactionRateDiffFine(CascadeCurrent,defectType,cel
 
 	interface
 		integer function findNumDefectFine(CascadeCurrent, defectType, cell)
-			use mod_constants
+			use mod_globalVariables
 			type(cascade), pointer :: CascadeCurrent
 			integer cell, defectType(numSpecies)
 		end function
@@ -3128,7 +3135,7 @@ end function
 !If reaction is not present, reactionUpdate is not associated and reactionPrev points to the end of the list.
 !***************************************************************************************************
 subroutine findReactionInList(reactionUpdate, reactionPrev, cell, reactants, products, numReactants, numProducts)
-	use mod_constants
+	use mod_globalVariables
 	use mod_structures
 	implicit none
 
@@ -3183,7 +3190,7 @@ end subroutine
 !If reaction is not present, reactionUpdate is not associated and reactionPrev points to the end of the list.
 !***************************************************************************************************
 subroutine findReactionInListDiff(reactionUpdate, reactionPrev, reactants, cell1, cell2, proc1, proc2)
-	use mod_constants
+	use mod_globalVariables
 	use mod_structures
 	implicit none
 
@@ -3236,7 +3243,7 @@ end subroutine
 !If reaction is not present, reactionUpdate is not associated and reactionPrev points to the end of the list.
 !***************************************************************************************************
 subroutine findReactionInListMultiple(reactionUpdate,reactionPrev,cell,reactants,products,numReactants,numProducts)
-	use mod_constants
+	use mod_globalVariables
 	use mod_structures
 	implicit none
 
@@ -3341,7 +3348,7 @@ end subroutine
 !***************************************************************************************************
 subroutine defectCombinationRules(products, product2, defectTemp, isCombined)
 	use mod_structures
-	use mod_constants
+	use mod_globalVariables
 	implicit none
 
 	integer products(numSpecies), product2(numSpecies)
@@ -3437,7 +3444,7 @@ end subroutine
 ! is allowed (using hard-coded information). If not, the subroutine returns a value of .FALSE. to isLegal.
 !***************************************************************************************************
 subroutine checkReactionLegality(numProducts, products, isLegal)
-use mod_constants
+use mod_globalVariables
 use mod_structures
 implicit none
 

@@ -4,7 +4,7 @@
 !*****************************************************************************************
 double precision function GenerateTimestep()
 	use mod_structures
-	use mod_constants
+	use mod_globalVariables
 	use mod_randdp
 	implicit none
 
@@ -20,7 +20,7 @@ end function
 !*****************************************************************************************
 subroutine chooseImplantReaction(reactionCurrent)
 	use mod_structures
-	use mod_constants
+	use mod_globalVariables
 	implicit none
 
 	type(reaction), pointer, intent(inout) :: reactionCurrent
@@ -69,7 +69,7 @@ end subroutine
 !*****************************************************************************************
 subroutine chooseReaction(reactionCurrent, CascadeCurrent)
 	use mod_structures
-	use mod_constants
+	use mod_globalVariables
 	use mod_randdp
 	implicit none
 
@@ -207,7 +207,7 @@ end subroutine
 !which reactions to update.
 !***************************************************************************************************
 subroutine updateDefectList(reactionCurrent, defectUpdateCurrent, CascadeCurrent)
-	use mod_constants
+	use mod_globalVariables
 	use mod_structures
 	use mod_reactionrates
 	use mod_randdp
@@ -259,7 +259,7 @@ subroutine updateDefectList(reactionCurrent, defectUpdateCurrent, CascadeCurrent
 	interface
 		subroutine findDefectInList(defectCurrent, defectPrev, products)
 			use mod_structures
-			use mod_constants
+			use mod_globalVariables
 			implicit none
 			type(defect), pointer, intent(inout) :: defectCurrent, defectPrev
 			integer, intent(in) :: products(numSpecies)
@@ -1050,7 +1050,7 @@ subroutine updateDefectList(reactionCurrent, defectUpdateCurrent, CascadeCurrent
 
 					!randomly choose whether to remove this defect from the system according to the mean free path (parameter) and the
 					!length of the volume element that the defect is currently in
-					if(diffusionRandom <= fineLength/meanFreePath) then
+					if(diffusionRandom <= fineLength/grainSize) then
 						flag=.TRUE.
 						!reactionCurrent%numProducts=0 !remove that defect from system
 						!we can no longer remove the defect in this way because changing the reaction list
@@ -1406,7 +1406,7 @@ subroutine updateDefectList(reactionCurrent, defectUpdateCurrent, CascadeCurrent
 
 					!randomly choose whether to remove this defect from the system according to the mean free path (parameter) and the
 					!length of the volume element that the defect is currently in
-					if(diffusionRandom <= myMesh(reactionCurrent%cellNumber(1))%length/meanFreePath) then
+					if(diffusionRandom <= myMesh(reactionCurrent%cellNumber(1))%length/grainSize) then
 						flag=.TRUE.
 						!reactionCurrent%numProducts=0 !remove that defect from system
 						!we can no longer remove the defect in this way because changing the reaction list
@@ -2276,7 +2276,7 @@ end subroutine
 !***************************************************************************************************
 subroutine updateReactionList(defectUpdate)
 	use mod_structures
-	use mod_constants
+	use mod_globalVariables
 	use mod_reactionrates
 	implicit none
 	include 'mpif.h'

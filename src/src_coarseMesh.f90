@@ -6,7 +6,7 @@
 !***************************************************************************************************
 subroutine findDefectInList(defectCurrent, defectPrev, products)
 	use mod_structures
-	use mod_constants
+	use mod_globalVariables
 	implicit none
 
 	type(defect), pointer, intent(inout) :: defectCurrent, defectPrev
@@ -49,7 +49,7 @@ end subroutine
 !***************************************************************************************************
 integer function findNumDefect(defectType, cellNumber)
 	use mod_structures
-	use mod_constants
+	use mod_globalVariables
 	implicit none
 
 	integer, intent(in) :: defectType(numSpecies)
@@ -86,7 +86,7 @@ end function
 !***************************************************************************************************
 integer function findNumDefectBoundary(defectType, cellNumber, dir)
 	use mod_structures
-	use mod_constants
+	use mod_globalVariables
 	implicit none
 
 	integer, intent(in) :: defectType(numSpecies), cellNumber, dir
@@ -125,7 +125,7 @@ end function
 !***********************************************************************
 subroutine countReactionsCoarse(reactionsCoarse)
 	use mod_structures
-	use mod_constants
+	use mod_globalVariables
 	implicit none
 	include 'mpif.h'
 
@@ -159,7 +159,7 @@ end subroutine
 subroutine updateImplantRateSingleCell(cell)
 	use mod_reactionrates
 	use mod_structures
-	use mod_constants
+	use mod_globalVariables
 	implicit none
 
 	integer, intent(in) :: cell
@@ -214,7 +214,7 @@ end subroutine
 !deleted within that cell, all reaction rates change because volume changes
 !***************************************************************************************************
 subroutine resetReactionListSingleCell(cell)
-	use mod_constants
+	use mod_globalVariables
 	use mod_structures
 	use mod_reactionrates
 	implicit none
@@ -326,7 +326,7 @@ end subroutine
 !***************************************************************************************************
 subroutine clearReactionListSingleCell(cellNumber)
 	use mod_structures
-	use mod_constants
+	use mod_globalVariables
 	implicit none
 
 	integer, intent(in) :: cellNumber

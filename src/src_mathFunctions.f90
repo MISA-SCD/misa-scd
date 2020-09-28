@@ -40,7 +40,7 @@ end function
 !system and compares it to totalRate, in order to test whether totalRate is being properly updated.
 !***************************************************************************************************
 double precision function TotalRateCheck()
-	use mod_constants
+	use mod_globalVariables
 	use mod_structures
 	implicit none
 
@@ -110,7 +110,7 @@ end function
 !***************************************************************************************************
 double precision function totalRateCascade(CascadeCurrent)
 	use mod_structures
-	use mod_constants
+	use mod_globalVariables
 	implicit none
 
 	type(cascade), pointer, intent(in) :: CascadeCurrent

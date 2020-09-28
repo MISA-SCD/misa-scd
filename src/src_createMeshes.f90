@@ -5,7 +5,7 @@
 !NOTE: Each sector should have at least two meshes per dimension (x, y, z dimension).
 !***************************************************************************************************
 subroutine initialMesh()
-	use mod_constants
+	use mod_globalVariables
 	use mod_structures
 
 	implicit none
@@ -292,7 +292,7 @@ end subroutine
 !**************************************************************************************************
 subroutine createConnectLocalPeriodic(length)
 	use mod_structures
-	use mod_constants
+	use mod_globalVariables
 	implicit none
 	include 'mpif.h'
 
@@ -534,7 +534,7 @@ end subroutine
 !**************************************************************************************************
 subroutine createConnectLocalFreeSurf(length)
 	use mod_structures
-	use mod_constants
+	use mod_globalVariables
 	implicit none
 	include 'mpif.h'
 
@@ -771,7 +771,7 @@ end subroutine
 !***************************************************************************************
 integer function findgNeighborPeriodic(globalID, dir)
 	use mod_structures
-	use mod_constants
+	use mod_globalVariables
 	implicit none
 
 	integer, intent(in) :: globalID, dir
@@ -829,7 +829,7 @@ end function
 !***************************************************************************************
 integer function findgNeighborFreeSurf(globalID, dir)
 	use mod_structures
-	use mod_constants
+	use mod_globalVariables
 	implicit none
 
 	integer, intent(in) :: globalID, dir

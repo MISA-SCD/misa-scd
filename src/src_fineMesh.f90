@@ -3,7 +3,7 @@
 !releases fine mesh back to coarse mesh when cascade is annealed
 !***************************************************************************************************
 subroutine releaseFineMeshDefects(CascadeCurrent)
-	use mod_constants
+	use mod_globalVariables
 	use mod_structures
 	implicit none
 
@@ -17,7 +17,7 @@ subroutine releaseFineMeshDefects(CascadeCurrent)
 	interface
 		subroutine findDefectInList(defectCurrent, defectPrev, products)
 			use mod_structures
-			use mod_constants
+			use mod_globalVariables
 			type(defect), pointer, intent(inout) :: defectCurrent, defectPrev
 			integer, intent(in) :: products(numSpecies)
 		end subroutine
@@ -256,7 +256,7 @@ end subroutine
 !***************************************************************************************************
 integer function findNumDefectFine(CascadeCurrent, defectType, cellNumber)
 	use mod_structures
-	use mod_constants
+	use mod_globalVariables
 	implicit none
 
 	type(cascade), pointer, intent(in) :: CascadeCurrent
@@ -292,7 +292,7 @@ end function
 !Finds the number of defects of type defectType in CascadeCurrent%localDefects. If none, returns 0
 !***************************************************************************************************
 integer function findNumDefectTotalFine(defectType, CascadeCurrent)
-	use mod_constants
+	use mod_globalVariables
 	use mod_structures
 	implicit none
 
@@ -303,7 +303,7 @@ integer function findNumDefectTotalFine(defectType, CascadeCurrent)
 
 	interface
 		integer function findNumDefectFine(CascadeCurrent, defectType, cell)
-			use mod_constants
+			use mod_globalVariables
 			type(cascade), pointer, intent(in) :: CascadeCurrent
 			integer, intent(in) :: defectType(numSpecies), cell
 		end function
@@ -324,7 +324,7 @@ end function
 ! double precision variable coordinates (for defect implantation in fine mesh at beginning of cascade)
 !***************************************************************************************************
 integer function findCellWithCoordinatesFineMesh(coordinates)
-	use mod_constants
+	use mod_globalVariables
 	use mod_structures
 	implicit none
 
@@ -361,7 +361,7 @@ end function
 !***************************************************************************************************
 integer function chooseRandomCell()
 	use mod_randdp
-	use mod_constants
+	use mod_globalVariables
 	implicit none
 
 	double precision :: r, a
@@ -385,7 +385,7 @@ end function
 !***********************************************************************
 subroutine countReactionsFine(reactionsFine)
 	use mod_structures
-	use mod_constants
+	use mod_globalVariables
 	implicit none
 	include 'mpif.h'
 

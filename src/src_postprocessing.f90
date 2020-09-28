@@ -4,6 +4,7 @@
 !***************************************************************************************************
 subroutine outputDefectsXYZ()
 	use mod_constants
+	use mod_globalVariables
 	use mod_structures
 	implicit none
 	include 'mpif.h'
@@ -253,8 +254,9 @@ end subroutine
 !Used to find total defect populations in simulation volume, not spatial distribution of defects.
 !*******************************************************************************************************
 subroutine outputDefectsTotal(simStatus)
-	use mod_structures
 	use mod_constants
+	use mod_structures
+	use mod_globalVariables
 	implicit none
 	include 'mpif.h'
 
@@ -286,7 +288,7 @@ subroutine outputDefectsTotal(simStatus)
 	interface
 		subroutine findDefectInList(defectCurrent, defectPrev, products)
 			use mod_structures
-			use mod_constants
+			use mod_globalVariables
 			implicit none
 			type(defect), pointer, intent(inout) :: defectCurrent, defectPrev
 			integer, intent(in) :: products(numSpecies)

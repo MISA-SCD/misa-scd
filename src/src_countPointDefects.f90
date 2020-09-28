@@ -4,7 +4,7 @@
 !************************************************
 subroutine computeVconcent()
     use mod_structures
-    use mod_constants
+    use mod_globalVariables
     implicit none
     include 'mpif.h'
 
@@ -73,7 +73,7 @@ end subroutine
 !************************************************
 subroutine computeSIAconcent()
     use mod_structures
-    use mod_constants
+    use mod_globalVariables
     implicit none
     include 'mpif.h'
 
@@ -141,8 +141,9 @@ end subroutine
 !This function will not be used
 !**********************************************************************************
 double precision function permanentCv()
-    use mod_structures
     use mod_constants
+    use mod_structures
+    use mod_globalVariables
     implicit none
 
     double precision :: Kiv, diffV, diffI

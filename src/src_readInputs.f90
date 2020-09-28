@@ -4,8 +4,9 @@
 !for all other input files (defect attributes, mesh, cascades, implantation, etc).
 !***************************************************************************************************
 subroutine ReadInputs()
-	use mod_structures
 	use mod_constants
+	use mod_structures
+	use mod_globalVariables
 	implicit none
 
 	character(len=20) :: char
@@ -203,7 +204,7 @@ subroutine ReadInputs()
 	agingTime       =0d0	!2019.04.30 Add
 
 	polycrystal			='no'
-	meanFreePath		=330000
+	grainSize		=330000
 	dislocationDensity	=0d0
 	impurityDensity		=0d0
 	max3DInt			=4
@@ -292,7 +293,7 @@ subroutine ReadInputs()
 				read(PARAFILE,*) annealTempInc
 			else if(char=='grainSize') then
 				flag1=.TRUE.
-				read(PARAFILE,*) meanFreePath
+				read(PARAFILE,*) grainSize
 			else if(char=='dislocDensity') then
 				flag1=.TRUE.
 				read(PARAFILE,*) dislocationDensity
@@ -458,6 +459,7 @@ end subroutine
 !***************************************************************************************************
 subroutine readDefectAttributes(filename)
 	use mod_constants
+	use mod_globalVariables
 	use mod_structures
 	implicit none
 
@@ -791,6 +793,7 @@ end subroutine
 !***************************************************************************************************
 subroutine readCascadeList(filename)
 	use mod_constants
+	use mod_globalVariables
 	use mod_structures
 	implicit none
 

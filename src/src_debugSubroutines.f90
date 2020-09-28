@@ -14,7 +14,7 @@
 !! OUTPUT: unadmissible defects, if any (on the screen)
 !***************************************************************************************************
 subroutine DEBUGCheckForUnadmissible(reactionCurrent)
-use mod_constants
+use mod_globalVariables
 use mod_structures
 implicit none
 
@@ -81,7 +81,7 @@ end subroutine
 !!defects have been updated (used to update reaction list)
 !*****************************************************************************************
 subroutine DEBUGPrintDefectUpdate(defectUpdate)
-use mod_constants
+use mod_globalVariables
 use mod_structures
 implicit none
 
@@ -111,7 +111,7 @@ end subroutine
 !!Prints reaction lists in coarse mesh as well as in cascades, if any are present
 !*****************************************************************************************
 subroutine DEBUGPrintReactionList()
-use mod_constants
+use mod_globalVariables
 use mod_structures
 implicit none
 
@@ -231,7 +231,7 @@ end subroutine
 !*****************************************************************************************
 subroutine DEBUGPrintDefects()
 use mod_structures
-use mod_constants
+use mod_globalVariables
 implicit none
 
 integer :: i, j
@@ -308,7 +308,7 @@ end subroutine
 !master processor. Used for debugging.
 !***********************************************************************
 subroutine DEBUGPrintReaction(reactionCurrent)
-use mod_constants
+use mod_globalVariables
 use mod_structures
 implicit none
 
@@ -348,7 +348,7 @@ end subroutine
 !> Subroutine debug print defectList - outputs defects in the coarse meshes of this processor.
 !***********************************************************************
 subroutine DEBUGPrintDefectList()
-	use mod_constants
+	use mod_globalVariables
 	use mod_structures
 	implicit none
 

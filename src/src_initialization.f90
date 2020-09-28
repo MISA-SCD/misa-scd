@@ -2,8 +2,9 @@
 !>Subroutine initialize vacancy or SIA defect.
 !***************************************************************************************
 subroutine initializeVIdefect()
-	use mod_structures
 	use mod_constants
+	use mod_structures
+	use mod_globalVariables
 	use mod_randdp
 	implicit none
 	include 'mpif.h'
@@ -110,7 +111,7 @@ end subroutine
 !*****************************************************************************************
 subroutine initializeOneCascade()
 	use mod_structures
-	use mod_constants
+	use mod_globalVariables
 	use mod_randdp
 	implicit none
 	include 'mpif.h'
@@ -139,7 +140,7 @@ end  subroutine
 !*****************************************************************************************
 subroutine initializeDefectList()
 	use mod_structures
-	use mod_constants
+	use mod_globalVariables
 	implicit none
 
 	integer :: cell, i, j
@@ -225,7 +226,7 @@ end subroutine
 !random number seed of the other processors.
 !*****************************************************************************************
 subroutine initializeRandomSeeds()
-	use mod_constants
+	use mod_globalVariables
 	use mod_structures
 	use mod_randdp
 	implicit none
@@ -253,7 +254,7 @@ end subroutine
 !finds the total reaction rate in the local processor once reaction lists have been initialized (including implantation reactions)
 !*****************************************************************************************
 subroutine initializeTotalRate()
-	use mod_constants
+	use mod_globalVariables
 	use mod_structures
 	implicit none
 
@@ -282,7 +283,7 @@ end subroutine
 !*****************************************************************************************
 subroutine initializeReactionList()
 	use mod_structures
-	use mod_constants
+	use mod_globalVariables
 	use mod_reactionrates
 	implicit none
 
@@ -751,7 +752,7 @@ end subroutine
 !*****************************************************************************************
 subroutine initializeBoundaryDefectList()
 	use mod_structures
-	use mod_constants
+	use mod_globalVariables
 	implicit none
 
 	integer :: cell, dir, i, j, gCell, gNeighor
@@ -849,8 +850,9 @@ end subroutine
 !initializes defect and reaction lists in a newly created fine mesh
 !***************************************************************************************************
 subroutine initializeFineMesh(CascadeCurrent)
-	use mod_structures
 	use mod_constants
+	use mod_structures
+	use mod_globalVariables
 	use mod_randdp
 	use mod_reactionrates
 	implicit none
@@ -866,7 +868,7 @@ subroutine initializeFineMesh(CascadeCurrent)
 	interface
 		subroutine findDefectInList(defectCurrent, defectPrev, products)
 			use mod_structures
-			use mod_constants
+			use mod_globalVariables
 			implicit none
 			type(defect), pointer :: defectCurrent, defectPrev
 			integer products(numSpecies)
@@ -1064,7 +1066,7 @@ end subroutine
 !***********************************************************************
 subroutine annealInitialization()
 	use mod_structures
-	use mod_constants
+	use mod_globalVariables
 	implicit none
 
 	integer :: cell

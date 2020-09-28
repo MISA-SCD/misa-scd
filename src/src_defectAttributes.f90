@@ -3,8 +3,9 @@
 !returns the diffusivity of a given defect type
 !*****************************************************************************************
 double precision function findDiffusivity(defectType)
-	use mod_structures
 	use mod_constants
+	use mod_structures
+	use mod_globalVariables
 	implicit none
 
 	integer, intent(in) :: defectType(numSpecies)
@@ -69,6 +70,7 @@ end function
 !*****************************************************************************************
 double precision function DiffusivityCompute(DefectType, functionType, numParameters, parameters)
 	use mod_constants
+	use mod_globalVariables
 	use mod_structures
 	implicit none
 
@@ -103,8 +105,9 @@ end function
 !This function is used to compute diffusivity of Cu atom
 !**********************************************************************************
 double precision function diffusivityCu()
-	use mod_structures
 	use mod_constants
+	use mod_structures
+	use mod_globalVariables
 	implicit none
 
 	integer :: DefectType(numSpecies), i
@@ -133,7 +136,7 @@ end function
 !*****************************************************************************************
 double precision function findBinding(DefectType, productType)
 	use mod_structures
-	use mod_constants
+	use mod_globalVariables
 	implicit none
 
 	integer, intent(in) :: DefectType(numSpecies), productType(numSpecies)
@@ -210,6 +213,7 @@ end function
 !*****************************************************************************************
 double precision function BindingCompute(DefectType, product, functionType, numParameters, parameters)
 	use mod_constants
+	use mod_globalVariables
 	implicit none
 
 	integer, intent(in) :: DefectType(numSpecies), product(numSpecies), functionType, numParameters
@@ -255,7 +259,7 @@ end function
 !NOTE: for Cu_nV_m clusters, this function returns the larger of m or n
 !*****************************************************************************************
 integer function findDefectSize(defectType)
-	use mod_constants
+	use mod_globalVariables
 	implicit none
 
 	integer, intent(in) :: defectType(numSpecies)

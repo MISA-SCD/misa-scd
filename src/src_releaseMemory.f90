@@ -3,7 +3,7 @@
 !***********************************************************************
 subroutine deallocateBoundaryDefectList()
 	use mod_structures
-	use mod_constants
+	use mod_globalVariables
 	implicit none
 
 	integer :: cell, dir
@@ -39,7 +39,7 @@ end subroutine
 !***********************************************************************
 Subroutine deallocateCascadeList()
 	use mod_structures
-	use mod_constants
+	use mod_globalVariables
 	implicit none
 
 	type(cascadeEvent), pointer :: CascadeTemp, CascadePrev
@@ -71,7 +71,7 @@ end subroutine
 !***********************************************************************
 subroutine deallocateMaterialInput()
 	use mod_structures
-	use mod_constants
+	use mod_globalVariables
 	implicit none
 
 	integer :: i
@@ -165,7 +165,7 @@ end subroutine
 !***********************************************************************
 subroutine deallocateDefectList()
 	use mod_structures
-	use mod_constants
+	use mod_globalVariables
 	implicit none
 
 	type(defect), pointer :: defectCurrent, defectPrev
@@ -200,7 +200,7 @@ end subroutine
 !***********************************************************************
 subroutine deallocateReactionList()
 	use mod_structures
-	use mod_constants
+	use mod_globalVariables
 	implicit none
 
 	type(reaction), pointer :: reactionCurrent, reactionPrev

@@ -6,7 +6,7 @@
 subroutine chooseCascade(CascadeTemp)
     use mod_structures
     use mod_randdp
-    use mod_constants
+    use mod_globalVariables
     implicit none
 
     type(cascadeEvent), pointer, intent(inout) :: cascadeTemp
@@ -32,7 +32,7 @@ end subroutine
 ! Outputs: number of cascades present
 !***************************************************************************************************
 integer function CascadeCount()
-    use mod_constants
+    use mod_globalVariables
     use mod_structures
     implicit none
 
@@ -58,7 +58,7 @@ end function
 !***************************************************************************************************
 subroutine addCascadeExplicit(reactionCurrent)
     use mod_structures
-    use mod_constants
+    use mod_globalVariables
     use mod_randdp
     implicit none
 
@@ -96,7 +96,7 @@ end subroutine
 ! Output: logical value for whether or not a fine mesh defect combines with a cascade.
 !***************************************************************************************************
 logical function cascadeMixingCheck()
-    use mod_constants
+    use mod_globalVariables
     use mod_randdp
     implicit none
 
@@ -131,7 +131,7 @@ end function
 !***************************************************************************************************
 subroutine cascadeUpdateStep(releaseToggle, cascadeCell)
     use mod_structures
-    use mod_constants
+    use mod_globalVariables
     use mod_reactionrates
     implicit none
     include 'mpif.h'
@@ -331,7 +331,7 @@ end subroutine
 !Output: cascadeConnectivity (global variable)
 !***************************************************************************************************
 subroutine createCascadeConnectivity()
-    use mod_constants
+    use mod_globalVariables
     implicit none
 
     integer :: cell
