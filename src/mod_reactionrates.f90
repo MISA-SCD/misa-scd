@@ -8,11 +8,12 @@ contains
 !Examples: dissociation, trapping, sinks. Diffusion reactions are not included in this subroutine.
 !***************************************************************************************************
 subroutine addSingleDefectReactions(cell, defectType)
+	use mod_constants
 	use mod_globalVariables
 	use mod_structures
 	implicit none
 
-	integer cell, defectType(numSpecies)
+	integer cell, defectType(SPECIES)
 	integer i, j, k, count, numReactants, numProducts, storeTemp
 	type(reaction), pointer :: reactionUpdate, reactionPrev
 	integer, allocatable :: reactants(:,:), products(:,:)
@@ -25,13 +26,13 @@ subroutine addSingleDefectReactions(cell, defectType)
 	!Dissociation reactions
 	numReactants=1
 	numProducts=2
-	allocate(reactants(numSpecies,numReactants))
-	allocate(products(numSpecies,numProducts))
+	allocate(reactants(SPECIES,numReactants))
+	allocate(products(SPECIES,numProducts))
 	do i=1, numDissocReac
 		count=0
 
 		!Check if the defect type is accepted by this dissociation reaction
-		do j=1,numSpecies
+		do j=1,SPECIES
 			if(defectType(j) == 0 .AND. DissocReactions(i)%reactants(j,1) == 0) then
 				count=count+1
 			else if(defectType(j) /= 0 .AND. DissocReactions(i)%reactants(j,1) /= 0) then
@@ -43,10 +44,10 @@ subroutine addSingleDefectReactions(cell, defectType)
 			end if
 		end do
 
-		if(count==numSpecies) then	!this defect type is accepted for this dissociation reaction
+		if(count==SPECIES) then	!this defect type is accepted for this dissociation reaction
 
 			!Create temporary arrays with the defect types associated with this reaction (dissociation)
-			do j=1,numSpecies
+			do j=1,SPECIES
 				reactants(j,1)=defectType(j)
 				products(j,2)=DissocReactions(i)%products(j,1)   !point defects
 				products(j,1)=reactants(j,1)-products(j,2)
@@ -101,13 +102,13 @@ subroutine addSingleDefectReactions(cell, defectType)
 				allocate(reactionUpdate)
 				reactionUpdate%numReactants=1
 				reactionUpdate%numProducts=2
-				allocate(reactionUpdate%reactants(numSpecies,reactionUpdate%numReactants))
-				allocate(reactionUpdate%products(numSpecies,reactionUpdate%numProducts))
+				allocate(reactionUpdate%reactants(SPECIES,reactionUpdate%numReactants))
+				allocate(reactionUpdate%products(SPECIES,reactionUpdate%numProducts))
 				allocate(reactionUpdate%cellNumber(reactionUpdate%numReactants+reactionUpdate%numProducts))
 				allocate(reactionUpdate%taskid(reactionUpdate%numReactants+reactionUpdate%numProducts))
 				nullify(reactionUpdate%next)
 				reactionPrev%next=>reactionUpdate
-				do j=1, numSpecies
+				do j=1, SPECIES
 					reactionUpdate%reactants(j,1)=reactants(j,1)
 					reactionUpdate%products(j,1)=products(j,1)
 					reactionUpdate%products(j,2)=products(j,2)
@@ -141,13 +142,13 @@ subroutine addSingleDefectReactions(cell, defectType)
 	deallocate(products)
 	numReactants=1
 	numProducts=0
-	allocate(reactants(numSpecies,numReactants))
-	allocate(products(numSpecies,numProducts))
+	allocate(reactants(SPECIES,numReactants))
+	allocate(products(SPECIES,numProducts))
 	do i=1, numSinkReac
 		count=0
 
 		!Check if the defect type is accepted by this sink reaction
-		do j=1,numSpecies
+		do j=1,SPECIES
 			if(defectType(j) == 0 .AND. SinkReactions(i)%reactants(j,1) == 0) then
 				count=count+1
 			else if(defectType(j) /= 0 .AND. SinkReactions(i)%reactants(j,1) /= 0) then
@@ -159,10 +160,10 @@ subroutine addSingleDefectReactions(cell, defectType)
 			end if
 		end do
 
-		if(count==numSpecies) then	!this defect type is accepted for this dissociation reaction
+		if(count==SPECIES) then	!this defect type is accepted for this dissociation reaction
 
 			!Create temporary arrays with the defect types associated with this reaction (sinks)
-			do j=1,numSpecies
+			do j=1,SPECIES
 				reactants(j,1)=defectType(j)
 			end do
 
@@ -202,13 +203,13 @@ subroutine addSingleDefectReactions(cell, defectType)
 				allocate(reactionUpdate)
 				reactionUpdate%numReactants=1
 				reactionUpdate%numProducts=0
-				allocate(reactionUpdate%reactants(numSpecies,reactionUpdate%numReactants))
+				allocate(reactionUpdate%reactants(SPECIES,reactionUpdate%numReactants))
 				allocate(reactionUpdate%cellNumber(reactionUpdate%numReactants))
 				allocate(reactionUpdate%taskid(reactionUpdate%numReactants))
 				nullify(reactionUpdate%next)
 				reactionPrev%next=>reactionUpdate
 
-				do j=1, numSpecies
+				do j=1, SPECIES
 					reactionUpdate%reactants(j,1)=reactants(j,1)
 				end do
 				do j=1,reactionUpdate%numReactants
@@ -241,12 +242,12 @@ subroutine addSingleDefectReactions(cell, defectType)
 	deallocate(products)
 	numReactants=1
 	numProducts=1
-	allocate(reactants(numSpecies,numReactants))
-	allocate(products(numSpecies,numProducts))
+	allocate(reactants(SPECIES,numReactants))
+	allocate(products(SPECIES,numProducts))
 	do i=1, numImpurityReac
 		count=0
 		!Check if the defect type is accepted by this impurity reaction
-		do j=1,numSpecies
+		do j=1,SPECIES
 			if(defectType(j) == 0 .AND. ImpurityReactions(i)%reactants(j,1) == 0) then
 				count=count+1
 			else if(defectType(j) /= 0 .AND. ImpurityReactions(i)%reactants(j,1) /= 0) then
@@ -258,18 +259,18 @@ subroutine addSingleDefectReactions(cell, defectType)
 				end if
 			end if
 		end do
-		if(count==numSpecies) then	!this defect type is accepted for this dissociation reaction
+		if(count==SPECIES) then	!this defect type is accepted for this dissociation reaction
 
 			!Create temporary arrays with the defect types associated with this reaction (impurities)
 			!Impurities change defect types from mobile SIA loops to sesile SIA loops. Therefore,
 			!we must change the defectType from 0 0 n 0 to 0 0 0 n.
-			do j=1,numSpecies
+			do j=1,SPECIES
 				reactants(j,1)=defectType(j)
 				if(reactants(j,1) /= 0) then
 					storeTemp=reactants(j,1)    !reactan=0 0 n 0, storeTemp=n
 				end if
 			end do
-			do j=1,numSpecies
+			do j=1,SPECIES
 				if(ImpurityReactions(i)%products(j,1)==1) then   !0 0 0 1
 					products(j,1)=storeTemp
 				else
@@ -311,13 +312,13 @@ subroutine addSingleDefectReactions(cell, defectType)
 				allocate(reactionUpdate)
 				reactionUpdate%numReactants=1
 				reactionUpdate%numProducts=1
-				allocate(reactionUpdate%reactants(numSpecies,reactionUpdate%numReactants))
-				allocate(reactionUpdate%products(numSpecies,reactionUpdate%numProducts))
+				allocate(reactionUpdate%reactants(SPECIES,reactionUpdate%numReactants))
+				allocate(reactionUpdate%products(SPECIES,reactionUpdate%numProducts))
 				allocate(reactionUpdate%cellNumber(reactionUpdate%numReactants+reactionUpdate%numProducts))
 				allocate(reactionUpdate%taskid(reactionUpdate%numReactants+reactionUpdate%numProducts))
 				nullify(reactionUpdate%next)
 				reactionPrev%next=>reactionUpdate
-				do j=1, numSpecies
+				do j=1, SPECIES
 					reactionUpdate%reactants(j,1)=reactants(j,1)
 					reactionUpdate%products(j,1)=products(j,1)
 				end do
@@ -354,11 +355,12 @@ end subroutine
 !Examples: dissociation, trapping, sinks. Diffusion reactions are not included in this subroutine.
 !***************************************************************************************************
 subroutine addSingleDefectReactionsFine(cascadeID, cell, defectType)
+	use mod_constants
 	use mod_globalVariables
 	use mod_structures
 	implicit none
 
-	integer cascadeID,cell, defectType(numSpecies)
+	integer cascadeID,cell, defectType(SPECIES)
 	type(cascade), pointer :: CascadeCurrent
 
 	integer i, j, count, numReactants, numProducts, storeTemp
@@ -382,13 +384,13 @@ subroutine addSingleDefectReactionsFine(cascadeID, cell, defectType)
 	!Dissociation reactions.
 	numReactants=1
 	numProducts=2
-	allocate(reactants(numSpecies,numReactants))
-	allocate(products(numSpecies,numProducts))
+	allocate(reactants(SPECIES,numReactants))
+	allocate(products(SPECIES,numProducts))
 	do i=1, numDissocReac
 		count=0
 
 		!Check if the defect type is accepted by this dissociation reaction
-		do j=1,numSpecies
+		do j=1,SPECIES
 			if(defectType(j) == 0 .AND. DissocReactions(i)%reactants(j,1) == 0) then
 				count=count+1
 			else if(defectType(j) /= 0 .AND. DissocReactions(i)%reactants(j,1) /= 0) then
@@ -401,10 +403,10 @@ subroutine addSingleDefectReactionsFine(cascadeID, cell, defectType)
 			end if
 		end do
 
-		if(count==numSpecies) then	!this defect type is accepted for this dissociation reaction
+		if(count==SPECIES) then	!this defect type is accepted for this dissociation reaction
 
 			!Create temporary arrays with the defect types associated with this reaction (dissociation)
-			do j=1, numSpecies
+			do j=1, SPECIES
 				reactants(j,1)=defectType(j)
 				products(j,2)=DissocReactions(i)%products(j,1)
 				products(j,1)=reactants(j,1)-products(j,2)
@@ -460,13 +462,13 @@ subroutine addSingleDefectReactionsFine(cascadeID, cell, defectType)
 				allocate(reactionUpdate)
 				reactionUpdate%numReactants=1
 				reactionUpdate%numProducts=2
-				allocate(reactionUpdate%reactants(numSpecies,reactionUpdate%numReactants))
-				allocate(reactionUpdate%products(numSpecies,reactionUpdate%numProducts))
+				allocate(reactionUpdate%reactants(SPECIES,reactionUpdate%numReactants))
+				allocate(reactionUpdate%products(SPECIES,reactionUpdate%numProducts))
 				allocate(reactionUpdate%cellNumber(reactionUpdate%numReactants+reactionUpdate%numProducts))
 				allocate(reactionUpdate%taskid(reactionUpdate%numReactants+reactionUpdate%numProducts))
 				nullify(reactionUpdate%next)
 				reactionPrev%next=>reactionUpdate
-				do j=1, numSpecies
+				do j=1, SPECIES
 					reactionUpdate%reactants(j,1)=reactants(j,1)
 					reactionUpdate%products(j,1)=products(j,1)
 					reactionUpdate%products(j,2)=products(j,2)
@@ -500,12 +502,12 @@ subroutine addSingleDefectReactionsFine(cascadeID, cell, defectType)
 	deallocate(products)
 	numReactants=1
 	numProducts=0
-	allocate(reactants(numSpecies,numReactants))
-	allocate(products(numSpecies,numProducts))
+	allocate(reactants(SPECIES,numReactants))
+	allocate(products(SPECIES,numProducts))
 	do i=1, numSinkReac
 		count=0
 		!Check if the defect type is accepted by this sink reaction
-		do j=1,numSpecies
+		do j=1,SPECIES
 			if(defectType(j) == 0 .AND. SinkReactions(i)%reactants(j,1) == 0) then
 				count=count+1
 			else if(defectType(j) /= 0 .AND. SinkReactions(i)%reactants(j,1) /= 0) then
@@ -517,10 +519,10 @@ subroutine addSingleDefectReactionsFine(cascadeID, cell, defectType)
 			end if
 		end do
 
-		if(count==numSpecies) then	!this defect type is accepted for this dissociation reaction
+		if(count==SPECIES) then	!this defect type is accepted for this dissociation reaction
 
 			!Create temporary arrays with the defect types associated with this reaction (sinks)
-			do j=1, numSpecies
+			do j=1, SPECIES
 				reactants(j,1)=defectType(j)
 			end do
 
@@ -560,13 +562,13 @@ subroutine addSingleDefectReactionsFine(cascadeID, cell, defectType)
 				allocate(reactionUpdate)
 				reactionUpdate%numReactants=1
 				reactionUpdate%numProducts=0
-				allocate(reactionUpdate%reactants(numSpecies,reactionUpdate%numReactants))
+				allocate(reactionUpdate%reactants(SPECIES,reactionUpdate%numReactants))
 				allocate(reactionUpdate%cellNumber(reactionUpdate%numReactants))
 				allocate(reactionUpdate%taskid(reactionUpdate%numReactants))
 				nullify(reactionUpdate%next)
 				reactionPrev%next=>reactionUpdate
 
-				do j=1, numSpecies
+				do j=1, SPECIES
 					reactionUpdate%reactants(j,1)=reactants(j,1)
 				end do
 				do j=1,reactionUpdate%numReactants
@@ -599,12 +601,12 @@ subroutine addSingleDefectReactionsFine(cascadeID, cell, defectType)
 	deallocate(products)
 	numReactants=1
 	numProducts=1
-	allocate(reactants(numSpecies,numReactants))
-	allocate(products(numSpecies,numProducts))
+	allocate(reactants(SPECIES,numReactants))
+	allocate(products(SPECIES,numProducts))
 	do i=1, numImpurityReac
 		count=0
 		!Check if the defect type is accepted by this impurity reaction
-		do j=1,numSpecies
+		do j=1,SPECIES
 			if(defectType(j) == 0 .AND. ImpurityReactions(i)%reactants(j,1) == 0) then
 				count=count+1
 			else if(defectType(j) /= 0 .AND. ImpurityReactions(i)%reactants(j,1) /= 0) then
@@ -617,18 +619,18 @@ subroutine addSingleDefectReactionsFine(cascadeID, cell, defectType)
 			end if
 		end do
 
-		if(count==numSpecies) then	!this defect type is accepted for this dissociation reaction
+		if(count==SPECIES) then	!this defect type is accepted for this dissociation reaction
 
 			!Create temporary arrays with the defect types associated with this reaction (impurities)
 			!Impurities change defect types from glissile SIA loops to sesile SIA loops. Therefore,
 			!we must change the defectType from 0 0 n 0 to 0 0 0 n. This is hard-coded in here.
-			do j=1,numSpecies
+			do j=1,SPECIES
 				reactants(j,1)=defectType(j)
 				if(reactants(j,1) /= 0) then
 					storeTemp=reactants(j,1)
 				end if
 			end do
-			do j=1,numSpecies
+			do j=1,SPECIES
 				if(ImpurityReactions(i)%products(j,1)==1) then
 					products(j,1)=storeTemp
 				else
@@ -669,13 +671,13 @@ subroutine addSingleDefectReactionsFine(cascadeID, cell, defectType)
 				allocate(reactionUpdate)
 				reactionUpdate%numReactants=1
 				reactionUpdate%numProducts=1
-				allocate(reactionUpdate%reactants(numSpecies,reactionUpdate%numReactants))
-				allocate(reactionUpdate%products(numSpecies,reactionUpdate%numProducts))
+				allocate(reactionUpdate%reactants(SPECIES,reactionUpdate%numReactants))
+				allocate(reactionUpdate%products(SPECIES,reactionUpdate%numProducts))
 				allocate(reactionUpdate%cellNumber(reactionUpdate%numReactants+reactionUpdate%numProducts))
 				allocate(reactionUpdate%taskid(reactionUpdate%numReactants+reactionUpdate%numProducts))
 				nullify(reactionUpdate%next)
 				reactionPrev%next=>reactionUpdate
-				do j=1, numSpecies
+				do j=1, SPECIES
 					reactionUpdate%reactants(j,1)=reactants(j,1)
 					reactionUpdate%products(j,1)=products(j,1)
 				end do
@@ -712,11 +714,12 @@ end subroutine
 !This refers mainly to clustering reactions or pinning reactions.
 !***************************************************************************************************
 subroutine addMultiDefectReactions(cell, defectType1, defectType2)
+	use mod_constants
 	use mod_globalVariables
 	use mod_structures
 	implicit none
 
-	integer cell, defectType1(numSpecies), defectType2(numSpecies)
+	integer cell, defectType1(SPECIES), defectType2(SPECIES)
 	type(reaction), pointer :: reactionUpdate, reactionPrev
 	integer i, j, count, count2, numReactants, numProducts
 	integer, allocatable :: reactants(:,:), products(:,:)
@@ -730,7 +733,7 @@ subroutine addMultiDefectReactions(cell, defectType1, defectType2)
 	!Clustering reactions.
 	numReactants=2
 	!numProducts=1
-	allocate(reactants(numSpecies,numReactants))
+	allocate(reactants(SPECIES,numReactants))
 	do i=1, numClusterReac
 
 		!*******************************************************
@@ -741,14 +744,14 @@ subroutine addMultiDefectReactions(cell, defectType1, defectType2)
 		!Check if the defect type is accepted by this dissociation reaction
 		!NOTE: we must check if defectType1 matches with ClusterReactions%reactants(1) and reactants(2)
 		!and vice versa with defectType2. We only want to make one reaction rate per pair of reactants.
-		do j=1,numSpecies
+		do j=1,SPECIES
 			if(defectType1(j)==0 .AND. ClusterReactions(i)%reactants(j,1)==0) then
 				if(defectType2(j)==0 .AND. ClusterReactions(i)%reactants(j,2)==0) then
 					count=count+1
 				else if(defectType2(j) /= 0 .AND. ClusterReactions(i)%reactants(j,2) /= 0) then
-					if(defectType2(j) >= ClusterReactions(i)%min(j+numSpecies)) then
-						if((defectType2(j) <= ClusterReactions(i)%max(j+numSpecies)) .OR. &
-								ClusterReactions(i)%max(j+numSpecies)==-1) then
+					if(defectType2(j) >= ClusterReactions(i)%min(j+SPECIES)) then
+						if((defectType2(j) <= ClusterReactions(i)%max(j+SPECIES)) .OR. &
+								ClusterReactions(i)%max(j+SPECIES)==-1) then
 							count=count+1
 						end if
 					end if
@@ -762,11 +765,11 @@ subroutine addMultiDefectReactions(cell, defectType1, defectType2)
 						end if
 					end if
 				else if(defectType2(j) /= 0 .AND. ClusterReactions(i)%reactants(j,2) /= 0) then
-					if((defectType2(j) <= ClusterReactions(i)%max(j+numSpecies)) .OR. &
-							ClusterReactions(i)%max(j+numSpecies)==-1) then
+					if((defectType2(j) <= ClusterReactions(i)%max(j+SPECIES)) .OR. &
+							ClusterReactions(i)%max(j+SPECIES)==-1) then
 						if((defectType1(j) <= ClusterReactions(i)%max(j)) .OR. &
 								ClusterReactions(i)%max(j)==-1) then
-							if(defectType2(j) >= ClusterReactions(i)%min(j+numSpecies) .AND. &
+							if(defectType2(j) >= ClusterReactions(i)%min(j+SPECIES) .AND. &
 									defectType1(j) >= ClusterReactions(i)%min(j)) then
 								count=count+1
 							end if
@@ -776,9 +779,9 @@ subroutine addMultiDefectReactions(cell, defectType1, defectType2)
 			end if
 		end do
 
-		if(count==numSpecies) then	!this defect pair is accepted for this clustering reaction
+		if(count==SPECIES) then	!this defect pair is accepted for this clustering reaction
 
-			do j=1,numSpecies
+			do j=1,SPECIES
 				reactants(j,1)=defectType1(j)
 				reactants(j,2)=defectType2(j)
 			end do
@@ -786,9 +789,9 @@ subroutine addMultiDefectReactions(cell, defectType1, defectType2)
 			!CuV+SIA:
 			if(defectType1(1)/=0 .AND. defectType1(2)/=0 .AND.  defectType2(3)>defectType1(2)) then
 				numProducts=2
-				allocate(products(numSpecies,numProducts))
+				allocate(products(SPECIES,numProducts))
 				!Create temporary arrays with the defect types associated with this reaction (SIA pinning)
-				do j=1,numSpecies
+				do j=1,SPECIES
 					if(j==2) then
 						products(j,1)=0
 					else
@@ -804,10 +807,10 @@ subroutine addMultiDefectReactions(cell, defectType1, defectType2)
 			else if(defectType1(1)/=0 .AND. defectType1(2)/=0 .AND.  defectType2(4)>defectType1(2)) then
 
 				numProducts=2
-				allocate(products(numSpecies,numProducts))
+				allocate(products(SPECIES,numProducts))
 
 				!Create temporary arrays with the defect types associated with this reaction (SIA pinning)
-				do j=1,numSpecies
+				do j=1,SPECIES
 
 					if(j==2) then
 						products(j,1)=0
@@ -822,10 +825,10 @@ subroutine addMultiDefectReactions(cell, defectType1, defectType2)
 				end do
 			else
 				numProducts=1
-				allocate(products(numSpecies,numProducts))
+				allocate(products(SPECIES,numProducts))
 
 				!Create temporary arrays with the defect types associated with this reaction (clustering)
-				do j=1,numSpecies
+				do j=1,SPECIES
 					products(j,1)=reactants(j,1)+reactants(j,2)
 				end do
 			end if
@@ -897,16 +900,16 @@ subroutine addMultiDefectReactions(cell, defectType1, defectType2)
 
 			!Total Annihilation
 			count2=0
-			do j=1,numSpecies
+			do j=1,SPECIES
 				if(products(j,1)==0) then
 					count2=count2+1
 				end if
 			end do
-			if(count2==numSpecies) then
+			if(count2==SPECIES) then
 				!we have completely annihilated the defects
 				deallocate(products)
 				numProducts=0
-				allocate(products(numSpecies,numProducts))
+				allocate(products(SPECIES,numProducts))
 			end if
 
 			!findReactionInList points reactionUpdate at the reaction if it already exists. If not, reactionUpdate
@@ -948,13 +951,13 @@ subroutine addMultiDefectReactions(cell, defectType1, defectType2)
 				allocate(reactionUpdate)
 				reactionUpdate%numReactants=2
 				reactionUpdate%numProducts=numProducts
-				allocate(reactionUpdate%reactants(numSpecies,reactionUpdate%numReactants))
-				allocate(reactionUpdate%products(numSpecies,reactionUpdate%numProducts))
+				allocate(reactionUpdate%reactants(SPECIES,reactionUpdate%numReactants))
+				allocate(reactionUpdate%products(SPECIES,reactionUpdate%numProducts))
 				allocate(reactionUpdate%cellNumber(reactionUpdate%numReactants+reactionUpdate%numProducts))
 				allocate(reactionUpdate%taskid(reactionUpdate%numReactants+reactionUpdate%numProducts))
 				nullify(reactionUpdate%next)
 				reactionPrev%next=>reactionUpdate
-				do j=1, numSpecies
+				do j=1, SPECIES
 					reactionUpdate%reactants(j,1)=reactants(j,1)
 					reactionUpdate%reactants(j,2)=reactants(j,2)
 				end do
@@ -962,7 +965,7 @@ subroutine addMultiDefectReactions(cell, defectType1, defectType2)
 				if(numProducts==1) then
 					reactionUpdate%products=products
 				else if(numProducts==2) then
-					do j=1, numSpecies
+					do j=1, SPECIES
 						reactionUpdate%products(j,1)=products(j,1)
 						reactionUpdate%products(j,2)=products(j,2)
 					end do
@@ -1006,7 +1009,7 @@ subroutine addMultiDefectReactions(cell, defectType1, defectType2)
 		!Check if the defect type is accepted by this dissociation reaction
 		!NOTE: we must check if defectType1 matches with ClusterReactions%reactants(1) and reactants(2)
 		!and vice versa with defectType2. We only want to make one reaction rate per pair of reactants.
-		do j=1,numSpecies
+		do j=1,SPECIES
 			if(defectType1(j)==0 .AND. ClusterReactions(i)%reactants(j,2)==0) then
 				if(defectType2(j)==0 .AND. ClusterReactions(i)%reactants(j,1)==0) then
 					count=count+1
@@ -1020,18 +1023,18 @@ subroutine addMultiDefectReactions(cell, defectType1, defectType2)
 				end if
 			else if(defectType1(j) /= 0 .AND. ClusterReactions(i)%reactants(j,2) /= 0) then
 				if(defectType2(j)==0 .AND. ClusterReactions(i)%reactants(j,1)==0) then
-					if(defectType1(j) >= ClusterReactions(i)%min(j+numSpecies)) then
-						if((defectType1(j) <= ClusterReactions(i)%max(j+numSpecies)) .OR. &
-								ClusterReactions(i)%max(j+numSpecies)==-1) then
+					if(defectType1(j) >= ClusterReactions(i)%min(j+SPECIES)) then
+						if((defectType1(j) <= ClusterReactions(i)%max(j+SPECIES)) .OR. &
+								ClusterReactions(i)%max(j+SPECIES)==-1) then
 							count=count+1
 						end if
 					end if
 				else if(defectType2(j) /= 0 .AND. ClusterReactions(i)%reactants(j,1) /= 0) then
-					if((defectType1(j) <= ClusterReactions(i)%max(j+numSpecies)) .OR. &
-							ClusterReactions(i)%max(j+numSpecies)==-1) then
+					if((defectType1(j) <= ClusterReactions(i)%max(j+SPECIES)) .OR. &
+							ClusterReactions(i)%max(j+SPECIES)==-1) then
 						if((defectType2(j) <= ClusterReactions(i)%max(j)) .OR. &
 								ClusterReactions(i)%max(j)==-1) then
-							if(defectType1(j) >= ClusterReactions(i)%min(j+numSpecies) .AND. &
+							if(defectType1(j) >= ClusterReactions(i)%min(j+SPECIES) .AND. &
 									defectType2(j) >= ClusterReactions(i)%min(j)) then
 								count=count+1
 							end if
@@ -1041,9 +1044,9 @@ subroutine addMultiDefectReactions(cell, defectType1, defectType2)
 			end if
 		end do
 
-		if(count==numSpecies) then	!this defect pair is accepted for this clustering reaction
+		if(count==SPECIES) then	!this defect pair is accepted for this clustering reaction
 
-			do j=1,numSpecies
+			do j=1,SPECIES
 				reactants(j,1)=defectType2(j)
 				reactants(j,2)=defectType1(j)
 			end do
@@ -1051,9 +1054,9 @@ subroutine addMultiDefectReactions(cell, defectType1, defectType2)
 			!SIA+CuV:
 			if(defectType2(1)/=0 .AND. defectType2(2)/=0 .AND.  defectType1(3)>defectType2(2)) then
 				numProducts=2
-				allocate(products(numSpecies,numProducts))
+				allocate(products(SPECIES,numProducts))
 				!Create temporary arrays with the defect types associated with this reaction (SIA pinning)
-				do j=1,numSpecies
+				do j=1,SPECIES
 					if(j==2) then
 						products(j,1)=0
 					else
@@ -1069,9 +1072,9 @@ subroutine addMultiDefectReactions(cell, defectType1, defectType2)
 			else if(defectType2(1)/=0 .AND. defectType2(2)/=0 .AND.  defectType1(4)>defectType2(2)) then
 
 				numProducts=2
-				allocate(products(numSpecies,numProducts))
+				allocate(products(SPECIES,numProducts))
 
-				do j=1,numSpecies
+				do j=1,SPECIES
 
 					if(j==2) then
 						products(j,1)=0
@@ -1086,12 +1089,12 @@ subroutine addMultiDefectReactions(cell, defectType1, defectType2)
 				end do
 			else
 				numProducts=1
-				allocate(products(numSpecies,numProducts))
+				allocate(products(SPECIES,numProducts))
 
 				!Create temporary arrays with the defect types associated with this reaction (clustering)
 				!NOTE: reverse the order of reactants and products so that the reaction is the same
 				!(so that findreactioninlistmultiple correctly identifies the reaction)
-				do j=1, numSpecies
+				do j=1, SPECIES
 					products(j,1)=reactants(j,1)+reactants(j,2)
 				end do
 			end if
@@ -1163,16 +1166,16 @@ subroutine addMultiDefectReactions(cell, defectType1, defectType2)
 
 			!Total Annihilation
 			count2=0
-			do j=1,numSpecies
+			do j=1,SPECIES
 				if(products(j,1)==0) then
 					count2=count2+1
 				endif
 			end do
-			if(count2==numSpecies) then
+			if(count2==SPECIES) then
 				!we have completely annihilated the defects
 				deallocate(products)
 				numProducts=0
-				allocate(products(numSpecies,numProducts))
+				allocate(products(SPECIES,numProducts))
 			endif
 
 			!findReactionInList points reactionUpdate at the reaction if it already exists. If not, reactionUpdate
@@ -1214,13 +1217,13 @@ subroutine addMultiDefectReactions(cell, defectType1, defectType2)
 				allocate(reactionUpdate)
 				reactionUpdate%numReactants=2
 				reactionUpdate%numProducts=numProducts
-				allocate(reactionUpdate%reactants(numSpecies,reactionUpdate%numReactants))
-				allocate(reactionUpdate%products(numSpecies,reactionUpdate%numProducts))
+				allocate(reactionUpdate%reactants(SPECIES,reactionUpdate%numReactants))
+				allocate(reactionUpdate%products(SPECIES,reactionUpdate%numProducts))
 				allocate(reactionUpdate%cellNumber(reactionUpdate%numReactants+reactionUpdate%numProducts))
 				allocate(reactionUpdate%taskid(reactionUpdate%numReactants+reactionUpdate%numProducts))
 				nullify(reactionUpdate%next)
 				reactionPrev%next=>reactionUpdate
-				do j=1, numSpecies
+				do j=1, SPECIES
 					reactionUpdate%reactants(j,1)=reactants(j,1)
 					reactionUpdate%reactants(j,2)=reactants(j,2)
 				end do
@@ -1228,7 +1231,7 @@ subroutine addMultiDefectReactions(cell, defectType1, defectType2)
 				if(numProducts==1) then
 					reactionUpdate%products=products
 				else if(numProducts==2) then
-					do j=1, numSpecies
+					do j=1, SPECIES
 						reactionUpdate%products(j,1)=products(j,1)
 						reactionUpdate%products(j,2)=products(j,2)
 					end do
@@ -1271,11 +1274,12 @@ end subroutine
 !This refers mainly to clustering reactions or pinning reactions.
 !***************************************************************************************************
 subroutine addMultiDefectReactionsFine(cascadeID, cell, defectType1, defectType2)
+	use mod_constants
 	use mod_globalVariables
 	use mod_structures
 	implicit none
 
-	integer cascadeID, cell, defectType1(numSpecies), defectType2(numSpecies)
+	integer cascadeID, cell, defectType1(SPECIES), defectType2(SPECIES)
 	type(cascade), pointer :: CascadeCurrent
 	type(reaction), pointer :: reactionUpdate, reactionPrev
 	integer i, j, count, count2, numReactants, numProducts
@@ -1298,7 +1302,7 @@ subroutine addMultiDefectReactionsFine(cascadeID, cell, defectType1, defectType2
 	!Clustering reactions.
 	numReactants=2
 	numProducts=1
-	allocate(reactants(numSpecies,numReactants))
+	allocate(reactants(SPECIES,numReactants))
 	do i=1, numClusterReac
 
 		!*******************************************************
@@ -1310,14 +1314,14 @@ subroutine addMultiDefectReactionsFine(cascadeID, cell, defectType1, defectType2
 		!Check if the defect type is accepted by this dissociation reaction
 		!NOTE: we must check if defectType1 matches with ClusterReactions%reactants(1) and reactants(2)
 		!and vice versa with defectType2. We only want to make one reaction rate per pair of reactants.
-		do j=1,numSpecies
+		do j=1,SPECIES
 			if(defectType1(j)==0 .AND. ClusterReactions(i)%reactants(j,1)==0) then
 				if(defectType2(j)==0 .AND. ClusterReactions(i)%reactants(j,2)==0) then
 					count=count+1
 				else if(defectType2(j) /= 0 .AND. ClusterReactions(i)%reactants(j,2) /= 0) then
-					if(defectType2(j) >= ClusterReactions(i)%min(j+numSpecies)) then
-						if((defectType2(j) <= ClusterReactions(i)%max(j+numSpecies)) .OR. &
-								ClusterReactions(i)%max(j+numSpecies)==-1) then
+					if(defectType2(j) >= ClusterReactions(i)%min(j+SPECIES)) then
+						if((defectType2(j) <= ClusterReactions(i)%max(j+SPECIES)) .OR. &
+								ClusterReactions(i)%max(j+SPECIES)==-1) then
 							count=count+1
 						end if
 					end if
@@ -1331,11 +1335,11 @@ subroutine addMultiDefectReactionsFine(cascadeID, cell, defectType1, defectType2
 						end if
 					end if
 				else if(defectType2(j) /= 0 .AND. ClusterReactions(i)%reactants(j,2) /= 0) then
-					if((defectType2(j) <= ClusterReactions(i)%max(j+numSpecies)) .OR. &
-							ClusterReactions(i)%max(j+numSpecies)==-1) then
+					if((defectType2(j) <= ClusterReactions(i)%max(j+SPECIES)) .OR. &
+							ClusterReactions(i)%max(j+SPECIES)==-1) then
 						if((defectType1(j) <= ClusterReactions(i)%max(j)) .OR. &
 								ClusterReactions(i)%max(j)==-1) then
-							if(defectType2(j) >= ClusterReactions(i)%min(j+numSpecies) .AND. &
+							if(defectType2(j) >= ClusterReactions(i)%min(j+SPECIES) .AND. &
 									defectType1(j) >= ClusterReactions(i)%min(j)) then
 								count=count+1
 							end if
@@ -1345,14 +1349,14 @@ subroutine addMultiDefectReactionsFine(cascadeID, cell, defectType1, defectType2
 			end if
 		end do
 
-		if(count==numSpecies) then	!this defect pair is accepted for this clustering reaction
+		if(count==SPECIES) then	!this defect pair is accepted for this clustering reaction
 
 			!CuV+SIA:
 			if(defectType1(1)/=0 .AND.  defectType2(3)>defectType1(2)) then
 				numProducts=2
-				allocate(products(numSpecies,numProducts))
+				allocate(products(SPECIES,numProducts))
 				!Create temporary arrays with the defect types associated with this reaction (SIA pinning)
-				do j=1,numSpecies
+				do j=1,SPECIES
 					reactants(j,1)=defectType1(j)
 					reactants(j,2)=defectType2(j)
 
@@ -1371,10 +1375,10 @@ subroutine addMultiDefectReactionsFine(cascadeID, cell, defectType1, defectType2
 			else if(defectType1(1)/=0 .AND.  defectType2(4)>defectType1(2)) then
 
 				numProducts=2
-				allocate(products(numSpecies,numProducts))
+				allocate(products(SPECIES,numProducts))
 
 				!Create temporary arrays with the defect types associated with this reaction (SIA pinning)
-				do j=1,numSpecies
+				do j=1,SPECIES
 					reactants(j,1)=defectType1(j)
 					reactants(j,2)=defectType2(j)
 
@@ -1392,10 +1396,10 @@ subroutine addMultiDefectReactionsFine(cascadeID, cell, defectType1, defectType2
 
 			else
 				numProducts=1
-				allocate(products(numSpecies,numProducts))
+				allocate(products(SPECIES,numProducts))
 
 				!Create temporary arrays with the defect types associated with this reaction (clustering)
-				do j=1, numSpecies
+				do j=1, SPECIES
 					reactants(j,1)=defectType1(j)
 					reactants(j,2)=defectType2(j)
 					products(j,1)=reactants(j,1)+reactants(j,2)
@@ -1467,16 +1471,16 @@ subroutine addMultiDefectReactionsFine(cascadeID, cell, defectType1, defectType2
 
 			!Total Annihilation
 			count2=0
-			do j=1,numSpecies
+			do j=1,SPECIES
 				if(products(j,1)==0) then
 					count2=count2+1
 				endif
 			end do
-			if(count2==numSpecies) then
+			if(count2==SPECIES) then
 				!we have completely annihilated the defects
 				deallocate(products)
 				numProducts=0
-				allocate(products(numSpecies,numProducts))
+				allocate(products(SPECIES,numProducts))
 			endif
 
 			!findReactionInList points reactionUpdate at the reaction if it already exists. If not, reactionUpdate
@@ -1510,13 +1514,13 @@ subroutine addMultiDefectReactionsFine(cascadeID, cell, defectType1, defectType2
 				allocate(reactionUpdate)
 				reactionUpdate%numReactants=2
 				reactionUpdate%numProducts=numProducts
-				allocate(reactionUpdate%reactants(numSpecies,reactionUpdate%numReactants))
-				allocate(reactionUpdate%products(numSpecies,reactionUpdate%numProducts))
+				allocate(reactionUpdate%reactants(SPECIES,reactionUpdate%numReactants))
+				allocate(reactionUpdate%products(SPECIES,reactionUpdate%numProducts))
 				allocate(reactionUpdate%cellNumber(reactionUpdate%numReactants+reactionUpdate%numProducts))
 				allocate(reactionUpdate%taskid(reactionUpdate%numReactants+reactionUpdate%numProducts))
 				nullify(reactionUpdate%next)
 				reactionPrev%next=>reactionUpdate
-				do j=1, numSpecies
+				do j=1, SPECIES
 					reactionUpdate%reactants(j,1)=reactants(j,1)
 					reactionUpdate%reactants(j,2)=reactants(j,2)
 					if(numProducts==1) then
@@ -1563,7 +1567,7 @@ subroutine addMultiDefectReactionsFine(cascadeID, cell, defectType1, defectType2
 		!Check if the defect type is accepted by this dissociation reaction
 		!NOTE: we must check if defectType1 matches with ClusterReactions%reactants(1) and reactants(2)
 		!and vice versa with defectType2. We only want to make one reaction rate per pair of reactants.
-		do j=1,numSpecies
+		do j=1,SPECIES
 			if(defectType1(j)==0 .AND. ClusterReactions(i)%reactants(j,2)==0) then
 				if(defectType2(j)==0 .AND. ClusterReactions(i)%reactants(j,1)==0) then
 					count=count+1
@@ -1577,18 +1581,18 @@ subroutine addMultiDefectReactionsFine(cascadeID, cell, defectType1, defectType2
 				end if
 			else if(defectType1(j) /= 0 .AND. ClusterReactions(i)%reactants(j,2) /= 0) then
 				if(defectType2(j)==0 .AND. ClusterReactions(i)%reactants(j,1)==0) then
-					if(defectType1(j) >= ClusterReactions(i)%min(j+numSpecies)) then
-						if((defectType1(j) <= ClusterReactions(i)%max(j+numSpecies)) .OR. &
-								ClusterReactions(i)%max(j+numSpecies)==-1) then
+					if(defectType1(j) >= ClusterReactions(i)%min(j+SPECIES)) then
+						if((defectType1(j) <= ClusterReactions(i)%max(j+SPECIES)) .OR. &
+								ClusterReactions(i)%max(j+SPECIES)==-1) then
 							count=count+1
 						end if
 					end if
 				else if(defectType2(j) /= 0 .AND. ClusterReactions(i)%reactants(j,1) /= 0) then
-					if((defectType1(j) <= ClusterReactions(i)%max(j+numSpecies)) .OR. &
-							ClusterReactions(i)%max(j+numSpecies)==-1) then
+					if((defectType1(j) <= ClusterReactions(i)%max(j+SPECIES)) .OR. &
+							ClusterReactions(i)%max(j+SPECIES)==-1) then
 						if((defectType2(j) <= ClusterReactions(i)%max(j)) .OR. &
 								ClusterReactions(i)%max(j)==-1) then
-							if(defectType1(j) >= ClusterReactions(i)%min(j+numSpecies) .AND. &
+							if(defectType1(j) >= ClusterReactions(i)%min(j+SPECIES) .AND. &
 									defectType2(j) >= ClusterReactions(i)%min(j)) then
 								count=count+1
 							end if
@@ -1598,14 +1602,14 @@ subroutine addMultiDefectReactionsFine(cascadeID, cell, defectType1, defectType2
 			end if
 		end do
 
-		if(count==numSpecies) then	!this defect pair is accepted for this clustering reaction
+		if(count==SPECIES) then	!this defect pair is accepted for this clustering reaction
 
 			!SIA+CuV
 			if(defectType2(1)/=0 .AND.  defectType1(3)>defectType2(2)) then
 				numProducts=2
-				allocate(products(numSpecies,numProducts))
+				allocate(products(SPECIES,numProducts))
 				!Create temporary arrays with the defect types associated with this reaction (SIA pinning)
-				do j=1,numSpecies
+				do j=1,SPECIES
 					reactants(j,2)=defectType1(j)
 					reactants(j,1)=defectType2(j)
 
@@ -1624,9 +1628,9 @@ subroutine addMultiDefectReactionsFine(cascadeID, cell, defectType1, defectType2
 			else if(defectType2(1)/=0 .AND.  defectType1(4)>defectType2(2)) then
 
 				numProducts=2
-				allocate(products(numSpecies,numProducts))
+				allocate(products(SPECIES,numProducts))
 
-				do j=1,numSpecies
+				do j=1,SPECIES
 					reactants(j,2)=defectType1(j)
 					reactants(j,1)=defectType2(j)
 
@@ -1643,10 +1647,10 @@ subroutine addMultiDefectReactionsFine(cascadeID, cell, defectType1, defectType2
 				end do
 			else
 				numProducts=1
-				allocate(products(numSpecies,numProducts))
+				allocate(products(SPECIES,numProducts))
 
 				!Create temporary arrays with the defect types associated with this reaction (clustering)
-				do j=1, numSpecies
+				do j=1, SPECIES
 					reactants(j,2)=defectType1(j)
 					reactants(j,1)=defectType2(j)
 					products(j,1)=reactants(j,1)+reactants(j,2)
@@ -1718,16 +1722,16 @@ subroutine addMultiDefectReactionsFine(cascadeID, cell, defectType1, defectType2
 
 			!Total Annihilation
 			count2=0
-			do j=1,numSpecies
+			do j=1,SPECIES
 				if(products(j,1)==0) then
 					count2=count2+1
 				endif
 			end do
-			if(count2==numSpecies) then
+			if(count2==SPECIES) then
 				!we have completely annihilated the defects
 				deallocate(products)
 				numProducts=0
-				allocate(products(numSpecies,numProducts))
+				allocate(products(SPECIES,numProducts))
 			endif
 
 			!findReactionInList points reactionUpdate at the reaction if it already exists. If not, reactionUpdate
@@ -1762,13 +1766,13 @@ subroutine addMultiDefectReactionsFine(cascadeID, cell, defectType1, defectType2
 				allocate(reactionUpdate)
 				reactionUpdate%numReactants=2
 				reactionUpdate%numProducts=numProducts
-				allocate(reactionUpdate%reactants(numSpecies,reactionUpdate%numReactants))
-				allocate(reactionUpdate%products(numSpecies,reactionUpdate%numProducts))
+				allocate(reactionUpdate%reactants(SPECIES,reactionUpdate%numReactants))
+				allocate(reactionUpdate%products(SPECIES,reactionUpdate%numProducts))
 				allocate(reactionUpdate%cellNumber(reactionUpdate%numReactants+reactionUpdate%numProducts))
 				allocate(reactionUpdate%taskid(reactionUpdate%numReactants+reactionUpdate%numProducts))
 				nullify(reactionUpdate%next)
 				reactionPrev%next=>reactionUpdate
-				do j=1, numSpecies
+				do j=1, SPECIES
 					reactionUpdate%reactants(j,1)=reactants(j,1)
 					reactionUpdate%reactants(j,2)=reactants(j,2)
 					if(numProducts==1) then
@@ -1814,11 +1818,12 @@ end subroutine
 !adds reactions to a reaction list representing diffusion between volume elements.
 !***********************************************************************************************
 subroutine addDiffusionReactions(cell1, cell2, proc1, proc2, dir, defectType)
+	use mod_constants
 	use mod_globalVariables
 	use mod_structures
 	implicit none
 
-	integer cell1, cell2, proc1, proc2, defectType(numSpecies), dir
+	integer cell1, cell2, proc1, proc2, defectType(SPECIES), dir
 	integer numReactants, numProducts, i, j, count
 	integer, allocatable :: reactants(:,:), products(:,:)
 	type(reaction), pointer :: reactionUpdate, reactionPrev
@@ -1829,13 +1834,13 @@ subroutine addDiffusionReactions(cell1, cell2, proc1, proc2, dir, defectType)
 
 	numReactants=1
 	numProducts=1
-	allocate(reactants(numSpecies,numReactants))
-	allocate(products(numSpecies,numProducts))
+	allocate(reactants(SPECIES,numReactants))
+	allocate(products(SPECIES,numProducts))
 	do i=1, numDiffReac
 		count=0
 
 		!Check if the defect type is accepted by this diffusion reaction
-		do j=1,numSpecies
+		do j=1,SPECIES
 			if(defectType(j) == 0 .AND. DiffReactions(i)%reactants(j,1) == 0) then
 				count=count+1
 			else if(defectType(j) /= 0 .AND. DiffReactions(i)%reactants(j,1) /= 0) then
@@ -1847,13 +1852,13 @@ subroutine addDiffusionReactions(cell1, cell2, proc1, proc2, dir, defectType)
 			end if
 		end do
 
-		if(count==numSpecies) then	!this defect type is accepted for this diffusion reaction
+		if(count==SPECIES) then	!this defect type is accepted for this diffusion reaction
 			!point reactionUpdate at the reaction and reactionPrev at the reaction before it
 			!(if reaction does not already exist, reactionUpdate is unallocated and reactionPrev points
 			!to the end of the list)
 
 			!Create temporary arrays with the defect types associated with this reaction (dissociation)
-			do j=1, numSpecies
+			do j=1, SPECIES
 				reactants(j,1)=defectType(j)
 				products(j,1)=defectType(j)
 			end do
@@ -1893,13 +1898,13 @@ subroutine addDiffusionReactions(cell1, cell2, proc1, proc2, dir, defectType)
 				allocate(reactionUpdate)
 				reactionUpdate%numReactants=1
 				reactionUpdate%numProducts=1
-				allocate(reactionUpdate%reactants(numSpecies,reactionUpdate%numReactants))
-				allocate(reactionUpdate%products(numSpecies,reactionUpdate%numProducts))
+				allocate(reactionUpdate%reactants(SPECIES,reactionUpdate%numReactants))
+				allocate(reactionUpdate%products(SPECIES,reactionUpdate%numProducts))
 				allocate(reactionUpdate%cellNumber(reactionUpdate%numReactants+reactionUpdate%numProducts))
 				allocate(reactionUpdate%taskid(reactionUpdate%numReactants+reactionUpdate%numProducts))
 				nullify(reactionUpdate%next)
 				reactionPrev%next=>reactionUpdate
-				do j=1, numSpecies
+				do j=1, SPECIES
 					reactionUpdate%reactants(j,1)=reactants(j,1)
 					reactionUpdate%products(j,1)=products(j,1)
 				end do
@@ -1937,11 +1942,12 @@ end subroutine
 !adds reactions to a reaction list representing diffusion between volume elements.
 !***************************************************************************************************
 subroutine addDiffusionCoarseToFine(cell, proc, CascadeCurrent, defectType)
+	use mod_constants
 	use mod_globalVariables
 	use mod_structures
 	implicit none
 
-	integer cell, proc, defectType(numSpecies)
+	integer cell, proc, defectType(SPECIES)
 	type(cascade), pointer :: CascadeCurrent
 	integer numReactants, numProducts, i, j, count, numDefectsFine
 	integer, allocatable :: reactants(:,:), products(:,:)
@@ -1951,7 +1957,7 @@ subroutine addDiffusionCoarseToFine(cell, proc, CascadeCurrent, defectType)
 	interface
 		integer function findNumDefectTotalFine(defectType, CascadeCurrent)
 			use mod_globalVariables
-			integer defectType(numSpecies)
+			integer defectType(SPECIES)
 			type(cascade), pointer :: CascadeCurrent
 		end function
 	end interface
@@ -1961,13 +1967,13 @@ subroutine addDiffusionCoarseToFine(cell, proc, CascadeCurrent, defectType)
 
 	numReactants=1
 	numProducts=1
-	allocate(reactants(numSpecies,numReactants))
-	allocate(products(numSpecies,numProducts))
+	allocate(reactants(SPECIES,numReactants))
+	allocate(products(SPECIES,numProducts))
 	do i=1, numDiffReac
 		count=0
 
 		!Check if the defect type is accepted by this dissociation reaction
-		do j=1,numSpecies
+		do j=1,SPECIES
 			if(defectType(j) == 0 .AND. DiffReactions(i)%reactants(j,1) == 0) then
 				count=count+1
 			else if(defectType(j) /= 0 .AND. DiffReactions(i)%reactants(j,1) /= 0) then
@@ -1979,7 +1985,7 @@ subroutine addDiffusionCoarseToFine(cell, proc, CascadeCurrent, defectType)
 			end if
 		end do
 
-		if(count==numSpecies) then
+		if(count==SPECIES) then
 			!this defect type is accepted for this dissociation reaction
 
 			!point reactionUpdate at the reaction and reactionPrev at the reaction before it
@@ -1987,7 +1993,7 @@ subroutine addDiffusionCoarseToFine(cell, proc, CascadeCurrent, defectType)
 			!to the end of the list)
 
 			!Create temporary arrays with the defect types associated with this reaction (dissociation)
-			do j=1, numSpecies
+			do j=1, SPECIES
 				reactants(j,1)=defectType(j)
 				products(j,1)=defectType(j)
 			end do
@@ -2034,13 +2040,13 @@ subroutine addDiffusionCoarseToFine(cell, proc, CascadeCurrent, defectType)
 				allocate(reactionUpdate)
 				reactionUpdate%numReactants=1
 				reactionUpdate%numProducts=1
-				allocate(reactionUpdate%reactants(numSpecies,reactionUpdate%numReactants))
-				allocate(reactionUpdate%products(numSpecies,reactionUpdate%numProducts))
+				allocate(reactionUpdate%reactants(SPECIES,reactionUpdate%numReactants))
+				allocate(reactionUpdate%products(SPECIES,reactionUpdate%numProducts))
 				allocate(reactionUpdate%cellNumber(reactionUpdate%numReactants+reactionUpdate%numProducts))
 				allocate(reactionUpdate%taskid(reactionUpdate%numReactants+reactionUpdate%numProducts))
 				nullify(reactionUpdate%next)
 				reactionPrev%next=>reactionUpdate
-				do j=1, numSpecies
+				do j=1, SPECIES
 					reactionUpdate%reactants(j,1)=reactants(j,1)
 					reactionUpdate%products(j,1)=products(j,1)
 				end do
@@ -2078,11 +2084,12 @@ end subroutine
 !adds reactions to a reaction list representing diffusion between volume elements inside a cascade mesh.
 !***************************************************************************************************
 subroutine addDiffusionReactionsFine(cascadeID, cell1, cell2, proc1, proc2, dir, defectType)
+	use mod_constants
 	use mod_globalVariables
 	use mod_structures
 	implicit none
 
-	integer cascadeID, cell1, cell2, proc1, proc2, dir, defectType(numSpecies)
+	integer cascadeID, cell1, cell2, proc1, proc2, dir, defectType(SPECIES)
 	type(cascade), pointer :: CascadeCurrent
 	integer numReactants, numProducts, i, j, count
 	integer, allocatable :: reactants(:,:), products(:,:)
@@ -2102,13 +2109,13 @@ subroutine addDiffusionReactionsFine(cascadeID, cell1, cell2, proc1, proc2, dir,
 
 	numReactants=1
 	numProducts=1
-	allocate(reactants(numSpecies,numReactants))
-	allocate(products(numSpecies,numProducts))
+	allocate(reactants(SPECIES,numReactants))
+	allocate(products(SPECIES,numProducts))
 	do i=1, numDiffReac
 		count=0
 
 		!Check if the defect type is accepted by this dissociation reaction
-		do j=1,numSpecies
+		do j=1,SPECIES
 			if(defectType(j) == 0 .AND. DiffReactions(i)%reactants(j,1) == 0) then
 				count=count+1
 			else if(defectType(j) /= 0 .AND. DiffReactions(i)%reactants(j,1) /= 0) then
@@ -2120,13 +2127,13 @@ subroutine addDiffusionReactionsFine(cascadeID, cell1, cell2, proc1, proc2, dir,
 			endif
 		end do
 
-		if(count==numSpecies) then	!this defect type is accepted for this dissociation reaction
+		if(count==SPECIES) then	!this defect type is accepted for this dissociation reaction
 			!point reactionUpdate at the reaction and reactionPrev at the reaction before it
 			!(if reaction does not already exist, reactionUpdate is unallocated and reactionPrev points
 			!to the end of the list)
 
 			!Create temporary arrays with the defect types associated with this reaction (diffusion)
-			do j=1,numSpecies
+			do j=1,SPECIES
 				reactants(j,1)=defectType(j)
 				products(j,1)=defectType(j)
 			end do
@@ -2165,13 +2172,13 @@ subroutine addDiffusionReactionsFine(cascadeID, cell1, cell2, proc1, proc2, dir,
 				allocate(reactionUpdate)
 				reactionUpdate%numReactants=1
 				reactionUpdate%numProducts=1
-				allocate(reactionUpdate%reactants(numSpecies,reactionUpdate%numReactants))
-				allocate(reactionUpdate%products(numSpecies,reactionUpdate%numProducts))
+				allocate(reactionUpdate%reactants(SPECIES,reactionUpdate%numReactants))
+				allocate(reactionUpdate%products(SPECIES,reactionUpdate%numProducts))
 				allocate(reactionUpdate%cellNumber(reactionUpdate%numReactants+reactionUpdate%numProducts))
 				allocate(reactionUpdate%taskid(reactionUpdate%numReactants+reactionUpdate%numProducts))
 				nullify(reactionUpdate%next)
 				reactionPrev%next=>reactionUpdate
-				do j=1, numSpecies
+				do j=1, SPECIES
 					reactionUpdate%reactants(j,1)=reactants(j,1)
 					reactionUpdate%products(j,1)=products(j,1)
 				end do
@@ -2210,6 +2217,7 @@ end subroutine
 !finds reaction rate for implantation reaction (Frenkel pairs, cascades).
 !***************************************************************************************************
 double precision function findReactionRate(cell, reactionParameter)
+	use mod_constants
 	use mod_globalVariables
 	use mod_structures
 	implicit none
@@ -2252,11 +2260,12 @@ end function
 !finds reaction rate for trapping of SIA loops by impurities (Carbon).
 !***************************************************************************************************
 double precision function findReactionRateImpurity(defectType, cell, reactionParameter)
+	use mod_constants
 	use mod_globalVariables
 	use mod_structures
 	implicit none
 
-	integer cell, defectType(numSpecies), num, size
+	integer cell, defectType(SPECIES), num, size
 	type(reactionParameters) :: reactionParameter
 	double precision reactionRate, Diff
 	double precision findDiffusivity, findBinding, Eb
@@ -2289,11 +2298,12 @@ end function
 !finds reaction rate for trapping of SIA loops by impurities (Carbon) inside a fine mesh (Cascade).
 !***************************************************************************************************
 double precision function findReactionRateImpurityFine(CascadeCurrent, defectType, cell, reactionParameter)
+	use mod_constants
 	use mod_globalVariables
 	use mod_structures
 	implicit none
 
-	integer cell, defectType(numSpecies), num, size
+	integer cell, defectType(SPECIES), num, size
 	type(reactionParameters) :: reactionParameter
 	double precision reactionRate, Diff
 	type(cascade), pointer :: cascadeCurrent
@@ -2304,7 +2314,7 @@ double precision function findReactionRateImpurityFine(CascadeCurrent, defectTyp
 		integer function findNumDefectFine(CascadeCurrent, defectType, cell)
 			use mod_globalVariables
 			type(cascade), pointer :: CascadeCurrent
-			integer defectType(numSpecies), cell
+			integer defectType(SPECIES), cell
 		end function
 	end interface
 
@@ -2340,7 +2350,7 @@ double precision function findReactionRateDissoc(defectType, products, cell, rea
 	use mod_structures
 	implicit none
 
-	integer cell, defectType(numSpecies), products(numSpecies,2), size, num
+	integer cell, defectType(SPECIES), products(SPECIES,2), size, num
 	type(reactionParameters) :: reactionParameter
 	double precision reactionRate, Diff, Eb
 	double precision findDiffusivity, findBinding
@@ -2385,7 +2395,7 @@ double precision function findReactionRateDissocFine(CascadeCurrent, defectType,
 	use mod_structures
 	implicit none
 
-	integer cell, defectType(numSpecies), products(numSpecies,2), size, num
+	integer cell, defectType(SPECIES), products(SPECIES,2), size, num
 	type(reactionParameters) :: reactionParameter
 	double precision reactionRate, Diff, Eb
 	type(cascade), pointer :: CascadeCurrent
@@ -2395,8 +2405,9 @@ double precision function findReactionRateDissocFine(CascadeCurrent, defectType,
 
 	interface
 		integer function findNumDefectFine(CascadeCurrent, defectType, cell)
+			use mod_constants
 			use mod_globalVariables
-			integer cell, defectType(numSpecies)
+			integer cell, defectType(SPECIES)
 			type(cascade), pointer :: CascadeCurrent
 		end function
 	end interface
@@ -2441,7 +2452,7 @@ double precision function findReactionRateSink(defectType, cell, reactionParamet
 	use mod_structures
 	implicit none
 
-	integer cell, defectType(numSpecies), num
+	integer cell, defectType(SPECIES), num
 	type(reactionParameters) :: reactionParameter
 	double precision reactionRate, Diff
 	double precision findDiffusivity
@@ -2483,7 +2494,7 @@ double precision function findReactionRateSinkFine(CascadeCurrent, defectType, c
 	use mod_structures
 	implicit none
 
-	integer cell, defectType(numSpecies), num, grainNum
+	integer cell, defectType(SPECIES), num, grainNum
 	type(reactionParameters) :: reactionParameter
 	double precision reactionRate, Diff
 	type(cascade), pointer :: CascadeCurrent
@@ -2491,8 +2502,9 @@ double precision function findReactionRateSinkFine(CascadeCurrent, defectType, c
 
 	interface
 		integer function findNumDefectFine(CascadeCurrent, defectType, cell)
+			use mod_constants
 			use mod_globalVariables
-			integer cell, defectType(numSpecies)
+			integer cell, defectType(SPECIES)
 			type(cascade), pointer :: CascadeCurrent
 		end function
 	end interface
@@ -2533,7 +2545,7 @@ double precision function findReactionRateMultiple(defectType1, defectType2, cel
 	use mod_structures
 	implicit none
 
-	integer cell, defectType1(numSpecies), defectType2(numSpecies), i, count
+	integer cell, defectType1(SPECIES), defectType2(SPECIES), i, count
 	type(reactionParameters) :: reactionParameter
 	double precision reactionRate, Diff1, Diff2, vol
 	integer size1, size2, num1, num2
@@ -2555,12 +2567,12 @@ double precision function findReactionRateMultiple(defectType1, defectType2, cel
 	num2=findNumDefect(defectType2,cell)
 
 	count=0
-	do i=1,numSpecies
+	do i=1,SPECIES
 		if(defectType1(i)==defectType2(i)) then
 			count=count+1
 		end if
 	end do
-	if(count==numSpecies) then
+	if(count==SPECIES) then
 		!we have two defects of the same type, have to modify the defect numbers for a defect to combine with itself
 		num2=num2-1
 	endif
@@ -2668,7 +2680,7 @@ double precision function findReactionRateMultipleFine(CascadeCurrent,defectType
 	use mod_structures
 	implicit none
 
-	integer cell, defectType1(numSpecies), defectType2(numSpecies), i, count
+	integer cell, defectType1(SPECIES), defectType2(SPECIES), i, count
 	type(reactionParameters) :: reactionParameter
 	double precision reactionRate, Diff1, Diff2, size1, size2, num1, num2, vol
 	!integer findNumDefectFine
@@ -2679,8 +2691,9 @@ double precision function findReactionRateMultipleFine(CascadeCurrent,defectType
 
 	interface
 		integer function findNumDefectFine(CascadeCurrent, defectType, cell)
+			use mod_constants
 			use mod_globalVariables
-			integer cell, defectType(numSpecies)
+			integer cell, defectType(SPECIES)
 			type(cascade), pointer :: CascadeCurrent
 		end function
 	end interface
@@ -2701,12 +2714,12 @@ double precision function findReactionRateMultipleFine(CascadeCurrent,defectType
 	!Adjust the number of defects in the reaction if both reactants are of the same type
 
 	count=0
-	do i=1,numSpecies
+	do i=1,SPECIES
 		if(defectType1(i)==defectType2(i)) then
 			count=count+1
 		end if
 	end do
-	if(count==numSpecies) then
+	if(count==SPECIES) then
 		!we have two defects of the same type, have to modify the defect numbers for a defect to combine with itself
 		num2=num2-1
 	end if
@@ -2802,7 +2815,7 @@ double precision function findReactionRateDiff(defectType, cell1, proc1, cell2, 
 	use mod_structures
 	implicit none
 
-	integer cell1, proc1, cell2, proc2, defectType(numSpecies), num1, num2, dir
+	integer cell1, proc1, cell2, proc2, defectType(SPECIES), num1, num2, dir
 	type(ReactionParameters) :: reactionParameter
 	double precision Diff, area1, area2, areaShared, lengthShared, Vol1, Vol2, length1, length2, reactionRate
 	integer findNumDefect, findNumDefectBoundary
@@ -2965,11 +2978,12 @@ end function
 !finds reaction rate for defect diffusion between a coarse mesh element and a fine (cascade) mesh
 !***************************************************************************************************
 double precision function findReactionRateCoarseToFine(defectType, cell, proc, numDefectsFine, reactionParameter)
+	use mod_constants
 	use mod_globalVariables
 	use mod_structures
 	implicit none
 
-	integer defectType(numSpecies), cell, proc, numDefectsFine, num1, num2, grainNum
+	integer defectType(SPECIES), cell, proc, numDefectsFine, num1, num2, grainNum
 	type(ReactionParameters) :: reactionParameter
 
 	double precision Diff, areaShared, Vol1, Vol2, length1, reactionRate, coarseToFineLength
@@ -3020,11 +3034,12 @@ end function
 !finds reaction rate for defect diffusion between elements in the fine mesh (inside a cascade)
 !***************************************************************************************************
 double precision function findReactionRateDiffFine(CascadeCurrent,defectType,cell1,proc1,cell2,proc2,dir,reactionParameter)
+	use mod_constants
 	use mod_globalVariables
 	use mod_structures
 	implicit none
 
-	integer cell1, proc1, cell2, proc2, defectType(numSpecies), num1, num2, dir, coarseCell
+	integer cell1, proc1, cell2, proc2, defectType(SPECIES), num1, num2, dir, coarseCell
 	type(ReactionParameters) :: reactionParameter
 	type(cascade), pointer :: CascadeCurrent
 	double precision Diff, area1, area2, areaShared, Vol1, Vol2, length,length1, length2, reactionRate, coarseLength
@@ -3034,9 +3049,10 @@ double precision function findReactionRateDiffFine(CascadeCurrent,defectType,cel
 
 	interface
 		integer function findNumDefectFine(CascadeCurrent, defectType, cell)
+			use mod_constants
 			use mod_globalVariables
 			type(cascade), pointer :: CascadeCurrent
-			integer cell, defectType(numSpecies)
+			integer cell, defectType(SPECIES)
 		end function
 	end interface
 
@@ -3135,6 +3151,7 @@ end function
 !If reaction is not present, reactionUpdate is not associated and reactionPrev points to the end of the list.
 !***************************************************************************************************
 subroutine findReactionInList(reactionUpdate, reactionPrev, cell, reactants, products, numReactants, numProducts)
+	use mod_constants
 	use mod_globalVariables
 	use mod_structures
 	implicit none
@@ -3150,7 +3167,7 @@ subroutine findReactionInList(reactionUpdate, reactionPrev, cell, reactants, pro
 
 			do i=1,numReactants
 				count(i)=0
-				do j=1,numSpecies
+				do j=1,SPECIES
 					if(reactionUpdate%reactants(j,i)==reactants(j,i)) then
 						count(i)=count(i)+1
 					end if
@@ -3159,7 +3176,7 @@ subroutine findReactionInList(reactionUpdate, reactionPrev, cell, reactants, pro
 
 			do i=1,numProducts
 				count(i+numReactants)=0
-				do j=1,numSpecies
+				do j=1,SPECIES
 					if(reactionUpdate%products(j,i)==products(j,i)) then
 						count(i+numReactants)=count(i+numReactants)+1
 					end if
@@ -3167,7 +3184,7 @@ subroutine findReactionInList(reactionUpdate, reactionPrev, cell, reactants, pro
 			end do
 			flag=.FALSE.
 			inter: do i=1,numReactants+numProducts
-				if(count(i) /= numSpecies) then
+				if(count(i) /= SPECIES) then
 					flag=.TRUE.
 					exit inter
 				end if
@@ -3190,6 +3207,7 @@ end subroutine
 !If reaction is not present, reactionUpdate is not associated and reactionPrev points to the end of the list.
 !***************************************************************************************************
 subroutine findReactionInListDiff(reactionUpdate, reactionPrev, reactants, cell1, cell2, proc1, proc2)
+	use mod_constants
 	use mod_globalVariables
 	use mod_structures
 	implicit none
@@ -3204,14 +3222,14 @@ subroutine findReactionInListDiff(reactionUpdate, reactionPrev, reactants, cell1
 			if(reactionUpdate%cellNumber(1)==cell1 .AND. reactionUpdate%cellNumber(2)==cell2) then
 				if(reactionUpdate%taskid(1)==proc1 .AND. reactionUpdate%taskid(2)==proc2) then
 					count(1)=0
-					do j=1,numSpecies
+					do j=1,SPECIES
 						if(reactionUpdate%reactants(j,1)==reactants(j,1)) then
 							count(1)=count(1)+1
 						end if
 					end do
 
 					count(2)=0
-					do j=1,numSpecies
+					do j=1,SPECIES
 						if(reactionUpdate%products(j,1)==reactants(j,1)) then
 							count(2)=count(2)+1
 						endif
@@ -3219,7 +3237,7 @@ subroutine findReactionInListDiff(reactionUpdate, reactionPrev, reactants, cell1
 
 					flag=.FALSE.
 					do i=1,2
-						if(count(i) /= numSpecies) then
+						if(count(i) /= SPECIES) then
 							flag=.TRUE.
 							exit
 						end if
@@ -3243,6 +3261,7 @@ end subroutine
 !If reaction is not present, reactionUpdate is not associated and reactionPrev points to the end of the list.
 !***************************************************************************************************
 subroutine findReactionInListMultiple(reactionUpdate,reactionPrev,cell,reactants,products,numReactants,numProducts)
+	use mod_constants
 	use mod_globalVariables
 	use mod_structures
 	implicit none
@@ -3260,7 +3279,7 @@ subroutine findReactionInListMultiple(reactionUpdate,reactionPrev,cell,reactants
 			!check if the reactants are the same as the reactionUpdate reactants
 			count(1)=0
 			count(2)=0
-			do j=1,numSpecies
+			do j=1,SPECIES
 				if(reactionUpdate%reactants(j,1)==reactants(j,1)) then
 					count(1)=count(1)+1
 				end if
@@ -3272,7 +3291,7 @@ subroutine findReactionInListMultiple(reactionUpdate,reactionPrev,cell,reactants
 			!check if the products are the same as the reactionUpdate products
 			do i=1,numProducts
 				count(i+numReactants)=0
-				do j=1,numSpecies
+				do j=1,SPECIES
 					if(reactionUpdate%products(j,i)==products(j,i)) then
 						count(i+numReactants)=count(i+numReactants)+1
 					end if
@@ -3281,7 +3300,7 @@ subroutine findReactionInListMultiple(reactionUpdate,reactionPrev,cell,reactants
 
 			flag=.FALSE.
 			inter1: do i=1,numReactants+numProducts
-				if(count(i) /= numSpecies) then
+				if(count(i) /= SPECIES) then
 					flag=.TRUE.
 					exit inter1
 				end if
@@ -3299,7 +3318,7 @@ subroutine findReactionInListMultiple(reactionUpdate,reactionPrev,cell,reactants
 			!check if the reactants are the same as the reactionUpdate reactants
 			count(1)=0
 			count(2)=0
-			do j=1,numSpecies
+			do j=1,SPECIES
 				if(reactionUpdate%reactants(j,2)==reactants(j,1)) then
 					count(1)=count(1)+1
 				end if
@@ -3311,7 +3330,7 @@ subroutine findReactionInListMultiple(reactionUpdate,reactionPrev,cell,reactants
 			!check if the products are the same as the reactionUpdate products
 			do i=1,numProducts
 				count(i+numReactants)=0
-				do j=1,numSpecies
+				do j=1,SPECIES
 					if(reactionUpdate%products(j,i)==products(j,i)) then
 						count(i+numReactants)=count(i+numReactants)+1
 					end if
@@ -3320,7 +3339,7 @@ subroutine findReactionInListMultiple(reactionUpdate,reactionPrev,cell,reactants
 
 			flag=.FALSE.
 			inter2: do i=1,numReactants+numProducts
-				if(count(i) /= numSpecies) then
+				if(count(i) /= SPECIES) then
 					flag=.TRUE.
 					exit inter2
 				end if
@@ -3347,11 +3366,12 @@ end subroutine
 !move all defect combination rules to this subroutine so that they only need to be changed once.
 !***************************************************************************************************
 subroutine defectCombinationRules(products, product2, defectTemp, isCombined)
+	use mod_constants
 	use mod_structures
 	use mod_globalVariables
 	implicit none
 
-	integer products(numSpecies), product2(numSpecies)
+	integer products(SPECIES), product2(SPECIES)
 	integer l
 	type(defect), pointer :: defectTemp
 	logical isCombined
@@ -3375,7 +3395,7 @@ subroutine defectCombinationRules(products, product2, defectTemp, isCombined)
 			products(3)=0
 		end if
 
-		do l=1,numSpecies
+		do l=1,SPECIES
 			products(l)=products(l)+defectTemp%defectType(l)
 		end do
 
@@ -3444,36 +3464,37 @@ end subroutine
 ! is allowed (using hard-coded information). If not, the subroutine returns a value of .FALSE. to isLegal.
 !***************************************************************************************************
 subroutine checkReactionLegality(numProducts, products, isLegal)
-use mod_globalVariables
-use mod_structures
-implicit none
+	use mod_constants
+	use mod_globalVariables
+	use mod_structures
+	implicit none
 
-integer numProducts, i
-integer products(numSpecies,numProducts)
-logical isLegal
+	integer numProducts, i
+	integer products(SPECIES,numProducts)
+	logical isLegal
 
-isLegal=.TRUE.
+	isLegal=.TRUE.
 
-!Check for Cu+SIA
-do i=1,numProducts
-    if(products(1,i)/=0 .AND. (products(3,i)/=0 .OR. products(4,i)/=0)) then
-        isLegal=.FALSE.
-    end if
-end do
+	!Check for Cu+SIA
+	do i=1,numProducts
+    	if(products(1,i)/=0 .AND. (products(3,i)/=0 .OR. products(4,i)/=0)) then
+        	isLegal=.FALSE.
+    	end if
+	end do
 
-!Check for CuV kick-out
-if(numProducts==2) then
+	!Check for CuV kick-out
+	if(numProducts==2) then
 
-	!Check for C1V1 dissociation: only allow one version of this to avoid
-	!double-counting the reaction.
-	if(products(1,1)==1 .AND. products(2,1)==0 .AND. products(3,1)==0 .AND. products(4,1)==0) then
-        if(products(1,2)==0 .AND. products(2,2)==1 .AND. products(3,2)==0 .AND. products(4,2)==0) then
+		!Check for C1V1 dissociation: only allow one version of this to avoid
+		!double-counting the reaction.
+		if(products(1,1)==1 .AND. products(2,1)==0 .AND. products(3,1)==0 .AND. products(4,1)==0) then
+        	if(products(1,2)==0 .AND. products(2,2)==1 .AND. products(3,2)==0 .AND. products(4,2)==0) then
 	
-			isLegal=.FALSE.
+				isLegal=.FALSE.
 	
-	    end if
+	    	end if
+		end if
 	end if
-end if
 
 end subroutine
 

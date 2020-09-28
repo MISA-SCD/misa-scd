@@ -170,9 +170,6 @@ module mod_globalVariables
     integer :: initialNumI                  !Initial number of self-interstitial atoms in the whole system
     integer, allocatable :: listVI(:,:)     !List the globalID of the mesh where initial vacancies and self-interstitial atoms are located.
 
-    !Material input information, created in MaterialInput.f90
-    integer numSpecies							        !<Number of chemical species (typically set to 4: Cu, V, SIA_m, SIA_im)
-
     !counters for sink efficiency
     integer :: numTrapV			            !<Postprocessing: number of vacancies trapped on grain boundary
     integer :: numTrapSIA			        !<Postprocessing: number of SIAs trapped on grain boundary

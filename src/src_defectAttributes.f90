@@ -8,7 +8,7 @@ double precision function findDiffusivity(defectType)
 	use mod_globalVariables
 	implicit none
 
-	integer, intent(in) :: defectType(numSpecies)
+	integer, intent(in) :: defectType(SPECIES)
 	integer :: i, j, numSame
 	double precision :: Diff
 	double precision, external :: DiffusivityCompute, diffusivityCu
@@ -18,13 +18,13 @@ double precision function findDiffusivity(defectType)
 
 	outer1: do i=1,numSingleDiff
 		numSame=0
-		do j=1,numSpecies
+		do j=1,SPECIES
 			if(defectType(j)==DiffSingle(i)%defectType(j)) then
 				numSame=numSame+1
 			end if
 		end do
 
-		if (numSame==numSpecies) then
+		if (numSame==SPECIES) then
 			if(DefectType(1)==1 .AND. DefectType(2)==0 .AND. DefectType(3)==0 .AND. DefectType(4)==0) then
 
 				Diff=diffusivityCu()
@@ -39,7 +39,7 @@ double precision function findDiffusivity(defectType)
 	if(i==numSingleDiff+1) then	!did not find defect in single defect list
 		do i=1,numFuncDiff
 			numSame=0
-			do j=1,numSpecies
+			do j=1,SPECIES
 				if(defectType(j)==0 .AND. DiffFunc(i)%defectType(j)==0) then
 					numSame=numSame+1
 				else if(defectType(j) /= 0 .AND. DiffFunc(i)%defectType(j)==1) then
@@ -49,7 +49,7 @@ double precision function findDiffusivity(defectType)
 					end if
 				end if
 			end do
-			if(numSame==numSpecies) then
+			if(numSame==SPECIES) then
 
 				Diff=DiffusivityCompute(defectType,DiffFunc(i)%functionType,DiffFunc(i)%numParam,DiffFunc(i)%parameters)
 				exit
@@ -74,7 +74,7 @@ double precision function DiffusivityCompute(DefectType, functionType, numParame
 	use mod_structures
 	implicit none
 
-	integer, intent(in) :: DefectType(numSpecies), functionType, numParameters
+	integer, intent(in) :: DefectType(SPECIES), functionType, numParameters
 	double precision, intent(in) :: parameters(numParameters)
 	double precision :: Diff, D0, Em
 	double precision, external :: diffusivityCu
@@ -110,7 +110,7 @@ double precision function diffusivityCu()
 	use mod_globalVariables
 	implicit none
 
-	integer :: DefectType(numSpecies), i
+	integer :: DefectType(SPECIES), i
 
 	outer: do i=1,numSingleDiff
 		if(DiffSingle(i)%defectType(1)==1 .AND. DiffSingle(i)%defectType(2)==0 .AND. &
@@ -135,11 +135,12 @@ end function
 !returns the binding energy of a given defect type
 !*****************************************************************************************
 double precision function findBinding(DefectType, productType)
+	use mod_constants
 	use mod_structures
 	use mod_globalVariables
 	implicit none
 
-	integer, intent(in) :: DefectType(numSpecies), productType(numSpecies)
+	integer, intent(in) :: DefectType(SPECIES), productType(SPECIES)
 	integer :: i, j, numSame, numSameProduct
 	double precision :: Eb
 	double precision, external :: BindingCompute
@@ -150,7 +151,7 @@ double precision function findBinding(DefectType, productType)
 	do i=1,numSingleBind
 		numSame=0
 		numSameProduct=0
-		do j=1,numSpecies
+		do j=1,SPECIES
 			if(DefectType(j)==BindSingle(i)%defectType(j)) then
 				numSame=numSame+1
 			end if
@@ -159,7 +160,7 @@ double precision function findBinding(DefectType, productType)
 			end if
 		end do
 
-		if (numSame==numSpecies .AND. numSameProduct==numSpecies) then
+		if (numSame==SPECIES .AND. numSameProduct==SPECIES) then
 			Eb=BindSingle(i)%Eb
 			exit
 		end if
@@ -169,7 +170,7 @@ double precision function findBinding(DefectType, productType)
 		do i=1,numFuncBind
 			numSame=0
 			numSameProduct=0
-			do j=1,numSpecies
+			do j=1,SPECIES
 
 				if(DefectType(j)==0 .AND. BindFunc(i)%defectType(j)==0) then
 					numSame=numSame+1
@@ -188,7 +189,7 @@ double precision function findBinding(DefectType, productType)
 				end if
 			end do
 
-			if(numSame==numSpecies .AND. numSameProduct==numSpecies) then
+			if(numSame==SPECIES .AND. numSameProduct==SPECIES) then
 
 				Eb=BindingCompute(DefectType, productType, BindFunc(i)%functionType, &
 						BindFunc(i)%numParam,BindFunc(i)%parameters)
@@ -216,14 +217,14 @@ double precision function BindingCompute(DefectType, product, functionType, numP
 	use mod_globalVariables
 	implicit none
 
-	integer, intent(in) :: DefectType(numSpecies), product(numSpecies), functionType, numParameters
+	integer, intent(in) :: DefectType(SPECIES), product(SPECIES), functionType, numParameters
 	double precision, intent(in) :: parameters(numParameters)
 	integer :: num, CuNum, VNum, SIANum, i
 	double precision :: Eb
 
 	if(functionType==12) then	!V / SIA cluster dislocation
 		num=0
-		do i=1,numSpecies
+		do i=1,SPECIES
 			if(DefectType(i) > num) then
 				num=DefectType(i)
 				exit
@@ -259,15 +260,16 @@ end function
 !NOTE: for Cu_nV_m clusters, this function returns the larger of m or n
 !*****************************************************************************************
 integer function findDefectSize(defectType)
+	use mod_constants
 	use mod_globalVariables
 	implicit none
 
-	integer, intent(in) :: defectType(numSpecies)
+	integer, intent(in) :: defectType(SPECIES)
 	integer :: max, i
 
 	!Hard-coded below and may be changed if the rules for defect size change.
 	max=0
-	do i=1, numSpecies
+	do i=1, SPECIES
 		if(defectType(i) > max) then
 			max=defectType(i)
 		end if

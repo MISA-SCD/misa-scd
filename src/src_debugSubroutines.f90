@@ -14,6 +14,7 @@
 !! OUTPUT: unadmissible defects, if any (on the screen)
 !***************************************************************************************************
 subroutine DEBUGCheckForUnadmissible(reactionCurrent)
+	use mod_constants
 use mod_globalVariables
 use mod_structures
 implicit none
@@ -35,7 +36,7 @@ end interface
 do i=1,numCells
 	defectCurrent=>defectList(i)
 	count=0
-	do j=1,numSpecies
+	do j=1,SPECIES
 		if(defectCurrent%defectType(j) /= 0) then
 			count=count+1
 		endif
@@ -57,7 +58,7 @@ do while(associated(CascadeCurrent))
 	do i=1,numCellsCascade
 		defectCurrent=>CascadeCurrent%localDefects(i)
 		count=0
-		do j=1,numSpecies
+		do j=1,SPECIES
 			if(defectCurrent%defectType(j) /= 0) then
 				count=count+1
 			endif
@@ -149,7 +150,7 @@ if(myProc%taskid==MASTER) then
 				!write(*,*) 'numProducts', reactionCurrent%numProducts, 'products',reactionCurrent%products
 
 				!do j=1,reactionCurrent%numProducts
-				!	write(*,*) (reactionCurrent%products(k,j),k=1,numSpecies)
+				!	write(*,*) (reactionCurrent%products(k,j),k=1,SPECIES)
 				!end do
 
 				write(*,*) 'cells and procs'
@@ -198,7 +199,7 @@ if(myProc%taskid==MASTER) then
 						!write(*,*) 'numProducts', reactionCurrent%numProducts, 'products',reactionCurrent%products
 						
 						!do j=1,reactionCurrent%numProducts
-						!	write(*,*) (reactionCurrent%products(k,j),k=1,numSpecies)
+						!	write(*,*) (reactionCurrent%products(k,j),k=1,SPECIES)
 						!end do
 						
 						!write(*,*) 'cells and procs'
@@ -352,6 +353,7 @@ end subroutine
 !> Subroutine debug print defectList - outputs defects in the coarse meshes of this processor.
 !***********************************************************************
 subroutine DEBUGPrintDefectList()
+	use mod_constants
 	use mod_globalVariables
 	use mod_structures
 	implicit none

@@ -3,6 +3,7 @@
 !releases fine mesh back to coarse mesh when cascade is annealed
 !***************************************************************************************************
 subroutine releaseFineMeshDefects(CascadeCurrent)
+	use mod_constants
 	use mod_globalVariables
 	use mod_structures
 	implicit none
@@ -16,10 +17,11 @@ subroutine releaseFineMeshDefects(CascadeCurrent)
 
 	interface
 		subroutine findDefectInList(defectCurrent, defectPrev, products)
+			use mod_constants
 			use mod_structures
 			use mod_globalVariables
 			type(defect), pointer, intent(inout) :: defectCurrent, defectPrev
-			integer, intent(in) :: products(numSpecies)
+			integer, intent(in) :: products(SPECIES)
 		end subroutine
 	end interface
 
@@ -41,14 +43,14 @@ subroutine releaseFineMeshDefects(CascadeCurrent)
 			if(associated(defectCurrentCoarse)) then
 
 				count=0
-				do j=1,numSpecies
+				do j=1,SPECIES
 					if(defectCurrentCoarse%defectType(j)==defectCurrentFine%defectType(j)) then
 						count=count+1
 					end if
 				end do
 
 				!case 1: this defect already exists in the coarse mesh
-				if(count==numSpecies) then
+				if(count==SPECIES) then
 					!Add the fine mesh defects to the coarse mesh defects
 					defectCurrentCoarse%num=defectCurrentCoarse%num+defectCurrentFine%num
 
@@ -59,8 +61,8 @@ subroutine releaseFineMeshDefects(CascadeCurrent)
 					allocate(defectPrevCoarse%next)
 					nullify(defectPrevCoarse%next%next)
 					defectPrevCoarse=>defectPrevCoarse%next
-					allocate(defectPrevCoarse%defectType(numSpecies))
-					do j=1,numSpecies
+					allocate(defectPrevCoarse%defectType(SPECIES))
+					do j=1,SPECIES
 						defectPrevCoarse%defectType(j)=defectCurrentFine%defectType(j)
 					end do
 					defectPrevCoarse%num=defectCurrentFine%num
@@ -77,8 +79,8 @@ subroutine releaseFineMeshDefects(CascadeCurrent)
 				allocate(defectPrevCoarse%next)
 				nullify(defectPrevCoarse%next%next)
 				defectPrevCoarse=>defectPrevCoarse%next
-				allocate(defectPrevCoarse%defectType(numSpecies))
-				do j=1,numSpecies
+				allocate(defectPrevCoarse%defectType(SPECIES))
+				do j=1,SPECIES
 					defectPrevCoarse%defectType(j)=defectCurrentFine%defectType(j)
 				end do
 				defectPrevCoarse%num=defectCurrentFine%num
@@ -255,12 +257,13 @@ end subroutine
 !!Finds the number of defects of type defectType in CascadeCurrent%localDefects. If none, returns 0
 !***************************************************************************************************
 integer function findNumDefectFine(CascadeCurrent, defectType, cellNumber)
+	use mod_constants
 	use mod_structures
 	use mod_globalVariables
 	implicit none
 
 	type(cascade), pointer, intent(in) :: CascadeCurrent
-	integer, intent(in) :: defectType(numSpecies), cellNumber
+	integer, intent(in) :: defectType(SPECIES), cellNumber
 	type(defect), pointer :: defectCurrent
 	integer :: numDefects, i, count
 
@@ -271,13 +274,13 @@ integer function findNumDefectFine(CascadeCurrent, defectType, cellNumber)
 	do while(associated(defectCurrent))
 
 		count=0
-		do i=1,numSpecies
+		do i=1,SPECIES
 			if(defectType(i)==defectCurrent%defectType(i)) then
 				count=count+1
 			end if
 		end do
 
-		if(count==numSpecies) then
+		if(count==SPECIES) then
 			numDefects=defectCurrent%num
 			exit
 		end if
@@ -296,16 +299,17 @@ integer function findNumDefectTotalFine(defectType, CascadeCurrent)
 	use mod_structures
 	implicit none
 
-	integer, intent(in) :: defectType(numSpecies)
+	integer, intent(in) :: defectType(SPECIES)
 	type(cascade), pointer, intent(in) :: CascadeCurrent
 	type(defect), pointer :: defectCurrent
 	integer :: cell, count
 
 	interface
 		integer function findNumDefectFine(CascadeCurrent, defectType, cell)
+			use mod_constants
 			use mod_globalVariables
 			type(cascade), pointer, intent(in) :: CascadeCurrent
-			integer, intent(in) :: defectType(numSpecies), cell
+			integer, intent(in) :: defectType(SPECIES), cell
 		end function
 	end interface
 

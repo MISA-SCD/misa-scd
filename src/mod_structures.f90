@@ -44,18 +44,18 @@ module mod_structures
 	type bindingFunction
 		integer, allocatable :: defectType(:)			!<Type of cluster that is dissociating (1's and 0's only)
 		integer, allocatable :: product(:)				!<Type of defect that dissociates from cluster
-		integer, allocatable :: min(:)					!<Minimum cluster size allowed to use this functional form for binding energy (size numSpecies)
-		integer, allocatable :: max(:)					!<Maximum cluster size allowed to use this functional form for binding energy (size numSpecies)
+		integer, allocatable :: min(:)					!<Minimum cluster size allowed to use this functional form for binding energy (size SPECIES)
+		integer, allocatable :: max(:)					!<Maximum cluster size allowed to use this functional form for binding energy (size SPECIES)
 		double precision, allocatable :: parameters(:)	!<Parameters to input into this functional form (read in from input file)
 		integer functionType							!<ID number of functional form, function is hard coded into Defect_Attributes.f90
 		integer numParam								!<Number of parameters needed to input into this functional form
 	end type
 
 	type reactionParameters
-		integer, allocatable :: reactants(:,:)	!<Defect types for reactants in this reaction--array size:(numSpecies, numReactants)
-		integer, allocatable :: products(:,:)	!<Defect types for products in this reaction--array size:(numSpecies, numProducts)
-		integer, allocatable :: min(:)			!<Smallest defect size for reactants (size numSpecies)
-		integer, allocatable :: max(:)			!<Largest defect size for reactants (size numSpecies, -1 indicates infinity)
+		integer, allocatable :: reactants(:,:)	!<Defect types for reactants in this reaction--array size:(SPECIES, numReactants)
+		integer, allocatable :: products(:,:)	!<Defect types for products in this reaction--array size:(SPECIES, numProducts)
+		integer, allocatable :: min(:)			!<Smallest defect size for reactants (size SPECIES)
+		integer, allocatable :: max(:)			!<Largest defect size for reactants (size SPECIES, -1 indicates infinity)
 		integer numReactants					!<Number of reactants (0, 1, or 2 typically)
 		integer numProducts						!<Number of products
 		integer functionType					!<ID number of function type used to calculate reaction rate, functions are hard coded in ReactionRates.f90
@@ -118,8 +118,8 @@ module mod_structures
 	type reaction
 		integer numReactants					!<Number of reactants in this reaction
 		integer numProducts						!<Number of products in this reaction
-		integer, allocatable :: reactants(:,:) 	!<Reactants in this reaction - array size:(numSpecies, numReactants)
-		integer, allocatable :: products(:,:)	!<Products in this reaction - array size:(numSpecies, numReactants)
+		integer, allocatable :: reactants(:,:) 	!<Reactants in this reaction - array size:(SPECIES, numReactants)
+		integer, allocatable :: products(:,:)	!<Products in this reaction - array size:(SPECIES, numReactants)
 		integer, allocatable :: cellNumber(:) 	!<Cell numbers of defects involved in this reaction. Array size: (numReactants+numProducts). Important for diffusion reactions
 		integer, allocatable :: taskid(:) 		!<Processor number of defects involved in this reaction. Array size: (numReactants+numProducts). May not all be the same processor number in the case of diffusion across processor boundaries.
 		double precision reactionRate			!<Rate (s^-1) for this reaction to be carried out, based on the defects present in the volume
@@ -134,7 +134,7 @@ module mod_structures
 	end type cascadeEvent
 
 	type cascadeDefect
-		integer, allocatable :: defectType(:) 	!<Type of defect (numSpecies)
+		integer, allocatable :: defectType(:) 	!<Type of defect (SPECIES)
 		double precision :: coordinates(3) 		!<Location of defect relative to center of cascade (in nm)
 		type(cascadeDefect), pointer :: next	!<Pointer pointing to the next defect in the list
 	end type cascadeDefect

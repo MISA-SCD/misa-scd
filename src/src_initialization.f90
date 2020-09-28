@@ -140,6 +140,7 @@ end  subroutine
 !Begins with a defect with type 0 0 0 0 and num 0. Note that numCells is needed in this subroutine
 !*****************************************************************************************
 subroutine initializeDefectList()
+	use mod_constants
 	use mod_structures
 	use mod_globalVariables
 	implicit none
@@ -149,8 +150,8 @@ subroutine initializeDefectList()
 
 	nullify(defectCurrent)
 	do cell=1,numCells
-		allocate(defectList(cell)%defectType(numSpecies))
-		do i=1,numSpecies
+		allocate(defectList(cell)%defectType(SPECIES))
+		do i=1,SPECIES
 			defectList(cell)%defectType(i)=0
 		end do
 		defectList(cell)%num=0
@@ -168,8 +169,8 @@ subroutine initializeDefectList()
 					else
 						allocate(defectCurrent%next)
 						defectCurrent=>defectCurrent%next
-						allocate(defectCurrent%defectType(numSpecies))
-						do j=1, numSpecies
+						allocate(defectCurrent%defectType(SPECIES))
+						do j=1, SPECIES
 							defectCurrent%defectType(j) = 0
 						end do
 						defectCurrent%defectType(3) = 1
@@ -191,8 +192,8 @@ subroutine initializeDefectList()
 					else
 						allocate(defectCurrent%next)
 						defectCurrent=>defectCurrent%next
-						allocate(defectCurrent%defectType(numSpecies))
-						do j=1, numSpecies
+						allocate(defectCurrent%defectType(SPECIES))
+						do j=1, SPECIES
 							defectCurrent%defectType(j) = 0
 						end do
 						defectCurrent%defectType(2) = 1
@@ -208,8 +209,8 @@ subroutine initializeDefectList()
 		if(CuContent > 0d0) then
 			allocate(defectCurrent%next)
 			defectCurrent=>defectCurrent%next
-			allocate(defectCurrent%defectType(numSpecies))
-			do i=1, numSpecies
+			allocate(defectCurrent%defectType(SPECIES))
+			do i=1, SPECIES
 				defectCurrent%defectType(i) = 0
 			end do
 			defectCurrent%defectType(1) = 1
@@ -284,6 +285,7 @@ end subroutine
 !creates a new reaction list for each volume element and initializes implantation reactions (with rates)
 !*****************************************************************************************
 subroutine initializeReactionList()
+	use mod_constants
 	use mod_structures
 	use mod_globalVariables
 	use mod_reactionrates
@@ -301,7 +303,7 @@ subroutine initializeReactionList()
 			if(implantType=='FrenkelPair') then
 				reactionList(cell)%numReactants=0
 				reactionList(cell)%numProducts=2
-				allocate(reactionList(cell)%products(numSpecies,reactionList(cell)%numProducts))
+				allocate(reactionList(cell)%products(SPECIES,reactionList(cell)%numProducts))
 				allocate(reactionList(cell)%cellNumber(reactionList(cell)%numProducts))
 				allocate(reactionList(cell)%taskid(reactionList(cell)%numProducts))
 
@@ -377,11 +379,11 @@ subroutine initializeReactionList()
 				reactionCurrent=>reactionCurrent%next
 				reactionCurrent%numReactants=2
 				reactionCurrent%numProducts=1
-				allocate(reactionCurrent%reactants(numSpecies,reactionCurrent%numReactants))
-				allocate(reactionCurrent%products(numSpecies,reactionCurrent%numProducts))
+				allocate(reactionCurrent%reactants(SPECIES,reactionCurrent%numReactants))
+				allocate(reactionCurrent%products(SPECIES,reactionCurrent%numProducts))
 				allocate(reactionCurrent%cellNumber(reactionCurrent%numReactants + reactionCurrent%numProducts))
 				allocate(reactionCurrent%taskid(reactionCurrent%numReactants + reactionCurrent%numProducts))
-				do j=1, numSpecies
+				do j=1, SPECIES
 					reactionCurrent%reactants(j,1)=ClusterReactions(reac)%reactants(j,1)
 					reactionCurrent%reactants(j,2)=ClusterReactions(reac)%reactants(j,2)
 					reactionCurrent%products(j,1)=ClusterReactions(reac)%products(j,1)
@@ -433,11 +435,11 @@ subroutine initializeReactionList()
 					reactionCurrent=>reactionCurrent%next
 					reactionCurrent%numReactants=2
 					reactionCurrent%numProducts=1
-					allocate(reactionCurrent%reactants(numSpecies,reactionCurrent%numReactants))
-					allocate(reactionCurrent%products(numSpecies,reactionCurrent%numProducts))
+					allocate(reactionCurrent%reactants(SPECIES,reactionCurrent%numReactants))
+					allocate(reactionCurrent%products(SPECIES,reactionCurrent%numProducts))
 					allocate(reactionCurrent%cellNumber(reactionCurrent%numReactants+reactionCurrent%numProducts))
 					allocate(reactionCurrent%taskid(reactionCurrent%numReactants+reactionCurrent%numProducts))
-					do j=1, numSpecies
+					do j=1, SPECIES
 						reactionCurrent%reactants(j,1)=ClusterReactions(reac)%reactants(j,1)
 						reactionCurrent%reactants(j,2)=ClusterReactions(reac)%reactants(j,2)
 						reactionCurrent%products(j,1)=ClusterReactions(reac)%products(j,1)
@@ -473,11 +475,11 @@ subroutine initializeReactionList()
 
 					reactionCurrent%numReactants=1
 					reactionCurrent%numProducts=1
-					allocate(reactionCurrent%reactants(numSpecies,reactionCurrent%numReactants))
-					allocate(reactionCurrent%products(numSpecies,reactionCurrent%numProducts))
+					allocate(reactionCurrent%reactants(SPECIES,reactionCurrent%numReactants))
+					allocate(reactionCurrent%products(SPECIES,reactionCurrent%numProducts))
 					allocate(reactionCurrent%cellNumber(reactionCurrent%numReactants + reactionCurrent%numProducts))
 					allocate(reactionCurrent%taskid(reactionCurrent%numReactants + reactionCurrent%numProducts))
-					do j=1, numSpecies
+					do j=1, SPECIES
 						reactionCurrent%reactants(j,1)=DiffReactions(reac)%reactants(j,1)
 						reactionCurrent%products(j,1)=DiffReactions(reac)%products(j,1)
 					end do
@@ -510,7 +512,7 @@ subroutine initializeReactionList()
 				reactionCurrent=>reactionCurrent%next
 				reactionCurrent%numReactants=1
 				reactionCurrent%numProducts=0
-				allocate(reactionCurrent%reactants(numSpecies,reactionCurrent%numReactants))
+				allocate(reactionCurrent%reactants(SPECIES,reactionCurrent%numReactants))
 				allocate(reactionCurrent%cellNumber(reactionCurrent%numReactants))
 				allocate(reactionCurrent%taskid(reactionCurrent%numReactants))
 
@@ -545,11 +547,11 @@ subroutine initializeReactionList()
 
 					reactionCurrent%numReactants=2
 					reactionCurrent%numProducts=1
-					allocate(reactionCurrent%reactants(numSpecies,reactionCurrent%numReactants))
-					allocate(reactionCurrent%products(numSpecies,reactionCurrent%numProducts))
+					allocate(reactionCurrent%reactants(SPECIES,reactionCurrent%numReactants))
+					allocate(reactionCurrent%products(SPECIES,reactionCurrent%numProducts))
 					allocate(reactionCurrent%cellNumber(reactionCurrent%numReactants+reactionCurrent%numProducts))
 					allocate(reactionCurrent%taskid(reactionCurrent%numReactants+reactionCurrent%numProducts))
-					do j=1, numSpecies
+					do j=1, SPECIES
 						reactionCurrent%reactants(j,1)=ClusterReactions(reac)%reactants(j,1)
 						reactionCurrent%reactants(j,2)=ClusterReactions(reac)%reactants(j,2)
 						reactionCurrent%products(j,1)=ClusterReactions(reac)%products(j,1)
@@ -602,11 +604,11 @@ subroutine initializeReactionList()
 
 					reactionCurrent%numReactants=1
 					reactionCurrent%numProducts=1
-					allocate(reactionCurrent%reactants(numSpecies,reactionCurrent%numReactants))
-					allocate(reactionCurrent%products(numSpecies,reactionCurrent%numProducts))
+					allocate(reactionCurrent%reactants(SPECIES,reactionCurrent%numReactants))
+					allocate(reactionCurrent%products(SPECIES,reactionCurrent%numProducts))
 					allocate(reactionCurrent%cellNumber(reactionCurrent%numReactants+reactionCurrent%numProducts))
 					allocate(reactionCurrent%taskid(reactionCurrent%numReactants+reactionCurrent%numProducts))
-					do j=1, numSpecies
+					do j=1, SPECIES
 						reactionCurrent%reactants(j,1)=DiffReactions(reac)%reactants(j,1)
 						reactionCurrent%products(j,1)=DiffReactions(reac)%products(j,1)
 					end do
@@ -640,7 +642,7 @@ subroutine initializeReactionList()
 				reactionCurrent=>reactionCurrent%next
 				reactionCurrent%numReactants=1
 				reactionCurrent%numProducts=0
-				allocate(reactionCurrent%reactants(numSpecies,reactionCurrent%numReactants))
+				allocate(reactionCurrent%reactants(SPECIES,reactionCurrent%numReactants))
 				allocate(reactionCurrent%cellNumber(reactionCurrent%numReactants))
 				allocate(reactionCurrent%taskid(reactionCurrent%numReactants))
 
@@ -675,11 +677,11 @@ subroutine initializeReactionList()
 					reactionCurrent=>reactionCurrent%next
 					reactionCurrent%numReactants=2
 					reactionCurrent%numProducts=1
-					allocate(reactionCurrent%reactants(numSpecies,reactionCurrent%numReactants))
-					allocate(reactionCurrent%products(numSpecies,reactionCurrent%numProducts))
+					allocate(reactionCurrent%reactants(SPECIES,reactionCurrent%numReactants))
+					allocate(reactionCurrent%products(SPECIES,reactionCurrent%numProducts))
 					allocate(reactionCurrent%cellNumber(reactionCurrent%numReactants+reactionCurrent%numProducts))
 					allocate(reactionCurrent%taskid(reactionCurrent%numReactants+reactionCurrent%numProducts))
-					do j=1, numSpecies
+					do j=1, SPECIES
 						reactionCurrent%reactants(j,1)=ClusterReactions(reac)%reactants(j,1)
 						reactionCurrent%reactants(j,2)=ClusterReactions(reac)%reactants(j,2)
 						reactionCurrent%products(j,1)=ClusterReactions(reac)%products(j,1)
@@ -727,10 +729,10 @@ subroutine initializeReactionList()
 
 				reactionCurrent%numReactants=2
 				reactionCurrent%numProducts=0
-				allocate(reactionCurrent%reactants(numSpecies,reactionCurrent%numReactants))
+				allocate(reactionCurrent%reactants(SPECIES,reactionCurrent%numReactants))
 				allocate(reactionCurrent%cellNumber(reactionCurrent%numReactants))
 				allocate(reactionCurrent%taskid(reactionCurrent%numReactants))
-				do j=1, numSpecies
+				do j=1, SPECIES
 					reactionCurrent%reactants(j,1)=ClusterReactions(reac)%reactants(j,1)
 					reactionCurrent%reactants(j,2)=ClusterReactions(reac)%reactants(j,2)
 				end do
@@ -753,6 +755,7 @@ end subroutine
 !This subroutine initializes the defect lists within the boundary mesh.
 !*****************************************************************************************
 subroutine initializeBoundaryDefectList()
+	use mod_constants
 	use mod_structures
 	use mod_globalVariables
 	implicit none
@@ -770,8 +773,8 @@ subroutine initializeBoundaryDefectList()
 
 				allocate(myBoundary(myMesh(cell)%neighbors(dir),dir)%defectList)
 				defectCurrent=>myBoundary(myMesh(cell)%neighbors(dir),dir)%defectList
-				allocate(defectCurrent%defectType(numSpecies))
-				do i=1, numSpecies
+				allocate(defectCurrent%defectType(SPECIES))
+				do i=1, SPECIES
 					defectCurrent%defectType(i)=0
 				end do
 				defectCurrent%num=0
@@ -790,8 +793,8 @@ subroutine initializeBoundaryDefectList()
 							else
 								allocate(defectCurrent%next)
 								defectCurrent=>defectCurrent%next
-								allocate(defectCurrent%defectType(numSpecies))
-								do j=1, numSpecies
+								allocate(defectCurrent%defectType(SPECIES))
+								do j=1, SPECIES
 									defectCurrent%defectType(j)=0
 								end do
 								defectCurrent%defectType(3)=1
@@ -814,8 +817,8 @@ subroutine initializeBoundaryDefectList()
 							else
 								allocate(defectCurrent%next)
 								defectCurrent=>defectCurrent%next
-								allocate(defectCurrent%defectType(numSpecies))
-								do j=1, numSpecies
+								allocate(defectCurrent%defectType(SPECIES))
+								do j=1, SPECIES
 									defectCurrent%defectType(j)=0
 								end do
 								defectCurrent%defectType(2)=1
@@ -832,8 +835,8 @@ subroutine initializeBoundaryDefectList()
 				if(CuContent > 0d0) then
 					allocate(defectCurrent%next)
 					defectCurrent=>defectCurrent%next
-					allocate(defectCurrent%defectType(numSpecies))
-					do i=1,numSpecies
+					allocate(defectCurrent%defectType(SPECIES))
+					do i=1,SPECIES
 						defectCurrent%defectType(i)=0
 					end do
 					defectCurrent%defectType(1)=1
@@ -864,16 +867,17 @@ subroutine initializeFineMesh(CascadeCurrent)
 	type(defect), pointer :: defectPrevCoarse, defectPrevFine
 	integer :: j, n, k, num, cell, count
 	double precision :: volumeRatio, r1, r2, lambda, rstore
-	integer :: products(numSpecies)
+	integer :: products(SPECIES)
 	integer, external :: binomial, factorial
 
 	interface
 		subroutine findDefectInList(defectCurrent, defectPrev, products)
+			use mod_constants
 			use mod_structures
 			use mod_globalVariables
 			implicit none
 			type(defect), pointer :: defectCurrent, defectPrev
-			integer products(numSpecies)
+			integer products(SPECIES)
 		end subroutine
 	end interface
 
@@ -882,9 +886,9 @@ subroutine initializeFineMesh(CascadeCurrent)
 
 	!For each cell, initialize the reaction list (no reaction) and defect list
 	do cell=1,numCellsCascade
-		allocate(CascadeCurrent%localDefects(cell)%defectType(numSpecies))
+		allocate(CascadeCurrent%localDefects(cell)%defectType(SPECIES))
 		nullify(CascadeCurrent%localDefects(cell)%next)
-		do j=1,numSpecies
+		do j=1,SPECIES
 			CascadeCurrent%localDefects(cell)%defectType(j)=0
 		end do
 		CascadeCurrent%localDefects(cell)%num=0
@@ -976,10 +980,10 @@ subroutine initializeFineMesh(CascadeCurrent)
 					!***************************************************************
 					!Deposit the defect into the fine mesh
 					!***************************************************************
-					do j=1,numSpecies
+					do j=1,SPECIES
 						products(j)=defectCurrentCoarse%defectType(j)
 					end do
-					!write(*,*) 'inserting into fine mesh', (products(j), j=1,numSpecies), 'k', k
+					!write(*,*) 'inserting into fine mesh', (products(j), j=1,SPECIES), 'k', k
 					nullify(defectPrevFine)
 					defectCurrentFine=>CascadeCurrent%localDefects(cell)
 
@@ -988,13 +992,13 @@ subroutine initializeFineMesh(CascadeCurrent)
 
 						count=0
 						!Check to see if this defect already exists in the fine mesh list
-						do j=1,numSpecies
+						do j=1,SPECIES
 							if(defectCurrentFine%defectType(j)==products(j)) then
 								count=count+1
 							end if
 						end do
 
-						if(count==numSpecies) then
+						if(count==SPECIES) then
 							defectCurrentFine%num=defectCurrentFine%num+1
 						else		!if the defect is to be inserted in the list
 							if(.NOT. associated(defectPrevFine)) then
@@ -1004,10 +1008,10 @@ subroutine initializeFineMesh(CascadeCurrent)
 							allocate(defectPrevFine%next)
 							nullify(defectPrevFine%next%next)
 							defectPrevFine=>defectPrevFine%next
-							allocate(defectPrevFine%defectType(numSpecies))
+							allocate(defectPrevFine%defectType(SPECIES))
 							defectPrevFine%cellNumber=cell
 							defectPrevFine%num=1
-							do j=1,numSpecies
+							do j=1,SPECIES
 								defectPrevFine%defectType(j)=products(j)
 							end do
 							defectPrevFine%next=>defectCurrentFine
@@ -1017,10 +1021,10 @@ subroutine initializeFineMesh(CascadeCurrent)
 						allocate(defectPrevFine%next)
 						nullify(defectPrevFine%next%next)
 						defectPrevFine=>defectPrevFine%next
-						allocate(defectPrevFine%defectType(numSpecies))
+						allocate(defectPrevFine%defectType(SPECIES))
 						defectPrevFine%cellNumber=cell
 						defectPrevFine%num=1
-						do j=1,numSpecies
+						do j=1,SPECIES
 							defectPrevFine%defectType(j)=products(j)
 						end do
 					end if

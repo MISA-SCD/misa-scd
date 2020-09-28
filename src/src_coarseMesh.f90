@@ -5,12 +5,13 @@
 !Outputs: defectCurrent and defectPrev pointed at location in list
 !***************************************************************************************************
 subroutine findDefectInList(defectCurrent, defectPrev, products)
+	use mod_constants
 	use mod_structures
 	use mod_globalVariables
 	implicit none
 
 	type(defect), pointer, intent(inout) :: defectCurrent, defectPrev
-	integer, intent(in) :: products(numSpecies)
+	integer, intent(in) :: products(SPECIES)
 	integer :: same, j
 
 	if(.NOT. associated(defectCurrent)) then
@@ -19,7 +20,7 @@ subroutine findDefectInList(defectCurrent, defectPrev, products)
 
 	outer:do while(associated(defectCurrent))
 		same=0
-		inner: do j=1,numSpecies
+		inner: do j=1,SPECIES
 			if(defectCurrent%defectType(j)==products(j)) then
 				same=same+1
 			else if(defectCurrent%defectType(j) > products(j)) then
@@ -27,7 +28,7 @@ subroutine findDefectInList(defectCurrent, defectPrev, products)
 			end if
 		end do inner
 
-		if(same==numSpecies) then
+		if(same==SPECIES) then
 			exit outer		!defectCurrent points to the defect that we are trying to add
 		else if(same==j-1) then
 			if(defectCurrent%defectType(j) > products(j)) then
@@ -48,11 +49,12 @@ end subroutine
 !Outputs: returns number of defects of type in cell
 !***************************************************************************************************
 integer function findNumDefect(defectType, cellNumber)
+	use mod_constants
 	use mod_structures
 	use mod_globalVariables
 	implicit none
 
-	integer, intent(in) :: defectType(numSpecies)
+	integer, intent(in) :: defectType(SPECIES)
 	integer, intent(in) :: cellNumber
 	type(defect), pointer :: defectCurrent
 	integer :: numDefects, i, count
@@ -62,12 +64,12 @@ integer function findNumDefect(defectType, cellNumber)
 
 	do while(associated(defectCurrent))
 		count=0
-		do i=1,numSpecies
+		do i=1,SPECIES
 			if(defectType(i)==defectCurrent%defectType(i)) then
 				count=count+1
 			end if
 		end do
-		if(count==numSpecies) then
+		if(count==SPECIES) then
 			numDefects=defectCurrent%num
 			exit
 		else
@@ -85,11 +87,12 @@ end function
 !Outputs: returns number of defects of type in cell
 !***************************************************************************************************
 integer function findNumDefectBoundary(defectType, cellNumber, dir)
+	use mod_constants
 	use mod_structures
 	use mod_globalVariables
 	implicit none
 
-	integer, intent(in) :: defectType(numSpecies), cellNumber, dir
+	integer, intent(in) :: defectType(SPECIES), cellNumber, dir
 	type(defect), pointer :: defectCurrent
 	integer :: numDefects, i, count
 
@@ -102,12 +105,12 @@ integer function findNumDefectBoundary(defectType, cellNumber, dir)
 
 		do while(associated(defectCurrent))
 			count=0
-			do i=1,numSpecies
+			do i=1,SPECIES
 				if(defectType(i)==defectCurrent%defectType(i)) then
 					count=count+1
 				endif
 			end do
-			if(count==numSpecies) then
+			if(count==SPECIES) then
 				numDefects=defectCurrent%num
 				exit
 			else
@@ -214,6 +217,7 @@ end subroutine
 !deleted within that cell, all reaction rates change because volume changes
 !***************************************************************************************************
 subroutine resetReactionListSingleCell(cell)
+	use mod_constants
 	use mod_globalVariables
 	use mod_structures
 	use mod_reactionrates
@@ -222,7 +226,7 @@ subroutine resetReactionListSingleCell(cell)
 	integer, intent(in) :: cell
 	type(defect), pointer :: defectCurrent, defectUpdate
 	type(cascade), pointer :: cascadeCurrent
-	integer :: i, j, dir, defectTemp(numSpecies)
+	integer :: i, j, dir, defectTemp(SPECIES)
 	integer :: localGrainID, neighborGrainID
 
 	!First reset the reaction list in this coarse volume element.
@@ -236,7 +240,7 @@ subroutine resetReactionListSingleCell(cell)
 
 	defectUpdate=>defectList(cell)
 	do while(associated(defectUpdate))
-		do i=1,numSpecies
+		do i=1,SPECIES
 			defectTemp(i)=defectUpdate%defectType(i)
 		end do
 

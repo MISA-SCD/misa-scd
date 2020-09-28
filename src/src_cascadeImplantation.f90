@@ -130,6 +130,7 @@ end function
 !Outputs: none
 !***************************************************************************************************
 subroutine cascadeUpdateStep(releaseToggle, cascadeCell)
+    use mod_constants
     use mod_structures
     use mod_globalVariables
     use mod_reactionrates
@@ -150,7 +151,7 @@ subroutine cascadeUpdateStep(releaseToggle, cascadeCell)
     !Fill send buffer
     if(cascadeCell==0) then
         numSend=0
-        allocate(defectSend(numSpecies+1,numSend))
+        allocate(defectSend(SPECIES+1,numSend))
     else    !cascadeCell /= 0: Implant a new cascade or release an existing  cascade
         numSend=0
         defectCurrent=>defectList(cascadeCell)%next
@@ -169,7 +170,7 @@ subroutine cascadeUpdateStep(releaseToggle, cascadeCell)
 
         if(numSend /=0 ) then
             numSend=numSend+1
-            allocate(defectSend(numSpecies+1,numSend))
+            allocate(defectSend(SPECIES+1,numSend))
 
             defectSend(1,1)=0		        !myMesh(cascadeCell)%neighbors(1,dir)
             defectSend(2,1)=numSend-1		!numDefects
@@ -183,17 +184,11 @@ subroutine cascadeUpdateStep(releaseToggle, cascadeCell)
                 defectSend(4,1)=-1		        !volume - CascadeElementVol*numCellsCascade
             end if
 
-            !defectSend(1,1)=0		        !myMesh(cascadeCell)%neighbors(1,dir)
-            !defectSend(2,1)=numSend-1		!numDefects
-            !defectSend(3,1)=cascadeCell	    !cascadeCell
-            !defectSend(4,1)=0		        !useless
-            !defectSend(5,1)=0		        !useless
-
             defectCurrent=>defectList(cascadeCell)%next
 
             do j=2,numSend
-                defectSend(1:numSpecies,j)=defectCurrent%defectType(:)
-                defectSend(numSpecies+1,j)=defectCurrent%num
+                defectSend(1:SPECIES,j)=defectCurrent%defectType(:)
+                defectSend(SPECIES+1,j)=defectCurrent%num
 
                 defectCurrent=>defectCurrent%next
             end do
@@ -219,7 +214,7 @@ subroutine cascadeUpdateStep(releaseToggle, cascadeCell)
 
         !Send
         if(myProc%procNeighbor(dir) /= myProc%taskid) then
-            call MPI_ISEND(defectSend, (numSpecies+1)*numSendTemp, MPI_INTEGER, myProc%procNeighbor(dir), &
+            call MPI_ISEND(defectSend, (SPECIES+1)*numSendTemp, MPI_INTEGER, myProc%procNeighbor(dir), &
                     900+dir, comm, sendRequest, ierr)
         end if
 
@@ -229,10 +224,10 @@ subroutine cascadeUpdateStep(releaseToggle, cascadeCell)
             call MPI_PROBE(myProc%procNeighbor(recvDir), 900+dir, comm,status,ierr)
             call MPI_GET_COUNT(status,MPI_INTEGER,count,ierr)
 
-            numRecv=count/(numSpecies+1)
-            allocate(defectRecv(numSpecies+1,numRecv))
+            numRecv=count/(SPECIES+1)
+            allocate(defectRecv(SPECIES+1,numRecv))
 
-            call MPI_RECV(defectRecv,(numSpecies+1)*numRecv,MPI_INTEGER,myProc%procNeighbor(recvDir),&
+            call MPI_RECV(defectRecv,(SPECIES+1)*numRecv,MPI_INTEGER,myProc%procNeighbor(recvDir),&
                     900+dir,comm,status,ierr)
 
             if(numRecv /= 0) then
@@ -274,10 +269,10 @@ subroutine cascadeUpdateStep(releaseToggle, cascadeCell)
                     allocate(defectCurrent%next)
                     nullify(defectCurrent%next%next)
                     defectCurrent=>defectCurrent%next
-                    allocate(defectCurrent%defectType(numSpecies))
+                    allocate(defectCurrent%defectType(SPECIES))
                     defectCurrent%cellNumber=bndryCellNumber
-                    defectCurrent%num=defectRecv(numSpecies+1,j)
-                    defectCurrent%defectType(:)=defectRecv(1:numSpecies,j)
+                    defectCurrent%num=defectRecv(SPECIES+1,j)
+                    defectCurrent%defectType(:)=defectRecv(1:SPECIES,j)
                 end do
 
                 !*******************

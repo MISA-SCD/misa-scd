@@ -5,8 +5,8 @@
 module mod_constants
     implicit none
 
-    integer, parameter :: MASTER=0			    !<Define the master node as ID=0
-    !integer, parameter :: SPECIES = 4                       !<Number of chemical species (typically set to 4: Cu, V, SIA_m, SIA_im)
+    integer, parameter :: MASTER=0			 !<Define the master node as ID=0
+    integer, parameter :: SPECIES = 4        !<Number of chemical species (typically set to 4: Cu, V, SIA_m, SIA_im)
 
     !constants
     double precision, parameter :: kboltzmann=8.625d-5	    !<Boltzmann's constant (eV/K)

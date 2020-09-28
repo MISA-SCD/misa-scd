@@ -274,8 +274,8 @@ program MISASCD
 			!***********************************************************************************************
 			!<Initialize defectUpdate. defectUpdate is used to store updated defects
 			allocate(defectUpdate)
-			allocate(defectUpdate%defectType(numSpecies))
-			do i=1,numSpecies
+			allocate(defectUpdate%defectType(SPECIES))
+			do i=1,SPECIES
 				defectUpdate%defectType(i)=0
 			end do
 			nullify(defectUpdate%next)
@@ -509,8 +509,8 @@ program MISASCD
 			!Choose from reactions in in reactionList(:) (local to this processor). Null events possible.
 			!***********************************************************************************************
 			allocate(defectUpdate)
-			allocate(defectUpdate%defectType(numSpecies))
-			do i=1,numSpecies
+			allocate(defectUpdate%defectType(SPECIES))
+			do i=1,SPECIES
 				defectUpdate%defectType(i)=0
 			end do
 			nullify(defectUpdate%next)

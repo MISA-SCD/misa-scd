@@ -469,15 +469,6 @@ subroutine readDefectAttributes(filename)
 	flag=.FALSE.
 	open(ATTRFILE, file=filename,action='read', status='old')
 
-	do while(flag .eqv. .FALSE.)
-		read(ATTRFILE,*) char
-		if(char=='species') then
-			flag=.TRUE.
-			read(ATTRFILE,*) numSpecies	!< numSpecies = 4
-		end if
-	end do
-	flag=.FALSE.
-
 	!*******************************************************
 	!<Read in formation energies
 	!*******************************************************
@@ -500,8 +491,8 @@ subroutine readDefectAttributes(filename)
 
 	allocate(FormSingle(numSingleForm))
 	do i=1,numSingleForm
-		allocate(FormSingle(i)%defectType(numSpecies))
-		read(ATTRFILE,*) (FormSingle(i)%defectType(j),j=1,numSpecies)
+		allocate(FormSingle(i)%defectType(SPECIES))
+		read(ATTRFILE,*) (FormSingle(i)%defectType(j),j=1,SPECIES)
 		read(ATTRFILE,*) char, FormSingle(i)%Ef
 	end do
 
@@ -527,8 +518,8 @@ subroutine readDefectAttributes(filename)
 
 	allocate(DiffSingle(numSingleDiff))
 	do i=1,numSingleDiff
-		allocate(DiffSingle(i)%defectType(numSpecies))
-		read(ATTRFILE,*) (DiffSingle(i)%defectType(j),j=1,numSpecies)
+		allocate(DiffSingle(i)%defectType(SPECIES))
+		read(ATTRFILE,*) (DiffSingle(i)%defectType(j),j=1,SPECIES)
 		read(ATTRFILE,*) char, DiffSingle(i)%D, char, DiffSingle(i)%Em
 	end do
 
@@ -543,12 +534,12 @@ subroutine readDefectAttributes(filename)
 
 	allocate(DiffFunc(numFuncDiff))
 	do i=1,numFuncDiff
-		allocate(DiffFunc(i)%defectType(numSpecies))
-		read(ATTRFILE,*) (DiffFunc(i)%defectType(j),j=1,numSpecies)	!< read in defectTypes
-		allocate(DiffFunc(i)%min(numSpecies))
-		allocate(DiffFunc(i)%max(numSpecies))
-		read(ATTRFILE,*) char, (DiffFunc(i)%min(j),j=1,numSpecies)
-		read(ATTRFILE,*) char, (DiffFunc(i)%max(j),j=1,numSpecies)
+		allocate(DiffFunc(i)%defectType(SPECIES))
+		read(ATTRFILE,*) (DiffFunc(i)%defectType(j),j=1,SPECIES)	!< read in defectTypes
+		allocate(DiffFunc(i)%min(SPECIES))
+		allocate(DiffFunc(i)%max(SPECIES))
+		read(ATTRFILE,*) char, (DiffFunc(i)%min(j),j=1,SPECIES)
+		read(ATTRFILE,*) char, (DiffFunc(i)%max(j),j=1,SPECIES)
 		read(ATTRFILE,*) char, DiffFunc(i)%functionType
 		read(ATTRFILE,*) char, DiffFunc(i)%numParam
 		allocate(DiffFunc(i)%parameters(DiffFunc(i)%numParam))
@@ -579,9 +570,9 @@ subroutine readDefectAttributes(filename)
 
 	allocate(BindSingle(numSingleBind))
 	do i=1,numSingleBind
-		allocate(BindSingle(i)%defectType(numSpecies))
-		allocate(BindSingle(i)%product(numSpecies))
-		read(ATTRFILE,*) (BindSingle(i)%defectType(j),j=1,numSpecies),(BindSingle(i)%product(j),j=1,numSpecies)
+		allocate(BindSingle(i)%defectType(SPECIES))
+		allocate(BindSingle(i)%product(SPECIES))
+		read(ATTRFILE,*) (BindSingle(i)%defectType(j),j=1,SPECIES),(BindSingle(i)%product(j),j=1,SPECIES)
 		read(ATTRFILE,*) char, BindSingle(i)%Eb
 	end do
 
@@ -596,13 +587,13 @@ subroutine readDefectAttributes(filename)
 
 	allocate(BindFunc(numFuncBind))
 	do i=1,numFuncBind
-		allocate(BindFunc(i)%defectType(numSpecies))
-		allocate(BindFunc(i)%product(numSpecies))
-		read(ATTRFILE,*) (BindFunc(i)%defectType(j),j=1,numSpecies),(BindFunc(i)%product(j),j=1,numSpecies)
-		allocate(BindFunc(i)%min(numSpecies))
-		allocate(BindFunc(i)%max(numSpecies))
-		read(ATTRFILE,*) char, (BindFunc(i)%min(j),j=1,numSpecies)
-		read(ATTRFILE,*) char, (BindFunc(i)%max(j),j=1,numSpecies)
+		allocate(BindFunc(i)%defectType(SPECIES))
+		allocate(BindFunc(i)%product(SPECIES))
+		read(ATTRFILE,*) (BindFunc(i)%defectType(j),j=1,SPECIES),(BindFunc(i)%product(j),j=1,SPECIES)
+		allocate(BindFunc(i)%min(SPECIES))
+		allocate(BindFunc(i)%max(SPECIES))
+		read(ATTRFILE,*) char, (BindFunc(i)%min(j),j=1,SPECIES)
+		read(ATTRFILE,*) char, (BindFunc(i)%max(j),j=1,SPECIES)
 		read(ATTRFILE,*) char, BindFunc(i)%functionType
 		read(ATTRFILE,*) char, BindFunc(i)%numParam
 		allocate(BindFunc(i)%parameters(BindFunc(i)%numParam))
@@ -627,14 +618,14 @@ subroutine readDefectAttributes(filename)
 	do i=1,numDissocReac
 		DissocReactions(i)%numReactants=1
 		DissocReactions(i)%numProducts=1
-		allocate(DissocReactions(i)%reactants(numSpecies,DissocReactions(i)%numReactants))
-		allocate(DissocReactions(i)%products(numSpecies,DissocReactions(i)%numProducts))
-		read(ATTRFILE,*) (DissocReactions(i)%reactants(j,1),j=1,numSpecies),&
-				(DissocReactions(i)%products(j,1),j=1,numSpecies)	!< read in defectType
-		allocate(DissocReactions(i)%min(numSpecies))
-		allocate(DissocReactions(i)%max(numSpecies))
-		read(ATTRFILE,*) char, (DissocReactions(i)%min(j),j=1,numSpecies)
-		read(ATTRFILE,*) char, (DissocReactions(i)%max(j),j=1,numSpecies)
+		allocate(DissocReactions(i)%reactants(SPECIES,DissocReactions(i)%numReactants))
+		allocate(DissocReactions(i)%products(SPECIES,DissocReactions(i)%numProducts))
+		read(ATTRFILE,*) (DissocReactions(i)%reactants(j,1),j=1,SPECIES),&
+				(DissocReactions(i)%products(j,1),j=1,SPECIES)	!< read in defectType
+		allocate(DissocReactions(i)%min(SPECIES))
+		allocate(DissocReactions(i)%max(SPECIES))
+		read(ATTRFILE,*) char, (DissocReactions(i)%min(j),j=1,SPECIES)
+		read(ATTRFILE,*) char, (DissocReactions(i)%max(j),j=1,SPECIES)
 		read(ATTRFILE,*) char, DissocReactions(i)%functionType
 	end do
 
@@ -651,14 +642,14 @@ subroutine readDefectAttributes(filename)
 	do i=1,numDiffReac
 		DiffReactions(i)%numReactants=1
 		DiffReactions(i)%numProducts=1
-		allocate(DiffReactions(i)%reactants(numSpecies,DiffReactions(i)%numReactants))
-		allocate(DiffReactions(i)%products(numSpecies,DiffReactions(i)%numProducts))
-		read(ATTRFILE,*) (DiffReactions(i)%reactants(j,1),j=1,numSpecies),&
-				(DiffReactions(i)%products(j,1),j=1,numSpecies)
-		allocate(DiffReactions(i)%min(numSpecies))
-		allocate(DiffReactions(i)%max(numSpecies))
-		read(ATTRFILE,*) char, (DiffReactions(i)%min(j),j=1,numSpecies)
-		read(ATTRFILE,*) char, (DiffReactions(i)%max(j),j=1,numSpecies)
+		allocate(DiffReactions(i)%reactants(SPECIES,DiffReactions(i)%numReactants))
+		allocate(DiffReactions(i)%products(SPECIES,DiffReactions(i)%numProducts))
+		read(ATTRFILE,*) (DiffReactions(i)%reactants(j,1),j=1,SPECIES),&
+				(DiffReactions(i)%products(j,1),j=1,SPECIES)
+		allocate(DiffReactions(i)%min(SPECIES))
+		allocate(DiffReactions(i)%max(SPECIES))
+		read(ATTRFILE,*) char, (DiffReactions(i)%min(j),j=1,SPECIES)
+		read(ATTRFILE,*) char, (DiffReactions(i)%max(j),j=1,SPECIES)
 		read(ATTRFILE,*) char, DiffReactions(i)%functionType
 	end do
 
@@ -676,12 +667,12 @@ subroutine readDefectAttributes(filename)
 	do i=1,numSinkReac
 		SinkReactions(i)%numReactants=1
 		SinkReactions(i)%numProducts=0
-		allocate(SinkReactions(i)%reactants(numSpecies,SinkReactions(i)%numReactants))
-		read(ATTRFILE,*) (SinkReactions(i)%reactants(j,1),j=1,numSpecies)
-		allocate(SinkReactions(i)%min(numSpecies))
-		allocate(SinkReactions(i)%max(numSpecies))
-		read(ATTRFILE,*) char, (SinkReactions(i)%min(j),j=1,numSpecies)
-		read(ATTRFILE,*) char, (SinkReactions(i)%max(j),j=1,numSpecies)
+		allocate(SinkReactions(i)%reactants(SPECIES,SinkReactions(i)%numReactants))
+		read(ATTRFILE,*) (SinkReactions(i)%reactants(j,1),j=1,SPECIES)
+		allocate(SinkReactions(i)%min(SPECIES))
+		allocate(SinkReactions(i)%max(SPECIES))
+		read(ATTRFILE,*) char, (SinkReactions(i)%min(j),j=1,SPECIES)
+		read(ATTRFILE,*) char, (SinkReactions(i)%max(j),j=1,SPECIES)
 		read(ATTRFILE,*) char, SinkReactions(i)%functionType
 	end do
 
@@ -698,14 +689,14 @@ subroutine readDefectAttributes(filename)
 	do i=1,numImpurityReac
 		ImpurityReactions(i)%numReactants=1
 		ImpurityReactions(i)%numProducts=1
-		allocate(ImpurityReactions(i)%reactants(numSpecies,ImpurityReactions(i)%numReactants))
-		allocate(ImpurityReactions(i)%products(numSpecies,ImpurityReactions(i)%numProducts))
-		read(ATTRFILE,*) (ImpurityReactions(i)%reactants(j,1),j=1,numSpecies), &
-				(ImpurityReactions(i)%products(j,1),j=1,numSpecies)
-		allocate(ImpurityReactions(i)%min(numSpecies))
-		allocate(ImpurityReactions(i)%max(numSpecies))
-		read(ATTRFILE,*) char, (ImpurityReactions(i)%min(j),j=1,numSpecies)
-		read(ATTRFILE,*) char, (ImpurityReactions(i)%max(j),j=1,numSpecies)
+		allocate(ImpurityReactions(i)%reactants(SPECIES,ImpurityReactions(i)%numReactants))
+		allocate(ImpurityReactions(i)%products(SPECIES,ImpurityReactions(i)%numProducts))
+		read(ATTRFILE,*) (ImpurityReactions(i)%reactants(j,1),j=1,SPECIES), &
+				(ImpurityReactions(i)%products(j,1),j=1,SPECIES)
+		allocate(ImpurityReactions(i)%min(SPECIES))
+		allocate(ImpurityReactions(i)%max(SPECIES))
+		read(ATTRFILE,*) char, (ImpurityReactions(i)%min(j),j=1,SPECIES)
+		read(ATTRFILE,*) char, (ImpurityReactions(i)%max(j),j=1,SPECIES)
 		read(ATTRFILE,*) char, ImpurityReactions(i)%functionType
 	end do
 
@@ -722,15 +713,15 @@ subroutine readDefectAttributes(filename)
 	do i=1,numClusterReac
 		ClusterReactions(i)%numReactants=2
 		ClusterReactions(i)%numProducts=1
-		allocate(ClusterReactions(i)%reactants(numSpecies,ClusterReactions(i)%numReactants))
-		allocate(ClusterReactions(i)%products(numSpecies,ClusterReactions(i)%numProducts))
-		read(ATTRFILE,*) (ClusterReactions(i)%reactants(j,1),j=1,numSpecies),&
-				(ClusterReactions(i)%reactants(j,2),j=1,numSpecies)
-		allocate(ClusterReactions(i)%min(numSpecies*ClusterReactions(i)%numReactants))
-		allocate(ClusterReactions(i)%max(numSpecies*ClusterReactions(i)%numReactants))
-		read(ATTRFILE,*) char,(ClusterReactions(i)%min(j),j=1,numSpecies*ClusterReactions(i)%numReactants)
-		read(ATTRFILE,*) char,(ClusterReactions(i)%max(j),j=1,numSpecies*ClusterReactions(i)%numReactants)
-		do j=1,numSpecies
+		allocate(ClusterReactions(i)%reactants(SPECIES,ClusterReactions(i)%numReactants))
+		allocate(ClusterReactions(i)%products(SPECIES,ClusterReactions(i)%numProducts))
+		read(ATTRFILE,*) (ClusterReactions(i)%reactants(j,1),j=1,SPECIES),&
+				(ClusterReactions(i)%reactants(j,2),j=1,SPECIES)
+		allocate(ClusterReactions(i)%min(SPECIES*ClusterReactions(i)%numReactants))
+		allocate(ClusterReactions(i)%max(SPECIES*ClusterReactions(i)%numReactants))
+		read(ATTRFILE,*) char,(ClusterReactions(i)%min(j),j=1,SPECIES*ClusterReactions(i)%numReactants)
+		read(ATTRFILE,*) char,(ClusterReactions(i)%max(j),j=1,SPECIES*ClusterReactions(i)%numReactants)
+		do j=1,SPECIES
 			ClusterReactions(i)%products(j,1)=ClusterReactions(i)%reactants(j,1)+&
 					ClusterReactions(i)%reactants(j,2)
 		end do
@@ -759,9 +750,9 @@ subroutine readDefectAttributes(filename)
 
 			ImplantReactions(i)%numReactants=0
 			ImplantReactions(i)%numProducts=2
-			allocate(ImplantReactions(i)%products(numSpecies,ImplantReactions(i)%numProducts))
-			read(ATTRFILE,*) (ImplantReactions(i)%products(j,1),j=1,numSpecies),&
-					(ImplantReactions(i)%products(j,2),j=1,numSpecies)
+			allocate(ImplantReactions(i)%products(SPECIES,ImplantReactions(i)%numProducts))
+			read(ATTRFILE,*) (ImplantReactions(i)%products(j,1),j=1,SPECIES),&
+					(ImplantReactions(i)%products(j,2),j=1,SPECIES)
 			read(ATTRFILE,*) char, ImplantReactions(i)%functionType
 
 		else if(i==2) then !read in cascade reaction parameters
@@ -821,8 +812,8 @@ subroutine readCascadeList(filename)
 		nullify(defectCurrent%next)
 
 		do j=1,numDefects
-			allocate(defectCurrent%defectType(numSpecies))
-			read(CASFILE,*) (defectCurrent%defectType(k),k=1,numSpecies)
+			allocate(defectCurrent%defectType(SPECIES))
+			read(CASFILE,*) (defectCurrent%defectType(k),k=1,SPECIES)
 			read(CASFILE,*) (defectCurrent%coordinates(k), k=1,3)
 
 			if(j /= numDefects) then

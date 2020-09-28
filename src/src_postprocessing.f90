@@ -34,7 +34,7 @@ subroutine outputDefectsXYZ()
 				defectCurrent=>defectCurrent%next
 			end do
 		end do
-		allocate(sendBuff(numSpecies+1,numDefects+numCells))
+		allocate(sendBuff(SPECIES+1,numDefects+numCells))
 
 		index=0
 		do cell=1, numCells
@@ -47,19 +47,19 @@ subroutine outputDefectsXYZ()
 			sendBuff(2,index)=myMesh(cell)%globalCell	!global cellID of this cell
 			sendBuff(3,index)=cell						!local cellID
 			sendBuff(4,index)=cellDefects(cell)			!number of defects in this cell
-			sendBuff(5:numSpecies+1,index)=0
+			sendBuff(5:SPECIES+1,index)=0
 
 			i=0
 			nullify(defectCurrent)
 			defectCurrent=>defectList(i)%next
 			do while(associated(defectCurrent))
 				i=i+1
-				sendBuff(1:numSpecies,index+i)=defectCurrent%defectType(1:numSpecies)
-				sendBuff(numSpecies+1,index+i)=defectCurrent%num
+				sendBuff(1:SPECIES,index+i)=defectCurrent%defectType(1:SPECIES)
+				sendBuff(SPECIES+1,index+i)=defectCurrent%num
 				defectCurrent=>defectCurrent%next
 			end do
 		end do
-		call MPI_SEND(sendBuff,(numSpecies+1)*(numDefects+numCells),MPI_INTEGER,MASTER,100+myProc%taskid,comm,ierr)
+		call MPI_SEND(sendBuff,(SPECIES+1)*(numDefects+numCells),MPI_INTEGER,MASTER,100+myProc%taskid,comm,ierr)
 		deallocate(sendBuff)
 	else
 		write(XYZFILE,*) '***********************************************************************'
@@ -152,9 +152,9 @@ subroutine outputDefectsXYZ()
 			count=0
 			call MPI_PROBE(i, 100+i,comm,status,ierr)
 			call MPI_GET_COUNT(status,MPI_INTEGER,count,ierr)
-			numRecv=count/(numSpecies+1)
-			allocate(recvBuff(numSpecies+1, numRecv))
-			call MPI_RECV(recvBuff,(numSpecies+1)*numRecv,MPI_INTEGER,i,100+i,comm,status,ierr)
+			numRecv=count/(SPECIES+1)
+			allocate(recvBuff(SPECIES+1, numRecv))
+			call MPI_RECV(recvBuff,(SPECIES+1)*numRecv,MPI_INTEGER,i,100+i,comm,status,ierr)
 
 			recvCells=recvBuff(1,1)
 			do cell=1, recvCells
@@ -185,38 +185,38 @@ subroutine outputDefectsXYZ()
 				radiusSVcluster=0d0
 
 				do k=1, recvBuff(4,index)
-					write(XYZFILE,*) recvBuff(1:numSpecies+1,index+k)
+					write(XYZFILE,*) recvBuff(1:SPECIES+1,index+k)
 					if(recvBuff(1,index+k) /=0) then	!Cu/Cu_Vac cluster
 						if(recvBuff(1,index+k)==1 .AND. recvBuff(2,index+k)==0) then
-							pointS=pointS+recvBuff(numSpecies+1,index+k)
+							pointS=pointS+recvBuff(SPECIES+1,index+k)
 						end if
 						if(recvBuff(1,index+k)>minSCluster .AND. recvBuff(2,index+k)==0) then	!Cu cluster
-							numS=numS+recvBuff(1,index+k)*recvBuff(numSpecies+1,index+k)
-							numScluster=numScluster+recvBuff(numSpecies+1,index+k)
+							numS=numS+recvBuff(1,index+k)*recvBuff(SPECIES+1,index+k)
+							numScluster=numScluster+recvBuff(SPECIES+1,index+k)
 						else if(recvBuff(2,index+k)/=0 .AND. (recvBuff(1,index+k)+recvBuff(2,index+k))>minSV) then
-							numSV=numSV+(recvBuff(1,index+k)+recvBuff(2,index+k))*recvBuff(numSpecies+1,index+k)
-							numSVcluster=numSVcluster+recvBuff(numSpecies+1,index+k)
+							numSV=numSV+(recvBuff(1,index+k)+recvBuff(2,index+k))*recvBuff(SPECIES+1,index+k)
+							numSVcluster=numSVcluster+recvBuff(SPECIES+1,index+k)
 						end if
 					else if(recvBuff(2,index+k)/=0) then	!V cluster
 						if(recvBuff(2,index+k)==1) then
-							pointV=pointV+recvBuff(numSpecies+1,index+k)
+							pointV=pointV+recvBuff(SPECIES+1,index+k)
 						end if
 						if(recvBuff(2,index+k) > minVoid) then
-							numV=numV+recvBuff(2,index+k)*recvBuff(numSpecies+1,index+k)
-							numVoid=numVoid+recvBuff(numSpecies+1,index+k)
+							numV=numV+recvBuff(2,index+k)*recvBuff(SPECIES+1,index+k)
+							numVoid=numVoid+recvBuff(SPECIES+1,index+k)
 						end if
 					else if(recvBuff(3,index+k)/=0) then
 						if(recvBuff(3,index+k)==1) then
-							pointSIA=pointSIA+recvBuff(numSpecies+1,index+k)
+							pointSIA=pointSIA+recvBuff(SPECIES+1,index+k)
 						end if
 						if(recvBuff(3,index+k) >minLoop) then
-							numSIA=numSIA+recvBuff(3,index+k)*recvBuff(numSpecies+1,index+k)
-							numLoop=numLoop+recvBuff(numSpecies+1,index+k)
+							numSIA=numSIA+recvBuff(3,index+k)*recvBuff(SPECIES+1,index+k)
+							numLoop=numLoop+recvBuff(SPECIES+1,index+k)
 						end if
 					else if(recvBuff(4,index+k)/=0) then
 						if(recvBuff(4,index+k) >minLoop) then
 							numSIA=numSIA+recvBuff(4,index+k)*defectCurrent%num
-							numLoop=numLoop+recvBuff(numSpecies+1,index+k)
+							numLoop=numLoop+recvBuff(SPECIES+1,index+k)
 						end if
 					end if
 				end do
@@ -262,7 +262,7 @@ subroutine outputDefectsTotal(simStatus)
 
 	integer, intent(in) :: simStatus		!<1: 'irradiation', 0: 'anneal'
 	integer :: i, j, k, status(MPI_STATUS_SIZE)
-	integer :: products(numSpecies), same
+	integer :: products(SPECIES), same
 	type(defect), pointer :: defectCurrent, defectPrevList, defectCurrentList, outputDefectList
 	type(cascade), pointer :: cascadeCurrent
 	integer, allocatable :: defectsRecv(:,:)
@@ -287,19 +287,20 @@ subroutine outputDefectsTotal(simStatus)
 
 	interface
 		subroutine findDefectInList(defectCurrent, defectPrev, products)
+			use mod_constants
 			use mod_structures
 			use mod_globalVariables
 			implicit none
 			type(defect), pointer, intent(inout) :: defectCurrent, defectPrev
-			integer, intent(in) :: products(numSpecies)
+			integer, intent(in) :: products(SPECIES)
 		end subroutine
 	end interface
 
 	!initialize outputDefectList
 	allocate(outputDefectList)
-	allocate(outputDefectList%defectType(numSpecies))
+	allocate(outputDefectList%defectType(SPECIES))
 	nullify(outputDefectList%next)
-	do i=1,numSpecies
+	do i=1,SPECIES
 		outputDefectList%defectType(i)=0
 	end do
 	outputDefectList%cellNumber=0
@@ -321,13 +322,13 @@ subroutine outputDefectsTotal(simStatus)
 			!Next update defects
 			if(associated(defectCurrentList)) then !if we aren't at the end of the list
 				same=0
-				do j=1,numSpecies
+				do j=1,SPECIES
 					if(defectCurrentList%defectType(j)==defectCurrent%defectType(j)) then
 						same=same+1
 					end if
 				end do
 
-				if(same == numSpecies) then
+				if(same == SPECIES) then
 					!if the defect is already present in the list
 					defectCurrentList%num=defectCurrentList%num+defectCurrent%num
 				else    !add a defect to the middle of the list
@@ -337,11 +338,11 @@ subroutine outputDefectsTotal(simStatus)
 					allocate(defectPrevList%next)
 					nullify(defectPrevList%next%next)
 					defectPrevList=>defectPrevList%next
-					allocate(defectPrevList%defectType(numSpecies))
+					allocate(defectPrevList%defectType(SPECIES))
 					defectPrevList%cellNumber=0	!no need for cell numbers in outputDefectList
 					defectPrevList%num=defectCurrent%num
 
-					do j=1,numSpecies
+					do j=1,SPECIES
 						defectPrevList%defectType(j)=defectCurrent%defectType(j)
 					end do
 
@@ -356,11 +357,11 @@ subroutine outputDefectsTotal(simStatus)
 				allocate(defectPrevList%next)
 				nullify(defectPrevList%next%next)
 				defectPrevList=>defectPrevList%next
-				allocate(defectPrevList%defectType(numSpecies))
+				allocate(defectPrevList%defectType(SPECIES))
 				defectPrevList%cellNumber=0 !no need for cell numbers in outputDefectList
 				defectPrevList%num=defectCurrent%num
 
-				do j=1,numSpecies
+				do j=1,SPECIES
 					defectPrevList%defectType(j)=defectCurrent%defectType(j)
 				end do
 				numDefectsSend=numDefectsSend+1
@@ -386,13 +387,13 @@ subroutine outputDefectsTotal(simStatus)
 					!Next update defects
 					if(associated(defectCurrentList)) then !if we aren't at the end of the list
 						same=0
-						do j=1,numSpecies
+						do j=1,SPECIES
 							if(defectCurrentList%defectType(j)==defectCurrent%defectType(j)) then
 								same=same+1
 							end if
 						end do
 
-						if(same == numSpecies) then
+						if(same == SPECIES) then
 							!if the defect is already present in the list
 							defectCurrentList%num=defectCurrentList%num+defectCurrent%num
 						else    !add a defect to the middle of the list
@@ -401,11 +402,11 @@ subroutine outputDefectsTotal(simStatus)
 							allocate(defectPrevList%next)
 							nullify(defectPrevList%next%next)
 							defectPrevList=>defectPrevList%next
-							allocate(defectPrevList%defectType(numSpecies))
+							allocate(defectPrevList%defectType(SPECIES))
 							defectPrevList%cellNumber=0	!no need for cell numbers in outputDefectList
 							defectPrevList%num=defectCurrent%num
 
-							do j=1,numSpecies
+							do j=1,SPECIES
 								defectPrevList%defectType(j)=defectCurrent%defectType(j)
 							end do
 
@@ -420,11 +421,11 @@ subroutine outputDefectsTotal(simStatus)
 						allocate(defectPrevList%next)
 						nullify(defectPrevList%next%next)
 						defectPrevList=>defectPrevList%next
-						allocate(defectPrevList%defectType(numSpecies))
+						allocate(defectPrevList%defectType(SPECIES))
 						defectPrevList%cellNumber=0 !no need for cell numbers in outputDefectList
 						defectPrevList%num=defectCurrent%num
 
-						do j=1,numSpecies
+						do j=1,SPECIES
 							defectPrevList%defectType(j)=defectCurrent%defectType(j)
 						end do
 						numDefectsSend=numDefectsSend+1
@@ -445,31 +446,31 @@ subroutine outputDefectsTotal(simStatus)
 	if(myProc%taskid /= MASTER) then
 
 		defectCurrentList=>outputDefectList%next
-		allocate(defectsSend(numSpecies+1,numDefectsSend))
+		allocate(defectsSend(SPECIES+1,numDefectsSend))
 		i=0
 		do while(associated(defectCurrentList))
 			i=i+1
-			do j=1,numSpecies
+			do j=1,SPECIES
 				defectsSend(j,i)=defectCurrentList%defectType(j)
 			end do
-			defectsSend(numSpecies+1,i)=defectCurrentList%num
+			defectsSend(SPECIES+1,i)=defectCurrentList%num
 			defectCurrentList=>defectCurrentList%next
 			if(i==numDefectsSend .AND. associated(defectCurrentList)) then
 				write(*,*) 'error outputDefectList size does not match numDefectsSend'
 			end if
 		end do
-		call MPI_SEND(defectsSend, (numSpecies+1)*numDefectsSend, MPI_INTEGER, MASTER, 400, comm, ierr)
+		call MPI_SEND(defectsSend, (SPECIES+1)*numDefectsSend, MPI_INTEGER, MASTER, 400, comm, ierr)
 		deallocate(defectsSend)
 	else	!MASTER
 
 		!Recv defects from other processors
 		do i=1, myProc%numtasks-1
-			allocate(defectsRecv(numSpecies+1,numDefectsRecv(i+1)))
-			call MPI_RECV(defectsRecv,(numSpecies+1)*numDefectsRecv(i+1),MPI_INTEGER,i,400,comm,status,ierr)
+			allocate(defectsRecv(SPECIES+1,numDefectsRecv(i+1)))
+			call MPI_RECV(defectsRecv,(SPECIES+1)*numDefectsRecv(i+1),MPI_INTEGER,i,400,comm,status,ierr)
 
 			do j=1,numDefectsRecv(i+1)
 
-				do k=1,numSpecies
+				do k=1,SPECIES
 					products(k)=defectsRecv(k,j)
 				end do
 
@@ -480,26 +481,26 @@ subroutine outputDefectsTotal(simStatus)
 				!Update outputDefectList
 				if(associated(defectCurrentList)) then !if we aren't at the end of the list
 					same=0
-					do k=1,numSpecies
+					do k=1,SPECIES
 						if(defectCurrentList%defectType(k)==products(k)) then
 							same=same+1
 						end if
 					end do
 
-					if(same==numSpecies) then
+					if(same==SPECIES) then
 						!if the defect is already present in the list
-						defectCurrentList%num=defectCurrentList%num+defectsRecv(numSpecies+1,j)
+						defectCurrentList%num=defectCurrentList%num+defectsRecv(SPECIES+1,j)
 					else
 						!if the defect is to be inserted in the list
 						nullify(defectPrevList%next)
 						allocate(defectPrevList%next)
 						nullify(defectPrevList%next%next)
 						defectPrevList=>defectPrevList%next
-						allocate(defectPrevList%defectType(numSpecies))
+						allocate(defectPrevList%defectType(SPECIES))
 						defectPrevList%cellNumber=0	!no need for cell numbers in outputDefectList
-						defectPrevList%num=defectsRecv(numSpecies+1,j)
+						defectPrevList%num=defectsRecv(SPECIES+1,j)
 
-						do k=1,numSpecies
+						do k=1,SPECIES
 							defectPrevList%defectType(k)=products(k)
 						end do
 						!if inserted defect is in the middle of the list, point it to the next item in the list
@@ -511,11 +512,11 @@ subroutine outputDefectsTotal(simStatus)
 					allocate(defectPrevList%next)
 					nullify(defectPrevList%next%next)
 					defectPrevList=>defectPrevList%next
-					allocate(defectPrevList%defectType(numSpecies))
+					allocate(defectPrevList%defectType(SPECIES))
 					defectPrevList%cellNumber=0 !no need for cell numbers in outputDefectList
-					defectPrevList%num=defectsRecv(numSpecies+1,j)
+					defectPrevList%num=defectsRecv(SPECIES+1,j)
 
-					do k=1,numSpecies
+					do k=1,SPECIES
 						defectPrevList%defectType(k)=products(k)
 					end do
 				else
