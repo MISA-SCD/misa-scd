@@ -22,7 +22,6 @@ module mod_globalVariables
     integer :: dims(3)                          !<Number of processors in x, y, z.
     logical, dimension(3) :: periods=(/.true., .true., .true./)     !<Boundary conditions in x, y, z.  The default is periodic
     integer :: ierr							    !<used for initializing and finalizing MPI
-    integer, parameter :: MASTER=0			    !<Define the master node as ID=0
 
     !>Processor information
     type(processorData) :: myProc				!<Contains processor information

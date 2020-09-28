@@ -447,8 +447,6 @@ subroutine ReadInputs()
 
 	recombinationCoeff=4d0*pi*(.4466)/atomSize			!from Stoller et al., not used any longer
 
-	if(myProc%taskid==MASTER) write(*,*) 'cascadeReactionLimit', cascadeReactionLimit
-
 end subroutine
 
 !***************************************************************************************************

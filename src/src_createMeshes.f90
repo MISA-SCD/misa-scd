@@ -5,6 +5,7 @@
 !NOTE: Each sector should have at least two meshes per dimension (x, y, z dimension).
 !***************************************************************************************************
 subroutine initialMesh()
+	use mod_constants
 	use mod_globalVariables
 	use mod_structures
 

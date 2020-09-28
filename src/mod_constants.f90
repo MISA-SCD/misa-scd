@@ -5,6 +5,7 @@
 module mod_constants
     implicit none
 
+    integer, parameter :: MASTER=0			    !<Define the master node as ID=0
     !integer, parameter :: SPECIES = 4                       !<Number of chemical species (typically set to 4: Cu, V, SIA_m, SIA_im)
 
     !constants

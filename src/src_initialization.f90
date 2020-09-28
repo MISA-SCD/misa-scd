@@ -110,6 +110,7 @@ end subroutine
 !>Subroutine
 !*****************************************************************************************
 subroutine initializeOneCascade()
+	use mod_constants
 	use mod_structures
 	use mod_globalVariables
 	use mod_randdp
@@ -226,6 +227,7 @@ end subroutine
 !random number seed of the other processors.
 !*****************************************************************************************
 subroutine initializeRandomSeeds()
+	use mod_constants
 	use mod_globalVariables
 	use mod_structures
 	use mod_randdp

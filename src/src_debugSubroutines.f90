@@ -81,6 +81,7 @@ end subroutine
 !!defects have been updated (used to update reaction list)
 !*****************************************************************************************
 subroutine DEBUGPrintDefectUpdate(defectUpdate)
+	use mod_constants
 use mod_globalVariables
 use mod_structures
 implicit none
@@ -111,6 +112,7 @@ end subroutine
 !!Prints reaction lists in coarse mesh as well as in cascades, if any are present
 !*****************************************************************************************
 subroutine DEBUGPrintReactionList()
+	use mod_constants
 use mod_globalVariables
 use mod_structures
 implicit none
@@ -230,6 +232,7 @@ end subroutine
 !!Have the option to skip volume elements that are empty.
 !*****************************************************************************************
 subroutine DEBUGPrintDefects()
+	use mod_constants
 use mod_structures
 use mod_globalVariables
 implicit none
@@ -308,6 +311,7 @@ end subroutine
 !master processor. Used for debugging.
 !***********************************************************************
 subroutine DEBUGPrintReaction(reactionCurrent)
+	use mod_constants
 use mod_globalVariables
 use mod_structures
 implicit none
