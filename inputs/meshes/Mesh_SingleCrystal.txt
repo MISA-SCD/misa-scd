@@ -1,13 +1,8 @@
 !***************************************************************************************************
 !This is an input file for the mesh creation code. Including:
-!           meshType ('periodic' or 'free surfaces')
 !           mesh length (cube)
 ! 		    number of meshes in x-direction, y-direction, and z-direction
 !***************************************************************************************************
-
-meshType
-periodic
-
 length (nm)
 10d0
 

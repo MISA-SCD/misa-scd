@@ -33,7 +33,7 @@ subroutine ReadInputs()
 	implantDist = 'uniform'
 	grainBoundaryToggle = 'no'
 	pointDefectToggle = 'no'
-	meshType = "periodic"
+	!meshType = "periodic"
 
 	!<read in filename of defect attributes file
 	do while(flag .eqv. .false.)
@@ -66,14 +66,14 @@ subroutine ReadInputs()
 		open(MESHFILE, file=meshFilename, status='old', action='read')
 	end if
 
-	do while(flag .eqv. .false.)
-		read(MESHFILE,*) char
-		if(char=='meshType') then
-			read(MESHFILE,*) meshType
-			flag=.true.
-		end if
-	end do
-	flag=.false.
+	!do while(flag .eqv. .false.)
+	!	read(MESHFILE,*) char
+	!	if(char=='meshType') then
+	!		read(MESHFILE,*) (meshType(i),i=1,3)
+	!		flag=.true.
+	!	end if
+	!end do
+	!flag=.false.
 
 	do while(flag .eqv. .false.)
 		read(MESHFILE,*) char

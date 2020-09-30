@@ -80,9 +80,11 @@ module mod_structures
 		integer globalCell							!<Global ID of the mesh
 		integer proc								!<Processor ID number that this element is located inside
 		integer material							!<Material ID number that this element is composed of (currently only set up for one material type)
-		integer numNeighbors(6)						!<Number of neighbors in each direction (left, right, etc). Could be not equal to 1 in the case of free surfaces or non-uniform mesh.
-		integer, allocatable :: neighbors(:)		!<ID of neighboring volume elements, regardless of if they are in this processor or not. Array size (6)
-		integer, allocatable :: neighborProcs(:)	!<Processor ID numbers of neighboring volume element. Array size (numNeighbors,6)
+		integer :: numNeighbors(6)						!<Number of neighbors in each direction (left, right, etc). Could be not equal to 1 in the case of free surfaces or non-uniform mesh.
+		integer :: neighbors(6)						!<ID of neighboring volume elements, regardless of if they are in this processor or not. Array size (6)
+		integer :: neighborProcs(6)					!<Processor ID numbers of neighboring volume element. Array size (numNeighbors,6)
+		!integer, allocatable :: neighbors(:)		!<ID of neighboring volume elements, regardless of if they are in this processor or not. Array size (6)
+		!integer, allocatable :: neighborProcs(:)	!<Processor ID numbers of neighboring volume element. Array size (numNeighbors,6)
 	end type mesh
 
 	type boundaryMesh

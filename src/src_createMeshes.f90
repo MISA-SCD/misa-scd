@@ -267,22 +267,24 @@ subroutine initialMesh()
 				myMesh(localElem)%length=length
 				myMesh(localElem)%volume=length**3d0
 
-				!uniform mesh: all elements have 1 neighbor in each direction
-				allocate(myMesh(localElem)%neighbors(6))
-				allocate(myMesh(localElem)%neighborProcs(6))
-				do dir=1,6
-					myMesh(localElem)%numNeighbors(dir)=1
-				end do
+				myMesh(localElem)%numNeighbors=0
+				myMesh(localElem)%neighbors=0
+				myMesh(localElem)%neighborProcs=-1
+				!allocate(myMesh(localElem)%neighbors(6))
+				!allocate(myMesh(localElem)%neighborProcs(6))
+				!do dir=1,6
+				!	myMesh(localElem)%numNeighbors(dir)=1
+				!end do
 			end do
 		end do
 	end do
 
 	!Step 3d: assign neighbors and processor numbers for neighbors (connectivity in myMesh) - periodic or free surfaces in +/- z
-	if(meshType=='periodic') then
+	!if(meshType=='periodic') then
 		call createConnectLocalPeriodic(length)
-	else if(meshType=='freeSurfaces') then
-		call createConnectLocalFreeSurf(length)
-	end if
+	!else if(meshType=='freeSurfaces') then
+	!	call createConnectLocalFreeSurf(length)
+	!end if
 
 end subroutine
 
@@ -318,12 +320,11 @@ subroutine createConnectLocalPeriodic(length)
 
 		!Right (+x)
 		if(mod(cell,numxLocal)==0) then !identify cell to the right
-
 			!If we are on the right edge of the local mesh, identify the neighboring processor
 			myMesh(cell)%neighborProcs(1)=myProc%procNeighbor(1)
-
-			!If the mesh is only one processor thick, then the neighboring processor is the same as this processor
-			if(myMesh(cell)%neighborProcs(1)==myProc%taskid) then
+			if(myProc%procNeighbor(1)==-1) then	!+x free surface
+				myMesh(cell)%neighbors(1)=0
+			else if(myMesh(cell)%neighborProcs(1)==myProc%taskid) then
 				myMesh(cell)%neighbors(1)=cell-numxLocal+1	!use periodic rules from uniform cubic mesh
 			else
 				!add these items to sendList, a buffer that is used at the end of this subroutine to communicate
@@ -333,7 +334,6 @@ subroutine createConnectLocalPeriodic(length)
 				send(1,numSend(1),1)=cell		!localCellID in this processor
 				send(2,numSend(1),1)=myMesh(cell)%material	!Material ID number that this element is composed of
 			end if
-
 		else
 			!if we are still inside the local mesh, don't need to communicate with neighboring cells and
 			!just use the uniform cubic connectivity rules (increase x, then y, then z)
@@ -343,10 +343,10 @@ subroutine createConnectLocalPeriodic(length)
 
 		!Left (-x)
 		if(mod(cell+numxLocal-1,numxLocal)==0) then !identify cell to the left
-
 			myMesh(cell)%neighborProcs(2)=myProc%procNeighbor(2)
-
-			if(myMesh(cell)%neighborProcs(2)==myProc%taskid) then
+			if(myProc%procNeighbor(2)==-1) then	!-x free surface
+				myMesh(cell)%neighbors(2)=0
+			else if(myMesh(cell)%neighborProcs(2)==myProc%taskid) then
 				myMesh(cell)%neighbors(2)=cell+numxLocal-1
 			else
 				numSend(2)=numSend(2)+1
@@ -360,17 +360,16 @@ subroutine createConnectLocalPeriodic(length)
 
 		!Front (+y)
 		if(mod(cell,numxLocal*numyLocal) > numxLocal*(numyLocal-1) .OR. mod(cell,numxLocal*numyLocal)==0) then
-
 			myMesh(cell)%neighborProcs(3)=myProc%procNeighbor(3)
-
-			if(myMesh(cell)%neighborProcs(3)==myProc%taskid) then
+			if(myProc%procNeighbor(3)==-1) then
+				myMesh(cell)%neighbors(3)=0
+			else if(myMesh(cell)%neighborProcs(3)==myProc%taskid) then
 				myMesh(cell)%neighbors(3)=cell-(numxLocal*(numyLocal-1))
 			else
 				numSend(3)=numSend(3)+1
 				send(1,numSend(3),3)=cell
 				send(2,numSend(3),3)=myMesh(cell)%material
 			end if
-
 		else
 			myMesh(cell)%neighbors(3)=cell+numxLocal
 			myMesh(cell)%neighborProcs(3)=myProc%taskid
@@ -379,10 +378,10 @@ subroutine createConnectLocalPeriodic(length)
 		!Back (-y)
 		if(mod(cell,numxLocal*numyLocal) <= numxLocal .AND. (mod(cell, numxLocal*numyLocal) /= 0 &
 				.OR. numyLocal==1)) then
-
 			myMesh(cell)%neighborProcs(4)=myProc%procNeighbor(4)
-
-			if(myMesh(cell)%neighborProcs(4)==myProc%taskid) then
+			if(myProc%procNeighbor(4)==-1) then
+				myMesh(cell)%neighbors(4)=0
+			else if(myMesh(cell)%neighborProcs(4)==myProc%taskid) then
 				myMesh(cell)%neighbors(4)=cell+(numxLocal*(numyLocal-1))
 			else
 				numSend(4)=numSend(4)+1
@@ -398,10 +397,10 @@ subroutine createConnectLocalPeriodic(length)
 		!Up (+z)
 		if(mod(cell,numxLocal*numyLocal*numzLocal) > numxLocal*numyLocal*(numzLocal-1) &
 				.OR. mod(cell, numxLocal*numyLocal*numzLocal)==0) then
-
 			myMesh(cell)%neighborProcs(5)=myProc%procNeighbor(5)
-
-			if(myMesh(cell)%neighborProcs(5)==myProc%taskid) then
+			if(myProc%procNeighbor(5)==-1) then
+				myMesh(cell)%neighbors(5)=0
+			else if(myMesh(cell)%neighborProcs(5)==myProc%taskid) then
 				myMesh(cell)%neighbors(5)=cell-(numxLocal*numyLocal*(numzLocal-1))
 			else
 				numSend(5)=numSend(5)+1
@@ -417,10 +416,10 @@ subroutine createConnectLocalPeriodic(length)
 		!Down (-z)
 		if(mod(cell,numxLocal*numyLocal*numzLocal) <= numxLocal*numyLocal &
 				.AND. (mod(cell,numxLocal*numyLocal*numzLocal) /= 0 .OR. numzLocal==1)) then
-
 			myMesh(cell)%neighborProcs(6)=myProc%procNeighbor(6)
-
-			if(myMesh(cell)%neighborProcs(6)==myProc%taskid) then
+			if(myProc%procNeighbor(6)==-1) then
+				myMesh(cell)%neighbors(6)=0
+			else if(myMesh(cell)%neighborProcs(6)==myProc%taskid) then
 				myMesh(cell)%neighbors(6)=cell+(numxLocal*numyLocal*(numzLocal-1))
 			else
 				numSend(6)=numSend(6)+1
@@ -465,11 +464,6 @@ subroutine createConnectLocalPeriodic(length)
 			call MPI_GET_COUNT(status,MPI_INTEGER,tempRecv,ierr)
 			numRecv(dir)=tempRecv/2
 
-			!	if(flagProbe .eqv. .TRUE.) then
-			!		call MPI_GET_COUNT(status,MPI_INTEGER,tempRecv)
-			!		numRecv(dir)=tempRecv/2
-			!	end if
-			!numRecv(dir)=numSend(dir)
 			allocate(recv(2,numRecv(dir)))
 			call MPI_RECV(recv,numRecv(dir)*2,MPI_INTEGER,myProc%procNeighbor(dir),200+tag,&
 					comm,status,ierr)
@@ -781,39 +775,63 @@ integer function findgNeighborPeriodic(globalID, dir)
 	!************************************************
 	!periodic boundary condition version
 	!************************************************
-	if(dir==1) then
+	if(dir==1) then	!+x
 		if(mod(globalID,numx)==0) then !identify cell to the right
-			neighborID=globalID-numx+1
+			if(periods(1) .eqv. .true.) then	!periodic
+				neighborID=globalID-numx+1
+			else	!free surface
+				neighborID=0
+			end if
 		else
 			neighborID=globalID+1
 		end if
 	else if(dir==2) then
 		if(mod(globalID+numx-1,numx)==0) then !identify cell to the left
-			neighborID=globalID+numx-1
+			if(periods(1) .eqv. .true.) then
+				neighborID=globalID+numx-1
+			else
+				neighborID=0
+			end if
 		else
 			neighborID=globalID-1
 		end if
 	else if(dir==3) then
-		if(mod(globalID,numx*numy) > numx*(numy-1) .OR. mod(globalID,numx*numy)==0) then
-			neighborID=globalID-(numx*(numy-1))
+		if(mod(globalID,numx*numy) > numx*(numy-1) .OR. mod(globalID,numx*numy)==0) then	!identify cell to the front
+			if(periods(2) .eqv. .true.) then
+				neighborID=globalID-(numx*(numy-1))
+			else
+				neighborID=0
+			end if
 		else
 			neighborID=globalID+numx
 		end if
 	else if(dir==4) then
-		if(mod(globalID,numx*numy) <= numx .AND. (mod(globalID, numx*numy) /= 0 .OR. numy==1)) then
-			neighborID=globalID+(numx*(numy-1))
+		if(mod(globalID,numx*numy) <= numx .AND. (mod(globalID, numx*numy) /= 0 .OR. numy==1)) then	!identify cell to the back
+			if(periods(2) .eqv. .true.) then
+				neighborID=globalID+(numx*(numy-1))
+			else
+				neighborID=0
+			end if
 		else
 			neighborID=globalID-numx
 		end if
 	else if(dir==5) then
-		if(mod(globalID,numx*numy*numz) > numx*numy*(numz-1) .OR. mod(globalID, numx*numy*numz)==0) then
-			neighborID=globalID-(numx*numy*(numz-1))
+		if(mod(globalID,numx*numy*numz) > numx*numy*(numz-1) .OR. mod(globalID, numx*numy*numz)==0) then	!identify cell to up
+			if(periods(3) .eqv. .true.) then
+				neighborID=globalID-(numx*numy*(numz-1))
+			else
+				neighborID=0
+			end if
 		else
 			neighborID=globalID+numx*numy
 		end if
 	else if(dir==6) then
-		if(mod(globalID,numx*numy*numz) <= numx*numy .AND. (mod(globalID,numx*numy*numz) /= 0 .OR. numz==1)) then
-			neighborID=globalID+(numx*numy*(numz-1))
+		if(mod(globalID,numx*numy*numz) <= numx*numy .AND. (mod(globalID,numx*numy*numz) /= 0 .OR. numz==1)) then	!identify cell to down
+			if(periods(3) .eqv. .true.) then
+				neighborID=globalID+(numx*numy*(numz-1))
+			else
+				neighborID=0
+			end if
 		else
 			neighborID=globalID-numx*numy
 		end if

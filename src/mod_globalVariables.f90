@@ -93,7 +93,7 @@ module mod_globalVariables
     character(len=20) grainBoundaryToggle	!<Used to determine whether or not we are using grain boundaries to remove defects from simulation
     character(len=20) pointDefectToggle		!<Toggles whether or not we allow HeSIA clusters to form ('yes' or 'no')
     character(len=20) polycrystal			!<(yes or no), used to identify whether or not we have multiple grains in our crystal
-    character(len=20) meshType              !<Boundary conditions
+    !character(len=20) meshType              !<Boundary conditions
     !used for test2
     character(len=20) test3
     integer :: oneCascadeGCell

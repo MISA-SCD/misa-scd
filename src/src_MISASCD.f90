@@ -26,7 +26,7 @@ program MISASCD
 	real :: time1, time2, time3
 	logical :: releaseToggle, impCascadeToggle
 	integer :: timeCounter
-	character(14) :: filename, filename1, filename2, filename3, filename4
+	character(14) :: filename1, filename2, filename3, filename4
 	integer :: simStatus	!<1: 'irradiation', 0: 'anneal'
 	double precision, external :: GenerateTimestep, TotalRateCheck
 
@@ -399,10 +399,6 @@ program MISASCD
 					write(*,*)
 				end if
 
-				!Several defect output optionas available.
-				!if(rawdatToggle=='yes') call outputDefectsXYZ()		!write(RAWDAT,*): rawdat
-				!if(totdatToggle=='yes') call outputDefectsTotal()	!write totdat.out, defect.out, stadat.out
-
 				outputCounter=outputCounter+1
 				call MPI_BARRIER(comm,ierr)
 			end if
@@ -446,10 +442,6 @@ program MISASCD
 			end if
 			write(*,*)
 		end if
-
-		!Final output
-		!if(totdatToggle=='yes') call outputDefectsTotal()
-		!if(rawdatToggle=='yes') call outputDefectsXYZ()
 
 		!*************************************************************************************************************
 		!*************************************************************************************************************
@@ -580,10 +572,6 @@ program MISASCD
 					write(*,*)
 				end if
 
-				!Several defect output optionas available.
-				!if(totdatToggle=='yes') call outputDefectsTotal()	!write(TOTDAT,*): totdat.out
-				!if(rawdatToggle=='yes') call outputDefectsXYZ()		!write(RAWDAT,*): rawdat
-
 				outputCounter=outputCounter+1
 				!call MPI_BARRIER(comm，ierr)
 			end if
@@ -607,11 +595,6 @@ program MISASCD
 				write(*,*) 'Anneal time', elapsedTime, 'steps', step, 'AverageTimeStep', elapsedTime/dble(step)
 				write(*,*)
 			end if
-
-			!Final output
-			!if(totdatToggle=='yes') call outputDefectsTotal()
-			!if(rawdatToggle=='yes') call outputDefectsXYZ()
-
 		end if
 
 		!***********************************************************************
