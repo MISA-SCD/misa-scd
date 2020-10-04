@@ -64,12 +64,6 @@ program MISASCD
 			type(DefectUpdateTracker), pointer, intent(inout) :: defectUpdate
 		end subroutine
 
-		subroutine DEBUGPrintReaction(reactionCurrent)
-			use mod_structures
-			implicit none
-			type(reaction), pointer, intent(inout) :: reactionCurrent
-		end subroutine
-
 		subroutine releaseFineMeshDefects(CascadeCurrent)
 			use mod_structures
 			implicit none
@@ -112,7 +106,7 @@ program MISASCD
 
 	!<Create fine mesh connectivity
 	allocate(cascadeConnectivity(6, numCellsCascade))	!< numCellsCascade=numxFine*numyFine*numzFine
-	call createCascadeConnectivity()
+	call  createCascadeConnect()
 
 	!***********************************************************************
 	!Multiple simulations begin.

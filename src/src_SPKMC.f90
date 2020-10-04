@@ -210,7 +210,7 @@ subroutine updateDefectList(reactionCurrent, defectUpdateCurrent, CascadeCurrent
 	use mod_constants
 	use mod_globalVariables
 	use mod_structures
-	use mod_reactionrates
+	use mod_updatereactions
 	use mod_randdp
 	implicit none
 	include 'mpif.h'
@@ -2280,7 +2280,7 @@ subroutine updateReactionList(defectUpdate)
 	use mod_constants
 	use mod_structures
 	use mod_globalVariables
-	use mod_reactionrates
+	use mod_updatereactions
 	implicit none
 	include 'mpif.h'
 
@@ -2322,14 +2322,14 @@ subroutine updateReactionList(defectUpdate)
 			if(defectUpdateCurrent%cascadeNumber==0) then	!update reaction in coarse mesh
 
 				!Single-defect reactions associated with defects of type defectTemp (Dissociation、sinkRemoval、impurityTrapping)
-				call addSingleDefectReactions(defectUpdateCurrent%cellNumber,defectTemp)
+				call update_1st_reactions(defectUpdateCurrent%cellNumber,defectTemp)
 
 				!Multi-defect reactions associated with defects of type defectTemp and defectCurrent%defectType
 				!(Scan over all defect types in the defect list)
 				defectCurrent=>defectList(defectUpdateCurrent%cellNumber)
 				do while(associated(defectCurrent))
 					if(defectCurrent%num /= 0) then
-						call addMultiDefectReactions(defectUpdateCurrent%cellNumber,defectTemp, defectCurrent%defectType)
+						call update_2nd_reactions(defectUpdateCurrent%cellNumber,defectTemp, defectCurrent%defectType)
 					end if
 					defectCurrent=>defectCurrent%next
 				end do
@@ -2343,7 +2343,7 @@ subroutine updateReactionList(defectUpdate)
 				defectUpdateNext=>defectUpdateCurrent%next
 				if(associated(defectUpdateNext)) then
 					if(defectUpdateNext%cellNumber==defectUpdateCurrent%cellNumber) then
-						call addMultiDefectReactions(defectUpdateCurrent%cellNumber, defectTemp, &
+						call update_2nd_reactions(defectUpdateCurrent%cellNumber, defectTemp, &
 								defectUpdateNext%defectType)
 					end if
 				end if
@@ -2377,16 +2377,16 @@ subroutine updateReactionList(defectUpdate)
 
 						if(localGrainID==neighborGrainID) then
 							!Allow diffusion between elements in the same grain
-							call addDiffusionReactions(defectUpdateCurrent%cellNumber, &
+							call update_diff_reactions(defectUpdateCurrent%cellNumber, &
 									myMesh(defectUpdateCurrent%cellNumber)%neighbors(j),&
 									myProc%taskid, myMesh(defectUpdateCurrent%cellNumber)%neighborProcs(j),&
 									j,defectTemp)
 						else
 							!Assume perfect sinks at grain boundaries - treat grain boundaries like free surfaces for now
-							call addDiffusionReactions(defectUpdateCurrent%cellNumber,0,myProc%taskid,-1,j,defectTemp)
+							call update_diff_reactions(defectUpdateCurrent%cellNumber,0,myProc%taskid,-1,j,defectTemp)
 						end if
 					else
-						call addDiffusionReactions(defectUpdateCurrent%cellNumber, &
+						call update_diff_reactions(defectUpdateCurrent%cellNumber, &
 								myMesh(defectUpdateCurrent%cellNumber)%neighbors(j),&
 								myProc%taskid, myMesh(defectUpdateCurrent%cellNumber)%neighborProcs(j),j,defectTemp)
 					end if
@@ -2407,12 +2407,12 @@ subroutine updateReactionList(defectUpdate)
 								%material == myMesh(defectUpdateCurrent%cellNumber)%material) then
 							!call addDiffusionReactions(myMesh(defectUpdateCurrent%cellNumber)%neighbors(j), defectUpdateCurrent%cellNumber, &
 							!		myProc%taskid, myProc%taskid, j, defectTemp)
-							call addDiffusionReactions(myMesh(defectUpdateCurrent%cellNumber)%neighbors(j), &
+							call update_diff_reactions(myMesh(defectUpdateCurrent%cellNumber)%neighbors(j), &
 									defectUpdateCurrent%cellNumber, myProc%taskid, myProc%taskid, dir, defectTemp)
 						else if(polycrystal=='no') then
 							!call addDiffusionReactions(myMesh(defectUpdateCurrent%cellNumber)%neighbors(j), defectUpdateCurrent%cellNumber, &
 							!		myProc%taskid, myProc%taskid, j, defectTemp)
-							call addDiffusionReactions(myMesh(defectUpdateCurrent%cellNumber)%neighbors(j), &
+							call update_diff_reactions(myMesh(defectUpdateCurrent%cellNumber)%neighbors(j), &
 									defectUpdateCurrent%cellNumber, myProc%taskid, myProc%taskid, dir, defectTemp)
 						end if
 					end if
@@ -2430,7 +2430,7 @@ subroutine updateReactionList(defectUpdate)
 				do while(associated(CascadeCurrent))
 
 					if(CascadeCurrent%cellNumber==defectUpdateCurrent%cellNumber) then
-						call addDiffusionCoarseToFine(defectUpdateCurrent%cellNumber,myProc%taskid,&
+						call update_diff_coarseToFine(defectUpdateCurrent%cellNumber,myProc%taskid,&
 								CascadeCurrent,defectTemp)
 					end if
 					CascadeCurrent=>CascadeCurrent%next
@@ -2458,7 +2458,7 @@ subroutine updateReactionList(defectUpdate)
 				end if
 
 				!Single-defect reactions associated with defects of type defectTemp in fine mesh
-				call addSingleDefectReactionsFine(defectUpdateCurrent%cascadeNumber,&
+				call update_1st_reactions_fine(defectUpdateCurrent%cascadeNumber,&
 						defectUpdateCurrent%cellNumber,defectTemp)
 
 				!Multi-defect reactions associated with defects of type defectTemp and defectCurrent%defectType (Scan over
@@ -2466,7 +2466,7 @@ subroutine updateReactionList(defectUpdate)
 				defectCurrent=>CascadeCurrent%localDefects(defectUpdateCurrent%cellNumber)
 				do while(associated(defectCurrent))
 					if(defectCurrent%num /= 0) then
-						call addMultiDefectReactionsFine(defectUpdateCurrent%cascadeNumber, &
+						call update_2nd_reactions_fine(defectUpdateCurrent%cascadeNumber, &
 								defectUpdateCurrent%cellNumber,defectTemp, defectCurrent%defectType)
 					end if
 					defectCurrent=>defectCurrent%next
@@ -2475,7 +2475,7 @@ subroutine updateReactionList(defectUpdate)
 				defectUpdateNext=>defectUpdateCurrent%next
 				if(associated(defectUpdateNext)) then
 					if(defectUpdateNext%cellNumber==defectUpdateCurrent%cellNumber) then
-						call addMultiDefectReactionsFine(defectUpdateCurrent%cascadeNumber, &
+						call update_2nd_reactions_fine(defectUpdateCurrent%cascadeNumber, &
 								defectUpdateCurrent%cellNumber, defectTemp, defectUpdateNext%defectType)
 					end if
 				end if
@@ -2484,7 +2484,7 @@ subroutine updateReactionList(defectUpdate)
 				do j=1,6
 
 					!Add diffusion reactions from this cell into neighboring cells
-					call addDiffusionReactionsFine(defectUpdateCurrent%cascadeNumber,&
+					call update_diff_reactions_fine(defectUpdateCurrent%cascadeNumber,&
 							defectUpdateCurrent%cellNumber,cascadeConnectivity(j,defectUpdateCurrent%cellNumber),&
 							myProc%taskid, myProc%taskid,j,defectTemp)
 
@@ -2496,9 +2496,9 @@ subroutine updateReactionList(defectUpdate)
 
 					!Add diffusion reactions from neighboring cells into this cell. (both directions)
 					if(cascadeConnectivity(j, defectUpdateCurrent%cellNumber) /= 0) then
-						!call addDiffusionReactionsFine(defectUpdateCurrent%cascadeNumber, cascadeConnectivity(j, defectUpdateCurrent%cellNumber), &
+						!call update_diff_reactions_fine(defectUpdateCurrent%cascadeNumber, cascadeConnectivity(j, defectUpdateCurrent%cellNumber), &
 						!	defectUpdateCurrent%cellNumber,myProc%taskid, myProc%taskid,j,defectTemp)
-						call addDiffusionReactionsFine(defectUpdateCurrent%cascadeNumber,&
+						call update_diff_reactions_fine(defectUpdateCurrent%cascadeNumber,&
 								cascadeConnectivity(j,defectUpdateCurrent%cellNumber),&
 								defectUpdateCurrent%cellNumber,myProc%taskid, myProc%taskid,dir,defectTemp)
 					end if
@@ -2523,15 +2523,15 @@ subroutine updateReactionList(defectUpdate)
 				neighborGrainID=myBoundary(defectUpdateCurrent%cellNumber,defectUpdateCurrent%dir)%material
 				if(localGrainID==neighborGrainID) then
 					!Allow diffusion between elements in the same grain
-					call addDiffusionReactions(defectUpdateCurrent%neighbor, defectUpdateCurrent%cellNumber, &
+					call update_diff_reactions(defectUpdateCurrent%neighbor, defectUpdateCurrent%cellNumber, &
 							myProc%taskid, defectUpdateCurrent%proc, defectUpdateCurrent%dir, defectTemp)
 				else
 					!Assume perfect sinks at grain boundaries - treat grain boundaries like free surfaces for now
-					call addDiffusionReactions(defectUpdateCurrent%neighbor, 0, myProc%taskid, -1, &
+					call update_diff_reactions(defectUpdateCurrent%neighbor, 0, myProc%taskid, -1, &
 							defectUpdateCurrent%dir, defectTemp)
 				end if
 			else
-				call addDiffusionReactions(defectUpdateCurrent%neighbor, defectUpdateCurrent%cellNumber, &
+				call update_diff_reactions(defectUpdateCurrent%neighbor, defectUpdateCurrent%cellNumber, &
 						myProc%taskid, defectUpdateCurrent%proc, defectUpdateCurrent%dir, defectTemp)
 			end if
 		end if

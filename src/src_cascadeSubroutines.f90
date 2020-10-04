@@ -103,11 +103,8 @@ logical function cascadeMixingCheck()
     double precision :: r1, probability
     logical :: boolean
 
-    !step 1: calculate the volume fraction of defectTemp in the cell
-    !Current version (n cascade mixing checks)
     probability=cascadeVolume/(numCellsCascade*CascadeElementVol)
 
-    !step 2: use random number to decide on interaction
     r1=dprand()
     if(r1 > probability) then
         boolean=.FALSE.
@@ -133,7 +130,7 @@ subroutine cascadeUpdateStep(releaseToggle, cascadeCell)
     use mod_constants
     use mod_structures
     use mod_globalVariables
-    use mod_reactionrates
+    use mod_updatereactions
     implicit none
     include 'mpif.h'
 
@@ -295,15 +292,15 @@ subroutine cascadeUpdateStep(releaseToggle, cascadeCell)
 
                         if(localGrainID==neighborGrainID) then
                             !Allow diffusion between elements in the same grain
-                            call addDiffusionReactions(cellNumber, bndryCellNumber,&
+                            call update_diff_reactions(cellNumber, bndryCellNumber,&
                                     myProc%taskid, myProc%procNeighbor(recvDir),recvDir,defectCurrent%defectType)
                         else
                             !Assume perfect sinks at grain boundaries - treat grain boundaries like free surfaces for now
-                            call addDiffusionReactions(cellNumber,0,myProc%taskid,-1,recvDir,defectCurrent%defectType)
+                            call update_diff_reactions(cellNumber,0,myProc%taskid,-1,recvDir,defectCurrent%defectType)
                         end if
                     else
                         !Add diffusion reactions from this cell to neighboring cells
-                        call addDiffusionReactions(cellNumber, bndryCellNumber,&
+                        call update_diff_reactions(cellNumber, bndryCellNumber,&
                                 myProc%taskid, myProc%procNeighbor(recvDir),recvDir,defectCurrent%defectType)
                     end if
                     defectCurrent=>defectCurrent%next
@@ -320,12 +317,12 @@ subroutine cascadeUpdateStep(releaseToggle, cascadeCell)
 end subroutine
 
 !***************************************************************************************************
-!> subroutine createCascadeConnectivity(): This subroutine assigns values to the connectivity matrix
+!> subroutine createCascadeConnect(): This subroutine assigns values to the connectivity matrix
 !(global variable) used for all cascades
 !Input: numxcascade, numycascade, nunmzcascade (global variables) : from parameters.txt
 !Output: cascadeConnectivity (global variable)
 !***************************************************************************************************
-subroutine createCascadeConnectivity()
+subroutine  createCascadeConnect()
     use mod_globalVariables
     implicit none
 

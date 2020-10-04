@@ -1,13 +1,13 @@
-module mod_reactionrates
+module mod_updatereactions
 	implicit none
 contains
 
 !***************************************************************************************************
-!>Subroutine addSingleDefectReactions(cell, defectType)
+!>Subroutine update_1st_reactions(cell, defectType)
 !adds reactions to a reaction list that require only a single reactant to be carried out.
 !Examples: dissociation, trapping, sinks. Diffusion reactions are not included in this subroutine.
 !***************************************************************************************************
-subroutine addSingleDefectReactions(cell, defectType)
+subroutine update_1st_reactions(cell, defectType)
 	use mod_constants
 	use mod_globalVariables
 	use mod_structures
@@ -72,9 +72,9 @@ subroutine addSingleDefectReactions(cell, defectType)
 			!point reactionUpdate at the reaction and reactionPrev at the reaction before it
 			!(if reaction does not already exist, reactionUpdate is unallocated and reactionPrev points to the end of the list)
 			reactionUpdate=>reactionList(cell)
-			call findReactionInList(reactionUpdate, reactionPrev, cell, reactants, products, numReactants, numProducts)
+			call findReaction_inList(reactionUpdate, reactionPrev, cell, reactants, products, numReactants, numProducts)
 
-			reactionRate=findReactionRateDissoc(defectType, products, cell, DissocReactions(i))
+			reactionRate=findRate_dissoc(defectType, products, cell, DissocReactions(i))
 
 			!if reactionRate==0 and reaction already exists, then delete it. Subtract from totalRate.
 			if(associated(reactionUpdate) .AND. reactionRate==0d0) then
@@ -170,9 +170,9 @@ subroutine addSingleDefectReactions(cell, defectType)
 			!point reactionUpdate at the reaction and reactionPrev at the reaction before it
 			!(if reaction does not already exist, reactionUpdate is unallocated and reactionPrev points to the end of the list)
 			reactionUpdate=>reactionList(cell)
-			call findReactionInList(reactionUpdate, reactionPrev, cell, reactants, products, numReactants, numProducts)
+			call findReaction_inList(reactionUpdate, reactionPrev, cell, reactants, products, numReactants, numProducts)
 
-			reactionRate=findReactionRateSink(defectType, cell, SinkReactions(i))
+			reactionRate=findRate_sink(defectType, cell, SinkReactions(i))
 
 			!if reactionRate==0 and reaction already exists, then delete it. Subtract from totalRate.
 			if(associated(reactionUpdate) .AND. reactionRate==0d0) then
@@ -281,9 +281,9 @@ subroutine addSingleDefectReactions(cell, defectType)
 			!point reactionUpdate at the reaction and reactionPrev at the reaction before it
 			!(if reaction does not already exist, reactionUpdate is unallocated and reactionPrev points to the end of the list)
 			reactionUpdate=>reactionList(cell)
-			call findReactionInList(reactionUpdate, reactionPrev, cell, reactants, products, numReactants, numProducts)
+			call findReaction_inList(reactionUpdate, reactionPrev, cell, reactants, products, numReactants, numProducts)
 
-			reactionRate=findReactionRateImpurity(defectType, cell, ImpurityReactions(i))
+			reactionRate=findRate_impurity(defectType, cell, ImpurityReactions(i))
 
 			!if reactionRate==0 and reaction already exists, then delete it. Subtract from totalRate.
 			if(associated(reactionUpdate) .AND. reactionRate==0d0) then
@@ -350,11 +350,11 @@ subroutine addSingleDefectReactions(cell, defectType)
 end subroutine
 
 !***************************************************************************************************
-!>Subroutine addSingleDefectReactionsFine(cascadeID, cell, defectType)
+!>Subroutine update_1st_reactions_fine(cascadeID, cell, defectType)
 !adds reactions to a reaction list inside a cascade (fine mesh) that require only a single reactant to be carried out.
 !Examples: dissociation, trapping, sinks. Diffusion reactions are not included in this subroutine.
 !***************************************************************************************************
-subroutine addSingleDefectReactionsFine(cascadeID, cell, defectType)
+subroutine update_1st_reactions_fine(cascadeID, cell, defectType)
 	use mod_constants
 	use mod_globalVariables
 	use mod_structures
@@ -431,9 +431,9 @@ subroutine addSingleDefectReactionsFine(cascadeID, cell, defectType)
 			!point reactionUpdate at the reaction and reactionPrev at the reaction before it
 			!(if reaction does not already exist, reactionUpdate is unallocated and reactionPrev points to the end of the list)
 			reactionUpdate=>CascadeCurrent%reactionList(cell)
-			call findReactionInList(reactionUpdate, reactionPrev, cell, reactants, products, numReactants, numProducts)
+			call findReaction_inList(reactionUpdate, reactionPrev, cell, reactants, products, numReactants, numProducts)
 
-			reactionRate=findReactionRateDissocFine(CascadeCurrent,defectType,products,cell,DissocReactions(i))
+			reactionRate=findRate_dissoc_fine(CascadeCurrent,defectType,products,cell,DissocReactions(i))
 
 			!if reactionRate==0 and reaction already exists, then delete it. Subtract from totalRate.
 			if(associated(reactionUpdate) .AND. reactionRate==0d0) then
@@ -529,9 +529,9 @@ subroutine addSingleDefectReactionsFine(cascadeID, cell, defectType)
 			!point reactionUpdate at the reaction and reactionPrev at the reaction before it
 			!(if reaction does not already exist, reactionUpdate is unallocated and reactionPrev points to the end of the list)
 			reactionUpdate=>CascadeCurrent%reactionList(cell)
-			call findReactionInList(reactionUpdate, reactionPrev, cell, reactants, products, numReactants, numProducts)
+			call findReaction_inList(reactionUpdate, reactionPrev, cell, reactants, products, numReactants, numProducts)
 
-			reactionRate=findReactionRateSinkFine(CascadeCurrent, defectType, cell, SinkReactions(i))
+			reactionRate=findRate_sink_fine(CascadeCurrent, defectType, cell, SinkReactions(i))
 
 			!if reactionRate==0 and reaction already exists, then delete it. Subtract from totalRate.
 			if(associated(reactionUpdate) .AND. reactionRate==0d0) then
@@ -641,8 +641,8 @@ subroutine addSingleDefectReactionsFine(cascadeID, cell, defectType)
 			!point reactionUpdate at the reaction and reactionPrev at the reaction before it
 			!(if reaction does not already exist, reactionUpdate is unallocated and reactionPrev points to the end of the list)
 			reactionUpdate=>CascadeCurrent%reactionList(cell)
-			call findReactionInList(reactionUpdate, reactionPrev, cell, reactants, products, numReactants, numProducts)
-			reactionRate=findReactionRateImpurityFine(CascadeCurrent, defectType, cell, ImpurityReactions(i))
+			call findReaction_inList(reactionUpdate, reactionPrev, cell, reactants, products, numReactants, numProducts)
+			reactionRate=findRate_impurity_fine(CascadeCurrent, defectType, cell, ImpurityReactions(i))
 
 			!if reactionRate==0 and reaction already exists, then delete it. Subtract from totalRate.
 			if(associated(reactionUpdate) .AND. reactionRate==0d0) then
@@ -709,11 +709,11 @@ subroutine addSingleDefectReactionsFine(cascadeID, cell, defectType)
 end subroutine
 
 !***************************************************************************************************
-!>Subroutine addMultiDefectReactions(cell, defectType1, defectType2)
+!>Subroutine update_2nd_reactions(cell, defectType1, defectType2)
 !adds reactions to a reaction list that require multiple defects to be carried out.
 !This refers mainly to clustering reactions or pinning reactions.
 !***************************************************************************************************
-subroutine addMultiDefectReactions(cell, defectType1, defectType2)
+subroutine update_2nd_reactions(cell, defectType1, defectType2)
 	use mod_constants
 	use mod_globalVariables
 	use mod_structures
@@ -917,10 +917,10 @@ subroutine addMultiDefectReactions(cell, defectType1, defectType2)
 			!NOTE: if order of reactants is backwards, we might not recognize that we have already added
 			!this reaction. Thus we could double-add reactions. Will fix later.
 			reactionUpdate=>reactionList(cell)
-			call findReactionInListMultiple(reactionUpdate, reactionPrev, cell, reactants, products, &
+			call findReaction_2nd_inList(reactionUpdate, reactionPrev, cell, reactants, products, &
 					numReactants, numProducts)
 
-			reactionRate=findReactionRateMultiple(defectType1, defectType2, cell, ClusterReactions(i))
+			reactionRate=findRate_2nd(defectType1, defectType2, cell, ClusterReactions(i))
 
 			!if reactionRate==0 and reaction already exists, then delete it. Subtract from totalRate.
 			if(associated(reactionUpdate) .AND. reactionRate==0d0) then
@@ -1183,10 +1183,10 @@ subroutine addMultiDefectReactions(cell, defectType1, defectType2)
 			!NOTE: if order of reactants is backwards, we might not recognize that we have already added
 			!this reaction. Thus we could double-add reactions. Will fix later.
 			reactionUpdate=>reactionList(cell)
-			call findReactionInListMultiple(reactionUpdate, reactionPrev, cell, reactants, products, &
+			call findReaction_2nd_inList(reactionUpdate, reactionPrev, cell, reactants, products, &
 					numReactants, numProducts)
 
-			reactionRate=findReactionRateMultiple(defectType1, defectType2, cell, ClusterReactions(i))
+			reactionRate=findRate_2nd(defectType1, defectType2, cell, ClusterReactions(i))
 
 			!if reactionRate==0 and reaction already exists, then delete it. Subtract from totalRate.
 			if(associated(reactionUpdate) .AND. reactionRate==0d0) then
@@ -1269,11 +1269,11 @@ subroutine addMultiDefectReactions(cell, defectType1, defectType2)
 end subroutine
 
 !***************************************************************************************************
-!>Subroutine addMultiDefectReactionsFine(cascadeID, cell, defectType1, defectType2)
+!>Subroutine update_2nd_reactions_fine(cascadeID, cell, defectType1, defectType2)
 !adds reactions to a reaction list inside a cascade that require multiple defects to be carried out.
 !This refers mainly to clustering reactions or pinning reactions.
 !***************************************************************************************************
-subroutine addMultiDefectReactionsFine(cascadeID, cell, defectType1, defectType2)
+subroutine update_2nd_reactions_fine(cascadeID, cell, defectType1, defectType2)
 	use mod_constants
 	use mod_globalVariables
 	use mod_structures
@@ -1488,9 +1488,9 @@ subroutine addMultiDefectReactionsFine(cascadeID, cell, defectType1, defectType2
 			!NOTE: if order of reactants is backwards, we might not recognize that we have already added
 			!this reaction. Thus we could double-add reactions. Will fix later.
 			reactionUpdate=>CascadeCurrent%reactionList(cell)
-			call findReactionInListMultiple(reactionUpdate,reactionPrev,cell,reactants,products,numReactants,numProducts)
+			call findReaction_2nd_inList(reactionUpdate,reactionPrev,cell,reactants,products,numReactants,numProducts)
 
-			reactionRate=findReactionRateMultipleFine(CascadeCurrent,defectType1,defectType2,cell,ClusterReactions(i))
+			reactionRate=findRate_2nd_fine(CascadeCurrent,defectType1,defectType2,cell,ClusterReactions(i))
 
 			!if reactionRate==0 and reaction already exists, then delete it. Subtract from totalRate.
 			if(associated(reactionUpdate) .AND. reactionRate==0d0) then
@@ -1739,9 +1739,9 @@ subroutine addMultiDefectReactionsFine(cascadeID, cell, defectType1, defectType2
 			!NOTE: if order of reactants is backwards, we might not recognize that we have already added
 			!this reaction. Thus we could double-add reactions. Will fix later.
 			reactionUpdate=>CascadeCurrent%reactionList(cell)
-			call findReactionInListMultiple(reactionUpdate,reactionPrev,cell,reactants,products,numReactants,numProducts)
+			call findReaction_2nd_inList(reactionUpdate,reactionPrev,cell,reactants,products,numReactants,numProducts)
 
-			reactionRate=findReactionRateMultipleFine(CascadeCurrent,defectType1,defectType2,cell,ClusterReactions(i))
+			reactionRate=findRate_2nd_fine(CascadeCurrent,defectType1,defectType2,cell,ClusterReactions(i))
 
 			!if reactionRate==0 and reaction already exists, then delete it. Subtract from totalRate.
 			if(associated(reactionUpdate) .AND. reactionRate==0d0) then
@@ -1814,10 +1814,10 @@ subroutine addMultiDefectReactionsFine(cascadeID, cell, defectType1, defectType2
 end subroutine
 
 !*************************************************************************************************
-!>Subroutine addDiffusionReactions(cell1, cell2, proc1, proc2, dir, defectType)
+!>Subroutine update_diff_reactions(cell1, cell2, proc1, proc2, dir, defectType)
 !adds reactions to a reaction list representing diffusion between volume elements.
 !***********************************************************************************************
-subroutine addDiffusionReactions(cell1, cell2, proc1, proc2, dir, defectType)
+subroutine update_diff_reactions(cell1, cell2, proc1, proc2, dir, defectType)
 	use mod_constants
 	use mod_globalVariables
 	use mod_structures
@@ -1866,9 +1866,9 @@ subroutine addDiffusionReactions(cell1, cell2, proc1, proc2, dir, defectType)
 			!find the reaction in the reaction list (INCLUDING DIFFUSION DIRECTIONS)
 			reactionUpdate=>reactionList(cell1)
 			nullify(reactionPrev)
-			call findReactionInListDiff(reactionUpdate, reactionPrev, reactants, cell1, cell2, proc1, proc2)
+			call findReaction_diff_inList(reactionUpdate, reactionPrev, reactants, cell1, cell2, proc1, proc2)
 
-			reactionRate=findReactionRateDiff(defectType, cell1, proc1, cell2, proc2, dir, DiffReactions(i))
+			reactionRate=findRate_diff(defectType, cell1, proc1, cell2, proc2, dir, DiffReactions(i))
 
 			!if reactionRate==0 and reaction already exists, then delete it. Subtract from totalRate.
 			if(associated(reactionUpdate) .AND. reactionRate==0d0) then
@@ -1938,10 +1938,10 @@ subroutine addDiffusionReactions(cell1, cell2, proc1, proc2, dir, defectType)
 end subroutine
 
 !***************************************************************************************************
-!>Subroutine addDiffusionCoarseToFine(cell, proc, CascadeCurrent, defectType)
+!>Subroutine update_diff_coarseToFine(cell, proc, CascadeCurrent, defectType)
 !adds reactions to a reaction list representing diffusion between volume elements.
 !***************************************************************************************************
-subroutine addDiffusionCoarseToFine(cell, proc, CascadeCurrent, defectType)
+subroutine update_diff_coarseToFine(cell, proc, CascadeCurrent, defectType)
 	use mod_constants
 	use mod_globalVariables
 	use mod_structures
@@ -2002,14 +2002,14 @@ subroutine addDiffusionCoarseToFine(cell, proc, CascadeCurrent, defectType)
 			!to identify that this is a reaction from the coarse mesh to the fine mesh into this cascade.
 			reactionUpdate=>reactionList(cell)
 			nullify(reactionPrev)
-			call findReactionInListDiff(reactionUpdate, reactionPrev, reactants, cell, -CascadeCurrent%cascadeID, &
+			call findReaction_diff_inList(reactionUpdate, reactionPrev, reactants, cell, -CascadeCurrent%cascadeID, &
 					proc, proc)
 
 			!Find the total number of defects of type defectType in the fine mesh (all cells)
 			numDefectsFine=findNumDefectTotalFine(defectType, CascadeCurrent)
 
 			!Find the reaction rate for diffusion from coarse to fine mesh
-			reactionRate=findReactionRateCoarseToFine(defectType, cell, proc, numDefectsFine, DiffReactions(i))
+			reactionRate=findRate_diff_coarseToFine(defectType, cell, proc, numDefectsFine, DiffReactions(i))
 
 			!Here, we update reactionList by either creating a new reaction or updating the current reaction
 
@@ -2080,10 +2080,10 @@ subroutine addDiffusionCoarseToFine(cell, proc, CascadeCurrent, defectType)
 end subroutine
 
 !***************************************************************************************************
-!>Subroutine addDiffusionReactionsFine(cascadeID, cell1, cell2, proc1, proc2, dir, defectType)
+!>Subroutine update_diff_reactions_fine(cascadeID, cell1, cell2, proc1, proc2, dir, defectType)
 !adds reactions to a reaction list representing diffusion between volume elements inside a cascade mesh.
 !***************************************************************************************************
-subroutine addDiffusionReactionsFine(cascadeID, cell1, cell2, proc1, proc2, dir, defectType)
+subroutine update_diff_reactions_fine(cascadeID, cell1, cell2, proc1, proc2, dir, defectType)
 	use mod_constants
 	use mod_globalVariables
 	use mod_structures
@@ -2141,9 +2141,9 @@ subroutine addDiffusionReactionsFine(cascadeID, cell1, cell2, proc1, proc2, dir,
 			!find the reaction in the reaction list (INCLUDING DIFFUSION DIRECTIONS)
 			reactionUpdate=>CascadeCurrent%reactionList(cell1)
 			nullify(reactionPrev)
-			call findReactionInListDiff(reactionUpdate, reactionPrev, reactants, cell1, cell2, proc1, proc2)
+			call findReaction_diff_inList(reactionUpdate, reactionPrev, reactants, cell1, cell2, proc1, proc2)
 
-			reactionRate=findReactionRateDiffFine(CascadeCurrent, defectType, cell1, proc1, cell2, proc2, dir, &
+			reactionRate=findRate_diff_fine(CascadeCurrent, defectType, cell1, proc1, cell2, proc2, dir, &
 					DiffReactions(i))
 
 			!if reactionRate==0 and reaction already exists, then delete it. Subtract from totalRate.
@@ -2213,10 +2213,10 @@ subroutine addDiffusionReactionsFine(cascadeID, cell1, cell2, proc1, proc2, dir,
 end subroutine
 
 !***************************************************************************************************
-!> Function findReactionRate(cell, reactionParameter)
+!> Function findRate_0th(cell, reactionParameter)
 !finds reaction rate for implantation reaction (Frenkel pairs, cascades).
 !***************************************************************************************************
-double precision function findReactionRate(cell, reactionParameter)
+double precision function findRate_0th(cell, reactionParameter)
 	use mod_constants
 	use mod_globalVariables
 	use mod_structures
@@ -2232,7 +2232,7 @@ double precision function findReactionRate(cell, reactionParameter)
 		volume=myMesh(cell)%volume
 
 		if(implantDist=='uniform') then
-			findReactionRate=volume*dpaRate/atomSize
+			findRate_0th=volume*dpaRate/atomSize
 		else
 			write(*,*) 'Error implant distribution not recognized'
 		endif
@@ -2242,13 +2242,13 @@ double precision function findReactionRate(cell, reactionParameter)
 		volume=myMesh(cell)%volume
 
 		if(implantDist=='uniform') then
-			findReactionRate=volume*dpaRate/(numDisplacedAtoms*atomSize)
+			findRate_0th=volume*dpaRate/(numDisplacedAtoms*atomSize)
 		else
 			write(*,*) 'Error implant distribution not recognized'
 		end if
 
 	else if(ReactionParameter%functionType==6) then	!Frenkel-Pair implantation disallowed in grain boundaries
-		findReactionRate=0d0
+		findRate_0th=0d0
 	else
 		write(*,*) 'error function type', ReactionParameter%functionType
 	end if
@@ -2256,10 +2256,10 @@ double precision function findReactionRate(cell, reactionParameter)
 end function
 
 !***************************************************************************************************
-!> Function findReactionRateImpurity(defectType, cell, reactionParameter)
+!> Function findRate_impurity(defectType, cell, reactionParameter)
 !finds reaction rate for trapping of SIA loops by impurities (Carbon).
 !***************************************************************************************************
-double precision function findReactionRateImpurity(defectType, cell, reactionParameter)
+double precision function findRate_impurity(defectType, cell, reactionParameter)
 	use mod_constants
 	use mod_globalVariables
 	use mod_structures
@@ -2289,15 +2289,15 @@ double precision function findReactionRateImpurity(defectType, cell, reactionPar
 		reactionRate=0d0
 	end if
 
-	findReactionRateImpurity=reactionRate
+	findRate_impurity=reactionRate
 
 end function
 
 !***************************************************************************************************
-!> Function findReactionRateImpurityFine(CascadeCurrent, defectType, cell, reactionParameter)
+!> Function findRate_impurity_fine(CascadeCurrent, defectType, cell, reactionParameter)
 !finds reaction rate for trapping of SIA loops by impurities (Carbon) inside a fine mesh (Cascade).
 !***************************************************************************************************
-double precision function findReactionRateImpurityFine(CascadeCurrent, defectType, cell, reactionParameter)
+double precision function findRate_impurity_fine(CascadeCurrent, defectType, cell, reactionParameter)
 	use mod_constants
 	use mod_globalVariables
 	use mod_structures
@@ -2336,15 +2336,15 @@ double precision function findReactionRateImpurityFine(CascadeCurrent, defectTyp
 		reactionRate=0d0
 	endif
 
-	findReactionRateImpurityFine=reactionRate
+	findRate_impurity_fine=reactionRate
 
 end function
 
 !**************************************************************************************************************
-!> Function findReactionRateDissoc(defectType, products, cell, reactionParameter)
+!> Function findRate_dissoc(defectType, products, cell, reactionParameter)
 !finds reaction rate for point defects to dissociate from clusters
 !**************************************************************************************************************
-double precision function findReactionRateDissoc(defectType, products, cell, reactionParameter)
+double precision function findRate_dissoc(defectType, products, cell, reactionParameter)
 	use mod_constants
 	use mod_globalVariables
 	use mod_structures
@@ -2381,15 +2381,15 @@ double precision function findReactionRateDissoc(defectType, products, cell, rea
 		reactionRate=0d0
 	end if
 
-	findReactionRateDissoc=reactionRate
+	findRate_dissoc=reactionRate
 
 end function
 
 !***************************************************************************************************
-!> Function findReactionRateDissocFine(CascadeCurrent, defectType, products, cell, reactionParameter)
+!> Function findRate_dissoc_fine(CascadeCurrent, defectType, products, cell, reactionParameter)
 !finds reaction rate for point defects to dissociate from clusters in the fine mesh (cascade)
 !***************************************************************************************************
-double precision function findReactionRateDissocFine(CascadeCurrent, defectType, products, cell, reactionParameter)
+double precision function findRate_dissoc_fine(CascadeCurrent, defectType, products, cell, reactionParameter)
 	use mod_constants
 	use mod_globalVariables
 	use mod_structures
@@ -2438,15 +2438,15 @@ double precision function findReactionRateDissocFine(CascadeCurrent, defectType,
 		reactionRate=0d0
 	endif
 
-	findReactionRateDissocFine=reactionRate
+	findRate_dissoc_fine=reactionRate
 
 end function
 
 !***************************************************************************************************
-!> Function findReactionRateSink(defectType, cell, reactionParameter)
+!> Function findRate_sink(defectType, cell, reactionParameter)
 !finds reaction rate for defects to get absorbed at sinks (typically matrix dislocations)
 !***************************************************************************************************
-double precision function findReactionRateSink(defectType, cell, reactionParameter)
+double precision function findRate_sink(defectType, cell, reactionParameter)
 	use mod_constants
 	use mod_globalVariables
 	use mod_structures
@@ -2480,15 +2480,15 @@ double precision function findReactionRateSink(defectType, cell, reactionParamet
 		reactionRate=0d0
 	endif
 
-	findReactionRateSink=reactionRate
+	findRate_sink=reactionRate
 
 end function
 
 !***************************************************************************************************
-!> Function findReactionRateSinkFine(CascadeCurrent, defectType, cell, reactionParameter)
+!> Function findRate_sink_fine(CascadeCurrent, defectType, cell, reactionParameter)
 !finds reaction rate for defects to get absorbed at sinks (typically matrix dislocations) in the fine mesh (cascade)
 !***************************************************************************************************
-double precision function findReactionRateSinkFine(CascadeCurrent, defectType, cell, reactionParameter)
+double precision function findRate_sink_fine(CascadeCurrent, defectType, cell, reactionParameter)
 	use mod_constants
 	use mod_globalVariables
 	use mod_structures
@@ -2531,15 +2531,15 @@ double precision function findReactionRateSinkFine(CascadeCurrent, defectType, c
 		reactionRate=0d0
 	end if
 
-	findReactionRateSinkFine=reactionRate
+	findRate_sink_fine=reactionRate
 
 end function
 
 !***************************************************************************************************
-!> Function findReactionRateMultiple(defectType1, defectType2, cell, reactionParameter)
+!> Function findRate_2nd(defectType1, defectType2, cell, reactionParameter)
 !finds reaction rate for defect clustering
 !***************************************************************************************************
-double precision function findReactionRateMultiple(defectType1, defectType2, cell, reactionParameter)
+double precision function findRate_2nd(defectType1, defectType2, cell, reactionParameter)
 	use mod_constants
 	use mod_globalVariables
 	use mod_structures
@@ -2666,15 +2666,15 @@ double precision function findReactionRateMultiple(defectType1, defectType2, cel
 		reactionRate=0d0
 	endif
 
-	findReactionRateMultiple=reactionRate
+	findRate_2nd=reactionRate
 
 end function
 
 !***************************************************************************************************
-!> Function findReactionRateMultipleFine(CascadeCurrent, defectType1, defectType2, cell, reactionParameter)
+!> Function findRate_2nd_fine(CascadeCurrent, defectType1, defectType2, cell, reactionParameter)
 !finds reaction rate for defect clustering in the fine mesh (Cascade)
 !***************************************************************************************************
-double precision function findReactionRateMultipleFine(CascadeCurrent,defectType1,defectType2,cell,reactionParameter)
+double precision function findRate_2nd_fine(CascadeCurrent,defectType1,defectType2,cell,reactionParameter)
 	use mod_constants
 	use mod_globalVariables
 	use mod_structures
@@ -2801,15 +2801,15 @@ double precision function findReactionRateMultipleFine(CascadeCurrent,defectType
 		reactionRate=0d0
 	end if
 
-	findReactionRateMultipleFine=reactionRate
+	findRate_2nd_fine=reactionRate
 
 end function
 
 !***************************************************************************************************
-!> Function findReactionRateDiff(defectType, cell1, proc1, cell2, proc2, dir, reactionParameter)
+!> Function findRate_diff(defectType, cell1, proc1, cell2, proc2, dir, reactionParameter)
 !finds reaction rate for defect diffusion between elements
 !***************************************************************************************************
-double precision function findReactionRateDiff(defectType, cell1, proc1, cell2, proc2, dir, reactionParameter)
+double precision function findRate_diff(defectType, cell1, proc1, cell2, proc2, dir, reactionParameter)
 	use mod_constants
 	use mod_globalVariables
 	use mod_structures
@@ -2838,9 +2838,9 @@ double precision function findReactionRateDiff(defectType, cell1, proc1, cell2, 
 			areaShared=area1
 			reactionRate=Diff*areaShared*(dble(num1)/Vol1)/length1
 			if(reactionRate > 0d0) then
-				findReactionRateDiff=reactionRate
+				findRate_diff=reactionRate
 			else
-				findReactionRateDiff=0d0
+				findRate_diff=0d0
 			end if
 		else	!cell-to-cell diffusion
 			!Find various parameters needed for reaction rate
@@ -2880,9 +2880,9 @@ double precision function findReactionRateDiff(defectType, cell1, proc1, cell2, 
 			reactionRate=alpha*Diff*areaShared*(dble(num1)/Vol1-dble(num2)/Vol2)/(length1/2d0 + length2/2d0)
 
 			if(reactionRate > 0d0) then
-				findReactionRateDiff=reactionRate
+				findRate_diff=reactionRate
 			else
-				findReactionRateDiff=0d0
+				findRate_diff=0d0
 			end if
 		end if
 	elseif(reactionParameter%functionType==15) then	!2D diffusion on a plane (rather than 3D diffusion in a volume)
@@ -2895,9 +2895,9 @@ double precision function findReactionRateDiff(defectType, cell1, proc1, cell2, 
 			lengthShared=length1
 			reactionRate=Diff*(lengthShared/length1)*(dble(num1)/area1)
 			if(reactionRate > 0d0) then
-				findReactionRateDiff=reactionRate
+				findRate_diff=reactionRate
 			else
-				findReactionRateDiff=0d0
+				findRate_diff=0d0
 			endif
 		else	!cell-to-cell diffusion
 			!Find various parameters needed for reaction rate
@@ -2931,12 +2931,12 @@ double precision function findReactionRateDiff(defectType, cell1, proc1, cell2, 
 				reactionRate=Diff*(lengthShared/(length1/2d0+length2/2d0))*(dble(num1)/area1-dble(num2)/area2)
 
 				if(reactionRate > 0d0) then
-					findReactionRateDiff=reactionRate
+					findRate_diff=reactionRate
 				else
-					findReactionRateDiff=0d0
+					findRate_diff=0d0
 				end if
 			else
-				findReactionRateDiff = 0d0	!Don't let 2D diffusion occur between different material types
+				findRate_diff = 0d0	!Don't let 2D diffusion occur between different material types
 			end if
 		end if
 
@@ -2949,7 +2949,7 @@ double precision function findReactionRateDiff(defectType, cell1, proc1, cell2, 
 		end if
 
 		if(grainNum==matNeighbor) then
-			findReactionRateDiff=0d0		!no dissociation from grain boundary to itself
+			findRate_diff=0d0		!no dissociation from grain boundary to itself
 		else
 
 			Diff=findDiffusivity(matNeighbor, defectType)		!diffusivity of the defect dissociating from the GB (in the bulk)
@@ -2961,23 +2961,23 @@ double precision function findReactionRateDiff(defectType, cell1, proc1, cell2, 
 			reactionRate=omega*dble(size)**(4d0/3d0)*Diff*dexp(-Eb/(kboltzmann*temperature))*dble(num1)
 
 			if(reactionRate > 0d0) then
-				findReactionRateDiff=reactionRate
+				findRate_diff=reactionRate
 			else
-				findReactionRateDiff=0d0
+				findRate_diff=0d0
 			end if
 		end if
 	else
 		write(*,*) 'error find reaction rate diffusion'
-		findReactionRateDiff=0d0
+		findRate_diff=0d0
 	end if
 
 end function
 
 !***************************************************************************************************
-!> Function findReactionRateCoarseToFine(defectType, cell, proc, numDefectsFine, reactionParameter)
+!> Function findRate_diff_coarseToFine(defectType, cell, proc, numDefectsFine, reactionParameter)
 !finds reaction rate for defect diffusion between a coarse mesh element and a fine (cascade) mesh
 !***************************************************************************************************
-double precision function findReactionRateCoarseToFine(defectType, cell, proc, numDefectsFine, reactionParameter)
+double precision function findRate_diff_coarseToFine(defectType, cell, proc, numDefectsFine, reactionParameter)
 	use mod_constants
 	use mod_globalVariables
 	use mod_structures
@@ -3018,22 +3018,22 @@ double precision function findReactionRateCoarseToFine(defectType, cell, proc, n
 		reactionRate=Diff*areaShared*(dble(num1)/Vol1-dble(num2)/Vol2)/(CoarseToFineLength)
 
 		if(reactionRate > 0d0) then
-			findReactionRateCoarseToFine=reactionRate
+			findRate_diff_coarseToFine=reactionRate
 		else
-			findReactionRateCoarseToFine=0d0
+			findRate_diff_coarseToFine=0d0
 		end if
 	else
 		write(*,*) 'error find reaction rate diffusion coarse to fine'
-		findReactionRateCoarseToFine=0d0
+		findRate_diff_coarseToFine=0d0
 	end if
 
 end function
 
 !***************************************************************************************************
-!> Function findReactionRateDiffFine(CascadeCurrent,defectType,cell1,proc1,cell2,proc2,dir,reactionParameter)
+!> Function findRate_diff_fine(CascadeCurrent,defectType,cell1,proc1,cell2,proc2,dir,reactionParameter)
 !finds reaction rate for defect diffusion between elements in the fine mesh (inside a cascade)
 !***************************************************************************************************
-double precision function findReactionRateDiffFine(CascadeCurrent,defectType,cell1,proc1,cell2,proc2,dir,reactionParameter)
+double precision function findRate_diff_fine(CascadeCurrent,defectType,cell1,proc1,cell2,proc2,dir,reactionParameter)
 	use mod_constants
 	use mod_globalVariables
 	use mod_structures
@@ -3077,9 +3077,9 @@ double precision function findReactionRateDiffFine(CascadeCurrent,defectType,cel
 			areaShared=area1
 			reactionRate=Diff*areaShared*(dble(num1)/Vol1)/length1
 			if(reactionRate > 0d0) then
-				findReactionRateDiffFine=reactionRate
+				findRate_diff_fine=reactionRate
 			else
-				findReactionRateDiffFine=0d0
+				findRate_diff_fine=0d0
 			end if
 
 		else if(cell2==0) then	!fine-to-coarse diffusion
@@ -3101,9 +3101,9 @@ double precision function findReactionRateDiffFine(CascadeCurrent,defectType,cel
 					(dble(num1)/Vol1-dble(num2)/coarseVolume)/(fineToCoarseLength)
 
 			if(reactionRate > 0d0) then
-				findReactionRateDiffFine=reactionRate
+				findRate_diff_fine=reactionRate
 			else
-				findReactionRateDiffFine=0d0
+				findRate_diff_fine=0d0
 			end if
 		else	!fine-to-fine diffusion
 
@@ -3132,25 +3132,25 @@ double precision function findReactionRateDiffFine(CascadeCurrent,defectType,cel
 
 			reactionRate=Diff*areaShared*(dble(num1)/Vol1-dble(num2)/Vol2)/(length1/2d0 + length2/2d0)
 			if(reactionRate > 0d0) then
-				findReactionRateDiffFine=reactionRate
+				findRate_diff_fine=reactionRate
 			else
-				findReactionRateDiffFine=0d0
+				findRate_diff_fine=0d0
 			end if
 		end if
 	else
 		write(*,*) 'error find reaction rate diffusion'
-		findReactionRateDiffFine=0d0
+		findRate_diff_fine=0d0
 	end if
 
 end function
 
 
 !***************************************************************************************************
-!subroutine findReactionInList(reactionUpdate, reactionPrev, cell, reactants, products, numReactants, numProducts)
+!subroutine findReaction_inList(reactionUpdate, reactionPrev, cell, reactants, products, numReactants, numProducts)
 !points reactionUpdate at the reaction in coarse or fine mesh with matching reactants and products in cell
 !If reaction is not present, reactionUpdate is not associated and reactionPrev points to the end of the list.
 !***************************************************************************************************
-subroutine findReactionInList(reactionUpdate, reactionPrev, cell, reactants, products, numReactants, numProducts)
+subroutine findReaction_inList(reactionUpdate, reactionPrev, cell, reactants, products, numReactants, numProducts)
 	use mod_constants
 	use mod_globalVariables
 	use mod_structures
@@ -3202,11 +3202,11 @@ subroutine findReactionInList(reactionUpdate, reactionPrev, cell, reactants, pro
 end subroutine
 
 !***************************************************************************************************
-!>Subroutine findReactionInListDiff(reactionUpdate, reactionPrev, reactants, cell1, cell2, proc1, proc2)
+!>Subroutine findReaction_diff_inList(reactionUpdate, reactionPrev, reactants, cell1, cell2, proc1, proc2)
 !Points reactionUpdate at the correct diffusion reaction in coarse or fine mesh with matching reactants and products in cells
 !If reaction is not present, reactionUpdate is not associated and reactionPrev points to the end of the list.
 !***************************************************************************************************
-subroutine findReactionInListDiff(reactionUpdate, reactionPrev, reactants, cell1, cell2, proc1, proc2)
+subroutine findReaction_diff_inList(reactionUpdate, reactionPrev, reactants, cell1, cell2, proc1, proc2)
 	use mod_constants
 	use mod_globalVariables
 	use mod_structures
@@ -3256,11 +3256,11 @@ subroutine findReactionInListDiff(reactionUpdate, reactionPrev, reactants, cell1
 end subroutine
 
 !***************************************************************************************************
-!>Subroutine findReactionInListMultiple(reactionUpdate, reactionPrev, cell, reactants, products, numReactants, numProducts)
+!>Subroutine findReaction_2nd_inList(reactionUpdate, reactionPrev, cell, reactants, products, numReactants, numProducts)
 !Points reactionUpdate at the clustering reaction in the coarse or fine mesh with matching reactants and products in cell
 !If reaction is not present, reactionUpdate is not associated and reactionPrev points to the end of the list.
 !***************************************************************************************************
-subroutine findReactionInListMultiple(reactionUpdate,reactionPrev,cell,reactants,products,numReactants,numProducts)
+subroutine findReaction_2nd_inList(reactionUpdate,reactionPrev,cell,reactants,products,numReactants,numProducts)
 	use mod_constants
 	use mod_globalVariables
 	use mod_structures

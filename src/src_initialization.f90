@@ -288,7 +288,7 @@ subroutine initializeReactionList()
 	use mod_constants
 	use mod_structures
 	use mod_globalVariables
-	use mod_reactionrates
+	use mod_updatereactions
 	implicit none
 
 	integer :: cell, i, j, reac, dir
@@ -320,7 +320,7 @@ subroutine initializeReactionList()
 					reactionList(cell)%cellNumber(i)=cell
 					reactionList(cell)%taskid(i)=myMesh(cell)%proc
 				end do
-				reactionList(cell)%reactionRate=findReactionRate(cell, ImplantReactions(reac))
+				reactionList(cell)%reactionRate=findRate_0th(cell, ImplantReactions(reac))
 				nullify(reactionList(cell)%next)
 
 			else if(implantType=='Cascade') then
@@ -339,7 +339,7 @@ subroutine initializeReactionList()
 				end do
 
 				if(implantScheme=='MonteCarlo') then
-					reactionList(cell)%reactionRate=findReactionRate(cell, ImplantReactions(reac))
+					reactionList(cell)%reactionRate=findRate_0th(cell, ImplantReactions(reac))
 				else if(implantScheme=='explicit') then
 					reactionList(cell)%reactionRate=0d0
 				end if
@@ -392,7 +392,7 @@ subroutine initializeReactionList()
 					reactionCurrent%cellNumber(i)=cell
 					reactionCurrent%taskid(i)=myMesh(cell)%proc
 				end do
-				reactionCurrent%reactionRate=findReactionRateMultiple(reactionCurrent%reactants(:,1), &
+				reactionCurrent%reactionRate=findRate_2nd(reactionCurrent%reactants(:,1), &
 						reactionCurrent%reactants(:,2), cell, ClusterReactions(reac))
 				nullify(reactionCurrent%next)
 			end if
@@ -448,7 +448,7 @@ subroutine initializeReactionList()
 						reactionCurrent%cellNumber(i)=cell
 						reactionCurrent%taskid(i)=myMesh(cell)%proc
 					end do
-					reactionCurrent%reactionRate=findReactionRateMultiple(reactionCurrent%reactants(:,1), &
+					reactionCurrent%reactionRate=findRate_2nd(reactionCurrent%reactants(:,1), &
 							reactionCurrent%reactants(:,2), cell, ClusterReactions(reac))
 					nullify(reactionCurrent%next)
 				end if
@@ -487,7 +487,7 @@ subroutine initializeReactionList()
 					reactionCurrent%cellNumber(2)=myMesh(cell)%neighbors(dir)
 					reactionCurrent%taskid(1)=myMesh(cell)%proc
 					reactionCurrent%taskid(2)=myMesh(cell)%neighborProcs(dir)
-					reactionCurrent%reactionRate=findReactionRateDiff(reactionCurrent%reactants(:,1),cell,myProc%taskid,&
+					reactionCurrent%reactionRate=findRate_diff(reactionCurrent%reactants(:,1),cell,myProc%taskid,&
 							myMesh(cell)%neighbors(dir),myMesh(cell)%neighborProcs(dir),dir,DiffReactions(reac))
 					nullify(reactionCurrent%next)
 				end do
@@ -521,7 +521,7 @@ subroutine initializeReactionList()
 					reactionCurrent%cellNumber(i)=cell
 					reactionCurrent%taskid(i)=myMesh(cell)%proc
 				end do
-				reactionCurrent%reactionRate=findReactionRateSink(reactionCurrent%reactants(:,1), cell, &
+				reactionCurrent%reactionRate=findRate_sink(reactionCurrent%reactants(:,1), cell, &
 						SinkReactions(reac))
 				nullify(reactionCurrent%next)
 			end if
@@ -560,7 +560,7 @@ subroutine initializeReactionList()
 						reactionCurrent%cellNumber(i)=cell
 						reactionCurrent%taskid(i)=myMesh(cell)%proc
 					end do
-					reactionCurrent%reactionRate=findReactionRateMultiple(reactionCurrent%reactants(:,1), &
+					reactionCurrent%reactionRate=findRate_2nd(reactionCurrent%reactants(:,1), &
 							reactionCurrent%reactants(:,2), cell, ClusterReactions(reac))
 					nullify(reactionCurrent%next)
 				end if
@@ -616,7 +616,7 @@ subroutine initializeReactionList()
 					reactionCurrent%cellNumber(2)=myMesh(cell)%neighbors(dir)
 					reactionCurrent%taskid(1)=myMesh(cell)%proc
 					reactionCurrent%taskid(2)=myMesh(cell)%neighborProcs(dir)
-					reactionCurrent%reactionRate=findReactionRateDiff(reactionCurrent%reactants(:,1), cell, &
+					reactionCurrent%reactionRate=findRate_diff(reactionCurrent%reactants(:,1), cell, &
 							myProc%taskid, myMesh(cell)%neighbors(dir), myMesh(cell)%neighborProcs(dir), dir, &
 							DiffReactions(reac))
 					nullify(reactionCurrent%next)
@@ -651,7 +651,7 @@ subroutine initializeReactionList()
 					reactionCurrent%cellNumber(i)=cell
 					reactionCurrent%taskid(i)=myMesh(cell)%proc
 				end do
-				reactionCurrent%reactionRate=findReactionRateSink(reactionCurrent%reactants(:,1), cell, &
+				reactionCurrent%reactionRate=findRate_sink(reactionCurrent%reactants(:,1), cell, &
 						SinkReactions(reac))
 				nullify(reactionCurrent%next)
 
@@ -697,7 +697,7 @@ subroutine initializeReactionList()
 						reactionCurrent%cellNumber(i)=cell
 						reactionCurrent%taskid(i)=myMesh(cell)%proc
 					end do
-					reactionCurrent%reactionRate=findReactionRateMultiple(reactionCurrent%reactants(:,1), &
+					reactionCurrent%reactionRate=findRate_2nd(reactionCurrent%reactants(:,1), &
 							reactionCurrent%reactants(:,2), cell, ClusterReactions(reac))
 					nullify(reactionCurrent%next)
 				end if
@@ -741,7 +741,7 @@ subroutine initializeReactionList()
 					reactionCurrent%taskid(i)=myMesh(cell)%proc
 				end do
 				!Find reaction rate for Cu clustering using ClusterReactions(reac), which is input from file.
-				reactionCurrent%reactionRate=findReactionRateMultiple(reactionCurrent%reactants(:,1), &
+				reactionCurrent%reactionRate=findRate_2nd(reactionCurrent%reactants(:,1), &
 						reactionCurrent%reactants(:,2), cell, ClusterReactions(reac))
 				nullify(reactionCurrent%next)
 			end if
@@ -859,7 +859,7 @@ subroutine initializeFineMesh(CascadeCurrent)
 	use mod_structures
 	use mod_globalVariables
 	use mod_randdp
-	use mod_reactionrates
+	use mod_updatereactions
 	implicit none
 
 	type(cascade), pointer, intent(inout) :: CascadeCurrent

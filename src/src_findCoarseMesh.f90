@@ -160,7 +160,7 @@ end subroutine
 !updates defect implantation rates due to change in volume
 !***************************************************************************************************
 subroutine updateImplantRateSingleCell(cell)
-	use mod_reactionrates
+	use mod_updatereactions
 	use mod_structures
 	use mod_globalVariables
 	implicit none
@@ -178,7 +178,7 @@ subroutine updateImplantRateSingleCell(cell)
 
 		totalRate=totalRate-reactionList(cell)%reactionRate
 		totalRateVol(cell)=totalRateVol(cell)-reactionList(cell)%reactionRate
-		reactionList(cell)%reactionRate=findReactionRate(cell, ImplantReactions(reac))
+		reactionList(cell)%reactionRate=findRate_0th(cell, ImplantReactions(reac))
 
 		totalRate=totalRate+reactionList(cell)%reactionRate
 		totalRateVol(cell)=totalRateVol(cell)+reactionList(cell)%reactionRate
@@ -195,7 +195,7 @@ subroutine updateImplantRateSingleCell(cell)
 		totalRateVol(cell)=totalRateVol(cell)-reactionList(cell)%reactionRate
 
 		if(implantScheme=='MonteCarlo') then
-			reactionList(cell)%reactionRate=findReactionRate(cell, ImplantReactions(reac))
+			reactionList(cell)%reactionRate=findRate_0th(cell, ImplantReactions(reac))
 
 			totalRate=totalRate+reactionList(cell)%reactionRate
 			totalRateVol(cell)=totalRateVol(cell)+reactionList(cell)%reactionRate
@@ -220,7 +220,7 @@ subroutine resetReactionListSingleCell(cell)
 	use mod_constants
 	use mod_globalVariables
 	use mod_structures
-	use mod_reactionrates
+	use mod_updatereactions
 	implicit none
 
 	integer, intent(in) :: cell
@@ -244,11 +244,11 @@ subroutine resetReactionListSingleCell(cell)
 			defectTemp(i)=defectUpdate%defectType(i)
 		end do
 
-		call addSingleDefectReactions(cell,defectTemp)
+		call update_1st_reactions(cell,defectTemp)
 
 		defectCurrent=>defectList(cell)
 		do while(associated(defectCurrent))
-			call addMultiDefectReactions(cell, defectTemp, defectCurrent%defectType)
+			call update_2nd_reactions(cell, defectTemp, defectCurrent%defectType)
 			defectCurrent=>defectCurrent%next
 		end do
 
@@ -276,14 +276,14 @@ subroutine resetReactionListSingleCell(cell)
 
 				if(localGrainID==neighborGrainID) then
 					!Allow diffusion between elements in the same grain
-					call addDiffusionReactions(cell, myMesh(cell)%neighbors(j),&
+					call update_diff_reactions(cell, myMesh(cell)%neighbors(j),&
 							myProc%taskid, myMesh(cell)%neighborProcs(j),j,defectTemp)
 				else
 					!Assume perfect sinks at grain boundaries - treat grain boundaries like free surfaces for now
-					call addDiffusionReactions(cell, 0, myProc%taskid, -1, j, defectTemp)
+					call update_diff_reactions(cell, 0, myProc%taskid, -1, j, defectTemp)
 				end if
 			else
-				call addDiffusionReactions(cell, myMesh(cell)%neighbors(j), myProc%taskid, &
+				call update_diff_reactions(cell, myMesh(cell)%neighbors(j), myProc%taskid, &
 						myMesh(cell)%neighborProcs(j), j, defectTemp)
 			end if
 
@@ -298,12 +298,12 @@ subroutine resetReactionListSingleCell(cell)
 				if(polycrystal=='yes' .AND. myMesh(myMesh(cell)%neighbors(j))%material == myMesh(cell)%material) then
 					!call addDiffusionReactions(myMesh(cell)%neighbors(j), cell, myProc%taskid, &
 					!		myProc%taskid, j, defectTemp)
-					call addDiffusionReactions(myMesh(cell)%neighbors(j),cell,myProc%taskid,myProc%taskid,dir,&
+					call update_diff_reactions(myMesh(cell)%neighbors(j),cell,myProc%taskid,myProc%taskid,dir,&
 							defectTemp)
 				else if(polycrystal=='no') then
 					!call addDiffusionReactions(myMesh(cell)%neighbors(j), cell, myProc%taskid, &
 					!		myProc%taskid, j, defectTemp)
-					call addDiffusionReactions(myMesh(cell)%neighbors(j),cell,myProc%taskid,myProc%taskid,dir,&
+					call update_diff_reactions(myMesh(cell)%neighbors(j),cell,myProc%taskid,myProc%taskid,dir,&
 							defectTemp)
 				end if
 			end if
@@ -315,7 +315,7 @@ subroutine resetReactionListSingleCell(cell)
 		CascadeCurrent=>ActiveCascades
 		do while(associated(CascadeCurrent))
 			if(CascadeCurrent%cellNumber==cell) then
-				call addDiffusionCoarseToFine(cell, myProc%taskid, CascadeCurrent, defectTemp)
+				call update_diff_coarseToFine(cell, myProc%taskid, CascadeCurrent, defectTemp)
 			end if
 			CascadeCurrent=>CascadeCurrent%next
 		end do
