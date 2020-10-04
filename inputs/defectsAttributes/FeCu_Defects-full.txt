@@ -14,9 +14,9 @@
 !    0th:        implantation (cascade or Fenkel pairs)
 !    1st:        dissociation
 !                sinkRemoval (absorption at sinks, include dislocation and grain boundary, sink strength: S=Sd+Sg)
-!                diffusion
 !                impurityTrapping
 !    2nd:        clustering
+!    diffusion
 ! 6) Identify the function form with ftype, including:
 !    6a)ftype   1~10 are used to calculate diffusivities
 !               1: immobile (0 parameters)
