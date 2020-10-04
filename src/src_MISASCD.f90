@@ -175,7 +175,6 @@ program MISASCD
 			write(*,*) 'Initial number of SIA', initialNumI
 			write(*,*) 'Equilibrium concentration of V', ceqV
 			write(*,*) 'Equilibrium concentration of SIA', ceqI
-			!write(*,*) 'firr',firr
 			write(*,*) 'totalRate', totalRate
 		end if
 

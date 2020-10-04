@@ -762,7 +762,7 @@ subroutine initializeBoundaryDefectList()
 
 	integer :: cell, dir, i, j, gCell, gNeighor
 	type(defect), pointer :: defectCurrent
-	integer, external :: findgNeighborPeriodic
+	integer, external :: findgNeighborGID
 
 	do cell=1,numCells
 		do dir=1,6
@@ -786,7 +786,7 @@ subroutine initializeBoundaryDefectList()
 
 					do i=1, initialNumI
 						gCell=myMesh(cell)%globalCell
-						gNeighor=findgNeighborPeriodic(gCell, dir)
+						gNeighor=findgNeighborGID(gCell, dir)
 						if(listVI(i,2)==gNeighor) then
 							if(defectCurrent%defectType(3)==1) then
 								defectCurrent%num=defectCurrent%num +1
@@ -810,7 +810,7 @@ subroutine initializeBoundaryDefectList()
 				if(initialNumV > 0) then
 					do i=1, initialNumV
 						gCell=myMesh(cell)%globalCell
-						gNeighor=findgNeighborPeriodic(gCell, dir)
+						gNeighor=findgNeighborGID(gCell, dir)
 						if(listVI(i,1)==gNeighor) then
 							if(defectCurrent%defectType(2)==1) then
 								defectCurrent%num=defectCurrent%num +1

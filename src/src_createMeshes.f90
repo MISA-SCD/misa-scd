@@ -279,21 +279,17 @@ subroutine initialMesh()
 		end do
 	end do
 
-	!Step 3d: assign neighbors and processor numbers for neighbors (connectivity in myMesh) - periodic or free surfaces in +/- z
-	!if(meshType=='periodic') then
-		call createConnectLocalPeriodic(length)
-	!else if(meshType=='freeSurfaces') then
-	!	call createConnectLocalFreeSurf(length)
-	!end if
+	!Step 3d: assign neighbors and processor numbers for neighbors (connectivity in myMesh) - periodic or free surfaces
+	call createMeshConnect(length)
 
 end subroutine
 
 !**************************************************************************************************
-!>Subroutine createConnectLocalPeriodic(length) (periodic boundary conditions)
+!>Subroutine createMeshConnect(length) (periodic boundary conditions or free surface)
 !It identifies the mesh and processor of neighboring meshes for each mesh.
 !The connectivity scheme is the same as in the global case, but neighboring processor numbers are used here.
 !**************************************************************************************************
-subroutine createConnectLocalPeriodic(length)
+subroutine createMeshConnect(length)
 	use mod_structures
 	use mod_globalVariables
 	implicit none
@@ -303,40 +299,27 @@ subroutine createConnectLocalPeriodic(length)
 	integer :: cell, localCell, maxElement
 	integer :: i, dir, tag
 	integer, allocatable :: send(:,:,:), recv(:,:)
-	integer, allocatable :: sendBuffer(:,:), recvBuffer(:,:)
 	integer :: materialBuff(numCells,6)
 	integer :: numSend(6)=0, numRecv(6)=0
-	integer :: sendRequest(6), recvRequest(6)
-	integer :: sendStatus(MPI_STATUS_SIZE,6), recvStatus(MPI_STATUS_SIZE,6), status(MPI_STATUS_SIZE)
+	integer :: status(MPI_STATUS_SIZE)
 	integer :: tempRecv
-	logical :: flagProbe
-	!************************************************
-	!periodic boundary condition version
-	!************************************************
+
 	allocate(send(2, numxLocal*numyLocal*numzLocal,6))
-	!allocate(recv(2, numxLocal*numyLocal*numzLocal,6))
 
 	do cell=1,numCells
-
 		!Right (+x)
 		if(mod(cell,numxLocal)==0) then !identify cell to the right
-			!If we are on the right edge of the local mesh, identify the neighboring processor
 			myMesh(cell)%neighborProcs(1)=myProc%procNeighbor(1)
 			if(myProc%procNeighbor(1)==-1) then	!+x free surface
 				myMesh(cell)%neighbors(1)=0
-			else if(myMesh(cell)%neighborProcs(1)==myProc%taskid) then
-				myMesh(cell)%neighbors(1)=cell-numxLocal+1	!use periodic rules from uniform cubic mesh
+			else if(myMesh(cell)%neighborProcs(1)==myProc%taskid) then	!+x periodic
+				myMesh(cell)%neighbors(1)=cell-numxLocal+1
 			else
-				!add these items to sendList, a buffer that is used at the end of this subroutine to communicate
-				!with other processors via MPI about which elements have neighbors in other cells
-				!(this cell sends information about itself, and the nieghboring cell will do the same in its processor)
-				numSend(1)=numSend(1)+1				!count the number of items in buffer
+				numSend(1)=numSend(1)+1			!count the number of items in buffer
 				send(1,numSend(1),1)=cell		!localCellID in this processor
 				send(2,numSend(1),1)=myMesh(cell)%material	!Material ID number that this element is composed of
 			end if
 		else
-			!if we are still inside the local mesh, don't need to communicate with neighboring cells and
-			!just use the uniform cubic connectivity rules (increase x, then y, then z)
 			myMesh(cell)%neighbors(1)=cell+1
 			myMesh(cell)%neighborProcs(1)=myProc%taskid
 		end if
@@ -434,11 +417,7 @@ subroutine createConnectLocalPeriodic(length)
 
 	end do
 
-	!Now that we have created SendList, the buffer that contains information about which elements in myMesh
-	!have neighbors on other processors, we send out the cell numbers of these cells to the neighboring procs.
-	!We label each MPI_SEND with globalCell so that the receiving processor pairs cells correctly using globalNeighbor (see below)
 	maxElement=0
-
 	!*******************************************************
 	!Send
 	do dir=1,6
@@ -469,8 +448,6 @@ subroutine createConnectLocalPeriodic(length)
 					comm,status,ierr)
 			do i=1, numRecv(dir)
 				localCell=send(1,i,dir)
-				!	myMesh(localCell)%neighbors(dir)=recvBuffer(1,i)
-				!	materialBuff(localCell,dir)=recvBuffer(2,i)
 				myMesh(localCell)%neighbors(dir)=recv(1,i)
 				materialBuff(localCell,dir)=recv(2,i)
 			end do
@@ -493,8 +470,7 @@ subroutine createConnectLocalPeriodic(length)
 	end do
 
 	allocate(myBoundary(maxElement,6))	!6 directions, maxElement elements in each direction (more than needed)
-
-!initialize myBoundary with 0 in localNeighbor - signal that myBoundary is not attached to anything
+	!initialize myBoundary with 0 in localNeighbor - signal that myBoundary is not attached to anything
 	do dir=1,6
 		do i=1,maxElement
 			myBoundary(i,dir)%localNeighbor=0	!default, says that this is not a real element of myBoundary.
@@ -522,249 +498,12 @@ subroutine createConnectLocalPeriodic(length)
 
 end subroutine
 
-!**************************************************************************************************
-!>Subroutine createConnectLocalFreeSurf(length) (free surfaces in z-direction and periodic boundary conditions in other directions)
-!This is the same as the previous subroutine except if the cell is at the free surface, its connectivity cell number
-!is 0 and the processor number is -1.
-!**************************************************************************************************
-subroutine createConnectLocalFreeSurf(length)
-	use mod_structures
-	use mod_globalVariables
-	implicit none
-	include 'mpif.h'
-
-	double precision, intent(in) :: length
-	integer :: cell, maxElement,localCell
-	integer :: globalCell, globalNeighbor
-	integer :: i,j, dir, tag
-	integer :: numSend(6), numRecv(6)
-	integer, allocatable :: sendBuffer(:,:,:)
-	integer, allocatable :: recvBuffer(:,:)
-	integer :: materialBuff(numxLocal*numyLocal*numzLocal,6)	!materialID of boundary meshes
-	integer :: sendRequest(6), recvRequest(6)
-	integer :: sendStatus(MPI_STATUS_SIZE,6), recvStatus(MPI_STATUS_SIZE,6), status(MPI_STATUS_SIZE)
-	integer :: tempRecv
-	logical :: flagProbe
-	integer, external :: findgNeighborFreeSurf
-
-	numSend(1:6)=0
-	numRecv(1:6)=0
-	!******************************************************************
-	!free surfaces at z=0 and z=zmax(Global) boundary condition version
-	!******************************************************************
-	allocate(sendBuffer(2, numxLocal*numyLocal*numzLocal,6))
-
-	do cell=1,numCells
-		if(mod(cell,numxLocal)==0) then !identify cell to the right
-
-			myMesh(cell)%neighborProcs(1)=myProc%procNeighbor(1)
-			if(myMesh(cell)%neighborProcs(1)==myProc%taskid) then
-				myMesh(cell)%neighbors(1)=cell-numxLocal+1
-			else
-				numSend(1)=numSend(1)+1				!count the number of items in buffer
-				sendBuffer(1,numSend(1),1)=cell		!localCellID in this processor
-				sendBuffer(2,numSend(1),1)=myMesh(cell)%material
-
-			end if
-		else
-			myMesh(cell)%neighbors(1)=cell+1
-			myMesh(cell)%neighborProcs(1)=myProc%taskid
-		end if
-
-		if(mod(cell+numxLocal-1,numxLocal)==0) then !identify cell to the left
-
-			myMesh(cell)%neighborProcs(2)=myProc%procNeighbor(2)
-			if(myMesh(cell)%neighborProcs(2)==myProc%taskid) then
-				myMesh(cell)%neighbors(2)=cell+numxLocal-1
-			else
-				numSend(2)=numSend(2)+1
-				sendBuffer(1,numSend(2),2)=cell
-				sendBuffer(2,numSend(2),2)=myMesh(cell)%material
-
-			end if
-		else
-			myMesh(cell)%neighbors(2)=cell-1
-			myMesh(cell)%neighborProcs(2)=myProc%taskid
-		end if
-
-		if(mod(cell,numxLocal*numyLocal) > numxLocal*(numyLocal-1) .OR. mod(cell,numxLocal*numyLocal)==0) then
-
-			myMesh(cell)%neighborProcs(3)=myProc%procNeighbor(3)
-			if(myMesh(cell)%neighborProcs(3)==myProc%taskid) then
-				myMesh(cell)%neighbors(3)=cell-(numxLocal*(numyLocal-1))
-			else
-				numSend(3)=numSend(3)+1
-				sendBuffer(1,numSend(3),3)=cell
-				sendBuffer(2,numSend(3),3)=myMesh(cell)%material
-
-			end if
-		else
-			myMesh(cell)%neighbors(3)=cell+numxLocal
-			myMesh(cell)%neighborProcs(3)=myProc%taskid
-		end if
-
-
-		if(mod(cell,numxLocal*numyLocal) <= numxLocal .AND. (mod(cell, numxLocal*numyLocal) /= 0 &
-				.OR. numyLocal==1)) then
-			myMesh(cell)%neighborProcs(4)=myProc%procNeighbor(4)
-			if(myMesh(cell)%neighborProcs(4)==myProc%taskid) then
-				myMesh(cell)%neighbors(4)=cell+(numxLocal*(numyLocal-1))
-			else
-				numSend(4)=numSend(4)+1
-				sendBuffer(1,numSend(4),4)=cell
-				sendBuffer(2,numSend(4),4)=myMesh(cell)%material
-
-			end if
-		else
-			myMesh(cell)%neighbors(4)=cell-numxLocal
-			myMesh(cell)%neighborProcs(4)=myProc%taskid
-		end if
-
-		if(mod(cell,numxLocal*numyLocal*numzLocal) > numxLocal*numyLocal*(numzLocal-1) .OR. &
-				mod(cell, numxLocal*numyLocal*numzLocal)==0) then
-
-			myMesh(cell)%neighborProcs(5)=myProc%procNeighbor(5)
-			globalCell=myMesh(cell)%globalCell
-			globalNeighbor=findgNeighborFreeSurf(globalCell, 5)
-			if(globalNeighbor==0) then
-				!free surface, set proc id to -1 and cell id to 0 to indicate free surface
-				myMesh(cell)%neighbors(5)=0
-				myMesh(cell)%neighborProcs(5)=-1
-			else
-				if(myMesh(cell)%neighborProcs(5)==myProc%taskid) then
-					myMesh(cell)%neighbors(5)=cell-(numxLocal*numyLocal*(numzLocal-1))
-				else
-					numSend(5)=numSend(5)+1
-					sendBuffer(1,numSend(5),5)=cell
-					sendBuffer(2,numSend(5),5)=myMesh(cell)%material
-
-				end if
-			end if
-		else
-			myMesh(cell)%neighbors(5)=cell+numxLocal*numyLocal
-			myMesh(cell)%neighborProcs(5)=myProc%taskid
-		end if
-
-		if(mod(cell,numxLocal*numyLocal*numzLocal) <= numxLocal*numyLocal .AND. &
-				(mod(cell,numxLocal*numyLocal*numzLocal) /= 0 .OR. numzLocal==1)) then
-
-			myMesh(cell)%neighborProcs(6)=myProc%procNeighbor(6)
-			globalCell=myMesh(cell)%globalCell
-			globalNeighbor=findgNeighborFreeSurf(globalCell, 6)
-			if(globalNeighbor==0) then
-				!free surface, set proc id to -1 and cell id to 0 to indicate free surface
-				myMesh(cell)%neighbors(6)=0
-				myMesh(cell)%neighborProcs(6)=-1
-			else
-				if(myMesh(cell)%neighborProcs(6)==myProc%taskid) then
-					myMesh(cell)%neighbors(6)=cell+(numxLocal*numyLocal*(numzLocal-1))
-				else
-					numSend(6)=numSend(6)+1
-					sendBuffer(1,numSend(6),6)=cell
-					sendBuffer(2,numSend(6),6)=myMesh(cell)%material
-
-				end if
-			end if
-		else
-			myMesh(cell)%neighbors(6)=cell-numxLocal*numyLocal
-			myMesh(cell)%neighborProcs(6)=myProc%taskid
-		end if
-	end do
-
-	!***************************************************************
-	!Send
-	do dir=1,6
-		if(myProc%procNeighbor(dir)/=myProc%taskid) then
-			call MPI_ISEND(sendBuffer(1,1,dir), 2*numSend(dir), MPI_INTEGER, myProc%procNeighbor(dir), &
-					200+dir, comm, sendRequest(dir),ierr)
-		end if
-	end do
-
-	!************************************************************
-	!Recv
-	do dir=1,6
-
-		if(mod(dir,2)==0) then
-			tag = dir-1
-		else
-			tag = dir+1
-		end if
-
-		if(myProc%procNeighbor(dir)/=myProc%taskid) then
-			numRecv(dir)=numSend(dir)
-			allocate(recvBuffer(2,numRecv(dir)))
-			call MPI_IRECV(recvBuffer, numRecv(dir)*2, MPI_INTEGER, myProc%procNeighbor(dir), &
-					200+tag, comm, recvRequest(dir), ierr)
-			call MPI_WAIT(recvRequest(dir),recvStatus(1,dir),ierr)
-
-			do i=1, numRecv(dir)
-				localCell=sendBuffer(1,i,dir)
-				myMesh(localCell)%neighbors(dir)=recvBuffer(1,i)
-				materialBuff(localCell,dir)=recvBuffer(2,i)
-
-			end do
-			deallocate(recvBuffer)
-		end if
-	end do
-
-	do dir=1,6
-		if(myProc%procNeighbor(dir)/=myProc%taskid) then
-			call MPI_WAIT(sendRequest(dir),sendStatus(1,dir),ierr)
-		end if
-	end do
-
-	deallocate(sendBuffer)
-
-	!***************************************************************************************************
-	!Initializing myBoundary with elements that are in neighboring processors that bound this one
-	!***************************************************************************************************
-	maxElement=0
-	do i=1, numCells
-		do dir=1, 6
-			if(myMesh(i)%neighborProcs(dir) /= myProc%taskid) then	!we are pointing to a different proc
-				if(myMesh(i)%neighbors(dir) > maxElement) then		!searching for the max element number in a neighbor
-					maxElement=myMesh(i)%neighbors(dir)
-				end if
-			end if
-		end do
-	end do
-
-	allocate(myBoundary(maxElement,6))	!6 directions, maxElement elements in each direction (more than needed)
-
-	!initialize myBoundary with 0 in localNeighbor - signal that myBoundary is not attached to anything
-	do i=1,maxElement
-		do dir=1,6
-			myBoundary(i,dir)%localNeighbor=0	!default, says that this is not a real element of myBoundary.
-			myBoundary(i,dir)%proc=-10		!default, says that this is not a real element of myBoundary.
-			myBoundary(i,dir)%material=0
-			myBoundary(i,dir)%length=0d0
-			myBoundary(i,dir)%volume=0d0
-		end do
-	end do
-
-	do i=1,numCells
-		do dir=1,6
-			if(myMesh(i)%neighborProcs(dir) == -1) then										!this is a free surface
-				!do nothing
-			else if(myMesh(i)%neighborProcs(dir) /= myProc%taskid .AND. myMesh(i)%neighborProcs(dir) /= -1) then
-				myBoundary(myMesh(i)%neighbors(dir),dir)%proc=myMesh(i)%neighborProcs(dir)	!set proc # of elements in myBoundary
-				myBoundary(myMesh(i)%neighbors(dir),dir)%length=length						!set length of elements in myBoundary
-				myBoundary(myMesh(i)%neighbors(dir),dir)%volume=length**3d0					!set volume of elements in myBoundary (changes with cascade addition)
-				myBoundary(myMesh(i)%neighbors(dir),dir)%material=materialBuff(i,dir)
-				myBoundary(myMesh(i)%neighbors(dir),dir)%localNeighbor=i
-
-			end if
-		end do
-	end do
-
-end subroutine
-
 !***************************************************************************************
-!>Function findgNeighborPeriodic(globalID, dir)
+!>Function findgNeighborGID(globalID, dir)
 !Inputs: globalID, direction
 !Output: globalNeighborID of the globalID in the direaction
 !***************************************************************************************
-integer function findgNeighborPeriodic(globalID, dir)
+integer function findgNeighborGID(globalID, dir)
 	use mod_structures
 	use mod_globalVariables
 	implicit none
@@ -772,9 +511,6 @@ integer function findgNeighborPeriodic(globalID, dir)
 	integer, intent(in) :: globalID, dir
 	integer :: neighborID
 
-	!************************************************
-	!periodic boundary condition version
-	!************************************************
 	if(dir==1) then	!+x
 		if(mod(globalID,numx)==0) then !identify cell to the right
 			if(periods(1) .eqv. .true.) then	!periodic
@@ -837,66 +573,8 @@ integer function findgNeighborPeriodic(globalID, dir)
 		end if
 	end if
 
-	findgNeighborPeriodic=neighborID
+	findgNeighborGID=neighborID
 
 end function
 
-!***************************************************************************************
-!>Function findgNeighborFreeSurf(globalID, dir)
-!Inputs: globalID, direction
-!Output: globalNeighborID of the globalID in the direaction
-!***************************************************************************************
-integer function findgNeighborFreeSurf(globalID, dir)
-	use mod_structures
-	use mod_globalVariables
-	implicit none
-
-	integer, intent(in) :: globalID, dir
-	integer :: neighborID
-
-	!************************************************
-	!PBCs in x and y, free in z (cell 0 represents free surface)
-	!************************************************
-
-	if(dir==1) then
-		if(mod(globalID,numx)==0) then !identify cell to the right
-			neighborID=globalID-numx+1
-		else
-			neighborID=globalID+1
-		end if
-	else if(dir==2) then
-		if(mod(globalID+numx-1,numx)==0) then !identify cell to the left
-			neighborID=globalID+numx-1
-		else
-			neighborID=globalID-1
-		end if
-	else if(dir==3) then
-		if(mod(globalID,numx*numy) > numx*(numy-1) .OR. mod(globalID,numx*numy)==0) then
-			neighborID=globalID-(numx*(numy-1))
-		else
-			neighborID=globalID+numx
-		end if
-	else if(dir==4) then
-		if(mod(globalID,numx*numy) <= numx .AND. (mod(globalID, numx*numy) /= 0 .OR. numy==1)) then
-			neighborID=globalID+(numx*(numy-1))
-		else
-			neighborID=globalID-numx
-		end if
-	else if(dir==5) then
-		if(mod(globalID,numx*numy*numz) > numx*numy*(numz-1) .OR. mod(globalID, numx*numy*numz)==0) then
-			neighborID=0
-		else
-			neighborID=globalID+numx*numy
-		end if
-	else if(dir==6) then
-		if(mod(globalID,numx*numy*numz) <= numx*numy .AND. (mod(globalID,numx*numy*numz) /=0 .OR. numz==1)) then
-			neighborID=0
-		else
-			neighborID=globalID-numx*numy
-		end if
-	end if
-
-	findgNeighborFreeSurf=neighborID
-
-end function
 
