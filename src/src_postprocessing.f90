@@ -13,7 +13,7 @@ subroutine outputDefectsXYZ()
 	type(defect), pointer :: defectCurrent
 	integer, allocatable :: cellDefects(:)
 	integer :: status(MPI_STATUS_SIZE), recvCells, count, numRecv
-	integer, allocatable :: senBuff(:,:), recvBuff(:,:)
+	integer, allocatable :: sendBuff(:,:), recvBuff(:,:)
 	integer :: pointS, pointV, pointSIA		!number of point defects (solute atom, vacancy, self-interstitial atom)
 	!integer :: totalVac, totalSIA			!total retained vacancies/self-interstitial atoms in the whole system
 	integer :: numS, numV, numSIA, numSV	!total number of solute atoms/vacancies/SIAs in clusters

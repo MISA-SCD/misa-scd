@@ -267,7 +267,7 @@ subroutine initialMesh()
 				myMesh(localElem)%length=length
 				myMesh(localElem)%volume=length**3d0
 
-				myMesh(localElem)%numNeighbors=0
+				myMesh(localElem)%numNeighbors=1
 				myMesh(localElem)%neighbors=0
 				myMesh(localElem)%neighborProcs=-1
 				!allocate(myMesh(localElem)%neighbors(6))

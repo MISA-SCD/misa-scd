@@ -7,10 +7,10 @@ length (nm)
 10d0
 
 numx
-10
+40
 numy
-10
+30
 numz
-10
+20
 
 

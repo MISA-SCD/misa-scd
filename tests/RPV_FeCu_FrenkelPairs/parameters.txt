@@ -102,7 +102,7 @@ no
 stadatToggle    !‘yes’ or ‘no’: toggles output of stadat.out file
 no
 
-rawdatToggle    !‘yes’ or ‘no’: toggles output of raw data files
+xyzdatToggle    !‘yes’ or ‘no’: toggles output of xyzdata.out files
 no
 
 minSCluster      !Only n>minSCluster SnVm and Sn clusters are counted
