@@ -152,10 +152,10 @@ double precision function permanentCv()
     do i=1,numSingleDiff
         if(DiffSingle(i)%defectType(1)==0 .AND. DiffSingle(i)%defectType(2)==1 .AND. &
                 DiffSingle(i)%defectType(3)==0 .AND. DiffSingle(i)%defectType(4)==0) then   !0_V_0_0
-            diffV = DiffSingle(i)%D*dexp(-DiffSingle(i)%Em/(kboltzmann*temperature))
+            diffV = DiffSingle(i)%D0*dexp(-DiffSingle(i)%Em/(kboltzmann*temperature))
         else if(DiffSingle(i)%defectType(1)==0 .AND. DiffSingle(i)%defectType(2)==0 .AND. &
                 DiffSingle(i)%defectType(3)==1 .AND. DiffSingle(i)%defectType(4)==0) then   !0_0_I_0
-            diffI = DiffSingle(i)%D*dexp(-DiffSingle(i)%Em/(kboltzmann*temperature))
+            diffI = DiffSingle(i)%D0*dexp(-DiffSingle(i)%Em/(kboltzmann*temperature))
         end if
     end do
 

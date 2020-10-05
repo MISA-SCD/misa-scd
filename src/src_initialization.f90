@@ -771,15 +771,15 @@ subroutine initializeBoundaryDefectList()
 					myMesh(cell)%neighborProcs(dir) == myProc%procNeighbor(dir) .AND. &
 					myMesh(cell)%neighborProcs(dir) /= -1) then
 
-				allocate(myBoundary(myMesh(cell)%neighbors(dir),dir)%defectList)
-				defectCurrent=>myBoundary(myMesh(cell)%neighbors(dir),dir)%defectList
+				allocate(myGhost(myMesh(cell)%neighbors(dir),dir)%defectList)
+				defectCurrent=>myGhost(myMesh(cell)%neighbors(dir),dir)%defectList
 				allocate(defectCurrent%defectType(SPECIES))
 				do i=1, SPECIES
 					defectCurrent%defectType(i)=0
 				end do
 				defectCurrent%num=0
 				defectCurrent%cellNumber=myMesh(cell)%neighbors(dir)
-				nullify(myBoundary(myMesh(cell)%neighbors(dir),dir)%defectList%next)
+				nullify(myGhost(myMesh(cell)%neighbors(dir),dir)%defectList%next)
 
 				!SIA_1
 				if(initialNumI > 0) then

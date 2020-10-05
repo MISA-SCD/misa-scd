@@ -520,7 +520,7 @@ subroutine readDefectAttributes(filename)
 	do i=1,numSingleDiff
 		allocate(DiffSingle(i)%defectType(SPECIES))
 		read(ATTRFILE,*) (DiffSingle(i)%defectType(j),j=1,SPECIES)
-		read(ATTRFILE,*) char, DiffSingle(i)%D, char, DiffSingle(i)%Em
+		read(ATTRFILE,*) char, DiffSingle(i)%D0, char, DiffSingle(i)%Em
 	end do
 
 	do while(flag .eqv. .FALSE.)
@@ -540,7 +540,7 @@ subroutine readDefectAttributes(filename)
 		allocate(DiffFunc(i)%max(SPECIES))
 		read(ATTRFILE,*) char, (DiffFunc(i)%min(j),j=1,SPECIES)
 		read(ATTRFILE,*) char, (DiffFunc(i)%max(j),j=1,SPECIES)
-		read(ATTRFILE,*) char, DiffFunc(i)%functionType
+		read(ATTRFILE,*) char, DiffFunc(i)%fType
 		read(ATTRFILE,*) char, DiffFunc(i)%numParam
 		allocate(DiffFunc(i)%parameters(DiffFunc(i)%numParam))
 		if(DiffFunc(i)%numParam /= 0) then
@@ -594,7 +594,7 @@ subroutine readDefectAttributes(filename)
 		allocate(BindFunc(i)%max(SPECIES))
 		read(ATTRFILE,*) char, (BindFunc(i)%min(j),j=1,SPECIES)
 		read(ATTRFILE,*) char, (BindFunc(i)%max(j),j=1,SPECIES)
-		read(ATTRFILE,*) char, BindFunc(i)%functionType
+		read(ATTRFILE,*) char, BindFunc(i)%fType
 		read(ATTRFILE,*) char, BindFunc(i)%numParam
 		allocate(BindFunc(i)%parameters(BindFunc(i)%numParam))
 		if(BindFunc(i)%numParam /= 0) then
@@ -626,7 +626,7 @@ subroutine readDefectAttributes(filename)
 		allocate(DissocReactions(i)%max(SPECIES))
 		read(ATTRFILE,*) char, (DissocReactions(i)%min(j),j=1,SPECIES)
 		read(ATTRFILE,*) char, (DissocReactions(i)%max(j),j=1,SPECIES)
-		read(ATTRFILE,*) char, DissocReactions(i)%functionType
+		read(ATTRFILE,*) char, DissocReactions(i)%fType
 	end do
 
 	do while(flag .eqv. .FALSE.)
@@ -650,7 +650,7 @@ subroutine readDefectAttributes(filename)
 		allocate(DiffReactions(i)%max(SPECIES))
 		read(ATTRFILE,*) char, (DiffReactions(i)%min(j),j=1,SPECIES)
 		read(ATTRFILE,*) char, (DiffReactions(i)%max(j),j=1,SPECIES)
-		read(ATTRFILE,*) char, DiffReactions(i)%functionType
+		read(ATTRFILE,*) char, DiffReactions(i)%fType
 	end do
 
 	do while(flag .eqv. .FALSE.)
@@ -673,7 +673,7 @@ subroutine readDefectAttributes(filename)
 		allocate(SinkReactions(i)%max(SPECIES))
 		read(ATTRFILE,*) char, (SinkReactions(i)%min(j),j=1,SPECIES)
 		read(ATTRFILE,*) char, (SinkReactions(i)%max(j),j=1,SPECIES)
-		read(ATTRFILE,*) char, SinkReactions(i)%functionType
+		read(ATTRFILE,*) char, SinkReactions(i)%fType
 	end do
 
 	do while(flag .eqv. .FALSE.)
@@ -697,7 +697,7 @@ subroutine readDefectAttributes(filename)
 		allocate(ImpurityReactions(i)%max(SPECIES))
 		read(ATTRFILE,*) char, (ImpurityReactions(i)%min(j),j=1,SPECIES)
 		read(ATTRFILE,*) char, (ImpurityReactions(i)%max(j),j=1,SPECIES)
-		read(ATTRFILE,*) char, ImpurityReactions(i)%functionType
+		read(ATTRFILE,*) char, ImpurityReactions(i)%fType
 	end do
 
 	do while(flag .eqv. .FALSE.)
@@ -725,7 +725,7 @@ subroutine readDefectAttributes(filename)
 			ClusterReactions(i)%products(j,1)=ClusterReactions(i)%reactants(j,1)+&
 					ClusterReactions(i)%reactants(j,2)
 		end do
-		read(ATTRFILE,*) char, ClusterReactions(i)%functionType
+		read(ATTRFILE,*) char, ClusterReactions(i)%fType
 	end do
 
 	do while(flag .eqv. .FALSE.)
@@ -753,7 +753,7 @@ subroutine readDefectAttributes(filename)
 			allocate(ImplantReactions(i)%products(SPECIES,ImplantReactions(i)%numProducts))
 			read(ATTRFILE,*) (ImplantReactions(i)%products(j,1),j=1,SPECIES),&
 					(ImplantReactions(i)%products(j,2),j=1,SPECIES)
-			read(ATTRFILE,*) char, ImplantReactions(i)%functionType
+			read(ATTRFILE,*) char, ImplantReactions(i)%fType
 
 		else if(i==2) then !read in cascade reaction parameters
 			do while(flag .eqv. .FALSE.)
@@ -766,7 +766,7 @@ subroutine readDefectAttributes(filename)
 
 			ImplantReactions(i)%numReactants=-10
 			ImplantReactions(i)%numProducts=0
-			read(ATTRFILE,*) char, ImplantReactions(i)%functionType
+			read(ATTRFILE,*) char, ImplantReactions(i)%fType
 		else
 			write(*,*) 'error numImplantReac'
 		end if
@@ -805,10 +805,10 @@ subroutine readCascadeList(filename)
 		read(CASFILE,*)
 		read(CASFILE,*) numDefects
 		read(CASFILE,*) cascadeCurrent%numDisplacedAtoms
-		cascadeCurrent%NumDefectsTotal=numDefects
+		cascadeCurrent%numDefectsTotal=numDefects
 		allocate(cascadeCurrent%ListOfDefects)
 		defectCurrent=>cascadeCurrent%ListOfDefects
-		nullify(cascadeCurrent%nextCascade)
+		nullify(cascadeCurrent%next)
 		nullify(defectCurrent%next)
 
 		do j=1,numDefects
@@ -824,8 +824,8 @@ subroutine readCascadeList(filename)
 		end do
 
 		if(i /= numCascades) then
-			allocate(cascadeCurrent%nextCascade)
-			cascadeCurrent=>cascadeCurrent%nextCascade
+			allocate(cascadeCurrent%next)
+			cascadeCurrent=>cascadeCurrent%next
 		end if
 	end do
 	nullify(defectCurrent)

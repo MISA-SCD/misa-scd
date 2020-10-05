@@ -1717,11 +1717,11 @@ subroutine updateDefectList(reactionCurrent, defectUpdateCurrent, CascadeCurrent
 						!create a new element in defectUpdate and assign all variables except for num and dir (will do later)
 						do j=1,6
 
-							!if myBoundary at this cell has defectList associated, then it is a boundary element for a local element in this cell.
+							!if myGhost at this cell has defectList associated, then it is a boundary element for a local element in this cell.
 							!NOTE: this will not work in the case of a non-uniform mesh (because there could be more
 							!than one local neighbor, will have to change to localNeighbor())
-							if(myBoundary(reactionCurrent%cellNumber(i+reactionCurrent%numReactants),&
-									j)%localNeighbor /= 0 .AND. myBoundary(reactionCurrent%cellNumber(i+&
+							if(myGhost(reactionCurrent%cellNumber(i+reactionCurrent%numReactants),&
+									j)%localNeighbor /= 0 .AND. myGhost(reactionCurrent%cellNumber(i+&
 									reactionCurrent%numReactants),j)%proc == reactionCurrent%taskid(i+&
 									reactionCurrent%numReactants)) then
 
@@ -1738,8 +1738,8 @@ subroutine updateDefectList(reactionCurrent, defectUpdateCurrent, CascadeCurrent
 								defectUpdateCurrent%cascadeNumber=0	!not inside a cascade
 
 								!This information is used to tell us which element in the local
-								!processor bounds this element in myBoundary
-								defectUpdateCurrent%neighbor=myBoundary(reactionCurrent%cellNumber(i+&
+								!processor bounds this element in myGhost
+								defectUpdateCurrent%neighbor=myGhost(reactionCurrent%cellNumber(i+&
 										reactionCurrent%numReactants),j)%localNeighbor
 
 								do l=1,SPECIES
@@ -1747,16 +1747,16 @@ subroutine updateDefectList(reactionCurrent, defectUpdateCurrent, CascadeCurrent
 									defectUpdateCurrent%defectType(l)=reactionCurrent%products(l,i)
 								end do
 
-								!Find defect in defect list on myBoundary
+								!Find defect in defect list on myGhost
 								nullify(defectPrev)
-								defectCurrent=>myBoundary(reactionCurrent%cellNumber(i+&
+								defectCurrent=>myGhost(reactionCurrent%cellNumber(i+&
 										reactionCurrent%numReactants),j)%defectList
 
 								call findDefectInList(defectCurrent, defectPrev, products)
 
 								!*****************************************************************
-								!Update defects within myBoundary
-								!UpdateDefectList: Insert defect in myBoundary(dir,cell)%defectList
+								!Update defects within myGhost
+								!UpdateDefectList: Insert defect in myGhost(dir,cell)%defectList
 								!*****************************************************************
 
 								if(associated(defectCurrent)) then !if we aren't at the end of the list
@@ -1907,7 +1907,7 @@ subroutine updateDefectList(reactionCurrent, defectUpdateCurrent, CascadeCurrent
 			end if
 		end do
 
-		!Add defects in bndryRecv to myBoundary()
+		!Add defects in bndryRecv to myGhost()
 		do j=1,numBndryRecv
 
 			!create a new element in defectUpdate and assign all variables except for num (will do later)
@@ -1922,13 +1922,13 @@ subroutine updateDefectList(reactionCurrent, defectUpdateCurrent, CascadeCurrent
 			nullify(defectUpdateCurrent%next)
 
 			!This information is used to tell us which element in the local
-			!processor bounds this element in myBoundary
+			!processor bounds this element in myGhost
 			defectUpdateCurrent%neighbor=firstRecv(SPECIES+3,j,i)
 
-			!point defectCurrent at the defect list in the correct cell of myBoundary
-			defectCurrent=>myBoundary(firstRecv(SPECIES+1,j,i),i)%defectList
+			!point defectCurrent at the defect list in the correct cell of myGhost
+			defectCurrent=>myGhost(firstRecv(SPECIES+1,j,i),i)%defectList
 			if(.NOT. associated(defectCurrent)) then
-				write(*,*) 'error myBoundary not allocated correctly'
+				write(*,*) 'error myGhost not allocated correctly'
 				write(*,*) 'dir', i, 'cell', firstRecv(SPECIES+1,j,i)
 				call MPI_ABORT(comm,ierr)
 			end if
@@ -1943,7 +1943,7 @@ subroutine updateDefectList(reactionCurrent, defectUpdateCurrent, CascadeCurrent
 			nullify(defectPrev)
 			call findDefectInList(defectCurrent, defectPrev, products)
 
-			!Next update defects in myBoundary
+			!Next update defects in myGhost
 			if(associated(defectCurrent)) then !if we aren't at the end of the list
 
 				same=0
@@ -1957,7 +1957,7 @@ subroutine updateDefectList(reactionCurrent, defectUpdateCurrent, CascadeCurrent
 
 					!if there is one defect of this type and it is in the middle of the defectList
 					if(defectCurrent%num==0 .AND. associated(defectCurrent%next) .AND. associated(defectPrev)) then
-						!delete this defect from the list in myBoundary
+						!delete this defect from the list in myGhost
 						defectPrev%next=>defectCurrent%next !remove that defect type from the system
 						deallocate(defectCurrent%defectType)
 						deallocate(defectCurrent)
@@ -1978,7 +1978,7 @@ subroutine updateDefectList(reactionCurrent, defectUpdateCurrent, CascadeCurrent
 						write(*,*) 'proc', myProc%taskid, 'dir', i, 'neighbor proc', myProc%procNeighbor(i)
 						write(*,*) (firstRecv(k,j,i),k=1,SPECIES+3)
 						write(*,*) 'step',step,'numBndryRecv',numBndryRecv, 'j',j
-						defectTemp=>myBoundary(firstRecv(SPECIES+1,j,i),i)%defectList
+						defectTemp=>myGhost(firstRecv(SPECIES+1,j,i),i)%defectList
 						do while(associated(defectTemp))
 							write(*,*) 'proc',myProc%taskid,defectTemp%defectType, defectTemp%num
 							defectTemp=>defectTemp%next
@@ -2008,7 +2008,7 @@ subroutine updateDefectList(reactionCurrent, defectUpdateCurrent, CascadeCurrent
 					write(*,*) 'j',j,'proc', myProc%taskid, 'dir', i, 'neighbor proc', myProc%procNeighbor(i)
 					write(*,*) (firstRecv(k,j,i),k=1,SPECIES+3)
 					!write(*,*) 'step',step
-					!defectTest=>myBoundary(firstRecv(SPECIES+1,j,i),i)%defectList
+					!defectTest=>myGhost(firstRecv(SPECIES+1,j,i),i)%defectList
 					!do while(associated(defectTest))
 					!    write(*,*) defectTest%defectType, defectTest%num, defectTest%cellNumber
 					!    defectTest=>defectTest%next
@@ -2175,7 +2175,7 @@ subroutine updateDefectList(reactionCurrent, defectUpdateCurrent, CascadeCurrent
 			call MPI_RECV(finalBufferRecv,(SPECIES+3)*numUpdateFinalRecv(recvDir),MPI_INTEGER,&
 					myProc%procNeighbor(recvDir),400+i ,comm,status,ierr)
 
-			!Add defects in finalBufferRecv to myBoundary()
+			!Add defects in finalBufferRecv to myGhost()
 			do j=1,numUpdateFinalRecv(recvDir)
 
 				if(finalBufferRecv(SPECIES+2,j)==-1) then
@@ -2195,8 +2195,8 @@ subroutine updateDefectList(reactionCurrent, defectUpdateCurrent, CascadeCurrent
 					defectUpdateCurrent%cascadeNumber=0	!not inside a cascade
 					nullify(defectUpdateCurrent%next)
 
-					!point defectCurrent at the defect list in the correct cell of myBoundary
-					defectCurrent=>myBoundary(finalBufferRecv(SPECIES+1,j),recvDir)%defectList
+					!point defectCurrent at the defect list in the correct cell of myGhost
+					defectCurrent=>myGhost(finalBufferRecv(SPECIES+1,j),recvDir)%defectList
 
 					do k=1,SPECIES
 						products(k)=finalBufferRecv(k,j)
@@ -2208,7 +2208,7 @@ subroutine updateDefectList(reactionCurrent, defectUpdateCurrent, CascadeCurrent
 					nullify(defectPrev)
 					call findDefectInList(defectCurrent, defectPrev, products)
 
-					!Next update defects in myBoundary
+					!Next update defects in myGhost
 					if(associated(defectCurrent)) then !if we aren't at the end of the list
 						same=0
 						do l=1,SPECIES
@@ -2368,7 +2368,7 @@ subroutine updateReactionList(defectUpdate)
 						if(myMesh(defectUpdateCurrent%cellNumber)%neighborProcs(j) /= myProc%taskid .AND. &
 								myMesh(defectUpdateCurrent%cellNumber)%neighborProcs(j) /= -1) then
 
-							neighborGrainID=myBoundary(myMesh(defectUpdateCurrent%cellNumber)%neighbors(j),j)%material
+							neighborGrainID=myGhost(myMesh(defectUpdateCurrent%cellNumber)%neighbors(j),j)%material
 						else if(myMesh(defectUpdateCurrent%cellNumber)%neighborProcs(j) == -1) then
 							neighborGrainID=localGrainID	!free surface release, don't need to do anything special
 						else
@@ -2520,7 +2520,7 @@ subroutine updateReactionList(defectUpdate)
 			if(polycrystal=='yes') then
 
 				localGrainID=myMesh(defectUpdateCurrent%neighbor)%material
-				neighborGrainID=myBoundary(defectUpdateCurrent%cellNumber,defectUpdateCurrent%dir)%material
+				neighborGrainID=myGhost(defectUpdateCurrent%cellNumber,defectUpdateCurrent%dir)%material
 				if(localGrainID==neighborGrainID) then
 					!Allow diffusion between elements in the same grain
 					call update_diff_reactions(defectUpdateCurrent%neighbor, defectUpdateCurrent%cellNumber, &

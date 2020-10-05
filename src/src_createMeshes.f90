@@ -456,7 +456,7 @@ subroutine createMeshConnect(length)
 	end do
 
 	!***************************************************************************************************
-	!Initializing myBoundary with elements that are in neighboring processors that bound this one
+	!Initializing myGhost with elements that are in neighboring processors that bound this one
 	!***************************************************************************************************
 	maxElement=0
 	do i=1, numCells
@@ -469,15 +469,15 @@ subroutine createMeshConnect(length)
 		end do
 	end do
 
-	allocate(myBoundary(maxElement,6))	!6 directions, maxElement elements in each direction (more than needed)
-	!initialize myBoundary with 0 in localNeighbor - signal that myBoundary is not attached to anything
+	allocate(myGhost(maxElement,6))	!6 directions, maxElement elements in each direction (more than needed)
+	!initialize myGhost with 0 in localNeighbor - signal that myGhost is not attached to anything
 	do dir=1,6
 		do i=1,maxElement
-			myBoundary(i,dir)%localNeighbor=0	!default, says that this is not a real element of myBoundary.
-			myBoundary(i,dir)%proc=-10			!default, says that this is not a real element of myBoundary.
-			myBoundary(i,dir)%material=0
-			myBoundary(i,dir)%length=0d0
-			myBoundary(i,dir)%volume=0d0
+			myGhost(i,dir)%localNeighbor=0	!default, says that this is not a real element of myGhost.
+			myGhost(i,dir)%proc=-10			!default, says that this is not a real element of myGhost.
+			myGhost(i,dir)%material=0
+			myGhost(i,dir)%length=0d0
+			myGhost(i,dir)%volume=0d0
 		end do
 	end do
 
@@ -486,11 +486,11 @@ subroutine createMeshConnect(length)
 			if(myMesh(i)%neighborProcs(dir) == -1) then										!this is a free surface
 				!do nothing
 			else if(myMesh(i)%neighborProcs(dir) /= myProc%taskid) then
-				myBoundary(myMesh(i)%neighbors(dir),dir)%proc=myMesh(i)%neighborProcs(dir)	!set proc # of elements in myBoundary
-				myBoundary(myMesh(i)%neighbors(dir),dir)%length=length						!set length of elements in myBoundary
-				myBoundary(myMesh(i)%neighbors(dir),dir)%volume=length**3d0					!set volume of elements in myBoundary (changes with cascade addition)
-				myBoundary(myMesh(i)%neighbors(dir),dir)%material=materialBuff(i,dir)
-				myBoundary(myMesh(i)%neighbors(dir),dir)%localNeighbor=i
+				myGhost(myMesh(i)%neighbors(dir),dir)%proc=myMesh(i)%neighborProcs(dir)	!set proc # of elements in myGhost
+				myGhost(myMesh(i)%neighbors(dir),dir)%length=length						!set length of elements in myGhost
+				myGhost(myMesh(i)%neighbors(dir),dir)%volume=length**3d0					!set volume of elements in myGhost (changes with cascade addition)
+				myGhost(myMesh(i)%neighbors(dir),dir)%material=materialBuff(i,dir)
+				myGhost(myMesh(i)%neighbors(dir),dir)%localNeighbor=i
 			end if
 		end do
 	end do

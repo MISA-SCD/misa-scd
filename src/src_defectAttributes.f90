@@ -30,7 +30,7 @@ double precision function findDiffusivity(defectType)
 				Diff=diffusivityCu()
 				exit  outer1
 			else
-				Diff=DiffSingle(i)%D*dexp(-DiffSingle(i)%Em/(kboltzmann*temperature))
+				Diff=DiffSingle(i)%D0*dexp(-DiffSingle(i)%Em/(kboltzmann*temperature))
 				exit outer1
 			end if
 		end if
@@ -51,7 +51,7 @@ double precision function findDiffusivity(defectType)
 			end do
 			if(numSame==SPECIES) then
 
-				Diff=DiffusivityCompute(defectType,DiffFunc(i)%functionType,DiffFunc(i)%numParam,DiffFunc(i)%parameters)
+				Diff=DiffusivityCompute(defectType,DiffFunc(i)%fType,DiffFunc(i)%numParam,DiffFunc(i)%parameters)
 				exit
 			end if
 		end do
@@ -119,10 +119,10 @@ double precision function diffusivityCu()
 			if(totalDPA > 0d0 .AND. dpaRate > 0d0) then
 			!	diffusivityCu=(DiffSingle(i)%D*dexp(-DiffSingle(i)%Em/(kboltzmann*temperature)))* &
 			!			(Vconcent/initialCeqv)
-				diffusivityCu=(DiffSingle(i)%D*dexp(-DiffSingle(i)%Em/(kboltzmann*temperature)))* firr
+				diffusivityCu=(DiffSingle(i)%D0*dexp(-DiffSingle(i)%Em/(kboltzmann*temperature)))* firr
 				exit outer
 			else
-				diffusivityCu=(DiffSingle(i)%D*dexp(-DiffSingle(i)%Em/(kboltzmann*temperature)))
+				diffusivityCu=(DiffSingle(i)%D0*dexp(-DiffSingle(i)%Em/(kboltzmann*temperature)))
 				exit outer
 			end if
 		end if
@@ -191,7 +191,7 @@ double precision function findBinding(DefectType, productType)
 
 			if(numSame==SPECIES .AND. numSameProduct==SPECIES) then
 
-				Eb=BindingCompute(DefectType, productType, BindFunc(i)%functionType, &
+				Eb=BindingCompute(DefectType, productType, BindFunc(i)%fType, &
 						BindFunc(i)%numParam,BindFunc(i)%parameters)
 				exit
 			end if

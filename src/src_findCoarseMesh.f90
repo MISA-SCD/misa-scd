@@ -83,7 +83,7 @@ end function
 !***************************************************************************************************
 !> Subroutine findNumDefectBoundary(defectType, cellNumber, dir)
 !finds the number of defects of a given type inside a certain volume element in the boundary mesh
-!Inputs: defectType, cellNumber, direction (used to identify correct element of myBoundary)
+!Inputs: defectType, cellNumber, direction (used to identify correct element of myGhost)
 !Outputs: returns number of defects of type in cell
 !***************************************************************************************************
 integer function findNumDefectBoundary(defectType, cellNumber, dir)
@@ -101,7 +101,7 @@ integer function findNumDefectBoundary(defectType, cellNumber, dir)
 		numDefects=0
 	else
 		numDefects=0
-		defectCurrent=>myBoundary(cellNumber,dir)%defectList
+		defectCurrent=>myGhost(cellNumber,dir)%defectList
 
 		do while(associated(defectCurrent))
 			count=0
@@ -267,7 +267,7 @@ subroutine resetReactionListSingleCell(cell)
 
 				!Find the grain ID number of the neighboring volume element
 				if(myMesh(cell)%neighborProcs(j) /= myProc%taskid .AND. myMesh(cell)%neighborProcs(j) /= -1) then
-					neighborGrainID=myBoundary(myMesh(cell)%neighbors(j),j)%material
+					neighborGrainID=myGhost(myMesh(cell)%neighbors(j),j)%material
 				else if(myMesh(cell)%neighborProcs(j) == -1) then
 					neighborGrainID=localGrainID
 				else

@@ -2227,7 +2227,7 @@ double precision function findRate_0th(cell, reactionParameter)
 	double precision Diff, Eb, volume, DPARateLocal, HeImplantRateLocal, zCoord
 	integer n, numClusters
 
-	if(reactionParameter%functionType==1) then	!Frenkel pair implantation
+	if(reactionParameter%fType==1) then	!Frenkel pair implantation
 
 		volume=myMesh(cell)%volume
 
@@ -2237,7 +2237,7 @@ double precision function findRate_0th(cell, reactionParameter)
 			write(*,*) 'Error implant distribution not recognized'
 		endif
 
-	else if(reactionParameter%functionType==2) then	!Cascade implantation
+	else if(reactionParameter%fType==2) then	!Cascade implantation
 
 		volume=myMesh(cell)%volume
 
@@ -2247,10 +2247,10 @@ double precision function findRate_0th(cell, reactionParameter)
 			write(*,*) 'Error implant distribution not recognized'
 		end if
 
-	else if(ReactionParameter%functionType==6) then	!Frenkel-Pair implantation disallowed in grain boundaries
+	else if(ReactionParameter%fType==6) then	!Frenkel-Pair implantation disallowed in grain boundaries
 		findRate_0th=0d0
 	else
-		write(*,*) 'error function type', ReactionParameter%functionType
+		write(*,*) 'error function type', ReactionParameter%fType
 	end if
 
 end function
@@ -2277,7 +2277,7 @@ double precision function findRate_impurity(defectType, cell, reactionParameter)
 		grainNum=myMesh(cell)%material
 	endif
 
-	if(reactionParameter%functionType==14) then	!impurityTrapping
+	if(reactionParameter%fType==14) then	!impurityTrapping
 		Diff=findDiffusivity(defectType)
 		num=findNumDefect(defectType,cell)
 		size=findDefectSize(defectType)
@@ -2324,7 +2324,7 @@ double precision function findRate_impurity_fine(CascadeCurrent, defectType, cel
 		grainNum=myMesh(CascadeCurrent%cellNumber)%material
 	end if
 
-	if(reactionParameter%functionType==14) then		!impurityTrapping
+	if(reactionParameter%fType==14) then		!impurityTrapping
 		Diff=findDiffusivity(defectType)
 		num=findNumDefectFine(CascadeCurrent,defectType,cell)
 		size=findDefectSize(defectType)
@@ -2363,7 +2363,7 @@ double precision function findRate_dissoc(defectType, products, cell, reactionPa
 	end if
 
 	!dissociation
-	if(reactionParameter%functionType==11) then
+	if(reactionParameter%fType==11) then
 
 		Diff=findDiffusivity(products(:,2))	!diffusivity of the defect dissociating from the cluster
 		num=findNumDefect(defectType,cell)			!number of clusters
@@ -2419,7 +2419,7 @@ double precision function findRate_dissoc_fine(CascadeCurrent, defectType, produ
 	endif
 
 	!dissociation
-	if(reactionParameter%functionType==11) then
+	if(reactionParameter%fType==11) then
 
 		!dissocation reactions
 		Diff=findDiffusivity(products(:,2))						!diffusivity of the defect dissociating from the cluster
@@ -2465,7 +2465,7 @@ double precision function findRate_sink(defectType, cell, reactionParameter)
 	end if
 
 	!sink reaction function type=12
-	if(reactionParameter%functionType==12) then	!sinkRemoval
+	if(reactionParameter%fType==12) then	!sinkRemoval
 
 		num=findNumDefect(defectType,cell)		!number of clusters of this type
 		Diff=findDiffusivity(defectType)		!diffusivity of clusters of this type
@@ -2516,7 +2516,7 @@ double precision function findRate_sink_fine(CascadeCurrent, defectType, cell, r
 	end if
 
 	!sink reaction function type=12
-	if(reactionParameter%functionType==12) then	!sinkRemoval
+	if(reactionParameter%fType==12) then	!sinkRemoval
 
 		num=findNumDefectFine(CascadeCurrent, defectType,cell)		!number of clusters of this type
 		Diff=findDiffusivity(defectType)							!diffusivity of clusters of this type
@@ -2587,7 +2587,7 @@ double precision function findRate_2nd(defectType1, defectType2, cell, reactionP
 	!reactionRate=Ztemp*(omegastar+omega*(dble(size1)**(1d0/3d0)+dble(size2)**(1d0/3d0)))*&
 	!        (Diff1+Diff2)*dble(num1)*dble(num2)*atomSize/vol
 
-	if(reactionParameter%functionType==21) then	!3D-3D
+	if(reactionParameter%fType==21) then	!3D-3D
 
 		if((defectType1(3)>0 .AND. defectType1(3) <= max3DInt) .AND. &
 				(defectType2(3)>0 .AND. defectType2(3) <= max3DInt)) then	!3D+3D: 3D(SIA) + 3D(SIA)
@@ -2600,7 +2600,7 @@ double precision function findRate_2nd(defectType1, defectType2, cell, reactionP
 		!reactionRate=Ztemp*(omegastar+omega*(dble(size1)**(1d0/3d0)+dble(size2)**(1d0/3d0)))*(Diff1+Diff2)*dble(num1)*dble(num2)&
 		!			 *atomSize/vol
 
-	else if(reactionParameter%functionType==22) then	!3D-1D: Cu/V/CuV + 1D(SIA)
+	else if(reactionParameter%fType==22) then	!3D-1D: Cu/V/CuV + 1D(SIA)
 
 		!reactionRate=omega*(dble(size1)**(1d0/3d0)+dble(size2)**(1d0/3d0))*(Diff1+Diff2)*dble(num1)*dble(num2)&
 		!		*atomSize/vol
@@ -2627,7 +2627,7 @@ double precision function findRate_2nd(defectType1, defectType2, cell, reactionP
 				*atomSize/vol+(omegacircle1D*dble(size2)**(1d0/2d0)+omega1D*dble(size1)**(1d0/3d0))**4d0*&
 						Diff2*dble(num2)*dble(num1)**(2d0)*(atomSize/vol)**(2d0)
 
-	else if(reactionParameter%functionType==23) then	!3D-1D: 3D(SIA) + 1D(SIA)
+	else if(reactionParameter%fType==23) then	!3D-1D: 3D(SIA) + 1D(SIA)
 
 		if(defectType1(3) > max3DInt .OR. defectType1(4) > max3DInt) then
 
@@ -2656,7 +2656,7 @@ double precision function findRate_2nd(defectType1, defectType2, cell, reactionP
 		!		(Zint*(omegastar1D+omegacircle1D*dble(size2)**(1d0/2d0)+omega1D*dble(size1)**(1d0/3d0)))**4d0*&
 		!				Diff2*dble(num2)*dble(num1)**(2d0)*(atomSize/vol)**(2d0)
 
-	else if(reactionParameter%functionType==24) then	!1D-1D: 1D(SIA) + 1D(SIA)
+	else if(reactionParameter%fType==24) then	!1D-1D: 1D(SIA) + 1D(SIA)
 
 		reactionRate=(Zint*omegacircle1D*(dble(size1)**(1d0/2d0)+dble(size2)**(1d0/2d0)))**4d0*&
 				(Diff1*dble(num2)+Diff2*dble(num1))*dble(num1*num2)*(atomSize/vol)**(2d0)
@@ -2725,7 +2725,7 @@ double precision function findRate_2nd_fine(CascadeCurrent,defectType1,defectTyp
 	end if
 
 	!list of clustering reaction functional forms
-	if(reactionParameter%functionType==21) then	!3D-3D
+	if(reactionParameter%fType==21) then	!3D-3D
 
 		if((defectType1(3)>0 .AND. defectType1(3) <= max3DInt) .AND. &
 				(defectType2(3)>0 .AND. defectType2(3) <= max3DInt)) then	!3D-3D: 3D(SIA) + 3D(SIA)
@@ -2739,7 +2739,7 @@ double precision function findRate_2nd_fine(CascadeCurrent,defectType1,defectTyp
 		!reactionRate=Ztemp*(omegastar+omega*(dble(size1)**(1d0/3d0)+dble(size2)**(1d0/3d0)))*(Diff1+Diff2)*dble(num1)*dble(num2)&
 		!			 *atomSize/vol
 
-	else if(reactionParameter%functionType==22) then	!3D-1D: Cu/V/CuV + 1D(SIA)
+	else if(reactionParameter%fType==22) then	!3D-1D: Cu/V/CuV + 1D(SIA)
 
 		!reactionRate=Ztemp*(omegastar+omega*(dble(size1)**(1d0/3d0)+dble(size2)**(1d0/3d0)))*(Diff1+Diff2)*dble(num1)*dble(num2)&
 		!			 *atomSize/vol
@@ -2767,7 +2767,7 @@ double precision function findRate_2nd_fine(CascadeCurrent,defectType1,defectTyp
 						Diff2*dble(num2)*dble(num1)**(2d0)*(atomSize/vol)**(2d0)
 
 
-	else if(reactionParameter%functionType==23) then	!3D-1D: 3D(SIA) + 1D(SIA)
+	else if(reactionParameter%fType==23) then	!3D-1D: 3D(SIA) + 1D(SIA)
 
 		if(defectType1(3) > max3DInt .OR. defectType1(4) > max3DInt) then
 
@@ -2792,7 +2792,7 @@ double precision function findRate_2nd_fine(CascadeCurrent,defectType1,defectTyp
 				(Zint*(omegacircle1D*dble(size2)**(1d0/2d0)+omega1D*dble(size1)**(1d0/3d0)))**4d0*&
 						Diff2*dble(num2)*dble(num1)**(2d0)*(atomSize/vol)**(2d0)
 
-	else if(reactionParameter%functionType==24) then	!1D-1D: 1D(SIA) + 1D(SIA)
+	else if(reactionParameter%fType==24) then	!1D-1D: 1D(SIA) + 1D(SIA)
 
 		reactionRate=(Zint*omegacircle1D*(dble(size1)**(1d0/2d0)+dble(size2)**(1d0/2d0)))**4d0*&
 				(Diff1*dble(num2)+Diff2*dble(num1))*dble(num1*num2)*(atomSize/vol)**(2d0)
@@ -2826,7 +2826,7 @@ double precision function findRate_diff(defectType, cell1, proc1, cell2, proc2, 
 	double precision alpha
 
 	grainNum=myMesh(cell1)%material
-	if(reactionParameter%functionType==13) then	!3D diffusion
+	if(reactionParameter%fType==13) then	!3D diffusion
 
 		Diff=findDiffusivity(defectType)
 		length1=myMesh(cell1)%length
@@ -2849,9 +2849,9 @@ double precision function findRate_diff(defectType, cell1, proc1, cell2, proc2, 
 				length2=myMesh(cell2)%length
 				Vol2=myMesh(cell2)%volume
 			else	!proc2 /= proc1
-				matNeighbor=myBoundary(cell2,dir)%material
-				length2=myBoundary(cell2,dir)%length
-				Vol2=myBoundary(cell2,dir)%volume
+				matNeighbor=myGhost(cell2,dir)%material
+				length2=myGhost(cell2,dir)%length
+				Vol2=myGhost(cell2,dir)%volume
 			end if
 
 			area2=length2**2d0
@@ -2885,7 +2885,7 @@ double precision function findRate_diff(defectType, cell1, proc1, cell2, proc2, 
 				findRate_diff=0d0
 			end if
 		end if
-	elseif(reactionParameter%functionType==15) then	!2D diffusion on a plane (rather than 3D diffusion in a volume)
+	elseif(reactionParameter%fType==15) then	!2D diffusion on a plane (rather than 3D diffusion in a volume)
 		Diff=findDiffusivity(defectType)
 		length1=myMesh(cell1)%length
 		area1=length1**2d0
@@ -2906,8 +2906,8 @@ double precision function findRate_diff(defectType, cell1, proc1, cell2, proc2, 
 				matNeighbor=myMesh(cell2)%material
 				length2=myMesh(cell2)%length
 			else
-				matNeighbor=myBoundary(cell2,dir)%material
-				length2=myBoundary(cell2,dir)%length
+				matNeighbor=myGhost(cell2,dir)%material
+				length2=myGhost(cell2,dir)%length
 			endif
 
 			if(grainNum==matNeighbor) then
@@ -2940,12 +2940,12 @@ double precision function findRate_diff(defectType, cell1, proc1, cell2, proc2, 
 			end if
 		end if
 
-	else if(reactionParameter%functionType==16) then	!Dissociation from grain boundary into bulk volume element
+	else if(reactionParameter%fType==16) then	!Dissociation from grain boundary into bulk volume element
 		!(treated as a diffusion reaction because we are moving between two volume elements, but the rate is given by a dissociation rate)
 		if(proc2==proc1) then
 			matNeighbor=myMesh(cell2)%material
 		else
-			matNeighbor=myBoundary(cell2,dir)%material
+			matNeighbor=myGhost(cell2,dir)%material
 		end if
 
 		if(grainNum==matNeighbor) then
@@ -2996,7 +2996,7 @@ double precision function findRate_diff_coarseToFine(defectType, cell, proc, num
 		grainNum=myMesh(cell)%material
 	end if
 
-	if(reactionParameter%functionType==13) then	!3D diffusion
+	if(reactionParameter%fType==13) then	!3D diffusion
 
 		length1=myMesh(cell)%length			!Length of coarse mesh element
 
@@ -3062,7 +3062,7 @@ double precision function findRate_diff_fine(CascadeCurrent,defectType,cell1,pro
 		grainNum=myMesh(CascadeCurrent%cellNumber)%material
 	end if
 
-	if(reactionParameter%functionType==13) then	!3D diffusion
+	if(reactionParameter%fType==13) then	!3D diffusion
 
 		Diff=findDiffusivity(defectType)		!function in MaterialInput
 

@@ -30,7 +30,7 @@ module mod_globalVariables
 
     !>Mesh information
     type(mesh),allocatable :: myMesh(:)					!<Contains (local) mesh information
-    type(boundaryMesh),allocatable ::  myBoundary(:,:)	!<Boundary elements (direction, element #)
+    type(ghostMesh),allocatable ::  myGhost(:,:)	    !<Ghost elements (direction, element #)
     integer numCells						            !<Number of cells in local mesh
     integer numTotal                                    !<Total meshes in the sysytem
     double precision meshLength                         !<Length of a coarse mesh

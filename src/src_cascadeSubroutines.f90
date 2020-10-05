@@ -1,5 +1,5 @@
 !***************************************************************************************************
-!>Subroutine: chooseCascade(CascadeTemp): Takes list of cascades (read from input file) and chooses one randomly
+!>Subroutine: chooseCascade(CascadeTemp): chooses one cascade randomly in cascadeList
 !!Inputs: CascadeList (global variable)
 !!Output: CascadeTemp (pointing at the cascade we want)
 !***************************************************************************************************
@@ -21,7 +21,7 @@ subroutine chooseCascade(CascadeTemp)
         if(atemp >= r) then
             exit
         end if
-        cascadeTemp=>cascadeTemp%nextCascade
+        cascadeTemp=>cascadeTemp%next
     end do
 end subroutine
 
@@ -234,21 +234,21 @@ subroutine cascadeUpdateStep(releaseToggle, cascadeCell)
 
                 if(meshingType=='adaptive') then
                     if(defectRecv(4,1)==-1) then
-                        myBoundary(bndryCellNumber,recvDir)%volume=myBoundary(bndryCellNumber,recvDir)%volume-&
+                        myGhost(bndryCellNumber,recvDir)%volume=myGhost(bndryCellNumber,recvDir)%volume-&
                                 CascadeElementVol*dble(numCellsCascade)
-                        myBoundary(bndryCellNumber,recvDir)%length=(myBoundary(bndryCellNumber,recvDir)%volume)&
+                        myGhost(bndryCellNumber,recvDir)%length=(myGhost(bndryCellNumber,recvDir)%volume)&
                                 **(1d0/3d0)
                     else if(defectRecv(4,1)==1) then
-                        myBoundary(bndryCellNumber,recvDir)%volume=myBoundary(bndryCellNumber,recvDir)%volume+&
+                        myGhost(bndryCellNumber,recvDir)%volume=myGhost(bndryCellNumber,recvDir)%volume+&
                                 CascadeElementVol*dble(numCellsCascade)
-                        myBoundary(bndryCellNumber,recvDir)%length=(myBoundary(bndryCellNumber,recvDir)%volume)&
+                        myGhost(bndryCellNumber,recvDir)%length=(myGhost(bndryCellNumber,recvDir)%volume)&
                                 **(1d0/3d0)
                     end if
                 end if
 
 
-                !remove defects from myBoundary (except for first defect, this is all 0's and is just a placeholder)
-                defectCurrent=>myBoundary(bndryCellNumber,recvDir)%defectList%next
+                !remove defects from myGhost (except for first defect, this is all 0's and is just a placeholder)
+                defectCurrent=>myGhost(bndryCellNumber,recvDir)%defectList%next
 
                 !delete exiting defects
                 nullify(defectPrev)
@@ -260,7 +260,7 @@ subroutine cascadeUpdateStep(releaseToggle, cascadeCell)
                 end do
 
                 !add defects to my boundary
-                defectCurrent=>myBoundary(bndryCellNumber,recvDir)%defectList
+                defectCurrent=>myGhost(bndryCellNumber,recvDir)%defectList
                 do j=2,numRecv
                     nullify(defectCurrent%next)
                     allocate(defectCurrent%next)
@@ -285,7 +285,7 @@ subroutine cascadeUpdateStep(releaseToggle, cascadeCell)
 
                         localGrainID=myMesh(cellNumber)%material
                         if(myProc%procNeighbor(recvDir)/=myProc%taskid .AND. myProc%procNeighbor(recvDir)/=-1) then
-                            neighborGrainID=myBoundary(myMesh(cellNumber)%neighbors(recvDir),recvDir)%material
+                            neighborGrainID=myGhost(myMesh(cellNumber)%neighbors(recvDir),recvDir)%material
                         else
                             neighborGrainID=myMesh(myMesh(cellNumber)%neighbors(recvDir))%material
                         end if

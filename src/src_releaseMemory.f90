@@ -16,7 +16,7 @@ subroutine deallocateBoundaryDefectList()
 				if(myMesh(cell)%neighborProcs(dir) /= myProc%procNeighbor(dir)) then
 					write(*,*) 'error neighbor not correct during boundary mesh initialization'
 				else
-					defectCurrent=>myBoundary(myMesh(cell)%neighbors(dir),dir)%defectList%next
+					defectCurrent=>myGhost(myMesh(cell)%neighbors(dir),dir)%defectList%next
 
 					do while(associated(defectCurrent))
 						defectPrev=>defectCurrent
@@ -57,7 +57,7 @@ Subroutine deallocateCascadeList()
 			deallocate(defectPrev)
 		end do
 		CascadePrev=>CascadeTemp
-		CascadeTemp=>CascadeTemp%nextCascade
+		CascadeTemp=>CascadeTemp%next
 		deallocate(CascadePrev)
 	end do
 
