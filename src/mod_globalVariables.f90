@@ -148,7 +148,6 @@ module mod_globalVariables
     double precision :: omegastar			!<Geometric constant for 3D spherical clustering (see Dunn et al. JNM 2013)
     double precision :: omegastar1D			!<Geometric constant for clustering with dislocation loops (see Dunn et al. JNM 2013)
     double precision :: omegacircle1D		!<Geometric constant for clustering with dislocation loops (see Dunn et al. JNM 2013)
-    double precision :: recombinationCoeff	!<Geometric constant for Frenkel pair recombination (see Dunn et al. JNM 2013)
 
     !>Simulation parameters, to be computed during simulation
     double precision :: totalTime           !<Total time

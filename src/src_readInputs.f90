@@ -33,7 +33,6 @@ subroutine ReadInputs()
 	implantDist = 'uniform'
 	grainBoundaryToggle = 'no'
 	pointDefectToggle = 'no'
-	!meshType = "periodic"
 
 	!<read in filename of defect attributes file
 	do while(flag .eqv. .false.)
@@ -48,56 +47,47 @@ subroutine ReadInputs()
 	call readDefectAttributes(defectFilename)
 
 	!<read in mesh file
-	do  while (flag .eqv. .false.)
-		read(PARAFILE,*) char
-		if(char=='meshFile') then
-			read(PARAFILE,*) meshFilename
-			flag=.true.
-		end if
-	end do
-	flag=.false.
+!	do  while (flag .eqv. .false.)
+!		read(PARAFILE,*) char
+!		if(char=='meshFile') then
+!			read(PARAFILE,*) meshFilename
+!			flag=.true.
+!		end if
+!	end do
+!	flag=.false.
 
 	!*************************************************
 	!<read in mesh file
-	inquire(file=meshFilename, exist=alive2)
-	if(.not. alive2) then
-		write(*,*) 'mesh file does not exist'
-	else
-		open(MESHFILE, file=meshFilename, status='old', action='read')
-	end if
+!	inquire(file=meshFilename, exist=alive2)
+!	if(.not. alive2) then
+!		write(*,*) 'mesh file does not exist'
+!	else
+!		open(MESHFILE, file=meshFilename, status='old', action='read')
+!	end if
 
-	!do while(flag .eqv. .false.)
-	!	read(MESHFILE,*) char
-	!	if(char=='meshType') then
-	!		read(MESHFILE,*) (meshType(i),i=1,3)
-	!		flag=.true.
-	!	end if
-	!end do
-	!flag=.false.
+!	do while(flag .eqv. .false.)
+!		read(MESHFILE,*) char
+!		if(char=='length') then
+!			read(MESHFILE,*) meshLength
+!			flag=.true.
+!		end if
+!	end do
+!	flag=.false.
 
-	do while(flag .eqv. .false.)
-		read(MESHFILE,*) char
-		if(char=='length') then
-			read(MESHFILE,*) meshLength
-			flag=.true.
-		end if
-	end do
-	flag=.false.
+!	do while(flag .eqv. .false.)
+!		read(MESHFILE,*) char
+!		if(char=='numx') then
+!			read(MESHFILE,*) numx
+!		else if(char=='numy') then
+!			read(MESHFILE,*) numy
+!		else if(char=='numz') then
+!			read(MESHFILE,*) numz
+!			flag=.true.
+!		end if
+!	end do
+!	flag=.false.
 
-	do while(flag .eqv. .false.)
-		read(MESHFILE,*) char
-		if(char=='numx') then
-			read(MESHFILE,*) numx
-		else if(char=='numy') then
-			read(MESHFILE,*) numy
-		else if(char=='numz') then
-			read(MESHFILE,*) numz
-			flag=.true.
-		end if
-	end do
-	flag=.false.
-
-	close(MESHFILE)
+!	close(MESHFILE)
 	!*************************************************
 
 	!read in irradiation type
@@ -189,42 +179,42 @@ subroutine ReadInputs()
 	!<read in simulartion parameters
 	!*******************************************************
 	!<set default valuse for toogles
-	test3			='no'
-	tempStore		=273d0
-	CuContent		=0.5d-2
-	numVac			=0
-	numInt			=0
-	dpaRate			=1d-4
-	totalDPA		=1d-1
-	firr			=1d0
-	atomSize		=0d0
-	lattice			=0.2876d0	!Fe
-	burgers			=0.287d0
-	reactionRadius	=0.65d0
-	agingTime       =0d0	!2019.04.30 Add
+	test3 = 'no'
+	tempStore = 273d0
+	CuContent = 0.5d-2
+	numVac = 0
+	numInt = 0
+	dpaRate = 1d-4
+	totalDPA = 1d-1
+	firr = 1d0
+	!atomSize		=0d0
+	lattice = 0.2876d0	!Fe
+	burgers = 0.287d0
+	reactionRadius = 0.65d0
+	agingTime = 0d0
 
-	polycrystal			='no'
-	grainSize		=330000
-	dislocationDensity	=0d0
-	impurityDensity		=0d0
-	max3DInt			=4
-	cascadeVolume		=0d0
-	numSims				=1
-	numGrains			=1
-	cascadeReactionLimit=100d0
+	polycrystal = 'no'
+	grainSize = 330000
+	dislocationDensity = 0d0
+	impurityDensity = 0d0
+	max3DInt = 4
+	cascadeVolume = 0d0
+	numSims = 1
+	numGrains = 1
+	cascadeReactionLimit = 100d0
 
-	annealTemp		=273d0
-	annealTime		=0d0
-	annealSteps		=0
-	annealType		='add'
-	annealTempInc	=0d0
+	annealTemp = 273d0
+	annealTime = 0d0
+	annealSteps = 0
+	annealType = 'add'
+	annealTempInc = 0d0
 
 	!Read variables in from file
 	flag=.FALSE.
 
 	do while(flag .eqv. .FALSE.)
 		read(PARAFILE,*) char
-		if(char=='start') then
+		if(char=='SimulationStart') then
 			flag=.TRUE.
 		end if
 	end do
@@ -234,7 +224,7 @@ subroutine ReadInputs()
 		flag1=.FALSE.
 		do while(flag1 .eqv. .FALSE.)
 			read(PARAFILE,*) char
-			if(char=='end') then
+			if(char=='SimulationEnd') then
 				flag1=.TRUE.
 				flag=.TRUE.
 			else if(char=='test3') then
@@ -261,9 +251,9 @@ subroutine ReadInputs()
 			else if(char=='firr') then
 				flag1=.TRUE.
 				read(PARAFILE,*) firr
-			else if(char=='atomSize') then
-				flag1=.TRUE.
-				read(PARAFILE,*) atomSize
+			!else if(char=='atomSize') then
+			!	flag1=.TRUE.
+			!	read(PARAFILE,*) atomSize
 			else if(char=='lattice') then
 				flag1=.TRUE.
 				read(PARAFILE,*) lattice
@@ -273,24 +263,24 @@ subroutine ReadInputs()
 			else if(char=='reactionRadius') then
 				flag1=.TRUE.
 				read(PARAFILE,*) reactionRadius
-			else if(char=='annealTemp') then
-				flag1=.TRUE.
-				read(PARAFILE,*) annealTemp
-			else if(char=='annealSteps') then
-				flag1=.TRUE.
-				read(PARAFILE,*) annealSteps
+			!else if(char=='annealTemp') then
+			!	flag1=.TRUE.
+			!	read(PARAFILE,*) annealTemp
+			!else if(char=='annealSteps') then
+			!	flag1=.TRUE.
+			!	read(PARAFILE,*) annealSteps
 			else if(char=='agingTime') then		!2019.04.30 Add
 				flag1=.TRUE.
 				read(PARAFILE,*) agingTime
-			else if(char=='annealTime') then
-				flag1=.TRUE.
-				read(PARAFILE,*) annealTime
-			else if(char=='annealType') then
-				flag1=.TRUE.
-				read(PARAFILE,*) annealType
-			else if(char=='annealTempInc') then
-				flag1=.TRUE.
-				read(PARAFILE,*) annealTempInc
+			!else if(char=='annealTime') then
+			!	flag1=.TRUE.
+			!	read(PARAFILE,*) annealTime
+			!else if(char=='annealType') then
+			!	flag1=.TRUE.
+			!	read(PARAFILE,*) annealType
+			!else if(char=='annealTempInc') then
+			!	flag1=.TRUE.
+			!	read(PARAFILE,*) annealTempInc
 			else if(char=='grainSize') then
 				flag1=.TRUE.
 				read(PARAFILE,*) grainSize
@@ -327,6 +317,47 @@ subroutine ReadInputs()
 	flag=.FALSE.
 
 	!*******************************************************
+	!<read in anneal parameters
+	!*******************************************************
+	do while(flag .eqv. .FALSE.)
+		read(PARAFILE,*) char
+		if(char=='AnnealStart') then
+			flag=.TRUE.
+		end if
+	end do
+	flag=.FALSE.
+
+	do while(flag .eqv. .FALSE.)
+		flag1=.FALSE.
+		do while(flag1 .eqv. .FALSE.)
+			read(PARAFILE,*) char
+			if(char=='AnnealEnd') then
+				flag1=.TRUE.
+				flag=.TRUE.
+			else if(char=='annealTemp') then
+				flag1=.TRUE.
+				read(PARAFILE,*) annealTemp
+			else if(char=='annealSteps') then
+				flag1=.TRUE.
+				read(PARAFILE,*) annealSteps
+			else if(char=='annealTime') then
+				flag1=.TRUE.
+				read(PARAFILE,*) annealTime
+			else if(char=='annealType') then
+				flag1=.TRUE.
+				read(PARAFILE,*) annealType
+			else if(char=='annealTempInc') then
+				flag1=.TRUE.
+				read(PARAFILE,*) annealTempInc
+			else
+				write(*,*) 'error parameter: ', char
+			end if
+		end do
+		flag1=.FALSE.
+	end do
+	flag=.FALSE.
+
+	!*******************************************************
 	!<read in output parameters
 	!*******************************************************
 	!<set default valuse for output parameters
@@ -351,7 +382,7 @@ subroutine ReadInputs()
 		flag1=.FALSE.
 		do while(flag1 .eqv. .FALSE.)
 			read(PARAFILE,*) char
-			if(char=='end') then
+			if(char=='OutputEnd') then
 				flag1=.TRUE.
 				flag=.TRUE.
 			else if(char=='totdatToggle') then
@@ -394,7 +425,7 @@ subroutine ReadInputs()
 
 		do while(flag .eqv. .FALSE.)
 			read(PARAFILE,*) char
-			if(char=='fineStart') then
+			if(char=='MeshStart') then
 				flag=.TRUE.
 			endif
 		end do
@@ -404,9 +435,21 @@ subroutine ReadInputs()
 			flag1=.FALSE.
 			do while(flag1 .eqv. .FALSE.)
 				read(PARAFILE,*) char
-				if(char=='end') then
+				if(char=='MeshEnd') then
 					flag1=.TRUE.
 					flag=.TRUE.
+				else if(char=='length') then
+					flag1=.TRUE.
+					read(PARAFILE,*) meshLength
+				else if(char=='numx') then
+					flag1=.TRUE.
+					read(PARAFILE,*) numx
+				else if(char=='numy') then
+					flag1=.TRUE.
+					read(PARAFILE,*) numy
+				else if(char=='numz') then
+					flag1=.TRUE.
+					read(PARAFILE,*) numz
 				else if(char=='fineLength') then
 					flag1=.TRUE.
 					read(PARAFILE,*) fineLength
@@ -436,7 +479,7 @@ subroutine ReadInputs()
 	!***********************************************************************
 	!clustering rate constants
 	!***********************************************************************
-
+	atomSize=(lattice**3d0)/2d0
 	omega=(48d0*pi**2/atomSize**2)**(1d0/3d0) 			!clustering rate parameter for spherical clusters
 	omegastar=(4*pi*reactionRadius)/atomSize			!clustering rate parameter modifier due to reaction radius
 	omega2D=(4d0*pi/(atomSize*burgers))**(1d0/2d0)		!clustering rate parameter for 1D migrating circular clusters
@@ -445,7 +488,6 @@ subroutine ReadInputs()
 	!omegastar1D=0d0									!clustering rate parameter modifier due to reaction radius
 	omegacircle1D=(1d0/burgers)**(1d0/2d0)				!clustering rate parameter for 1D migrating circular clusters
 
-	recombinationCoeff=4d0*pi*(.4466)/atomSize			!from Stoller et al., not used any longer
 
 end subroutine
 
