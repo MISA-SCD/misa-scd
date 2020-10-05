@@ -319,7 +319,7 @@ end subroutine
 !***************************************************************************************************
 !> subroutine createCascadeConnect(): This subroutine assigns values to the connectivity matrix
 !(global variable) used for all cascades
-!Input: numxcascade, numycascade, nunmzcascade (global variables) : from parameters.txt
+!Input: numxcascade, numycascade, nunmzcascade (global variables) : from configure.in
 !Output: cascadeConnectivity (global variable)
 !***************************************************************************************************
 subroutine  createCascadeConnect()

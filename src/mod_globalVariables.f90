@@ -7,7 +7,7 @@
 ! 3) Global reaction rates
 ! 4) Material input information, in the form of derived types (diffusion and binding energies, etc)
 ! 5) Universal constants
-! 6) Simulation parameters read in from parameters.txt
+! 6) Simulation parameters read in from configure.in
 ! 7) Other miscellaneous variables used for MPI, debugging, or postprocessing
 !****************************************************************************************
 module mod_globalVariables
@@ -83,7 +83,7 @@ module mod_globalVariables
     type(reactionParameters), allocatable :: ImplantReactions(:)	    !<List of allowed implantation reactions (and ref. to functional form of reaction rate)--(numImplantReac)
 
     !*************************************************************
-    !>Simulation parameters read in from parameters.txt
+    !>Simulation parameters read in from configure.in
     !************************************************************
     !Toggles
     character(len=20) implantType			!<(Frenkel pairs or cascades), used to determine the type of damage in the simulation

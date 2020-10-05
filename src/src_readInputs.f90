@@ -1,6 +1,6 @@
 !***************************************************************************************************
-!> Subroutine ReadInputs():  - reads in simulation parameters from parameters.txt
-!This subroutine reads in all simulation parameters located in parameters.txt as well file names
+!> Subroutine ReadInputs():  - reads in simulation parameters from configure.in
+!This subroutine reads in all simulation parameters located in configure.in as well file names
 !for all other input files (defect attributes, mesh, cascades, implantation, etc).
 !***************************************************************************************************
 subroutine ReadInputs()
@@ -18,11 +18,11 @@ subroutine ReadInputs()
 
 	flag= .false.
 	!<read in filename of defectFile
-	inquire(file='parameters.txt', exist=alive1)
+	inquire(file='configure.in', exist=alive1)
 	if(.not. alive1) then
-		write(*,*) 'parameters.txt does not exist'
+		write(*,*) 'configure.in does not exist'
 	else
-		open(unit=PARAFILE, file='parameters.txt', status='old',action='read')
+		open(unit=PARAFILE, file='configure.in', status='old',action='read')
 	end if
 
 	!*******************************************************

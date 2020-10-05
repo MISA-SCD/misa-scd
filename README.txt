@@ -13,17 +13,17 @@ cd src
 make clean
 make
 
-To run, such as Bulk_CuPrecipitate_Cascade, use the following commands:
+To run under examples/, use the following commands:
 
-cd ../tests/Bulk_CuPrecipitate_Cascade
-mpirun -n 8 ../../src/misascd parameters.txt
+cd ../tests/[Example file name]
+mpirun -n [number of processes] ../../src/misascd configure.in
 
 ******************************************************************************************
-Description of parameters.txt
+Description of configure.in
 ******************************************************************************************
 This is the main file containing the simulation parameters. It also contains the filenames 
 of the other input files and several toggles for various simulation options. The options
-that can be toggled in parameters.txt are:
+that can be toggled in configure.in are:
 
 1) ImplantType ('cascade' or 'FrenkelPair')
 This option determines whether we are implanting cascades or Frenkel pairs. It toggles the
@@ -57,7 +57,7 @@ migrating defects from the simulation.
 6) pointDefect ('yes' or 'no')
 This option toggles the mobility of defect clusters.
 
-All other parameters are explained in the comments of the parameters.txt file
+All other parameters are explained in the comments of the configure.in file
 
 !*****************************************************************************************
 !Output files and formatting
