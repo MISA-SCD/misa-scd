@@ -25,7 +25,7 @@ $ mpirun -n [number of processes] ../../src/misascd configure.in
 This is the main file containing the simulation parameters. It also contains the filenames 
 of the other input files and several toggles for various simulation options. It contains four
 parts of parameters:
-1. Toggles, which controls the simulation process.
+1. **Toggles**, which controls the simulation process.
     * implantType ('cascade' or 'FrenkelPair')
     This option determines whether we are implanting cascades or Frenkel pairs. It toggles the
     use of an adaptive meshing scheme for cascades as well as causes the program to read in
@@ -46,41 +46,36 @@ parts of parameters:
 
     * pointDefect ('yes' or 'no')
     This option toggles the mobility of defect clusters.
-2. Simulation parameters, which defaults to the parameters in the case of irradiation.
+2. **Simulation parameters**, which defaults to the parameters in the case of irradiation.
 If it's a thermal aging simulation, one needs to insert 'agingTime' with a non-zero value
 and set 'dpaRate' and 'totalDPA' with zero-value.
 
-3. Anneal parameters, which used for annealing simulation.
+3. **Anneal parameters**, which used for annealing simulation.
 If it's an anneal simulation, one should set the values and set 'dpaRate' and 'totalDPA' with zero-value.
 
-4. Output parameters, which used to control post-processing.
+4. **Output parameters**, which used to control post-processing.
 The simulation outputs using a logarithmic timescale. A new output file is created for each repetition of
 the simulation. MISA-SCD has an option to run multiple simulations in a row. At each output point,
-information can be entered into four output files:
+information can be entered into four output files:  
 totdat_x.out, defect_x.out, stadat_x.out, xyzdat_x.out
 
-totdat_x.out: contains defect populations (defect type and their number) and their statistics
-              (number density, average radius and so on) in the whole system.
-defect_x.out: contains only defect populations (defect type and their number) in the whole system.
-stadat_x.out: contains only statistics of defects (number density, average radius and so on) in the whole system.
-xyzdat_x.out: contains defect populations (defect type and their number) and their statistics
-                            (number density, average radius and so on) in each mesh.
+totdat_x.out: contains defect populations (defect type and their number) and their statistics (number density, average radius and so on) in the whole system.  
+defect_x.out: contains only defect populations (defect type and their number) in the whole system.  
+stadat_x.out: contains only statistics of defects (number density, average radius and so on) in the whole system.  
+xyzdat_x.out: contains defect populations (defect type and their number) and their statistics (number density, average radius and so on) in each mesh.
 
 All other parameters are explained in the comments of the configure.in file
 
-NOTE: the current method for identifying defect types is as  follows:
+NOTE: the current method for identifying defect types is as  follows:  
 NumCu NumV NumSIA NumSIA_immobile NumDefects
 
-For example, the output:
-3 2 0 0 5
-Indicates that the defect type in this volume element is a Cu3V2 cluster, and there are 5
-of these defects in the volume element.
+For example, the output:  
+3 2 0 0 5  
+Indicates that the defect type in this volume element is a Cu3V2 cluster, and there are 5 of these defects in the volume element.
 
-##Others
-Each input file has a specific format that is currently MISA-SCD v1.0 code. If the format is incorrect,
-the code will return errors.
+## Others
+Each input file has a specific format that is currently MISA-SCD v1.0 code. If the format is incorrect, the code will return errors.
 
-The simulation automatically divides the mesh between the number of specified processors.
-If a processor is left with zero mesh elements, the code will return an error.
+The simulation automatically divides the mesh between the number of specified processors. If a processor is left with zero mesh elements, the code will return an error.
 
 
