@@ -1,10 +1,10 @@
 # MISA-SCD v1.0
 
 README file for Parallel Stochastic Cluster Dynamics Simulation Software -- MISA-SCD v1.0
-Developers:[Chendandan](mailto:chendandan_ustb@xs.ustb.edu.cn)
+Developers: [Chendandan](mailto:chendandan_ustb@xs.ustb.edu.cn)
 
 ## Compile and Run
-dependency:
+Dependency:
 1. mpi
 2. fortran90
 
@@ -77,7 +77,7 @@ Each input file has a specific format that is currently MISA-SCD v1.0 code. If t
 
 The simulation automatically divides the mesh between the number of specified processors. If a processor is left with zero mesh elements, the code will return an error.
 
-The development of the MISA-SCD v1.0 refers to the [SRSCD](https://github.com/aaronydunn/srscd/tree/master/Documents/GradSchool2016/srscd) code.
+The development of the MISA-SCD v1.0 refers to the [SRSCD](https://github.com/aaronydunn/srscd/tree/master/Documents/GradSchool2016/srscd) (Spatially Resolved Stochastic Cluster Dynamics) code.
 
 
 
