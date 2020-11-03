@@ -1,6 +1,7 @@
-14      ! T=600 K,  Epka=10 keV,  DIRECTION OF PKA IS <122>
-
-3
+600.0       !temperature (K) uncertain
+10000       !PKA energy (eV), DIRECTION OF PKA IS <122>
+14          !Average number of displaced atoms per cascade (used for dpa calculation)
+3           !number of cascades
 
 16
 10

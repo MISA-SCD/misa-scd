@@ -44,22 +44,76 @@ Subroutine deallocateCascadeList()
 
 	type(cascadeEvent), pointer :: CascadeTemp, CascadePrev
 	type(cascadeDefect), pointer :: DefectTemp, DefectPrev
+	integer :: i, fileID, test
 
-	CascadeTemp=>CascadeList
-	do while(associated(CascadeTemp))
-		DefectTemp=>CascadeTemp%listOfDefects
-		do while(associated(DefectTemp))
-			DefectPrev=>DefectTemp
-			DefectTemp=>DefectTemp%next
-			if(allocated(defectPrev%defectType)) then
-				deallocate(defectPrev%defectType)
-			endif
-			deallocate(defectPrev)
-		end do
-		CascadePrev=>CascadeTemp
-		CascadeTemp=>CascadeTemp%next
-		deallocate(CascadePrev)
-	end do
+	!<Deallocate cascadeList
+	if(implantType=='Cascade') then
+		if(numCascadeFiles > 1) then	!<delete cascadeLists(numCascadeFiles)
+			do fileID=1, numCascadeFiles
+				!<delete %listDefects
+				test=1
+				nullify(CascadeTemp)
+				CascadeTemp=>cascadeLists(fileID)%listCascades%next
+				do while(associated(CascadeTemp))
+					test=test+1
+					nullify(DefectTemp)
+					DefectTemp=>CascadeTemp%listOfDefects%next
+					do while(associated(DefectTemp))
+						CascadeTemp%listOfDefects%next=>DefectTemp%next
+						deallocate(DefectTemp%defectType)
+						deallocate(DefectTemp)
+						DefectTemp=>CascadeTemp%listOfDefects%next
+					end do
+					deallocate(CascadeTemp%listDefects%defectType)
+					deallocate(CascadeTemp%listDefects)
+
+					cascadeLists(fileID)%listCascades%next=>CascadeTemp%next
+					deallocate(CascadeTemp)
+					CascadeTemp=>cascadeLists(fileID)%listCascades%next
+				end do
+				!<delete the first cascade
+				nullify(CascadeTemp)
+				CascadeTemp=>cascadeLists(fileID)%listCascades
+				do while(associated(CascadeTemp))
+					nullify(DefectTemp)
+					DefectTemp=>CascadeTemp%listCascades%next
+					do while(associated(DefectTemp))
+						CascadeTemp%listCascades%next=>DefectTemp%next
+						deallocate(DefectTemp%defectType)
+						deallocate(DefectTemp)
+						DefectTemp=>CascadeTemp%listOfDefects%next
+					end do
+					deallocate(CascadeTemp%listDefects%defectType)
+					deallocate(CascadeTemp%listDefects)
+
+					deallocate(CascadeTemp)
+					nullify(CascadeTemp)
+				end do
+			end do
+			deallocate(cascadeLists)
+		else	!<delete cascadeList
+			CascadeTemp=>CascadeList
+			do while(associated(CascadeTemp))
+				DefectTemp=>CascadeTemp%listOfDefects
+				do while(associated(DefectTemp))
+					DefectPrev=>DefectTemp
+					DefectTemp=>DefectTemp%next
+					if(allocated(defectPrev%defectType)) then
+						deallocate(defectPrev%defectType)
+					endif
+					deallocate(defectPrev)
+				end do
+				CascadePrev=>CascadeTemp
+				CascadeTemp=>CascadeTemp%next
+				deallocate(CascadePrev)
+			end do
+		end if
+	end if
+
+	if(PKAspectrum=='yes') then
+		deallocate(EPKAlist%energy)
+		deallocate(EPKAlist%cpdf)
+	end if
 
 end subroutine
 

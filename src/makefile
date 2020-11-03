@@ -15,7 +15,7 @@ TARGET = misascd
 
 MODSRCS =   mod_structures.f90\
             mod_constants.f90\
-            mod_globalVariables.f90\
+            mod_globalvariables.f90\
             mod_randdp.f90\
             mod_updatereactions.f90
 MODOBJS = $(MODSRCS:.f90=.o)

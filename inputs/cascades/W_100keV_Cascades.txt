@@ -1,6 +1,7 @@
-122.286
-
-14
+600.0       !temperature (K) uncertain
+100000      !PKA energy (eV)
+122.286     !Average number of displaced atoms per cascade (used for dpa calculation)
+14          !number of cascades
 
 139
 102

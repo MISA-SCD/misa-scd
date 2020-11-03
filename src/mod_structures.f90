@@ -149,4 +149,20 @@ module mod_structures
 		double precision, allocatable :: totalRate(:)	!<Sum of the rates of all reactions in each cascade element
 	end type cascade
 
+	!<PKA spectrum
+	type :: cpdf_t
+		integer :: size									!number of datas
+		double precision, allocatable :: energy(:)		!<PKA energy
+		double precision, allocatable :: cpdf(:)		!<Probability between 0 and 1
+	end type cpdf_t
+
+	!<cascade fiels
+	type :: cascadeFileList		!<List of cascades that are read in from a number of cascade files
+		double precision :: temperature					!<temperature of the cascade collision
+		double precision :: PKAenergy					!<PKA energy of the cascade collision
+		double precision :: averDisAtoms				!<average number of atoms displaced per cascade in this cascade file
+		integer :: numCascades							!<number of cascade in this cascade file
+		type(cascadeEvent), pointer :: listCascades		!<list of cascades in this cascade file
+	end type cascadeFileList
+
 end module

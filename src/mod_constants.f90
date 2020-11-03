@@ -20,6 +20,7 @@ module mod_constants
     integer, parameter :: ATTRFILE = 11     !<Used to read Defects.txtx file
     integer, parameter :: MESHFILE = 12     !<Used to read Mesh_*.txt file
     integer, parameter :: CASFILE = 13      !<Used to read cascades.txt File
+    integer, parameter :: CPDFFILE = 14                     !<PKA spectrum
     !<output file
     integer, parameter :: TOTFILE = 81      !<Used to write totdat.out file, contains defects (type and number) and  statistical data
     integer, parameter :: DEFFILE = 82      !<Used to write defect.out file, contains onle defects (type and number)

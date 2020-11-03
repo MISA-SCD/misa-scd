@@ -1,6 +1,7 @@
-15      ! T=600 K,  Epka=10 keV
-
-9       !number of cascades
+600.0       !temperature (K) uncertain
+10000       !PKA energy (eV)
+15          !Average number of displaced atoms per cascade (used for dpa calculation)
+9           !number of cascades
 
 16      !number of defects
 10      !number of displaced atoms

@@ -10,7 +10,7 @@
 ! 6) Simulation parameters read in from configure.in
 ! 7) Other miscellaneous variables used for MPI, debugging, or postprocessing
 !****************************************************************************************
-module mod_globalVariables
+module mod_globalvariables
     use mod_constants
     use mod_structures
     implicit none
@@ -47,8 +47,10 @@ module mod_globalVariables
     !>Cascade list
     type(cascadeEvent),pointer :: cascadeList			!<List of cascades (read from file) that can be implanted
     type(cascade),pointer :: ActiveCascades				!<List of fine meshes that are active due to recent cascade implantation. Contains defect lists and reaction lists)
-    integer :: numCascades							    !<number of cascades in the cascade input file
+    double precision :: PKAtemperature                  !<Temperature of this cascade collision (K)
+    double precision :: PKAenergy                       !<Energy of this PKA (eV)
     double precision :: numDisplacedAtoms		        !<number of atoms displaced per cascade, read from cascade file
+    integer :: numCascades							    !<number of cascades in the cascade input file
     integer :: numCellsCascade							!<number of volume elements within a cascade (fine) mesh
     integer :: numxCascade,numyCascade,numzCascade	    !<number of elements in cascade x-direction, y-direction, z-direction
     integer,allocatable :: cascadeConnectivity(:,:) 	!<connectivity matrix for cascade meshes (same for all fine meshes)
@@ -96,6 +98,11 @@ module mod_globalVariables
     !used for test2
     character(len=20) test3
     integer :: oneCascadeGCell
+    !<PKA spectrum
+    character(len=20) :: PKAspectrum                    !<('yes' or 'no') Whether to use the PKA spectrum
+    integer :: numCascadeFiles                          !<cascadeFile: materials_temperature_PKAenergy_*.txt
+    type(cascadeFileList), pointer :: cascadeLists(:)   !<List of cascades (read from file) that can be implanted--cascadeLists(numCascadeFiles)
+    type(cpdf_t) :: EPKAlist                            !<list of PKA spectrum (cpdf and PKA energies)
 
     !>Simulation parameters
     double precision :: tempStore		    !<Temperature read in (K) - used when temp. changes several times during a simulation

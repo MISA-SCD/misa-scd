@@ -12,7 +12,8 @@ subroutine ReadInputs()
 	character(len=20) :: char
 	integer :: i
 	character(len=100) :: defectFilename                 !<Filename of defect attributes file
-	character(len=100) :: meshFilename                   !<Filename of mesh file
+	!character(len=100) :: meshFilename                   !<Filename of mesh file
+	character(len=100) :: pkaFilename                    !<Filename of PKA spectrum file
 	character(len=100) :: cascadeFilename                !<Filename of cascade file
 	logical :: alive1, alive2, flag, flag1
 
@@ -43,8 +44,6 @@ subroutine ReadInputs()
 		end if
 	end do
 	flag= .false.
-
-	call readDefectAttributes(defectFilename)
 
 	!<read in mesh file
 !	do  while (flag .eqv. .false.)
@@ -115,6 +114,36 @@ subroutine ReadInputs()
 		write(*,*) 'error frenkel pairs with explicit implantation'
 	endif
 
+	!<Whether to use the PKA spectrum
+	do while (flag .eqv. .false.)
+		read(PARAFILE,*) char
+		if(char=='PKAspectrum') then
+			read(PARAFILE,*) PKAspectrum
+			flag=.true.
+		end if
+	end do
+	flag=.false.
+
+	!<read in filename of PKA spectrum file
+	do while (flag .eqv. .false.)
+		read(PARAFILE,*) char
+		if(char=='pkaFile') then
+			read(PARAFILE,*) pkaFilename
+			flag=.true.
+		end if
+	end do
+	flag=.false.
+
+	!<read in the number of cascade files
+	do while (flag .eqv. .false.)
+		read(PARAFILE,*) char
+		if(char=='numCascadeFiles') then
+			read(PARAFILE,*) numCascadeFiles
+			flag=.true.
+		end if
+	end do
+	flag=.false.
+
 	!read in filename of cascade file
 	do while (flag .eqv. .false.)
 		read(PARAFILE,*) char
@@ -125,13 +154,6 @@ subroutine ReadInputs()
 	end do
 	flag=.false.
 
-	if(implantType=='Cascade') then
-		call readCascadeList(cascadeFilename)
-	else if(implantType=='FrenkelPair') then
-		numDisplacedAtoms=1				!Frenkel pair implantation, no need to read cascades, one displaced atom per implant event
-	else
-		write(*,*) 'error implantType'
-	end if
 
 	do while(flag .eqv. .false.)
 		read(PARAFILE,*) char
@@ -475,6 +497,29 @@ subroutine ReadInputs()
 	end if
 
 	close(PARAFILE)
+
+	!*******************************************************
+	!<Read other files
+	!*******************************************************
+	!<read _defects_.txt
+	call readDefectAttributes(defectFilename)
+	!<read cpdf.*
+	if(PKAspectrum == 'yes') then
+		call readPKAspectrum(pkaFilename)
+	end if
+
+	!<read cascade.txt
+	if(implantType=='Cascade') then
+		if(numCascadeFiles > 1) then
+			call readCascadeFiles(cascadeFilename)
+		else
+			call readCascadeList(cascadeFilename)
+		end if
+	else if(implantType=='FrenkelPair') then
+		numDisplacedAtoms=1				!Frenkel pair implantation, no need to read cascades, one displaced atom per implant event
+	else
+		write(*,*) 'error implantType'
+	end if
 
 	!***********************************************************************
 	!clustering rate constants
@@ -839,15 +884,15 @@ subroutine readCascadeList(filename)
 
 	allocate(cascadeList)
 	cascadeCurrent=>cascadeList
+	read(CASFILE,*) PKAtemperature
+	read(CASFILE,*) PKAenergy
 	read(CASFILE,*) numDisplacedAtoms
-	read(CASFILE,*)
 	read(CASFILE,*) numCascades
 
 	do i=1,numCascades
 		read(CASFILE,*)
-		read(CASFILE,*) numDefects
+		read(CASFILE,*) cascadeCurrent%numDefectsTotal
 		read(CASFILE,*) cascadeCurrent%numDisplacedAtoms
-		cascadeCurrent%numDefectsTotal=numDefects
 		allocate(cascadeCurrent%ListOfDefects)
 		defectCurrent=>cascadeCurrent%ListOfDefects
 		nullify(cascadeCurrent%next)
@@ -876,3 +921,109 @@ subroutine readCascadeList(filename)
 	close(CASFILE)
 
 end subroutine
+
+!***************************************************************************************************
+!> Subroutine readEPKAs(filename): reads PKA spectrum file
+!The first column is the PKA energy, and the second column is the cpdf
+!***************************************************************************************************
+subroutine readPKAspectrum(filename)
+	use mod_constants
+	use mod_structures
+	use mod_structures
+	implicit none
+
+	character(len=100), intent(in) :: filename       !< filename = '../../inputs/pkas/cpdf.w
+	integer :: i
+
+	open(CPDFFILE, file=filename, status='old', action='read')
+	read(CPDFFILE, *) EPKAlist%size
+	read(CPDFFILE, *)
+	allocate(EPKAlist%energy(EPKAlist%size))
+	allocate(EPKAlist%cpdf(EPKAlist%size))
+
+	do i=1, EPKAlist%size
+		read(CPDFFILE, *) EPKAlist%energy(i), EPKAlist%cpdf(i)
+	end do
+	close(CPDFFILE)
+
+end subroutine readPKAspectrum
+
+!***************************************************************************************************
+!> Subroutine readCascadeFiles(filename): reads cascade defects in a number of cascade files
+!This subroutine reads a list of cascades from each cascade file and stored in derived type cascade.
+!***************************************************************************************************
+subroutine readCascadeFiles(filename)
+	use mod_constants
+	use mod_structures
+	use mod_structures
+	implicit none
+
+	character(len=100), intent(in) :: filename       !< filename = '../../inputs/cascades/Fe_*.txt'
+	character(len=100) :: systemChars
+	character(len=100) :: cascadeFilename
+	integer :: fileID, stat, totalDisAtoms, totalCascades, i, j, k
+	type(cascadeEvent), pointer :: casCurrent
+	type(cascadeDefect), pointer :: casDef
+
+	allocate(cascadeLists(numCascadeFiles))
+	totalDisAtoms=0
+	totalCascades=0
+
+	systemChars = 'ls -R '//trim(filename)//' > cas.dat'	!write all cascade files' relative path to cas.dat file
+	call system(trim(systemChars))
+
+	open(20, file='cas.dat')
+	do fileID=1, numCascadeFiles
+		!<read filename
+		read(20, fmt='(A)', iostat=stat) cascadeFilename
+		if(stat /= 0) then
+			write(*,*) 'Error: read cascade filename'
+		end if
+		open(CASFILE, file=cascadeFilename, status='old', action='read')
+		!<read number of atoms displaced and number of cascades in this cascade file
+		read(CASFILE,*) cascadeLists(fileID)%temperature   !(K)
+		read(CASFILE,*) cascadeLists(fileID)%PKAenergy     !(eV)
+		read(CASFILE,*) cascadeLists(fileID)%averDisAtoms
+		read(CASFILE,*) cascadeLists(fileID)%numCascades
+		totalDisAtoms=totalDisAtoms+cascadeLists(fileID)%averDisAtoms
+		totalCascades=totalCascades+cascadeLists(fileID)%numCascades
+		allocate(cascadeLists(fileID)%listCascades)
+
+		!read cascades in this file
+		nullify(casCurrent)
+		casCurrent=>cascadeLists(fileID)%listCascades
+		nullify(casCurrent%next)
+		do i=1, cascadeLists(fileID)%numCascades
+			read(CASFILE,*)
+			read(CASFILE,*) casCurrent%numDefects
+			read(CASFILE,*) casCurrent%numDisplacedAtoms
+			allocate(casCurrent%listDefects)
+			nullify(casDef)
+			casDef=>casCurrent%listDefects
+			nullify(casDef%next)
+
+			do j=1,casCurrent%numDefects
+				allocate(casDef%defectType(SPECIES))
+				read(CASFILE,*) (casDef%defectType(k),k=1,SPECIES)
+				read(CASFILE,*) (casDef%coordinates(k), k=1,3)
+
+				if(j /= casCurrent%numDefects) then
+					allocate(casDef%next)
+					casDef=>casDef%next
+					nullify(casDef%next)
+				end if
+			end do
+
+			if(i /= cascadeLists(fileID)%numCascades) then
+				allocate(casCurrent%next)
+				casCurrent=>casCurrent%next
+				nullify(casCurrent%next)
+			end if
+		end do
+		close(CASFILE)
+	end do
+	numDisplacedAtoms=dble(totalDisAtoms)/dble(totalCascades)
+
+	close(20, status='delete')      !<close  and delete cas.dat
+
+end subroutine readCascadeFiles

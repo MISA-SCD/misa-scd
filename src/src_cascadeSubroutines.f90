@@ -25,6 +25,90 @@ subroutine chooseCascade(CascadeTemp)
     end do
 end subroutine
 
+!****************************************************************************************
+!>Subroutine: chooseCascade_files(CascadeTemp): chooses one cascade randomly from a number of cascade files
+!Inputs: CascadeList (global variable)
+!Output: CascadeTemp (pointing at the cascade we want)
+!*****************************************************************************************
+subroutine chooseCascade_withFiles(cascadeTemp)
+    use mod_structures
+    use mod_randdp
+    use mod_globalVariables
+    implicit none
+
+    type(cascadeEvent), pointer, intent(inout) :: cascadeTemp
+    double precision :: r, r1, atemp, atemp1, energy
+    integer :: i
+    double precision, external :: sample_PKA_energy
+
+    if(PKAspectrum == 'yes') then
+        energy = sample_PKA_energy()      !<energy > 0d0
+
+        outer1: do i=1, numCascadeFiles
+            if(abs(energy-cascadeLists(i)%PKAenergy) <= 5d0) then   !find the cascade file
+                r=dprand()
+                atemp=0d0
+                cascadeTemp=>cascadeLists(i)%listCascades
+                do while(associated(cascadeTemp))
+                    atemp=atemp+1d0/dble(cascadeLists(i)%numCascades)
+                    if(r<=atemp) then
+                        exit outer1
+                    else
+                        cascadeTemp=>cascadeTemp%next
+                    end if
+                end do
+            end if
+        end do outer1
+    else    !not use PKA spectrum
+        r1 = dprand()   !<used to choose a cascade file
+        atemp1 = 0d0
+        outer2: do i=1, numCascadeFiles
+            atemp1 =atemp1 +1d0/dble(numCascadeFiles)
+            if(r1 <= atemp1) then   !<chosed a cascade file
+                r=dprand()
+                atemp=0d0
+                cascadeTemp=>cascadeLists(i)%listCascades
+                do while(associated(cascadeTemp))
+                    atemp=atemp+1d0/dble(cascadeLists(i)%numCascades)
+                    if(r<=atemp) then
+                        exit outer2
+                    else
+                        cascadeTemp=>cascadeTemp%next
+                    end if
+                end do
+            end if
+        end do outer2
+    end if
+
+end subroutine chooseCascade_withFiles
+
+!***************************************************************************************************
+!> subroutine choosePKAenergy(): The PKA energy is sampled by linear interpolation
+!***************************************************************************************************
+double precision function sample_PKA_energy()
+    use mod_structures
+    use mod_randdp
+    use mod_globalVariables
+    implicit none
+
+    double precision :: cpdf, r
+    integer :: i, index
+    double precision :: slope
+
+    index=0
+    r=dprand()
+    do i=2, EPKAlist%size
+        if(r > EPKAlist%cpdf(i-1) .AND. r < EPKAlist%cpdf(i)) then
+            index=i
+            exit
+        end if
+    end do
+
+    slope = (EPKAlist%energy(index) - EPKAlist%energy(index-1))/(EPKAlist%cpdf(index) - EPKAlist%cpdf(index-1))
+    sample_PKA_energy = slope*(r - EPKAlist%cpdf(index-1)) + EPKAlist%energy(index-1)
+
+end function
+
 !***************************************************************************************************
 !> Integer function CascadeCount(): This subroutine counts how many cascades are active in the LOCAL mesh (not on all processors)
 ! and returns that value

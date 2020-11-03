@@ -1,7 +1,7 @@
-! T=600 K,  Epka=25 keV, one dislocation loop
-37.75
-
-8
+600.0       !temperature (K) uncertain
+25000       !PKA energy (eV), no dislocation loop
+37.75       !Average number of displaced atoms per cascade (used for dpa calculation)
+8           !number of cascades
 
 50
 40

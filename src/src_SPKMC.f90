@@ -369,7 +369,12 @@ subroutine updateDefectList(reactionCurrent, defectUpdateCurrent, CascadeCurrent
 				!> update localSend if needed
 				!> populate with defects from cascade
 				!**************************************************
-				call chooseCascade(cascadeTemp)	!cascadeTemp must be associated
+				nullify(cascadeTemp)
+				if(numCascadeFiles > 1) then
+					call chooseCascade_withFiles(cascadeTemp)
+				else
+					call chooseCascade(cascadeTemp)	!cascadeTemp must be associated
+				end if
 				cascadeDefectTemp=>cascadeTemp%ListOfDefects
 
 				!initialize the cascade to be added
@@ -760,7 +765,12 @@ subroutine updateDefectList(reactionCurrent, defectUpdateCurrent, CascadeCurrent
 				nullify(defectPrev)
 
 			else if(meshingType=='nonAdaptive') then
-				call chooseCascade(CascadeTemp)	!choose one of the cascades from the list randomly
+				nullify(cascadeTemp)
+				if(numCascadeFiles > 1) then
+					call chooseCascade_withFiles(cascadeTemp)
+				else
+					call chooseCascade(CascadeTemp)	!choose one of the cascades from the list randomly
+				end if
 				cascadeDefectTemp=>cascadeTemp%ListOfDefects
 				!***************************************************************************************
 				!Recombination step:
