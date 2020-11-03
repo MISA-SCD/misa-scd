@@ -55,14 +55,13 @@ If it's an anneal simulation, one should set the values and set 'dpaRate' and 't
 
 4. **Output parameters**, which used to control post-processing.
 The simulation outputs using a logarithmic timescale. A new output file is created for each repetition of
-the simulation. MISA-SCD has an option to run multiple simulations in a row. At each output point,
-information can be entered into four output files:  
+the simulation. MISA-SCD has an option to run multiple simulations in a row. At each output point, information can be entered into four output files:  
 totdat_x.out, defect_x.out, stadat_x.out, xyzdat_x.out
 
-totdat_x.out: contains defect populations (defect type and their number) and their statistics (number density, average radius and so on) in the whole system.  
-defect_x.out: contains only defect populations (defect type and their number) in the whole system.  
-stadat_x.out: contains only statistics of defects (number density, average radius and so on) in the whole system.  
-xyzdat_x.out: contains defect populations (defect type and their number) and their statistics (number density, average radius and so on) in each mesh.
+* totdat_x.out: contains defect populations (defect type and their number) and their statistics (number density, average radius and so on) in the whole system.  
+* defect_x.out: contains only defect populations (defect type and their number) in the whole system.  
+* stadat_x.out: contains only statistics of defects (number density, average radius and so on) in the whole system.  
+* xyzdat_x.out: contains defect populations (defect type and their number) and their statistics (number density, average radius and so on) in each mesh.
 
 All other parameters are explained in the comments of the configure.in file
 
@@ -77,5 +76,8 @@ Indicates that the defect type in this volume element is a Cu3V2 cluster, and th
 Each input file has a specific format that is currently MISA-SCD v1.0 code. If the format is incorrect, the code will return errors.
 
 The simulation automatically divides the mesh between the number of specified processors. If a processor is left with zero mesh elements, the code will return an error.
+
+The development of the MISA-SCD v1.0 refers to the [SRSCD](https://github.com/aaronydunn/srscd/tree/master/Documents/GradSchool2016/srscd) code.
+
 
 
