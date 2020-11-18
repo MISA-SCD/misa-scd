@@ -929,7 +929,7 @@ end subroutine
 subroutine readPKAspectrum(filename)
 	use mod_constants
 	use mod_structures
-	use mod_structures
+	use mod_globalvariables
 	implicit none
 
 	character(len=100), intent(in) :: filename       !< filename = '../../inputs/pkas/cpdf.w
@@ -955,7 +955,7 @@ end subroutine readPKAspectrum
 subroutine readCascadeFiles(filename)
 	use mod_constants
 	use mod_structures
-	use mod_structures
+	use mod_globalvariables
 	implicit none
 
 	character(len=100), intent(in) :: filename       !< filename = '../../inputs/cascades/Fe_*.txt'
@@ -995,19 +995,19 @@ subroutine readCascadeFiles(filename)
 		nullify(casCurrent%next)
 		do i=1, cascadeLists(fileID)%numCascades
 			read(CASFILE,*)
-			read(CASFILE,*) casCurrent%numDefects
+			read(CASFILE,*) casCurrent%numDefectsTotal
 			read(CASFILE,*) casCurrent%numDisplacedAtoms
-			allocate(casCurrent%listDefects)
+			allocate(casCurrent%ListOfDefects)
 			nullify(casDef)
-			casDef=>casCurrent%listDefects
+			casDef=>casCurrent%ListOfDefects
 			nullify(casDef%next)
 
-			do j=1,casCurrent%numDefects
+			do j=1,casCurrent%numDefectsTotal
 				allocate(casDef%defectType(SPECIES))
 				read(CASFILE,*) (casDef%defectType(k),k=1,SPECIES)
 				read(CASFILE,*) (casDef%coordinates(k), k=1,3)
 
-				if(j /= casCurrent%numDefects) then
+				if(j /= casCurrent%numDefectsTotal) then
 					allocate(casDef%next)
 					casDef=>casDef%next
 					nullify(casDef%next)

@@ -92,20 +92,20 @@ double precision function sample_PKA_energy()
     implicit none
 
     double precision :: cpdf, r
-    integer :: i, index
+    integer :: i, index_PKA
     double precision :: slope
 
-    index=0
+    index_PKA=0
     r=dprand()
     do i=2, EPKAlist%size
         if(r > EPKAlist%cpdf(i-1) .AND. r < EPKAlist%cpdf(i)) then
-            index=i
+            index_PKA=i
             exit
         end if
     end do
 
-    slope = (EPKAlist%energy(index) - EPKAlist%energy(index-1))/(EPKAlist%cpdf(index) - EPKAlist%cpdf(index-1))
-    sample_PKA_energy = slope*(r - EPKAlist%cpdf(index-1)) + EPKAlist%energy(index-1)
+    slope = (EPKAlist%energy(index_PKA) - EPKAlist%energy(index_PKA-1))/(EPKAlist%cpdf(index_PKA) - EPKAlist%cpdf(index_PKA-1))
+    sample_PKA_energy = slope*(r - EPKAlist%cpdf(index_PKA-1)) + EPKAlist%energy(index_PKA-1)
 
 end function
 

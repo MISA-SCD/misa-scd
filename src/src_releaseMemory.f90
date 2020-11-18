@@ -50,7 +50,7 @@ Subroutine deallocateCascadeList()
 	if(implantType=='Cascade') then
 		if(numCascadeFiles > 1) then	!<delete cascadeLists(numCascadeFiles)
 			do fileID=1, numCascadeFiles
-				!<delete %listDefects
+				!<delete %ListOfDefects
 				test=1
 				nullify(CascadeTemp)
 				CascadeTemp=>cascadeLists(fileID)%listCascades%next
@@ -64,8 +64,8 @@ Subroutine deallocateCascadeList()
 						deallocate(DefectTemp)
 						DefectTemp=>CascadeTemp%listOfDefects%next
 					end do
-					deallocate(CascadeTemp%listDefects%defectType)
-					deallocate(CascadeTemp%listDefects)
+					deallocate(CascadeTemp%ListOfDefects%defectType)
+					deallocate(CascadeTemp%ListOfDefects)
 
 					cascadeLists(fileID)%listCascades%next=>CascadeTemp%next
 					deallocate(CascadeTemp)
@@ -76,15 +76,15 @@ Subroutine deallocateCascadeList()
 				CascadeTemp=>cascadeLists(fileID)%listCascades
 				do while(associated(CascadeTemp))
 					nullify(DefectTemp)
-					DefectTemp=>CascadeTemp%listCascades%next
+					DefectTemp=>CascadeTemp%listOfDefects%next
 					do while(associated(DefectTemp))
-						CascadeTemp%listCascades%next=>DefectTemp%next
+						CascadeTemp%listOfDefects%next=>DefectTemp%next
 						deallocate(DefectTemp%defectType)
 						deallocate(DefectTemp)
 						DefectTemp=>CascadeTemp%listOfDefects%next
 					end do
-					deallocate(CascadeTemp%listDefects%defectType)
-					deallocate(CascadeTemp%listDefects)
+					deallocate(CascadeTemp%ListOfDefects%defectType)
+					deallocate(CascadeTemp%ListOfDefects)
 
 					deallocate(CascadeTemp)
 					nullify(CascadeTemp)

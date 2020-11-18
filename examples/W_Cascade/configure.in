@@ -17,8 +17,17 @@ Cascade
 implantScheme           !<('MonteCarlo' for MC cascade implantation, 'explicit' for explicit cascade implantation).
 MonteCarlo
 
+PKAspectrum             !('yes' or 'no') Whether to use the PKA spectrum
+no
+
+pkaFile                 !Location of the PKA spectrum file
+'../../inputs/pkas/'
+
+numCascadeFiles         !Number of cascade files
+1
+
 cascadeFile             !<Location of the cascade file.
-'../../inputs/cascades/Fe_20KeV_Cascades.txt'
+'../../inputs/cascades/W_100keV_Cascades.txt'
 
 meshingType             !<('adaptive' or 'nonAdaptive') Whether we are using adaptive meshing protocol or not (adaptive for yes, nonAdaptive for no).
 nonAdaptive
@@ -49,7 +58,7 @@ numInt                  !<Integer. Number of initial SIAs put in
 0
 
 dpaRate			        !<Double precision. DPA rate (unit: dpa/s).
-2.28d-7
+1.52d-7
 
 totalDPA                !<Double precision. Total DPA at the end of simulation (unit: dpa).
 0.03d0
