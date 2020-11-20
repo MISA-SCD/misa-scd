@@ -273,6 +273,12 @@ subroutine updateDefectList(reactionCurrent, defectUpdateCurrent, CascadeCurrent
 			type(cascadeEvent), pointer, intent(inout) :: CascadeTemp
 		end subroutine
 
+		subroutine chooseCascade_withFiles(cascadeTemp)
+			use mod_structures
+			implicit none
+			type(cascadeEvent), pointer, intent(inout) :: cascadeTemp
+		end subroutine
+
 		subroutine initializeFineMesh(CascadeCurrent)
 			use mod_structures
 			type(cascade), pointer, intent(inout) :: CascadeCurrent

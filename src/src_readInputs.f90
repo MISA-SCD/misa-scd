@@ -168,14 +168,14 @@ subroutine ReadInputs()
 		write(*,*) 'error meshingType, it should be nonAdaptive'
 	end if
 
-	do while(flag .eqv. .false.)
-		read(PARAFILE,*) char
-		if(char=='implantDist') then
-			read(PARAFILE,*) implantDist
-			flag=.TRUE.
-		end if
-	end do
-	flag=.false.
+	!do while(flag .eqv. .false.)
+	!	read(PARAFILE,*) char
+	!	if(char=='implantDist') then
+	!		read(PARAFILE,*) implantDist
+	!		flag=.TRUE.
+	!	end if
+	!end do
+	!flag=.false.
 
 	!read in grain boundary toggle
 	do while(flag .eqv. .false.)
@@ -442,8 +442,8 @@ subroutine ReadInputs()
 	!***********************************************************************
 	!if we are using adaptive meshing, read in the adaptive meshing parameters
 	!***********************************************************************
-	if(meshingType=='adaptive') then
-		flag=.FALSE.
+	!if(meshingType=='adaptive') then
+		!flag=.FALSE.
 
 		do while(flag .eqv. .FALSE.)
 			read(PARAFILE,*) char
@@ -494,7 +494,7 @@ subroutine ReadInputs()
 
 		cascadeElementVol=fineLength**3d0
 		numCellsCascade=numxCascade*numyCascade*numzCascade
-	end if
+	!end if
 
 	close(PARAFILE)
 
@@ -877,7 +877,7 @@ subroutine readCascadeList(filename)
 	character(len=20) :: char
 	type(cascadeEvent), pointer :: cascadeCurrent
 	type(cascadeDefect), pointer :: defectCurrent
-	integer :: i, numDefects, j, k
+	integer :: i, j, k
 	logical :: flag
 
 	open(CASFILE, file=filename, status='old', action='read')
@@ -898,12 +898,12 @@ subroutine readCascadeList(filename)
 		nullify(cascadeCurrent%next)
 		nullify(defectCurrent%next)
 
-		do j=1,numDefects
+		do j=1, cascadeCurrent%numDefectsTotal
 			allocate(defectCurrent%defectType(SPECIES))
 			read(CASFILE,*) (defectCurrent%defectType(k),k=1,SPECIES)
 			read(CASFILE,*) (defectCurrent%coordinates(k), k=1,3)
 
-			if(j /= numDefects) then
+			if(j /= cascadeCurrent%numDefectsTotal) then
 				allocate(defectCurrent%next)
 				nullify(defectCurrent%next%next)
 				defectCurrent=>defectCurrent%next
@@ -1024,6 +1024,7 @@ subroutine readCascadeFiles(filename)
 	end do
 	numDisplacedAtoms=dble(totalDisAtoms)/dble(totalCascades)
 
-	close(20, status='delete')      !<close  and delete cas.dat
+	!close(20, status='delete')      !<close  and delete cas.dat
+	close(20)      !<close  and delete cas.dat
 
 end subroutine readCascadeFiles

@@ -403,14 +403,14 @@ program MISASCD
 				exit
 			end if
 
-			do while(elapsedTime >= 1.0d-4/dpaRate .AND. timeCounter==1)
-				if(myProc%taskid==MASTER) then
-					call cpu_time(time2)
-					write(*,*) '----1d-4 computationTime: ', time2-time1
-				end if
-				timeCounter=timeCounter+1
-				exit
-			end do
+			!do while(elapsedTime >= 1.0d-4/dpaRate .AND. timeCounter==1)
+			!	if(myProc%taskid==MASTER) then
+			!		call cpu_time(time2)
+			!		write(*,*) '----1d-4 computationTime: ', time2-time1
+			!	end if
+			!	timeCounter=timeCounter+1
+			!	exit
+			!end do
 		end do	!end of do while(elapsedTime < totalTime)
 
 		!***********************************************************************

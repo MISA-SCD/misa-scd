@@ -37,15 +37,18 @@ subroutine chooseCascade_withFiles(cascadeTemp)
     implicit none
 
     type(cascadeEvent), pointer, intent(inout) :: cascadeTemp
-    double precision :: r, r1, atemp, atemp1, energy
+    double precision :: r, r1, atemp, atemp1, energy, minEnergy
     integer :: i
     double precision, external :: sample_PKA_energy
 
     if(PKAspectrum == 'yes') then
         energy = sample_PKA_energy()      !<energy > 0d0
 
+        minEnergy=1.0d8
         outer1: do i=1, numCascadeFiles
-            if(abs(energy-cascadeLists(i)%PKAenergy) <= 5d0) then   !find the cascade file
+            !if(abs(energy-cascadeLists(i)%PKAenergy) <= 5d0) then   !find the cascade file
+            if(abs(energy-cascadeLists(i)%PKAenergy) < minEnergy) then   !find the cascade file
+
                 r=dprand()
                 atemp=0d0
                 cascadeTemp=>cascadeLists(i)%listCascades
