@@ -1024,7 +1024,6 @@ subroutine readCascadeFiles(filename)
 	end do
 	numDisplacedAtoms=dble(totalDisAtoms)/dble(totalCascades)
 
-	!close(20, status='delete')      !<close  and delete cas.dat
-	close(20)      !<close  and delete cas.dat
+	close(20, status='delete')      !<close  and delete cas.dat
 
 end subroutine readCascadeFiles
