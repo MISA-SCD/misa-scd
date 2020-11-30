@@ -17,6 +17,15 @@ Cascade
 implantScheme           !<('MonteCarlo' for MC cascade implantation, 'explicit' for explicit cascade implantation).
 MonteCarlo
 
+PKAspectrum             !('yes' or 'no') Whether to use the PKA spectrum
+no
+
+pkaFile                 !Location of the PKA spectrum file
+'../../inputs/pkas/'
+
+numCascadeFiles         !Number of cascade files
+1
+
 cascadeFile             !<Location of the cascade file.
 '../../inputs/cascades/Fe_20KeV_Cascades.txt'
 

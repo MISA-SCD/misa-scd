@@ -860,15 +860,17 @@ subroutine update_2nd_reactions(cell, defectType1, defectType2)
 
 				!SIA+SIA clustering
 				!two 1D clusters coming together to make a sessile cluster
-				if(reactants(3,1) > max3DInt .AND. reactants(3,2) > max3DInt) then
-					products(4,1)=products(3,1)
-					products(3,1)=0
-				end if
+			!	if(reactants(3,1) > max3DInt .AND. reactants(3,2) > max3DInt) then
+			!		products(4,1)=products(3,1)
+			!		products(3,1)=0
+			!	end if
 
 				!sessile SIA + mobile SIA = sessile SIA
 				if(products(3,1) /= 0 .AND. products(4,1) /= 0) then
-					products(4,1)=products(3,1)+products(4,1)
-					products(3,1)=0
+			!		products(4,1)=products(3,1)+products(4,1)
+			!		products(3,1)=0
+					products(3,1)=products(3,1)+products(4,1)
+					products(4,1)=0
 				end if
 
 				!sessile cluster becomes mobile when it shrinks below max3DInt
@@ -1125,15 +1127,17 @@ subroutine update_2nd_reactions(cell, defectType1, defectType2)
 
 				!SIA+SIA clustering
 				!two 1D clusters coming together to make a sessile cluster
-				if(reactants(3,1) > max3DInt .AND. reactants(3,2) > max3DInt) then
-					products(4,1)=products(3,1)
-					products(3,1)=0
-				end if
+			!	if(reactants(3,1) > max3DInt .AND. reactants(3,2) > max3DInt) then
+			!		products(4,1)=products(3,1)
+			!		products(3,1)=0
+			!	end if
 
 				!sessile SIA + mobile SIA = sessile SIA
 				if(products(3,1) /= 0 .AND. products(4,1) /= 0) then
-					products(4,1)=products(3,1)+products(4,1)
-					products(3,1)=0
+			!		products(4,1)=products(3,1)+products(4,1)
+			!		products(3,1)=0
+					products(3,1)=products(3,1)+products(4,1)
+					products(4,1)=0
 				end if
 
 				!sessile cluster becomes mobile when it shrinks below max3DInt
@@ -1431,16 +1435,18 @@ subroutine update_2nd_reactions_fine(cascadeID, cell, defectType1, defectType2)
 				end if
 
 				!two 1D SIA clusters coming together to make a sessile cluster
-				if(reactants(3,1) > max3DInt .AND. reactants(3,2) > max3DInt) then
-					products(4,1)=products(3,1)
-					products(3,1)=0
-				endif
+			!	if(reactants(3,1) > max3DInt .AND. reactants(3,2) > max3DInt) then
+			!		products(4,1)=products(3,1)
+			!		products(3,1)=0
+			!	end if
 
 				!sessile SIA + mobile SIA = sessile SIA
 				if(products(3,1) /= 0 .AND. products(4,1) /= 0) then
-					products(4,1)=products(3,1)+products(4,1)
-					products(3,1)=0
-				endif
+			!		products(4,1)=products(3,1)+products(4,1)
+			!		products(3,1)=0
+					products(3,1)=products(3,1)+products(4,1)
+					products(4,1)=0
+				end if
 
 				!sessile cluster becomes mobile when it shrinks below max3DInt
 				if(products(4,1) /= 0 .AND. products(4,1) <= max3DInt) then
@@ -1682,15 +1688,17 @@ subroutine update_2nd_reactions_fine(cascadeID, cell, defectType1, defectType2)
 				end if
 
 				!two 1D SIA clusters coming together to make a sessile cluster
-				if(reactants(3,1) > max3DInt .AND. reactants(3,2) > max3DInt) then
-					products(4,1)=products(3,1)
-					products(3,1)=0
-				end if
+			!	if(reactants(3,1) > max3DInt .AND. reactants(3,2) > max3DInt) then
+			!		products(4,1)=products(3,1)
+			!		products(3,1)=0
+			!	end if
 
 				!sessile SIA + mobile SIA = sessile SIA
 				if(products(3,1) /= 0 .AND. products(4,1) /= 0) then
-					products(4,1)=products(3,1)+products(4,1)
-					products(3,1)=0
+			!		products(4,1)=products(3,1)+products(4,1)
+			!		products(3,1)=0
+					products(3,1)=products(3,1)+products(4,1)
+					products(4,1)=0
 				end if
 
 				!sessile cluster becomes mobile when it shrinks below max3DInt
@@ -3390,10 +3398,10 @@ subroutine defectCombinationRules(products, product2, defectTemp, isCombined)
 	else	!Combine
 
 		!two 1D clusters coming together to make a sessile cluster
-		if(products(3) > max3DInt .AND. defectTemp%defectType(3) > max3DInt) then
-			products(4)=products(3)
-			products(3)=0
-		end if
+	!	if(products(3) > max3DInt .AND. defectTemp%defectType(3) > max3DInt) then
+	!		products(4)=products(3)
+	!		products(3)=0
+	!	end if
 
 		do l=1,SPECIES
 			products(l)=products(l)+defectTemp%defectType(l)
@@ -3429,8 +3437,10 @@ subroutine defectCombinationRules(products, product2, defectTemp, isCombined)
 
 		!sessile+mobile SIA cluster makes sessile cluster
 		if(products(3) /= 0. .AND. products(4) /= 0) then
-			products(4)=products(3)+products(4)
-			products(3)=0
+		!	products(4)=products(3)+products(4)
+		!	products(3)=0
+			products(3)=products(3)+products(4)
+			products(4)=0
 		end if
 
 		!sessile cluster becomes mobile again when it shrinks below max3DInt
