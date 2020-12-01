@@ -985,7 +985,7 @@ subroutine readCascadeFiles(filename)
 		read(CASFILE,*) cascadeLists(fileID)%PKAenergy     !(eV)
 		read(CASFILE,*) cascadeLists(fileID)%averDisAtoms
 		read(CASFILE,*) cascadeLists(fileID)%numCascades
-		totalDisAtoms=totalDisAtoms+cascadeLists(fileID)%averDisAtoms
+		totalDisAtoms=totalDisAtoms+cascadeLists(fileID)%averDisAtoms*cascadeLists(fileID)%numCascades
 		totalCascades=totalCascades+cascadeLists(fileID)%numCascades
 		allocate(cascadeLists(fileID)%listCascades)
 
