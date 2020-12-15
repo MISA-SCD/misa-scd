@@ -4,7 +4,8 @@ cmake-build-debug/
 
 # Other files
 tools/
-doc/git
+doc/
+test/
 
 # Prerequisites
 *.d
