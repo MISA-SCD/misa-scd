@@ -376,7 +376,9 @@ program MISASCD
 				simStatus=1	!<1: 'irradiation', 0: 'anneal'
 				call MPI_REDUCE(numImpAnn,totalImpAnn, 2, MPI_INTEGER, MPI_SUM, 0,comm, ierr)
 				if(xyzdatToggle=='yes') call outputDefectsXYZ()	!write xyzdat.out
-				call outputDefectsTotal(simStatus)	!write totdat.out, defect.out, stadat.out
+				if(totdatToggle=='yes' .OR. defectToggle=='yes' .OR. stadatToggle=='yes') then
+					call outputDefectsTotal(simStatus)	!write totdat.out, defect.out, stadat.out
+				end if
 				call cpu_time(time2)
 				if(myProc%taskid==MASTER) then
 					DPA=dble(totalImpAnn(1))/(systemVol/(numDisplacedAtoms*atomSize))
@@ -419,7 +421,9 @@ program MISASCD
 		simStatus=1	!<1: 'irradiation', 0: 'anneal'
 		call MPI_REDUCE(numImpAnn, totalImpAnn, 2, MPI_INTEGER, MPI_SUM,0, comm, ierr)
 		if(xyzdatToggle=='yes') call outputDefectsXYZ()	!write xyzdat.out
-		call outputDefectsTotal(simStatus)	!write totdat.out, defect.out, stadat.out
+		if(totdatToggle=='yes' .OR. defectToggle=='yes' .OR. stadatToggle=='yes') then
+			call outputDefectsTotal(simStatus)	!write totdat.out, defect.out, stadat.out
+		end if
 		call cpu_time(time2)
 		if(myProc%taskid==MASTER) then
 			DPA=dble(totalImpAnn(1))/(systemVol/(numDisplacedAtoms*atomSize))
@@ -555,7 +559,9 @@ program MISASCD
 				simStatus=0	!<1: 'irradiation', 0: 'anneal'
 				!call MPI_REDUCE(numImpAnn, totalImpAnn, 2, MPI_INTEGER, MPI_SUM,0,comm, ierr)
 				if(xyzdatToggle=='yes') call outputDefectsXYZ()	!write xyzdat.out
-				call outputDefectsTotal(simStatus)	!write totdat.out, defect.out, stadat.out
+				if(totdatToggle=='yes' .OR. defectToggle=='yes' .OR. stadatToggle=='yes') then
+					call outputDefectsTotal(simStatus)	!write totdat.out, defect.out, stadat.out
+				end if
 				call cpu_time(time2)
 				if(myProc%taskid==MASTER) then
 					!DPA=dble(totalImpAnn(1))/(systemVol/(numDisplacedAtoms*atomSize))
@@ -577,7 +583,9 @@ program MISASCD
 			simStatus=0	!<1: 'irradiation', 0: 'anneal'
 			!call MPI_REDUCE(numImpAnn,totalImpAnn, 2, MPI_INTEGER, MPI_SUM, 0, comm, ierr)
 			if(xyzdatToggle=='yes') call outputDefectsXYZ()	!write xyzdat.out
-			call outputDefectsTotal(simStatus)	!write totdat.out, defect.out, stadat.out
+			if(totdatToggle=='yes' .OR. defectToggle=='yes' .OR. stadatToggle=='yes') then
+				call outputDefectsTotal(simStatus)	!write totdat.out, defect.out, stadat.out
+			end if
 			call cpu_time(time2)
 			!write(*,*) 'Fraction null steps', dble(nullSteps)/dble(step), 'Proc', myProc%taskid
 			if(myProc%taskid==MASTER) then
