@@ -6,6 +6,8 @@ cmake-build-debug/
 tools/
 doc/
 test/
+inputs/cascades/FeCu1.5_773.txt
+inputs/defectsAttributes/Cu_Defects_Aging.txt
 
 # Prerequisites
 *.d
