@@ -30,11 +30,16 @@ program MISASCD
 	integer :: simStatus	!<1: 'irradiation', 0: 'anneal'
 	double precision, external :: GenerateTimestep, TotalRateCheck
 
+	!test
+	type(defect), pointer :: defectTest
+	type(reaction), pointer :: reactionTest
+
 	interface
-		subroutine chooseImplantReaction(reactionCurrent)
+		subroutine chooseImplantReaction(reactionCurrent, CascadeCurrent)
 			use mod_structures
 			implicit none
 			type(reaction), pointer, intent(inout) :: reactionCurrent
+			type(cascade), pointer, intent(inout) :: CascadeCurrent
 		end subroutine
 
 		subroutine chooseReaction(reactionCurrent, CascadeCurrent)
@@ -286,7 +291,7 @@ program MISASCD
 			else if(implantScheme=='MonteCarlo') then
 				if(test3 == 'yes') then
 					call initializeOneCascade()
-					call chooseImplantReaction(reactionCurrent)
+					call chooseImplantReaction(reactionCurrent, CascadeCurrent)
 				else
 					call chooseReaction(reactionCurrent, CascadeCurrent)
 				end if
@@ -344,6 +349,22 @@ program MISASCD
 			if(implantType=='Cascade') then
 				call cascadeUpdateStep(releaseToggle, cascadeCell)
 			end if
+
+			!***test
+			!if(cascadeCell /= 0) then
+			!	write(*,*) 'myProc%taskid', myProc%taskid, 'cell', cascadeCell
+			!	nullify(reactionTest)
+			!	reactionTest=>reactionList(cascadeCell)
+			!	do while(associated(reactionTest))
+			!		write(*,*) 'numReactants', reactionTest%numReactants, 'numProducts', reactionTest%numProducts
+			!		write(*,*) 'reactants', reactionTest%reactants
+			!		write(*,*) 'products', reactionTest%products
+			!		write(*,*) 'cellNumber', reactionTest%cellNumber
+			!		write(*,*) 'proc', reactionTest%taskid
+			!		write(*,*) 'reactionRate', reactionTest%reactionRate
+			!		reactionTest=>reactionTest%next
+			!	end do
+			!end if
 
 			!****************************************************************************************
 			!Every time a cascade is added, we reset the total rate and check how wrong it has become
@@ -568,6 +589,7 @@ program MISASCD
 					write(*,*)
 					write(*,*) 'Annealing process'
 					write(*,*) 'Anneal time', elapsedTime, 'steps',step, 'AverageTimeStep', elapsedTime/dble(step)
+					write(*,*) 'computationTime', time2-time1
 					write(*,*)
 				end if
 
@@ -594,6 +616,7 @@ program MISASCD
 				write(*,*) 'Annealing process'
 				write(*,*) 'Final Defect State'
 				write(*,*) 'Anneal time', elapsedTime, 'steps', step, 'AverageTimeStep', elapsedTime/dble(step)
+				write(*,*) 'computationTime', time2-time1
 				write(*,*)
 			end if
 		end if

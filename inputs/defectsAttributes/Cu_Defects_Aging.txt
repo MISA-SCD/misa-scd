@@ -76,10 +76,17 @@ D0	1.0d14	Em	1.3d0
 D0	4.0d10	Em	0.3d0
 
 numFunction
-4
+5
+
+1	0	0	0			!nCu    mobile
+min 2   0   0   0
+max 40  0   0   0
+fType	4
+param	2
+6.3d13  2.29d0
 
 1	0	0	0			!nCu    immobile
-min 2   0   0   0
+min 41   0   0   0
 max -1  0   0   0
 fType	1
 param	0
@@ -307,7 +314,7 @@ max -1  -1  0   0
 fType   11
 
 1	1	0	0		0	1	0	0	!nCumV->V+nCu(m-1)V
-min 1   2   0   0
+min 1   1   0   0
 max -1  -1  0   0
 fType   11
 
@@ -316,7 +323,7 @@ diffusion
 
 1	0	0	0		1	0	0	0	!Cu diffusion
 min 1   0   0   0
-max 1   0   0   0
+max 40   0   0   0
 fType   13
 
 0	1	0	0		0	1	0	0	!V diffusion
@@ -333,13 +340,13 @@ sinkRemoval					        !These reactions involve removing defects from the mesh 
 2							        !number of defect types that can be removed this way
 
 0	1	0	0				        !V trapping
-min 0   1   0   0
-max 0   1   0   0
+min 0   0   0   0
+max 0   0   0   0
 fType   12
 
 0	0	1	0				        !SIA_mobile trapping
-min 0   0   1   0
-max 0   0   1   0
+min 0   0   0   0
+max 0   0   0   0
 fType   12
 
 impurityTrapping			        !These reactions involve changing mobile SIA loops to sessile SIA loops via trapping by impurities

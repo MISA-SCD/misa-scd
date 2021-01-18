@@ -92,7 +92,7 @@ cascadeVolume           !<Double precision. Volume of cascade (unit: nm^3).
 1000d0
 
 numSims                 !<Integer. Number of times to repeat simulation.
-5
+1
 
 SimulationEnd		    !<Tag for the end of the simulation parameters
 

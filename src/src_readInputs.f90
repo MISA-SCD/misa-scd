@@ -920,6 +920,29 @@ subroutine readCascadeList(filename)
 
 	close(CASFILE)
 
+	!*****test
+	!cascadeCurrent=>cascadeList
+	!if(myProc%taskid==MASTER) then
+	!	write(*,*) 'PKAtemperature', PKAtemperature
+	!	write(*,*) 'PKAenergy',PKAenergy
+	!	write(*,*) 'numDisplacedAtoms', numDisplacedAtoms
+	!	write(*,*) 'numCascades', numCascades
+	!	write(*,*) 'defects:'
+	!	do while(associated(cascadeCurrent))
+	!		write(*,*) 'numDefectsTotal', cascadeCurrent%numDefectsTotal
+	!		write(*,*) 'numDisplacedAtoms', cascadeCurrent%numDisplacedAtoms
+	!		defectCurrent=>cascadeCurrent%ListOfDefects
+	!		do while(associated(defectCurrent))
+	!			write(*,*) 'defect:', defectCurrent%defectType
+	!			defectCurrent=>defectCurrent%next
+	!		end do
+	!		cascadeCurrent=>cascadeCurrent%next
+	!	end do
+	!end if
+	!nullify(defectCurrent)
+	!nullify(cascadeCurrent)
+
+
 end subroutine
 
 !***************************************************************************************************

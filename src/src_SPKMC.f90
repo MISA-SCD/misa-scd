@@ -18,16 +18,20 @@ end function
 !*****************************************************************************************
 !>subroutine
 !*****************************************************************************************
-subroutine chooseImplantReaction(reactionCurrent)
+subroutine chooseImplantReaction(reactionCurrent, CascadeCurrent)
 	use mod_structures
 	use mod_globalVariables
 	implicit none
 
 	type(reaction), pointer, intent(inout) :: reactionCurrent
+	type(cascade), pointer, intent(inout) :: cascadeCurrent
 	integer :: i
 
-	write(*,*) 'step', step, 'oneCascadeGCell',oneCascadeGCell
+	if(myProc%taskid==MASTER) then
+		write(*,*) 'step', step, 'oneCascadeGCell',oneCascadeGCell
+	end if
 	nullify(reactionCurrent)	!These are default pointed at nothing, indicating null event
+	nullify(CascadeCurrent)		!These are default pointed at nothing, indicating null event
 
 	!***********************************************************************
 	!Choose from reactions within the coarse mesh
