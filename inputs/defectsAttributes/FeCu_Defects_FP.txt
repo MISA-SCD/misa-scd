@@ -201,7 +201,7 @@ Eb	0.451d0
 Eb	0.659d0
 
 numFunction
-11
+8
 
 1	0	0	0		1	0	0	0	!nCu->Cu+(n-1)Cu
 min 3   0   0   0
@@ -225,46 +225,25 @@ param	2
 4.3d0	1.2d0
 
 1	1	0	0		1	0	0	0	!nCumV->Cu+(n-1)CumV
-min 3   3   0   0
-max -1  -1  0   0
-ftype	14
-param	3
-0.5d0	0.215d0 0.0004d0
-
-1	1	0	0		1	0	0	0	!nCumV->Cu+(n-1)CumV
 min 3   1   0   0
-max -1  2   0   0
-ftype	14
-param	3
-0.5d0	0.215d0 0.0004d0
-
-1	1	0	0		1	0	0	0	!nCumV->Cu+(n-1)CumV
-min 1   3   0   0
-max 2   -1  0   0
+max -1  -1  0   0
 ftype	14
 param	3
 0.5d0	0.215d0 0.0004d0
 
 1	1	0	0		1	0	0	0	!nCumV->Cu+(n-1)CumV
 min 1   2   0   0
-max 2   2   0   0
+max 2   -1  0   0
 ftype	14
 param	3
 0.5d0	0.215d0 0.0004d0
 
 1	1	0	0		0	1	0	0	!nCumV->V+nCu(m-1)V
-min 6   7   0   0
+min 6   1   0   0
 max -1  -1  0   0
 ftype	15              !type 7
 param	4
 1.63d0	1.72d0	2.69d0  0.0004d0
-
-1	1	0	0		0	1	0	0	!nCumV->V+nCu(m-1)V
-min 6   1   0   0
-max -1  6   0   0
-ftype	15
-param	4
-1.63d0	1.72d0	2.69d0	0.0004d0
 
 1	1	0	0		0	1	0	0	!nCumV->V+nCu(m-1)V
 min 1   7   0   0

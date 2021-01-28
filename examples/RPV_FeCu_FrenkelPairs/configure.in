@@ -62,7 +62,7 @@ dpaRate			        !<Double precision. DPA rate (unit: dpa/s).
 2d-9
 
 totalDPA                !<Double precision. Total DPA at the end of simulation (unit: dpa).
-2d-4
+4d-3
 
 firr                    !<Double precision. Radiation enhanced factor (firr = Cv / Ceqv)
 2.5d7
@@ -92,7 +92,7 @@ cascadeVolume           !<Double precision. Volume of cascade (unit: nm^3).
 1000d0
 
 numSims                 !<Integer. Number of times to repeat simulation.
-1
+3
 
 SimulationEnd		    !<Tag for the end of the simulation parameters
 
