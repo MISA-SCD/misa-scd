@@ -2255,8 +2255,6 @@ double precision function findRate_0th(cell, reactionParameter)
 			write(*,*) 'Error implant distribution not recognized'
 		end if
 
-	else if(ReactionParameter%fType==6) then	!Frenkel-Pair implantation disallowed in grain boundaries
-		findRate_0th=0d0
 	else
 		write(*,*) 'error function type', ReactionParameter%fType
 	end if

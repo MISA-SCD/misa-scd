@@ -209,7 +209,6 @@ subroutine ReadInputs()
 	dpaRate = 1d-4
 	totalDPA = 1d-1
 	firr = 1d0
-	!atomSize		=0d0
 	lattice = 0.2876d0	!Fe
 	burgers = 0.287d0
 	reactionRadius = 0.65d0
@@ -512,8 +511,10 @@ subroutine ReadInputs()
 	if(implantType=='Cascade') then
 		if(numCascadeFiles > 1) then
 			call readCascadeFiles(cascadeFilename)
-		else
+		else if(numCascadeFiles == 1) then
 			call readCascadeList(cascadeFilename)
+		else
+			write(*,*) 'error implantType'
 		end if
 	else if(implantType=='FrenkelPair') then
 		numDisplacedAtoms=1				!Frenkel pair implantation, no need to read cascades, one displaced atom per implant event
@@ -826,37 +827,57 @@ subroutine readDefectAttributes(filename)
 
 	allocate(ImplantReactions(numImplantReac))
 	do i=1,numImplantReac
-		if(i==1) then	!Read in Frenkel pair reaction parameters
-			do while(flag .eqv. .FALSE.)
-				read(ATTRFILE,*) char
-				if(char=='FrenkelPair') then
-					flag=.TRUE.
-				end if
-			end do
-			flag=.FALSE.
+		do while(flag .eqv. .FALSE.)
+			read(ATTRFILE,*) char
+			if(char=='FrenkelPair') then
+				ImplantReactions(i)%numReactants=0
+				ImplantReactions(i)%numProducts=2
+				allocate(ImplantReactions(i)%products(SPECIES,ImplantReactions(i)%numProducts))
+				read(ATTRFILE,*) (ImplantReactions(i)%products(j,1),j=1,SPECIES),&
+						(ImplantReactions(i)%products(j,2),j=1,SPECIES)
+				read(ATTRFILE,*) char, ImplantReactions(i)%fType
+				flag=.TRUE.
+			else if(char=='Cascade') then
+				ImplantReactions(i)%numReactants=-10
+				ImplantReactions(i)%numProducts=0
+				read(ATTRFILE,*) char, ImplantReactions(i)%fType
+				flag=.TRUE.
+			end if
+		end do
+		flag=.FALSE.
 
-			ImplantReactions(i)%numReactants=0
-			ImplantReactions(i)%numProducts=2
-			allocate(ImplantReactions(i)%products(SPECIES,ImplantReactions(i)%numProducts))
-			read(ATTRFILE,*) (ImplantReactions(i)%products(j,1),j=1,SPECIES),&
-					(ImplantReactions(i)%products(j,2),j=1,SPECIES)
-			read(ATTRFILE,*) char, ImplantReactions(i)%fType
+	!	if(i==1) then	!Read in Frenkel pair reaction parameters
+	!		do while(flag .eqv. .FALSE.)
+	!			read(ATTRFILE,*) char
+	!			if(char=='FrenkelPair') then
+	!				flag=.TRUE.
+	!			end if
+	!		end do
+	!		flag=.FALSE.
 
-		else if(i==2) then !read in cascade reaction parameters
-			do while(flag .eqv. .FALSE.)
-				read(ATTRFILE,*) char
-				if(char=='Cascade') then
-					flag=.TRUE.
-				end if
-			end do
-			flag=.FALSE.
+	!		ImplantReactions(i)%numReactants=0
+	!		ImplantReactions(i)%numProducts=2
+	!		allocate(ImplantReactions(i)%products(SPECIES,ImplantReactions(i)%numProducts))
+	!		read(ATTRFILE,*) (ImplantReactions(i)%products(j,1),j=1,SPECIES),&
+	!				(ImplantReactions(i)%products(j,2),j=1,SPECIES)
+	!		read(ATTRFILE,*) char, ImplantReactions(i)%fType
 
-			ImplantReactions(i)%numReactants=-10
-			ImplantReactions(i)%numProducts=0
-			read(ATTRFILE,*) char, ImplantReactions(i)%fType
-		else
-			write(*,*) 'error numImplantReac'
-		end if
+	!	else if(i==2) then !read in cascade reaction parameters
+	!		do while(flag .eqv. .FALSE.)
+	!			read(ATTRFILE,*) char
+	!			if(char=='Cascade') then
+	!				flag=.TRUE.
+	!			end if
+	!		end do
+	!		flag=.FALSE.
+
+	!		ImplantReactions(i)%numReactants=-10
+	!		ImplantReactions(i)%numProducts=0
+	!		read(ATTRFILE,*) char, ImplantReactions(i)%fType
+	!	else
+	!		write(*,*) 'error numImplantReac'
+	!	end if
+
 	end do
 
 	close(ATTRFILE)
