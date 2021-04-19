@@ -6,8 +6,15 @@ cmake-build-debug/
 tools/
 doc/
 test/
-inputs/cascades/FeCu1.5_773_1.txt
-inputs/defectsAttributes/Cu_Defects_Aging.txt
+inputs/cascades/
+!inputs/cascades/Fe_20KeV_Cascades.txt
+!inputs/cascades/W_100KeV_Cascades.txt
+inputs/defectsAttributes/
+!inputs/defectsAttributes/Fe_Defects.txt
+!inputs/defectsAttributes/FeCu_Defects-full.txt
+!inputs/defectsAttributes/FeCu_Defects_Cas.txt
+!inputs/defectsAttributes/FeCu_Defects_FP.txt
+!inputs/defectsAttributes/W_Defects_Cas.txt
 
 # Prerequisites
 *.d
