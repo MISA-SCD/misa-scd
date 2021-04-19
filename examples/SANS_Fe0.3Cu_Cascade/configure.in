@@ -62,10 +62,10 @@ dpaRate			        !<Double precision. DPA rate (unit: dpa/s).
 1.4d-7
 
 totalDPA                !<Double precision. Total DPA at the end of simulation (unit: dpa).
-2.0d-1
+7.0d-1
 
 firr                    !<Double precision. Radiation enhanced factor (firr = Cv / Ceqv)
-7.69d5
+7.7d5
 
 lattice                 !<Double precision. Lattice constant (unit: nm).  atomVolume = lattice^3/2
 0.2867d0
@@ -92,7 +92,7 @@ cascadeVolume           !<Double precision. Volume of cascade (unit: nm^3).
 1000d0
 
 numSims                 !<Integer. Number of times to repeat simulation.
-1
+3
 
 SimulationEnd		    !<Tag for the end of the simulation parameters
 
@@ -161,7 +161,7 @@ numx            !<Integer. Number of meshes in x-direction
 40
 
 numy            !<Integer. Number of meshes in y-direction
-30
+40
 
 numz            !<Integer. Number of meshes in z-direction
 20

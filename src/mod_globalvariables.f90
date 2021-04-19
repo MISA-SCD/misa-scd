@@ -96,8 +96,8 @@ module mod_globalvariables
     character(len=20) pointDefectToggle		!<Toggles whether or not we allow HeSIA clusters to form ('yes' or 'no')
     character(len=20) polycrystal			!<(yes or no), used to identify whether or not we have multiple grains in our crystal
     !used for test2
-    character(len=20) test3
-    integer :: oneCascadeGCell
+    character(len=20) test3                 !<If test3 = 'yes', the simulation becomes a subsequent evolution of a cascade
+    integer :: oneCascadeGCell              !<oneCascadeGCell = global cell ID of the mesh to be implanted a cascade
     !<PKA spectrum
     character(len=20) :: PKAspectrum                    !<('yes' or 'no') Whether to use the PKA spectrum
     integer :: numCascadeFiles                          !<cascadeFile: materials_temperature_PKAenergy_*.txt
