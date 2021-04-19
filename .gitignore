@@ -6,10 +6,11 @@ cmake-build-debug/
 tools/
 doc/
 test/
-inputs/cascades/
+inputs/cascades/*
 !inputs/cascades/Fe_20KeV_Cascades.txt
 !inputs/cascades/W_100KeV_Cascades.txt
-inputs/defectsAttributes/
+
+inputs/defectsAttributes/*
 !inputs/defectsAttributes/Fe_Defects.txt
 !inputs/defectsAttributes/FeCu_Defects-full.txt
 !inputs/defectsAttributes/FeCu_Defects_Cas.txt
