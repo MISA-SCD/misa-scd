@@ -237,18 +237,27 @@ subroutine initializeRandomSeeds()
 
 	integer :: randseed, i, irand
 	integer :: status(MPI_STATUS_SIZE)
+	integer, allocatable :: randseedBuff(:)
+	double precision :: commTime1, commTime2, r1_2
 
+	allocate(randseedBuff(myProc%numtasks))
+	randseedBuff=0
 	if(myProc%taskid == MASTER) then
 		call system_clock(Count=randseed)	!return randseed (integer, unit:ms)
-		call sdprnd(randseed)
-		do i=1,myProc%numtasks-1
-			randseed=irand(randseed)
-			call mpi_send(randseed, 1, MPI_INTEGER, i, 1000,comm, ierr)
+		randseedBuff(1)=randseed
+		do i=1, myProc%numtasks-1
+			randseedBuff(i+1)=irand(randseedBuff(i))
 		end do
-	else
-		call mpi_recv(randseed, 1, MPI_INTEGER, MASTER, 1000, comm, status, ierr)
-		call sdprnd(randseed)
 	end if
+	commTime1=MPI_WTIME()
+	call MPI_SCATTER(randseedBuff, 1, MPI_INTEGER, randseed, 1, MPI_INTEGER, MASTER, comm, ierr)
+	commTime2=MPI_WTIME()
+	commTimeSum=commTimeSum+commTime2-commTime1
+	deallocate(randseedBuff)
+	call sdprnd(randseed)
+
+	!r1_2=dprand()
+	!write(*,*) 'proc', myProc%taskid, 'randSeed', randseed, 'rand', r1_2
 
 end subroutine
 

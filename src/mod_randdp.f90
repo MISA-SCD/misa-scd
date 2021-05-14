@@ -1,4 +1,3 @@
-
 !>Module randdp: double precision random number generation
 !!
 !!   Nick Maclaren's double precision random number generator.
@@ -16,141 +15,133 @@
 !!   condition is passed onto all subsequent recipients of the software,
 !!   whether modified or not.
 
-MODULE mod_randdp
-! Replaces COMMON /randpp/ and defines dp
+module mod_randdp
+  !Replaces COMMON /randpp/ and defines dp
+  implicit none
 
-IMPLICIT NONE
-INTEGER, PARAMETER, PUBLIC :: dp = SELECTED_REAL_KIND(15, 60)
+  integer, parameter, public :: dp=SELECTED_REAL_KIND(15,60)
+  REAL(dp), save, public :: poly(101), other, offset
+  integer, save, public :: index
 
-REAL (dp), SAVE, PUBLIC    :: poly(101), other, offset
-INTEGER, SAVE, PUBLIC      :: index
+contains
 
-CONTAINS
+  !*******************************************************************************
+  !> Subroutine sdprnd - seeds random number generator in this processor using integer input
+  !Input: iseed
+  !Output: poly(1:101), other, offset, index
+  !*******************************************************************************
+  subroutine sdprnd (iseed)
 
-!   Nick Maclaren's double precision random number generator.
-!   This version, which is compatible with Lahey's ELF90 compiler,
-!   is by Alan Miller ( alan @ vic.cmis.csiro.au, www.vic.cmis.csiro.au/~alan )
+    integer, intent(in) :: iseed
+    !Local variables
+    real(dp) :: x
+    real(dp), parameter :: xmod = 1000009711.0_dp, ymod = 33554432.0_dp
+    integer :: ix, iy, iz, i
+    logical, save :: inital = .true.
 
-!   Latest revision - 18 December 1997
+    !ISEED should be set to an integer between 0 and 9999 inclusive;
+    !a value of 0 will initialise the generator only if it has not already been done.
+    if(inital .or. iseed /=0) then
+      inital = .false.
+    else
+      return  !<The following statements are no longer executed
+    end if
 
-!   Copyright (C) 1992  N.M. Maclaren
-!   Copyright (C) 1992  The University of Cambridge
+    !INDEX must be initialised to an integer between 1 and 101 inclusive,
+    !POLY(1...N) to integers between 0 and 1000009710 inclusive (not all 0),
+    !and OTHER to a non-negative proper fraction with denominator 33554432.
+    !It uses the Wichmann-Hill generator to do this.
 
-!   This software may be reproduced and used freely, provided that all
-!   users of it agree that the copyright holders are not liable for any
-!   damage or injury caused by use of this software and that this
-!   condition is passed onto all subsequent recipients of the software,
-!   whether modified or not.
+    ix = mod(abs(iseed), 10000) + 1
+    iy = 2*ix + 1
+    iz = 3*ix + 1
+    do i = -10,101
+      if(i >= 1) then
+        poly(i) = aint(xmod*x)
+      end if
+      ix = mod(171*ix, 30269)
+      iy = mod(172*iy, 30307)
+      iz = mod(170*iz, 30323)
+      x = mod(dble(ix)/30269.0_dp + dble(iy)/30307.0_dp + dble(iz)/30323.0_dp, 1.0_dp)
+    end do
+    other = aint(ymod*x)/ymod
+    offset = 1.0_dp/ymod
+    index = 1
 
-!> Subroutine sdprnd - seeds random number generator in this processor using integer input
-!Input: iseed
-!Output: poly(1:101), other, offset, index
+    return
+  end subroutine sdprnd
 
-SUBROUTINE sdprnd (iseed)
+  !*******************************************************************************
+  !>Function dprand - generates a double precision random number between 0 and 1
+  !*******************************************************************************
+  function dprand() result(fn_val)
 
-INTEGER, INTENT(IN)  :: iseed
+    real(dp) :: fn_val  !Output
+    !Local variables
+    real(dp) :: x, y
+    !N.B. ymod has been removed from the previous DATA statement; it caused a fatal error as it is not used.
+    real(dp), parameter :: xmod = 1000009711.0_dp, xmod2 = 2000019422.0_dp, xmod4 = 4000038844.0_dp
+    real(dp), parameter :: tiny = 1.0E-17_dp,  zero = 0.0_dp, one = 1.0_dp
+    integer :: n
+    logical, save :: inital = .true.
 
-! Local variables
-REAL (dp)            :: x   !unknown
-REAL (dp), PARAMETER :: xmod = 1000009711.0_dp, ymod = 33554432.0_dp
-INTEGER              :: ix, iy, iz, i
-LOGICAL, SAVE        :: inital = .TRUE.
+    !This returns a uniform (0,1) random number, with extremely good uniformity properties.
+    !It assumes that real(dp) provides at least 33 bits of accuracy, and uses a power of two base.
+    if(inital) then
+      call sdprnd(0)
+      inital = .false.
+    end if
 
-!   ISEED should be set to an integer between 0 and 9999 inclusive;
-!   a value of 0 will initialise the generator only if it has not
-!   already been done.
+    !See [Knuth] for why this implements the algorithm described in the paper.
+    !Note that this code is tuned for machines with fast real(dp), but slow multiply and divide; many, many other options are possible.
+    n = index - 64  !n=-63?
+    if(n <= 0) then
+      n = n + 101 !n=38?
+    end if
+    x = poly(index) + poly(index)
+    x = xmod4 - poly(n) - poly(n) - x - x - poly(index)
+    if(x < zero) then
+      if(x < -xmod) then
+        x = x + xmod2
+      end if
+      if(x < zero) then
+        x = x + xmod
+      end if
+    else
+      if(x >= xmod2) then
+        x = x - xmod2
+        if(x >= xmod) then
+          x = x - xmod
+        end if
+      end if
+      if(x >= xmod) then
+        x = x - xmod
+      end if
+    end if
+    poly(index) = x
+    index = index + 1
+    if(index > 101) then
+      index = index - 101
+    end if
 
-IF (inital .OR. iseed /= 0) THEN
-  inital = .false.
-ELSE
-  RETURN
-END IF
+    !Add in the second generator modulo 1, and force to be non-zero.
+    !The restricted ranges largely cancel themselves out.
+    do
+      y = 37.0_dp*other + offset
+      other = y - aint(y)
+      if(other /= zero) then
+        exit
+      end if
+    end do
 
-!   INDEX must be initialised to an integer between 1 and 101 inclusive,
-!   POLY(1...N) to integers between 0 and 1000009710 inclusive (not all 0),
-!   and OTHER to a non-negative proper fraction with denominator 33554432.
-!   It uses the Wichmann-Hill generator to do this.
+    x = x/xmod + other
+    if(x >= one) then
+      x = x - one
+    end if
+    fn_val = x + tiny
 
-ix = MOD(ABS(iseed), 10000) + 1
-iy = 2*ix + 1
-iz = 3*ix + 1
-DO i = -10,101
-  IF (i >= 1) poly(i) = AINT(xmod*x)
-  ix = MOD(171*ix, 30269)
-  iy = MOD(172*iy, 30307)
-  iz = MOD(170*iz, 30323)
-  x = MOD(DBLE(ix)/30269.0_dp + DBLE(iy)/30307.0_dp + DBLE(iz)/30323.0_dp, 1.0_dp)
-END DO
-other = AINT(ymod*x)/ymod
-offset = 1.0_dp/ymod
-INDEX = 1
+    return
+  end function dprand
 
-RETURN
-END SUBROUTINE sdprnd
-
-!> Function dprand - generates a double precision random number between 0 and 1
-
-FUNCTION dprand() RESULT(fn_val)
-
-REAL (dp)            :: fn_val  !Output
-
-! Local variables
-REAL (dp)            :: x, y
-
-! N.B. ymod has been removed from the previous DATA statement; it caused a
-!      fatal error as it is not used.
-REAL (dp), PARAMETER :: xmod = 1000009711.0_dp, xmod2 = 2000019422.0_dp, &
-                        xmod4 = 4000038844.0_dp, tiny = 1.0E-17_dp,  &
-                        zero = 0.0_dp, one = 1.0_dp
-INTEGER              :: n
-LOGICAL, SAVE        :: inital = .TRUE.
-
-!   This returns a uniform (0,1) random number, with extremely good
-!   uniformity properties.  It assumes that REAL (dp) provides
-!   at least 33 bits of accuracy, and uses a power of two base.
-
-IF (inital) THEN
-  CALL sdprnd (0)
-  inital = .false.
-END IF
-
-!   See [Knuth] for why this implements the algorithm described in the paper.
-!   Note that this code is tuned for machines with fast REAL (dp), but
-!   slow multiply and divide; many, many other options are possible.
-
-n = INDEX - 64
-IF (n <= 0) n = n + 101
-x = poly(INDEX) + poly(INDEX)
-x = xmod4 - poly(n) - poly(n) - x - x - poly(INDEX)
-IF (x < zero) THEN
-  IF (x < -xmod) x = x + xmod2
-  IF (x < zero) x = x + xmod
-ELSE
-  IF (x >= xmod2) THEN
-    x = x - xmod2
-    IF (x >= xmod) x = x - xmod
-  END IF
-  IF (x >= xmod) x = x - xmod
-END IF
-poly(INDEX) = x
-INDEX = INDEX + 1
-IF (INDEX > 101) INDEX = INDEX - 101
-
-!   Add in the second generator modulo 1, and force to be non-zero.
-!   The restricted ranges largely cancel themselves out.
-
-DO
-  y = 37.0_dp*other + offset
-  other = y - AINT(y)
-  IF (other /= zero) EXIT
-END DO
-
-x = x/xmod + other
-IF (x >= one) x = x - one
-fn_val = x + tiny
-
-RETURN
-END FUNCTION dprand
-
-END MODULE mod_randdp
+end module mod_randdp
 

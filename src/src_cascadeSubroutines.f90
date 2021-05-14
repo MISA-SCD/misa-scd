@@ -231,6 +231,7 @@ subroutine cascadeUpdateStep(releaseToggle, cascadeCell)
     integer, allocatable :: defectSend(:,:), defectRecv(:,:)
     integer :: status(MPI_STATUS_SIZE), sendStatus(MPI_STATUS_SIZE),recvStatus(MPI_STATUS_SIZE)
     integer :: sendRequest, recvRequest
+    double precision :: commTime1, commTime2
 
     !Fill send buffer
     if(cascadeCell==0) then
@@ -297,12 +298,13 @@ subroutine cascadeUpdateStep(releaseToggle, cascadeCell)
         end if
 
         !Send
-        if(myProc%procNeighbor(dir) /= myProc%taskid) then
+        commTime1=MPI_WTIME()
+        !if(myProc%procNeighbor(dir) /= myProc%taskid) then
             call MPI_ISEND(defectSend, (SPECIES+1)*numSendTemp, MPI_INTEGER, myProc%procNeighbor(dir), &
                     900+dir, comm, sendRequest, ierr)
-        end if
+        !end if
 
-        if(myProc%procNeighbor(recvDir) /= myProc%taskid) then
+        !if(myProc%procNeighbor(recvDir) /= myProc%taskid) then
 
             count=0
             call MPI_PROBE(myProc%procNeighbor(recvDir), 900+dir, comm,status,ierr)
@@ -313,6 +315,8 @@ subroutine cascadeUpdateStep(releaseToggle, cascadeCell)
 
             call MPI_RECV(defectRecv,(SPECIES+1)*numRecv,MPI_INTEGER,myProc%procNeighbor(recvDir),&
                     900+dir,comm,status,ierr)
+        commTime2=MPI_WTIME()
+        commTimeSum=commTimeSum+commTime2-commTime1
 
             if(numRecv /= 0) then
                 !Update my boundary
@@ -394,7 +398,7 @@ subroutine cascadeUpdateStep(releaseToggle, cascadeCell)
                 end do
             end if
             deallocate(defectRecv)
-        end if
+        !end if
 
         if(myProc%procNeighbor(dir) /= myProc%taskid) then
             call MPI_WAIT(sendRequest, sendStatus, ierr)

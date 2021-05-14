@@ -5,7 +5,7 @@
 # -------------------End---------------------------
 
 #Compiler and Compile options
-FC = mpif90
+FC = mpif90 -O2
 FF = -g
 
 #Source code files, Object files and Target(Executable) file defeine

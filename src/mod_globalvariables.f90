@@ -22,6 +22,7 @@ module mod_globalvariables
     integer :: dims(3)                          !<Number of processors in x, y, z.
     logical, dimension(3) :: periods=(/.true., .true., .true./)     !<Boundary conditions in x, y, z.  The default is periodic
     integer :: ierr							    !<used for initializing and finalizing MPI
+    double precision :: commTimeSum             !<Statistical communication time
 
     !>Processor information
     type(processorData) :: myProc				!<Contains processor information

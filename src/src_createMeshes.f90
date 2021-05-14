@@ -235,7 +235,7 @@ subroutine initialMesh()
 	if(myProc%taskid==MASTER) then
 		write(*,*) 'numx numy numz', numx, numy, numz
 	end if
-	write(*,*) 'proc', myProc%taskid, 'numxLocal numyLocal numzLocal', numxLocal, numyLocal, numzLocal
+	!write(*,*) 'proc', myProc%taskid, 'numxLocal numyLocal numzLocal', numxLocal, numyLocal, numzLocal
 
 	!If any processors don't have volume elements in them (too many procs), we create an error message
 	if(numCells==0) then
@@ -303,6 +303,7 @@ subroutine createMeshConnect(length)
 	integer :: numSend(6)=0, numRecv(6)=0
 	integer :: status(MPI_STATUS_SIZE)
 	integer :: tempRecv
+	double precision :: commTime1, commTime2
 
 	allocate(send(2, numxLocal*numyLocal*numzLocal,6))
 
@@ -420,12 +421,15 @@ subroutine createMeshConnect(length)
 	maxElement=0
 	!*******************************************************
 	!Send
+	commTime1=MPI_WTIME()
 	do dir=1,6
 		if(myProc%procNeighbor(dir)/=myProc%taskid) then
 			call MPI_SEND(send(1,1,dir),numSend(dir)*2,MPI_INTEGER,myProc%procNeighbor(dir),200+dir,&
 					comm,ierr)
 		end if
 	end do
+	commTime2=MPI_WTIME()
+	commTimeSum=commTime2-commTime1
 
 	!Recv
 	do dir=1,6
@@ -439,6 +443,7 @@ subroutine createMeshConnect(length)
 		if(myProc%procNeighbor(dir)/=myProc%taskid) then
 
 			tempRecv=0
+			commTime1=MPI_WTIME()
 			call MPI_PROBE(myProc%procNeighbor(dir), 200+tag,comm,status,ierr)
 			call MPI_GET_COUNT(status,MPI_INTEGER,tempRecv,ierr)
 			numRecv(dir)=tempRecv/2
@@ -446,6 +451,9 @@ subroutine createMeshConnect(length)
 			allocate(recv(2,numRecv(dir)))
 			call MPI_RECV(recv,numRecv(dir)*2,MPI_INTEGER,myProc%procNeighbor(dir),200+tag,&
 					comm,status,ierr)
+			commTime2=MPI_WTIME()
+			commTimeSum=commTime2-commTime1
+
 			do i=1, numRecv(dir)
 				localCell=send(1,i,dir)
 				myMesh(localCell)%neighbors(dir)=recv(1,i)

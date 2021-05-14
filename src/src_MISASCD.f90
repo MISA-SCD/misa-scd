@@ -24,6 +24,8 @@ program MISASCD
 	integer :: status(MPI_STATUS_SIZE), sim, outputCounter, nullSteps
 	integer :: cascadeCell, i, CascadeCount, TotalCascades
 	real :: time1, time2, time3
+	double precision :: runTime1, runTime2
+	double precision :: commTime1, commTime2
 	logical :: releaseToggle, impCascadeToggle
 	integer :: timeCounter
 	character(14) :: filename1, filename2, filename3, filename4
@@ -102,6 +104,9 @@ program MISASCD
 	if(myProc%taskid==MASTER) then
 		write(*,*) 'proc division', dims
 	end if
+
+	runTime1=MPI_WTIME()
+	commTimeSum=0.0
 
 	!***********************************************************************
 	!Initialize input parameters and meshes
@@ -235,7 +240,10 @@ program MISASCD
 			impCascadeToggle= .FALSE.
 
 			!<find the maximum totalRate in all processors
+			commTime1=MPI_WTIME()
 			call MPI_REDUCE(totalRate,maxRate,1,MPI_DOUBLE_PRECISION,MPI_MAX,0,comm,ierr)
+			commTime2=MPI_WTIME()
+			commTimeSum=commTimeSum+commTime2-commTime1
 
 			if(myProc%taskid==MASTER) then
 				rateTau(1)=maxRate
@@ -260,7 +268,10 @@ program MISASCD
 				end if
 			end if
 
+			commTime1=MPI_WTIME()
 			call MPI_BCAST(rateTau, 2, MPI_DOUBLE_PRECISION, MASTER, comm,ierr)
+			commTime2=MPI_WTIME()
+			commTimeSum=commTimeSum+commTime2-commTime1
 
 			maxRate=rateTau(1)	!<update maxRate of the processor
 			tau=rateTau(2)		!<update time step of the processor
@@ -395,7 +406,10 @@ program MISASCD
 			!if(elapsedTime >= totalTime/50d0*(outputCounter)) then
 			!if(mod(step,100000)==0) then
 				simStatus=1	!<1: 'irradiation', 0: 'anneal'
+				commTime1=MPI_WTIME()
 				call MPI_REDUCE(numImpAnn,totalImpAnn, 2, MPI_INTEGER, MPI_SUM, 0,comm, ierr)
+				commTime2=MPI_WTIME()
+				commTimeSum=commTimeSum+commTime2-commTime1
 				if(xyzdatToggle=='yes') call outputDefectsXYZ()	!write xyzdat.out
 				if(totdatToggle=='yes' .OR. defectToggle=='yes' .OR. stadatToggle=='yes') then
 					call outputDefectsTotal(simStatus)	!write totdat.out, defect.out, stadat.out
@@ -440,7 +454,10 @@ program MISASCD
 		!Output defects at the end of the implantation loop
 		!***********************************************************************
 		simStatus=1	!<1: 'irradiation', 0: 'anneal'
+		commTime1=MPI_WTIME()
 		call MPI_REDUCE(numImpAnn, totalImpAnn, 2, MPI_INTEGER, MPI_SUM,0, comm, ierr)
+		commTime2=MPI_WTIME()
+		commTimeSum=commTimeSum+commTime2-commTime1
 		if(xyzdatToggle=='yes') call outputDefectsXYZ()	!write xyzdat.out
 		if(totdatToggle=='yes' .OR. defectToggle=='yes' .OR. stadatToggle=='yes') then
 			call outputDefectsTotal(simStatus)	!write totdat.out, defect.out, stadat.out
@@ -658,8 +675,11 @@ program MISASCD
 	call deallocateMaterialInput()
 
 	call cpu_time(time2)
+	runTime2=MPI_WTIME()
 	if(myProc%taskid==MASTER) then
-		write(*,*) 'computation time', time2-time1
+		!write(*,*) 'computation time', time2-time1
+		write(*,*) 'run time', runTime2-runTime1
+		write(*,*) 'communication time', commTimeSum
 		write(*,*) 'Deallocating memory'
 	end if
 
