@@ -35,6 +35,7 @@ program MISASCD
 	!test
 	type(defect), pointer :: defectTest
 	type(reaction), pointer :: reactionTest
+	integer :: impCount
 
 	interface
 		subroutine chooseImplantReaction(reactionCurrent, CascadeCurrent)
@@ -51,10 +52,11 @@ program MISASCD
 			type(cascade), pointer, intent(inout) :: CascadeCurrent
 		end subroutine
 
-		subroutine addCascadeExplicit(reactionCurrent)
+		subroutine addCascadeExplicit(reactionCurrent, CascadeCurrent)
 			use mod_structures
 			implicit none
 			type(reaction), pointer, intent(inout) :: reactionCurrent
+			type(cascade), pointer, intent(inout) :: cascadeCurrent
 		end subroutine
 
 		subroutine updateDefectList(reactionCurrent, defectUpdateCurrent, CascadeCurrent)
@@ -86,6 +88,7 @@ program MISASCD
 
 	call cpu_time(time1)
 	timeCounter = 1
+	impCount = 1
 	!***********************************************************************
 	!<Initialize MPI interface
 	!***********************************************************************
@@ -294,8 +297,11 @@ program MISASCD
 			!<If implantScheme=='explicit', cascade implantation needs to be carried out explicitly
 			if(implantScheme=='explicit') then
 				if(elapsedTime >= numImpAnn(1)*(numDisplacedAtoms*atomSize)/(totalVolume*dpaRate)) then
+				!if(elapsedTime >= 2.0d0*impCount) then
+				!	impCount=impCount+1
+
 					!<choose a cell in the peocessor to implant cascade
-					call addCascadeExplicit(reactionCurrent)
+					call addCascadeExplicit(reactionCurrent, CascadeCurrent)
 				else
 					call chooseReaction(reactionCurrent, CascadeCurrent)
 				end if

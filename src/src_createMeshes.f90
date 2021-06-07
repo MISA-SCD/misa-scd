@@ -296,7 +296,7 @@ subroutine createMeshConnect(length)
 	include 'mpif.h'
 
 	double precision, intent(in) :: length
-	integer :: cell, localCell, maxElement
+	integer :: cell, localCell, maxElement, maxBndryCells
 	integer :: i, dir, tag
 	integer, allocatable :: send(:,:,:), recv(:,:)
 	integer :: materialBuff(numCells,6)
@@ -305,7 +305,16 @@ subroutine createMeshConnect(length)
 	integer :: tempRecv
 	double precision :: commTime1, commTime2
 
-	allocate(send(2, numxLocal*numyLocal*numzLocal,6))
+	maxBndryCells = numxLocal*numyLocal
+	if((numyLocal*numzLocal) > maxBndryCells) then
+		maxBndryCells = numyLocal*numzLocal
+	end if
+	if((numxLocal*numzLocal) > maxBndryCells) then
+		maxBndryCells = numxLocal*numzLocal
+	end if
+
+	!allocate(send(2, numxLocal*numyLocal*numzLocal,6))
+	allocate(send(2, maxBndryCells,6))
 
 	do cell=1,numCells
 		!Right (+x)
@@ -415,24 +424,21 @@ subroutine createMeshConnect(length)
 			myMesh(cell)%neighbors(6)=cell-numxLocal*numyLocal
 			myMesh(cell)%neighborProcs(6)=myProc%taskid
 		end if
-
 	end do
 
 	maxElement=0
 	!*******************************************************
-	!Send
-	commTime1=MPI_WTIME()
-	do dir=1,6
-		if(myProc%procNeighbor(dir)/=myProc%taskid) then
-			call MPI_SEND(send(1,1,dir),numSend(dir)*2,MPI_INTEGER,myProc%procNeighbor(dir),200+dir,&
-					comm,ierr)
+	do dir = 1,6
+		if(dir == 1 .OR. dir == 2) then			!<x
+			numRecv(dir) = numyLocal*numzLocal
+		else if(dir == 3 .OR. dir == 4) then	!<y
+			numRecv(dir) = numxLocal*numzLocal
+		else if(dir == 5 .OR. dir == 6) then	!<z
+			numRecv(dir) = numxLocal*numyLocal
 		end if
 	end do
-	commTime2=MPI_WTIME()
-	commTimeSum=commTime2-commTime1
 
-	!Recv
-	do dir=1,6
+	do dir = 1,6
 
 		if(mod(dir,2)==0) then
 			tag = dir-1
@@ -440,28 +446,37 @@ subroutine createMeshConnect(length)
 			tag = dir+1
 		end if
 
-		if(myProc%procNeighbor(dir)/=myProc%taskid) then
 
-			tempRecv=0
+		if(myProc%procNeighbor(dir) /= myProc%taskid .AND. myProc%procNeighbor(dir) /= -1) then
 			commTime1=MPI_WTIME()
-			call MPI_PROBE(myProc%procNeighbor(dir), 200+tag,comm,status,ierr)
-			call MPI_GET_COUNT(status,MPI_INTEGER,tempRecv,ierr)
-			numRecv(dir)=tempRecv/2
+			call MPI_SEND(send(1,1,dir),numSend(dir)*2,MPI_INTEGER,myProc%procNeighbor(dir),dir,comm,ierr)
+			commTime2=MPI_WTIME()
+			commTimeSum=commTime2-commTime1
+		end if
 
-			allocate(recv(2,numRecv(dir)))
-			call MPI_RECV(recv,numRecv(dir)*2,MPI_INTEGER,myProc%procNeighbor(dir),200+tag,&
-					comm,status,ierr)
+		if(myProc%procNeighbor(tag)/=myProc%taskid .AND. myProc%procNeighbor(tag) /= -1) then
+			allocate(recv(2,numRecv(tag)))
+			commTime1=MPI_WTIME()
+			call MPI_RECV(recv,numRecv(tag)*2,MPI_INTEGER,myProc%procNeighbor(tag),dir,comm,status,ierr)
 			commTime2=MPI_WTIME()
 			commTimeSum=commTime2-commTime1
 
-			do i=1, numRecv(dir)
-				localCell=send(1,i,dir)
-				myMesh(localCell)%neighbors(dir)=recv(1,i)
-				materialBuff(localCell,dir)=recv(2,i)
+			do i=1, numRecv(tag)
+				localCell=send(1,i,tag)
+				myMesh(localCell)%neighbors(tag)=recv(1,i)
+				materialBuff(localCell,tag)=recv(2,i)
 			end do
+
+			if(myProc%taskid == 0) then
+				do i = 1,numRecv(tag)
+					write(*,*) 'recvDir', tag, 'numRecv', numRecv(tag), 'recvCell', recv(1,i)
+				end do
+			end if
+
 			deallocate(recv)
 		end if
 	end do
+	deallocate(send)
 
 	!***************************************************************************************************
 	!Initializing myGhost with elements that are in neighboring processors that bound this one
@@ -502,7 +517,6 @@ subroutine createMeshConnect(length)
 			end if
 		end do
 	end do
-	deallocate(send)
 
 end subroutine
 

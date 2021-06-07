@@ -137,25 +137,28 @@ integer function CascadeCount()
 end function
 
 !***************************************************************************************************
-!>subroutine addCascadeExplicit(reactionCurrent): This subroutine takes the place of chooseReaction
+!>subroutine addCascadeExplicit(reactionCurrent, CascadeCurrent): This subroutine takes the place of chooseReaction
 !in the case of explicit cascade implantation. It forces the program to 'choose' a cascade reaction,
 !instead of using the Monte Carlo algorithm to do so.
 ! Inputs: none
-! Outputs: reactionCurrent and CascadeCurrent, pointing at cascade reaction.
+! Outputs: reactionCurrent and CascadeCurrent, pointing at o-th reaction.
 !***************************************************************************************************
-subroutine addCascadeExplicit(reactionCurrent)
+subroutine addCascadeExplicit(reactionCurrent, CascadeCurrent)
     use mod_structures
     use mod_globalVariables
     use mod_randdp
     implicit none
 
     type(reaction), pointer, intent(inout) :: reactionCurrent
+    type(cascade), pointer, intent(inout) :: cascadeCurrent
     double precision :: r2, atemp, r2timesa
     integer :: i
 
     atemp=0d0
     r2=dprand()
     r2timesa=r2*numCells
+    nullify(reactionCurrent)
+    nullify(CascadeCurrent)
 
     outer: do i=1,numCells
         reactionCurrent=>reactionList(i)
