@@ -317,7 +317,7 @@ subroutine ReadInputs()
 			else if(char=='cascadeVolume') then
 				flag1=.TRUE.
 				read(PARAFILE,*) cascadeVolume
-			else if(char=='cascRxnLimit') then
+			else if(char=='cascadeReacLimit') then
 				flag1=.TRUE.
 				read(PARAFILE,*) cascadeReactionLimit
 			else if(char=='numSims') then
