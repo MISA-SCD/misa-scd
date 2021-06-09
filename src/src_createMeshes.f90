@@ -467,11 +467,11 @@ subroutine createMeshConnect(length)
 				materialBuff(localCell,tag)=recv(2,i)
 			end do
 
-			if(myProc%taskid == 0) then
-				do i = 1,numRecv(tag)
-					write(*,*) 'recvDir', tag, 'numRecv', numRecv(tag), 'recvCell', recv(1,i)
-				end do
-			end if
+			!if(myProc%taskid == 0) then
+			!	do i = 1,numRecv(tag)
+			!		write(*,*) 'recvDir', tag, 'numRecv', numRecv(tag), 'recvCell', recv(1,i)
+			!	end do
+			!end if
 
 			deallocate(recv)
 		end if
