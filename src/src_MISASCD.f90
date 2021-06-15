@@ -116,6 +116,12 @@ program MISASCD
 	!***********************************************************************
 	call ReadInputs()
 	call initialMesh()			!open Mesh_xx.txt file and carry out parallel mesh initialization routine
+	!<!<Initialize cascadeReactionLimit
+	if(implantType=='Cascade' .AND. meshingType=='adaptive') then
+		cascadeReactionLimit = 10d0*myMesh(1)%volume*dpaRate/(numDisplacedAtoms*atomSize)	!=10 times the cascade implantation rate
+	else
+		cascadeReactionLimit = 0d0
+	end if
 
 	!<Create fine mesh connectivity
 	allocate(cascadeConnectivity(6, numCellsCascade))	!< numCellsCascade=numxFine*numyFine*numzFine

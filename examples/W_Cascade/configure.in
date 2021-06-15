@@ -90,9 +90,6 @@ max3DInt                !<Integer. Maximum size for SIA defect to diffuse in 3D.
 cascadeVolume           !<Double precision. Volume of cascade (unit: nm^3).
 1000d0
 
-cascadeReacLimit        !<Double precision. Total reaction rate in a cascade cell to consider it annealed and release cascade back to coarse mesh (s^-1)
-100d0
-
 numSims                 !<Integer. Number of times to repeat simulation.
 1
 

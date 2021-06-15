@@ -222,7 +222,7 @@ subroutine ReadInputs()
 	cascadeVolume = 0d0
 	numSims = 1
 	numGrains = 1
-	cascadeReactionLimit = 100d0
+	!cascadeReactionLimit = 100d0
 
 	annealTemp = 273d0
 	annealTime = 0d0
@@ -317,9 +317,9 @@ subroutine ReadInputs()
 			else if(char=='cascadeVolume') then
 				flag1=.TRUE.
 				read(PARAFILE,*) cascadeVolume
-			else if(char=='cascadeReacLimit') then
-				flag1=.TRUE.
-				read(PARAFILE,*) cascadeReactionLimit
+			!else if(char=='cascadeReacLimit') then
+			!	flag1=.TRUE.
+			!	read(PARAFILE,*) cascadeReactionLimit
 			else if(char=='numSims') then
 				flag1=.TRUE.
 				read(PARAFILE,*) numSims
