@@ -3407,7 +3407,7 @@ subroutine defectCombinationRules(products, product2, defectTemp, isCombined)
 
 		!CuV+SIA
 		if(products(1)/=0 .AND. products(2)/=0 .AND. products(3) > products(2)) then
-			product2(3)=products(3)-products(2)
+			product2(3)=products(3)-products(2)	!product2 is SIA cluster
 			products(2)=0
 			products(3)=0
 		else if(products(1)/=0 .AND. products(2)/=0 .AND. products(4) > products(2)) then
@@ -3465,6 +3465,62 @@ subroutine defectCombinationRules(products, product2, defectTemp, isCombined)
 	end if
 
 end subroutine
+
+
+	!***************************************************************************************************
+	!***************************************************************************************************
+	subroutine defectCombinationRules_2nd(products, defectTemp)
+		use mod_constants
+		use mod_structures
+		use mod_globalVariables
+		implicit none
+
+		integer products(SPECIES)
+		type(defect), pointer :: defectTemp
+
+		!two 1D clusters coming together to make a sessile cluster
+		if(products(3) > max3DInt .AND. defectTemp%defectType(3) > max3DInt) then
+			products(4)=products(3)
+			products(3)=0
+		end if
+		products = products + defectTemp%defectType
+
+		!V+SIA recombination
+		if(products(2) >= products(3)) then
+			products(2)=products(2)-products(3)
+			products(3)=0
+		else if(products(3) > products(2)) then
+			products(3)=products(3)-products(2)
+			products(2)=0
+		end if
+		if(products(2) >= products(4)) then
+			products(2)=products(2)-products(4)
+			products(4)=0
+		else if(products(4) > products(2)) then
+			products(4)=products(4)-products(2)
+			products(2)=0
+		end if
+
+		!sessile+mobile SIA cluster makes sessile cluster
+		if(products(3) /= 0. .AND. products(4) /= 0) then
+			products(4)=products(3)+products(4)
+			products(3)=0
+		end if
+
+		!sessile cluster becomes mobile again when it shrinks below max3DInt
+		if(products(4) /= 0 .AND. products(4) <= max3DInt) then
+			products(3)=products(4)
+			products(4)=0
+		end if
+
+		if(pointDefectToggle=='yes') then
+			if(products(3) /= 0 .AND. products(3) > max3DInt) then
+				products(4)=products(3)
+				products(3)=0
+			end if
+		end if
+
+	end subroutine
 
 !***************************************************************************************************
 ! Subroutine checkReactionLegality(numProducts, products, isLegal)

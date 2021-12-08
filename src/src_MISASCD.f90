@@ -108,7 +108,7 @@ program MISASCD
 		write(*,*) 'proc division', dims
 	end if
 
-	runTime1=MPI_WTIME()
+	!runTime1=MPI_WTIME()
 	commTimeSum=0.0
 
 	!***********************************************************************
@@ -198,6 +198,7 @@ program MISASCD
 		!***********************************************************************
 		numImpAnn(1)=0     	!<Postprocessing: number of Frenkel pairs / cascades (local)
 		numImpAnn(2)=0     	!<Postprocessing: number of annihilation reactions carried out
+		numImpAnn(3)=0		!<total displaced atoms
 		elapsedTime=0d0		!<The simulation time that has passed
 
 		numTrapSIA=0		!<Postprocessing: number of SIAs trapped on grain boundary
@@ -239,6 +240,8 @@ program MISASCD
 		!<	reactants in neighboring cells. Then add all reaction rates associated with REACTANTS AND PRODUCTS in the cell and diffusion
 		!<	reactions in neighboring cells.)
 		!<5. Repeat 1-4.
+		runTime1 = MPI_WTIME()
+
 		do while(elapsedTime < totalTime)
 		!do while(step < 1)
 
@@ -419,7 +422,8 @@ program MISASCD
 			!if(mod(step,100000)==0) then
 				simStatus=1	!<1: 'irradiation', 0: 'anneal'
 				commTime1=MPI_WTIME()
-				call MPI_REDUCE(numImpAnn,totalImpAnn, 2, MPI_INTEGER, MPI_SUM, 0,comm, ierr)
+				!call MPI_REDUCE(numImpAnn,totalImpAnn, 2, MPI_INTEGER, MPI_SUM, 0,comm, ierr)
+				call MPI_REDUCE(numImpAnn,totalImpAnn, 3, MPI_DOUBLE_PRECISION, MPI_SUM, 0,comm, ierr)
 				commTime2=MPI_WTIME()
 				commTimeSum=commTimeSum+commTime2-commTime1
 				if(xyzdatToggle=='yes') call outputDefectsXYZ()	!write xyzdat.out
@@ -428,7 +432,8 @@ program MISASCD
 				end if
 				call cpu_time(time2)
 				if(myProc%taskid==MASTER) then
-					DPA=dble(totalImpAnn(1))/(systemVol/(numDisplacedAtoms*atomSize))
+					!DPA=dble(totalImpAnn(1))/(systemVol/(numDisplacedAtoms*atomSize))
+					DPA = totalImpAnn(3)/(systemVol/atomSize)
 					write(*,*)
 					write(*,*) 'time', elapsedTime, 'DPA', DPA, 'steps', step, 'AverageTimeStep', elapsedTime/dble(step)
 					if(implantType=='FrenkelPair') then
@@ -461,13 +466,15 @@ program MISASCD
 			!	exit
 			!end do
 		end do	!end of do while(elapsedTime < totalTime)
+		runTime2=MPI_WTIME()
 
 		!***********************************************************************
 		!Output defects at the end of the implantation loop
 		!***********************************************************************
 		simStatus=1	!<1: 'irradiation', 0: 'anneal'
 		commTime1=MPI_WTIME()
-		call MPI_REDUCE(numImpAnn, totalImpAnn, 2, MPI_INTEGER, MPI_SUM,0, comm, ierr)
+		!call MPI_REDUCE(numImpAnn, totalImpAnn, 2, MPI_INTEGER, MPI_SUM,0, comm, ierr)
+		call MPI_REDUCE(numImpAnn, totalImpAnn, 3, MPI_DOUBLE_PRECISION, MPI_SUM,0, comm, ierr)
 		commTime2=MPI_WTIME()
 		commTimeSum=commTimeSum+commTime2-commTime1
 		if(xyzdatToggle=='yes') call outputDefectsXYZ()	!write xyzdat.out
@@ -476,7 +483,8 @@ program MISASCD
 		end if
 		call cpu_time(time2)
 		if(myProc%taskid==MASTER) then
-			DPA=dble(totalImpAnn(1))/(systemVol/(numDisplacedAtoms*atomSize))
+			!DPA=dble(totalImpAnn(1))/(systemVol/(numDisplacedAtoms*atomSize))
+			DPA = totalImpAnn(3)/(systemVol/atomSize)
 			write(*,*)
 			write(*,*) 'Final  step'
 			write(*,*) 'time', elapsedTime, 'DPA', DPA, 'steps', step, 'AverageTimeStep', elapsedTime/dble(step)
@@ -687,7 +695,7 @@ program MISASCD
 	call deallocateMaterialInput()
 
 	call cpu_time(time2)
-	runTime2=MPI_WTIME()
+	!runTime2=MPI_WTIME()
 	if(myProc%taskid==MASTER) then
 		!write(*,*) 'computation time', time2-time1
 		write(*,*) 'run time', runTime2-runTime1

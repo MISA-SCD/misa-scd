@@ -14,6 +14,7 @@ module mod_constants
     double precision, parameter :: Zint = 1.2d0				!<Constant representing preference for clustering of interstitials by interstitial clusters (increases clustering cross-section)
     double precision, parameter :: Zv = 1.0d0
     double precision, parameter :: atomSize_Cu = 8.79d-3    !<Cu (nm^3)
+    double precision, parameter :: ED = 40d0                !<Threshold energy of displacement (Fe:40eV, W:)
 
     !<input files
     integer, parameter :: PARAFILE = 10     !<Used to read parameter.txtx file

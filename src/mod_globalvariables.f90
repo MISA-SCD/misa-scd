@@ -164,9 +164,11 @@ module mod_globalvariables
     double precision :: temperature			!<Temperature (K)
     double precision :: DPA					!<DPA tracker (not a parameter)
     double precision :: rateTau(2)          !<Used for collective communication
-    integer :: numImpAnn(2)                 !<Postprocessing: numImpAnn(1) is the num of Frenkel pairs / cascades (local), numImpAnn(2) is the number of annihilation reactions carried out (local)
-    integer :: totalImpAnn(2)               !<Postprocessing: numImpAnn(1) is the number of implant events across all processors, numImpAnn(2) is the number of annihilation reactions across all processors
-    !Cu solubility CeqCu(T) = exp(DelatS/kB)*exp(-Omega/(kB*T))  Reference: (F. Christien and A. Barbu, 2004)
+    !integer :: numImpAnn(2)                 !<Postprocessing: numImpAnn(1) is the num of Frenkel pairs / cascades (local), numImpAnn(2) is the number of annihilation reactions carried out (local)
+    !integer :: totalImpAnn(2)               !<Postprocessing: numImpAnn(1) is the number of implant events across all processors, numImpAnn(2) is the number of annihilation reactions across all processors
+    double precision :: numImpAnn(3)        !<1: num of Frenkel pairs or cascades (local), 2:number of annihilation reactions carried out (local), 3: total of displaced atoms (local)
+    double precision :: totalImpAnn(3)      !<1: num of Frenkel pairs or cascades (global), 2:number of annihilation reactions carried out (global), 3: total of displaced atoms (global)
+    !<Cu solubility CeqCu(T) = exp(DelatS/kB)*exp(-Omega/(kB*T))  Reference: (F. Christien and A. Barbu, 2004)
     double precision :: ceqV                !Thermal equilibrium concentration of vacancy
     double precision :: ceqI                !Thermal equilibrium concentration of SIA
     double precision :: concV               !Vacancy concentration
@@ -176,7 +178,7 @@ module mod_globalvariables
     integer :: initialNumI                  !Initial number of self-interstitial atoms in the whole system
     integer, allocatable :: listVI(:,:)     !List the globalID of the mesh where initial vacancies and self-interstitial atoms are located.
 
-    !counters for sink efficiency
+    !>counters for sink efficiency
     integer :: numTrapV			            !<Postprocessing: number of vacancies trapped on grain boundary
     integer :: numTrapSIA			        !<Postprocessing: number of SIAs trapped on grain boundary
     integer :: numEmitV			            !<Postprocessing: number of vacancies emitted from grain boundary

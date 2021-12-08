@@ -11,6 +11,7 @@ subroutine chooseCascade(CascadeTemp)
 
     type(cascadeEvent), pointer, intent(inout) :: cascadeTemp
     double precision :: r, atemp
+    double precision, external :: damageFunc
 
     r=dprand()
     atemp=0d0
@@ -19,6 +20,7 @@ subroutine chooseCascade(CascadeTemp)
     do while(associated(cascadeTemp))
         atemp=atemp+1d0/dble(numCascades)
         if(atemp >= r) then
+            numImpAnn(3) = numImpAnn(3) + damageFunc(PKAenergy)
             exit
         end if
         cascadeTemp=>cascadeTemp%next
@@ -39,7 +41,7 @@ subroutine chooseCascade_withFiles(cascadeTemp)
     type(cascadeEvent), pointer, intent(inout) :: cascadeTemp
     double precision :: r, r1, atemp, atemp1, energy, minEnergy
     integer :: i
-    double precision, external :: sample_PKA_energy
+    double precision, external :: sample_PKA_energy, damageFunc
 
     if(PKAspectrum == 'yes') then
         energy = sample_PKA_energy()      !<energy > 0d0
@@ -55,6 +57,7 @@ subroutine chooseCascade_withFiles(cascadeTemp)
                 do while(associated(cascadeTemp))
                     atemp=atemp+1d0/dble(cascadeLists(i)%numCascades)
                     if(r<=atemp) then
+                        numImpAnn(3) = numImpAnn(3) + damageFunc(cascadeLists(i)%PKAenergy)
                         exit outer1
                     else
                         cascadeTemp=>cascadeTemp%next
@@ -73,7 +76,8 @@ subroutine chooseCascade_withFiles(cascadeTemp)
                 cascadeTemp=>cascadeLists(i)%listCascades
                 do while(associated(cascadeTemp))
                     atemp=atemp+1d0/dble(cascadeLists(i)%numCascades)
-                    if(r<=atemp) then
+                    if(r<=atemp) then   !chosed a cascade from these cascade files
+                        numImpAnn(3) = numImpAnn(3) + damageFunc(cascadeLists(i)%PKAenergy)
                         exit outer2
                     else
                         cascadeTemp=>cascadeTemp%next
@@ -86,7 +90,7 @@ subroutine chooseCascade_withFiles(cascadeTemp)
 end subroutine chooseCascade_withFiles
 
 !***************************************************************************************************
-!> subroutine choosePKAenergy(): The PKA energy is sampled by linear interpolation
+!> function sample_PKA_energy(): The PKA energy is sampled by linear interpolation
 !***************************************************************************************************
 double precision function sample_PKA_energy()
     use mod_structures
@@ -109,6 +113,28 @@ double precision function sample_PKA_energy()
 
     slope = (EPKAlist%energy(index_PKA) - EPKAlist%energy(index_PKA-1))/(EPKAlist%cpdf(index_PKA) - EPKAlist%cpdf(index_PKA-1))
     sample_PKA_energy = slope*(r - EPKAlist%cpdf(index_PKA-1)) + EPKAlist%energy(index_PKA-1)
+
+end function
+
+!***************************************************************************************************
+!> function damageFunc(Epka): Calculate the number of displaced atoms according to the PKA energy
+!***************************************************************************************************
+double precision function damageFunc(Epka)
+    use mod_constants
+    implicit none
+
+    double precision, intent(in) :: Epka
+    double precision :: vNRT
+
+    vNRT = 0d0
+    if(Epka <= ED) then
+        vNRT = 0d0
+    else if(Epka <= (2d0*ED/0.8d0)) then
+        vNRT = 1d0
+    else
+        vNRT = 0.8d0*Epka/(2d0*ED)
+    end if
+    damageFunc = vNRT
 
 end function
 

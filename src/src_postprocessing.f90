@@ -577,7 +577,8 @@ subroutine outputDefectsTotal(simStatus)
 		VAnnihilated=0d0
 
 		!<Output time information
-		DPA=dble(totalImpAnn(1))/(systemVol/(numDisplacedAtoms*atomSize))
+		!DPA=dble(totalImpAnn(1))/(systemVol/(numDisplacedAtoms*atomSize))
+		DPA = totalImpAnn(3)/(systemVol/atomSize)
 		if(totdatToggle=='yes') then
 			write(TOTFILE,*)
 			write(TOTFILE,*)
