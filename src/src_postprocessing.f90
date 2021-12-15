@@ -578,7 +578,11 @@ subroutine outputDefectsTotal(simStatus)
 
 		!<Output time information
 		!DPA=dble(totalImpAnn(1))/(systemVol/(numDisplacedAtoms*atomSize))
-		DPA = totalImpAnn(3)/(systemVol/atomSize)
+		if(implantType=='Cascade') then
+			DPA = totalImpAnn(3)/(systemVol/atomSize)
+		else
+			DPA = totalImpAnn(1)/(systemVol/atomSize)
+		end if
 		if(totdatToggle=='yes') then
 			write(TOTFILE,*)
 			write(TOTFILE,*)

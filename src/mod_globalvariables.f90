@@ -22,7 +22,10 @@ module mod_globalvariables
     integer :: dims(3)                          !<Number of processors in x, y, z.
     logical, dimension(3) :: periods=(/.true., .true., .true./)     !<Boundary conditions in x, y, z.  The default is periodic
     integer :: ierr							    !<used for initializing and finalizing MPI
-    double precision :: commTimeSum             !<Statistical communication time
+    double precision :: commTimeSum             !<total communication time
+    double precision :: allreduceTime           !<total global communiaction time
+    double precision :: casCommTime             !<total point-to-point communication time used for cascade implantation
+    double precision :: otherCommTime           !<total point-to-point communication time ued for other cases
 
     !>Processor information
     type(processorData) :: myProc				!<Contains processor information
@@ -160,12 +163,10 @@ module mod_globalvariables
     !>Simulation parameters, to be computed during simulation
     double precision :: totalTime           !<Total time
     double precision :: elapsedTime         !<Elapsed time
-    integer :: step                         !<Current number of time steps
+    integer(kind=8) :: step                         !<Current number of time steps
     double precision :: temperature			!<Temperature (K)
     double precision :: DPA					!<DPA tracker (not a parameter)
     double precision :: rateTau(2)          !<Used for collective communication
-    !integer :: numImpAnn(2)                 !<Postprocessing: numImpAnn(1) is the num of Frenkel pairs / cascades (local), numImpAnn(2) is the number of annihilation reactions carried out (local)
-    !integer :: totalImpAnn(2)               !<Postprocessing: numImpAnn(1) is the number of implant events across all processors, numImpAnn(2) is the number of annihilation reactions across all processors
     double precision :: numImpAnn(3)        !<1: num of Frenkel pairs or cascades (local), 2:number of annihilation reactions carried out (local), 3: total of displaced atoms (local)
     double precision :: totalImpAnn(3)      !<1: num of Frenkel pairs or cascades (global), 2:number of annihilation reactions carried out (global), 3: total of displaced atoms (global)
     !<Cu solubility CeqCu(T) = exp(DelatS/kB)*exp(-Omega/(kB*T))  Reference: (F. Christien and A. Barbu, 2004)

@@ -256,7 +256,7 @@ subroutine updateDefectList(reactionCurrent, defectUpdateCurrent, CascadeCurrent
 	integer, external :: findCellWithCoordinatesFineMesh, chooseRandomCell
 	logical, external :: cascadeMixingCheck
 
-	double precision :: commTime1, commTime2, commTimeSend1, commTimeSend2, compTime1, compTime2
+	double precision :: commTime1, commTime2, compTime1, compTime2
 	!just for testing
 	type(defect),pointer :: defectTest
 	type(reaction),pointer :: reactionTest
@@ -313,7 +313,7 @@ subroutine updateDefectList(reactionCurrent, defectUpdateCurrent, CascadeCurrent
 		!allocate(firstSend(SPECIES+3,0,6))
 		allocate(firstSend(SPECIES+3,4,6))
 
-		commTime1=MPI_WTIME()
+		commTime1 = MPI_WTIME()
 		do i=1,6
 			if(mod(i,2)==0) then
 				recvDir=i-1
@@ -339,6 +339,8 @@ subroutine updateDefectList(reactionCurrent, defectUpdateCurrent, CascadeCurrent
 			!end if
 		end do
 
+        compTime1 = MPI_WTIME() !标记计算时间的起点
+
 	else	!associated(reactionCurrent)	!if we have chosen an event
 
 		!***********************************************************************************************
@@ -350,7 +352,7 @@ subroutine updateDefectList(reactionCurrent, defectUpdateCurrent, CascadeCurrent
 			!allocate(firstSend(SPECIES+3,0,6))
 			allocate(firstSend(SPECIES+3,4,6))
 			firstSend=0
-			commTime1=MPI_WTIME()
+			commTime1 = MPI_WTIME()
 			do i=1,6
 				if(mod(i,2)==0) then
 					recvDir=i-1
@@ -380,6 +382,7 @@ subroutine updateDefectList(reactionCurrent, defectUpdateCurrent, CascadeCurrent
 				!end if
 			end do
 
+            compTime1 = MPI_WTIME() !标记计算时间的起点
 			!Update cascades
 			if(meshingType=='adaptive') then
 				!**************************************************
@@ -1120,7 +1123,7 @@ subroutine updateDefectList(reactionCurrent, defectUpdateCurrent, CascadeCurrent
 			end if
 
 			!Communication: send products to neighbor proc and receive defects (local and boundry) from neighbor proc
-			commTime1=MPI_WTIME()
+			commTime1 = MPI_WTIME()
 			do i=1,6
 
 				if(mod(i,2)==0) then
@@ -1149,6 +1152,7 @@ subroutine updateDefectList(reactionCurrent, defectUpdateCurrent, CascadeCurrent
 				!end if
 			end do
 
+            compTime1 = MPI_WTIME() !标记计算时间的起点
 			!Update defects in local mesh
 			!Remove reactants from the system
 			do i=1, reactionCurrent%numReactants
@@ -1554,6 +1558,7 @@ subroutine updateDefectList(reactionCurrent, defectUpdateCurrent, CascadeCurrent
 				!end if
 			end do
 
+            compTime1 = MPI_WTIME() !标记计算时间的起点
 			!removing reactants from the system
 			do i=1, reactionCurrent%numReactants
 
@@ -1635,14 +1640,6 @@ subroutine updateDefectList(reactionCurrent, defectUpdateCurrent, CascadeCurrent
 					call MPI_ABORT(comm,ierr)
 				else
 					!decrease the number of defects by 1 if the number of defects is greater than 1
-					!write(86,*) 'decreasing defect num by 1', defectCurrent%num, 'type', defectCurrent%defectType, &
-					!	'cell', defectCurrent%cellNumber
-					!write(86,*)
-					!if(associated(defectPrev))	write(86,*) 'defect', defectPrev%defectType, 'num', defectPrev%num
-					!write(86,*) 'defect', defectCurrent%defectType, 'num', defectCurrent%num
-					!if(associated(defectCurrent%next)) !write(86,*) 'defect', defectCurrent%next%defectType, &
-					!	'num', defectCurrent%next%num
-
 					defectCurrent%num=defectCurrent%num-1 !remove the defect from the system instead of the entire entry in the list
 
 					if(defectCurrent%num==0) then
@@ -1913,7 +1910,7 @@ subroutine updateDefectList(reactionCurrent, defectUpdateCurrent, CascadeCurrent
 		end if
 	end if	!if associated(reactionCurrent)
 
-	compTime1=MPI_WTIME()
+	compTime2 = MPI_WTIME() !标记计算时间的终止位置
 	do i=1,6
 		if(mod(i,2)==0) then
 			recvDir=i-1
@@ -1929,14 +1926,9 @@ subroutine updateDefectList(reactionCurrent, defectUpdateCurrent, CascadeCurrent
 			call MPI_WAIT(recvFirstRequest(recvDir),recvFirstStatus,ierr)
 		end if
 	end do
-	commTime2=MPI_WTIME()
-	if((commTime2-commTime1) >= (compTime1-commTime1)) then
-		commTimeSum=commTimeSum+(commTime2-commTime1)-(compTime1-commTime1)
-	end if
-	!if(myProc%taskid==MASTER) then
-	!	write(*,*) 'step', step, 'updateDefects: commTime', commTime2-commTime1
-	!	write(*,*) 'step', step, 'updateDefects: compTime', compTime1-commTime1
-	!end if
+	commTime2 = MPI_WTIME()
+	commTimeSum = commTimeSum + (commTime2-commTime1)-(compTime2-compTime1)
+	otherCommTime = otherCommTime + (commTime2-commTime1)-(compTime2-compTime1)
 
 	!totalLocalRecv=1
 	allocate(finalSend(SPECIES+3,6,6))
@@ -2067,12 +2059,6 @@ subroutine updateDefectList(reactionCurrent, defectUpdateCurrent, CascadeCurrent
 					write(*,*) 'error in defectUpdate negative defect numbers'
 					write(*,*) 'j',j,'proc', myProc%taskid, 'dir', i, 'neighbor proc', myProc%procNeighbor(i)
 					write(*,*) (firstRecv(k,j,i),k=1,SPECIES+3)
-					!write(*,*) 'step',step
-					!defectTest=>myGhost(firstRecv(SPECIES+1,j,i),i)%defectList
-					!do while(associated(defectTest))
-					!    write(*,*) defectTest%defectType, defectTest%num, defectTest%cellNumber
-					!    defectTest=>defectTest%next
-					!end do
 					call MPI_ABORT(comm,ierr)
 				else
 
@@ -2132,10 +2118,6 @@ subroutine updateDefectList(reactionCurrent, defectUpdateCurrent, CascadeCurrent
 
 					if(defectCurrent%num==0) then
 						write(*,*) 'Error zero defects in updateDefectList, step 3 of communication'
-						!		defectPrev%next=>defectCurrent%next !remove that defect type from the system
-						!		deallocate(defectCurrent%defectType)
-						!		deallocate(defectCurrent)
-						!		nullify(defectCurrent)
 					end if
 				else		!if the defect is to be inserted in the list
 					nullify(defectPrev%next)
@@ -2213,38 +2195,23 @@ subroutine updateDefectList(reactionCurrent, defectUpdateCurrent, CascadeCurrent
 		end if
 
 		!Send
-		!if(myProc%procNeighbor(i) /= myProc%taskid) then
-		commTime1=MPI_WTIME()
-		!	call MPI_SEND(finalSend(1,1,i),(SPECIES+3)*numUpdateFinal(i),MPI_INTEGER,&
-		!			myProc%procNeighbor(i), 400+i ,comm,ierr)
-		call MPI_SEND(finalSend(1,1,i),(SPECIES+3)*6,MPI_INTEGER,&
-				myProc%procNeighbor(i), 400+i ,comm,ierr)
-			!call MPI_ISEND(finalSend(1,1,i),(SPECIES+3)*numUpdateFinal(i),MPI_INTEGER,&
-			!        myProc%procNeighbor(i), 400+i ,comm,sendFinalRequest(i),ierr)
-		!end if
-		commTime2=MPI_WTIME()
-		commTimeSum=commTimeSum+commTime2-commTime1
+		if(myProc%procNeighbor(i)/=myProc%taskid .AND. myProc%procNeighbor(i)/=-1) then
+			commTime1=MPI_WTIME()
+			call MPI_SEND(finalSend(1,1,i),(SPECIES+3)*6,MPI_INTEGER,myProc%procNeighbor(i),400+i,comm,ierr)
+			commTime2=MPI_WTIME()
+			commTimeSum = commTimeSum + (commTime2-commTime1)
+			otherCommTime = otherCommTime + (commTime2-commTime1)
+		end if
 
 		!Recv
-		!if(myProc%procNeighbor(recvDir) /= myProc%taskid) then
-
-			!Recv Bndry
-		!	count=0
-		!	call MPI_PROBE(myProc%procNeighbor(recvDir), 400+i,comm,status,ierr)
-		!	call MPI_GET_COUNT(status,MPI_INTEGER,count,ierr)
-
-		!	numUpdateFinalRecv(recvDir) = count/(SPECIES+3)
-
-		!	allocate(finalBufferRecv(SPECIES+3,numUpdateFinalRecv(recvDir)))
-		allocate(finalBufferRecv(SPECIES+3,6))
-
-		commTime1=MPI_WTIME()
-		!	call MPI_RECV(finalBufferRecv,(SPECIES+3)*numUpdateFinalRecv(recvDir),MPI_INTEGER,&
-		!			myProc%procNeighbor(recvDir),400+i ,comm,status,ierr)
-		call MPI_RECV(finalBufferRecv,(SPECIES+3)*6,MPI_INTEGER,&
-				myProc%procNeighbor(recvDir),400+i ,comm,status,ierr)
-		commTime2=MPI_WTIME()
-		commTimeSum=commTimeSum+commTime2-commTime1
+		if(myProc%procNeighbor(recvDir)/=myProc%taskid .AND. myProc%procNeighbor(recvDir)/=-1) then
+			allocate(finalBufferRecv(SPECIES+3,6))
+			commTime1=MPI_WTIME()
+			call MPI_RECV(finalBufferRecv,(SPECIES+3)*6,MPI_INTEGER,myProc%procNeighbor(recvDir),400+i,comm,status,ierr)
+			commTime2=MPI_WTIME()
+			commTimeSum = commTimeSum + (commTime2-commTime1)
+			otherCommTime = otherCommTime + (commTime2-commTime1)
+		end if
 
 		numFinal=0
 		do j=1, 6
@@ -2253,67 +2220,52 @@ subroutine updateDefectList(reactionCurrent, defectUpdateCurrent, CascadeCurrent
 			end if
 		end do
 
-			!Add defects in finalBufferRecv to myGhost()
-			do j=1,numFinal
+		!Add defects in finalBufferRecv to myGhost()
+		do j=1,numFinal
 
-				if(finalBufferRecv(SPECIES+2,j)==-1) then
+			if(finalBufferRecv(SPECIES+2,j)==-1) then
 					write(*,*) 'error deleting defects in finalBufferRecv'
 					!call MPI_ABORT(comm,ierr)
-				else
+			else
+				!create a new element in defectUpdate and assign all variables except for num (will do later)
+				allocate(defectUpdateCurrent%next)
+				defectUpdateCurrent=>defectUpdateCurrent%next
+				defectUpdateCurrent%proc=myProc%procNeighbor(recvDir)
+				defectUpdateCurrent%dir=recvDir
+				allocate(defectUpdateCurrent%defectType(SPECIES))
+				defectUpdateCurrent%cellNumber=finalBufferRecv(SPECIES+1,j)	!cell number in boundary mesh
+				defectUpdateCurrent%num=finalBufferRecv(SPECIES+2,j) !This should be +1 only
+				defectUpdateCurrent%neighbor=finalBufferRecv(SPECIES+3,j) !cell number in myMesh
+				defectUpdateCurrent%cascadeNumber=0	!not inside a cascade
+				nullify(defectUpdateCurrent%next)
 
-					!create a new element in defectUpdate and assign all variables except for num (will do later)
-					allocate(defectUpdateCurrent%next)
-					defectUpdateCurrent=>defectUpdateCurrent%next
-					defectUpdateCurrent%proc=myProc%procNeighbor(recvDir)
-					defectUpdateCurrent%dir=recvDir
-					allocate(defectUpdateCurrent%defectType(SPECIES))
-					defectUpdateCurrent%cellNumber=finalBufferRecv(SPECIES+1,j)	!cell number in boundary mesh
-					defectUpdateCurrent%num=finalBufferRecv(SPECIES+2,j) !This should be +1 only
-					defectUpdateCurrent%neighbor=finalBufferRecv(SPECIES+3,j) !cell number in myMesh
-					defectUpdateCurrent%cascadeNumber=0	!not inside a cascade
-					nullify(defectUpdateCurrent%next)
+				!point defectCurrent at the defect list in the correct cell of myGhost
+				defectCurrent=>myGhost(finalBufferRecv(SPECIES+1,j),recvDir)%defectList
 
-					!point defectCurrent at the defect list in the correct cell of myGhost
-					defectCurrent=>myGhost(finalBufferRecv(SPECIES+1,j),recvDir)%defectList
+				do k=1,SPECIES
+					products(k)=finalBufferRecv(k,j)
+					defectUpdateCurrent%defectType(k)=finalBufferRecv(k,j)
+				end do
 
-					do k=1,SPECIES
-						products(k)=finalBufferRecv(k,j)
-						defectUpdateCurrent%defectType(k)=finalBufferRecv(k,j)
-					end do
+				!point DefectCurrent at the defect we are looking for (if it is there), otherwise
+				!point defectCurrent after and defectPrev before where it should go in defectList.
+				nullify(defectPrev)
+				call findDefectInList(defectCurrent, defectPrev, products)
 
-					!point DefectCurrent at the defect we are looking for (if it is there), otherwise
-					!point defectCurrent after and defectPrev before where it should go in defectList.
-					nullify(defectPrev)
-					call findDefectInList(defectCurrent, defectPrev, products)
-
-					!Next update defects in myGhost
-					if(associated(defectCurrent)) then !if we aren't at the end of the list
-						same=0
-						do l=1,SPECIES
-							if(defectCurrent%defectType(l)==products(l)) then
-								same=same+1
-							end if
-						end do
-						if(same==SPECIES) then	!if the defect is already present in the list
-							defectCurrent%num=defectCurrent%num+finalBufferRecv(SPECIES+2,j) !This should be +1 only
-
-							if(defectCurrent%num==0) then
-								write(*,*) 'Error zero defects in updateDefectList, step 5 of communication'
-							end if
-						else		!if the defect is to be inserted in the list
-							nullify(defectPrev%next)
-							allocate(defectPrev%next)
-							nullify(defectPrev%next%next)
-							defectPrev=>defectPrev%next
-							allocate(defectPrev%defectType(SPECIES))
-							defectPrev%cellNumber=finalBufferRecv(SPECIES+1,j)
-							defectPrev%num=finalBufferRecv(SPECIES+2,j) !This should be +1 only
-							do l=1,SPECIES
-								defectPrev%defectType(l)=finalBufferRecv(l,j)
-							end do
-							defectPrev%next=>defectCurrent !if inserted defect is in the middle of the list, point it to the next item in the list
+				!Next update defects in myGhost
+				if(associated(defectCurrent)) then !if we aren't at the end of the list
+					same=0
+					do l=1,SPECIES
+						if(defectCurrent%defectType(l)==products(l)) then
+							same=same+1
 						end if
-					else 			!add a defect to the end of the list
+					end do
+					if(same==SPECIES) then	!if the defect is already present in the list
+						defectCurrent%num=defectCurrent%num+finalBufferRecv(SPECIES+2,j) !This should be +1 only
+						if(defectCurrent%num==0) then
+							write(*,*) 'Error zero defects in updateDefectList, step 5 of communication'
+						end if
+					else		!if the defect is to be inserted in the list
 						nullify(defectPrev%next)
 						allocate(defectPrev%next)
 						nullify(defectPrev%next%next)
@@ -2324,18 +2276,24 @@ subroutine updateDefectList(reactionCurrent, defectUpdateCurrent, CascadeCurrent
 						do l=1,SPECIES
 							defectPrev%defectType(l)=finalBufferRecv(l,j)
 						end do
+						defectPrev%next=>defectCurrent !if inserted defect is in the middle of the list, point it to the next item in the list
 					end if
+				else 			!add a defect to the end of the list
+					nullify(defectPrev%next)
+					allocate(defectPrev%next)
+					nullify(defectPrev%next%next)
+					defectPrev=>defectPrev%next
+					allocate(defectPrev%defectType(SPECIES))
+					defectPrev%cellNumber=finalBufferRecv(SPECIES+1,j)
+					defectPrev%num=finalBufferRecv(SPECIES+2,j) !This should be +1 only
+					do l=1,SPECIES
+						defectPrev%defectType(l)=finalBufferRecv(l,j)
+					end do
 				end if
-			end do
-			deallocate(finalBufferRecv)
-		!end if
+			end if
+		end do
+		deallocate(finalBufferRecv)
 	end do
-
-	!do i=1,6
-	!    if(myProc%procNeighbor(i) /= myProc%taskid) then
-	!        call MPI_WAIT(sendFinalRequest(i),sendFinalStatus,ierr)
-	!    end if
-	!end do
 
 	if(allocated(finalSend)) then
 		deallocate(finalSend)

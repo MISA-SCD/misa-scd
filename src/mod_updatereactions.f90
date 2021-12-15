@@ -14,11 +14,10 @@ subroutine update_1st_reactions(cell, defectType)
 	implicit none
 
 	integer cell, defectType(SPECIES)
-	integer i, j, k, count, numReactants, numProducts, storeTemp
+	integer i, j, count, numReactants, numProducts, storeTemp
 	type(reaction), pointer :: reactionUpdate, reactionPrev
 	integer, allocatable :: reactants(:,:), products(:,:)
-	double precision reactionRate, totalRateCheck
-	logical isLegal
+	double precision reactionRate
 
 	nullify(reactionUpdate)
 	nullify(reactionPrev)
@@ -366,8 +365,7 @@ subroutine update_1st_reactions_fine(cascadeID, cell, defectType)
 	integer i, j, count, numReactants, numProducts, storeTemp
 	type(reaction), pointer :: reactionUpdate, reactionPrev
 	integer, allocatable :: reactants(:,:), products(:,:)
-	double precision reactionRate, totalRateCheck
-	logical isLegal
+	double precision reactionRate
 
 	nullify(reactionUpdate)
 	nullify(reactionPrev)
@@ -724,11 +722,9 @@ subroutine update_2nd_reactions(cell, defectType1, defectType2)
 	integer i, j, count, count2, numReactants, numProducts
 	integer, allocatable :: reactants(:,:), products(:,:)
 	double precision reactionRate
-	logical isLegal, isLegalTemp
 
 	nullify(reactionUpdate)
 	nullify(reactionPrev)
-	isLegalTemp =.TRUE.
 
 	!Clustering reactions.
 	numReactants=2
@@ -1289,7 +1285,6 @@ subroutine update_2nd_reactions_fine(cascadeID, cell, defectType1, defectType2)
 	integer i, j, count, count2, numReactants, numProducts
 	integer, allocatable :: reactants(:,:), products(:,:)
 	double precision reactionrate
-	logical isLegal
 
 	nullify(reactionUpdate)
 	nullify(reactionPrev)
@@ -2825,7 +2820,6 @@ double precision function findRate_diff(defectType, cell1, proc1, cell2, proc2, 
 	type(ReactionParameters) :: reactionParameter
 	double precision Diff, area1, area2, areaShared, lengthShared, Vol1, Vol2, length1, length2, reactionRate
 	integer findNumDefect, findNumDefectBoundary
-	double precision findStrainEnergy, findStrainEnergyBoundary
 	double precision findDiffusivity
 	integer grainNum, matNeighbor, size
 	double precision Eb, findBinding

@@ -249,10 +249,7 @@ subroutine initializeRandomSeeds()
 			randseedBuff(i+1)=irand(randseedBuff(i))
 		end do
 	end if
-	commTime1=MPI_WTIME()
 	call MPI_SCATTER(randseedBuff, 1, MPI_INTEGER, randseed, 1, MPI_INTEGER, MASTER, comm, ierr)
-	commTime2=MPI_WTIME()
-	commTimeSum=commTimeSum+commTime2-commTime1
 	deallocate(randseedBuff)
 	call sdprnd(randseed)
 

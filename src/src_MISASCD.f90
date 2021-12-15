@@ -23,19 +23,13 @@ program MISASCD
 	double precision :: tau
 	integer :: status(MPI_STATUS_SIZE), sim, outputCounter, nullSteps
 	integer :: cascadeCell, i, CascadeCount, TotalCascades
-	real :: time1, time2, time3
-	double precision :: runTime1, runTime2
-	double precision :: commTime1, commTime2
+	real :: time1, time2
+	double precision :: runTime1, runTime2, commTime1, commTime2
 	logical :: releaseToggle, impCascadeToggle
 	integer :: timeCounter
 	character(14) :: filename1, filename2, filename3, filename4
 	integer :: simStatus	!<1: 'irradiation', 0: 'anneal'
 	double precision, external :: GenerateTimestep, TotalRateCheck
-
-	!test
-	type(defect), pointer :: defectTest
-	type(reaction), pointer :: reactionTest
-	integer :: impCount
 
 	interface
 		subroutine chooseImplantReaction(reactionCurrent, CascadeCurrent)
@@ -88,7 +82,6 @@ program MISASCD
 
 	call cpu_time(time1)
 	timeCounter = 1
-	impCount = 1
 	!***********************************************************************
 	!<Initialize MPI interface
 	!***********************************************************************
@@ -107,9 +100,6 @@ program MISASCD
 	if(myProc%taskid==MASTER) then
 		write(*,*) 'proc division', dims
 	end if
-
-	!runTime1=MPI_WTIME()
-	commTimeSum=0.0
 
 	!***********************************************************************
 	!Initialize input parameters and meshes
@@ -170,15 +160,9 @@ program MISASCD
 		allocate(defectList(numCells))		!<Create list of defects - array
 		allocate(reactionList(numCells))	!<Create list of reactions - array
 		allocate(totalRateVol(numCells))	!<Create array of total rates in each volume element
-		call cpu_time(time3)
 		call initializeVIdefect()			!<initialize point defects in the whole system
 		call initializeDefectList()			!<initialize defects within myMesh
 		call initializeBoundaryDefectList()	!<initialize defects on boundary of myMesh (in other procs)
-
-		call cpu_time(time2)
-		if(myProc%taskid==MASTER) then
-			write(*,*) 'initialize VI time', time2-time3
-		end if
 		call initializeReactionList()		!<initialize reactions within myMesh
 		call initializeTotalRate()			!<initialize totalRate and maxRate using reactionList(:)
 
@@ -240,10 +224,13 @@ program MISASCD
 		!<	reactants in neighboring cells. Then add all reaction rates associated with REACTANTS AND PRODUCTS in the cell and diffusion
 		!<	reactions in neighboring cells.)
 		!<5. Repeat 1-4.
+		commTimeSum = 0d0
+		allreduceTime = 0d0
+		casCommTime = 0d0
+		otherCommTime = 0d0
 		runTime1 = MPI_WTIME()
 
 		do while(elapsedTime < totalTime)
-		!do while(step < 1)
 
 			step=step+1
 			!<Logical variable tells us whether cascade communication step needs to be carried out
@@ -255,7 +242,8 @@ program MISASCD
 			commTime1=MPI_WTIME()
 			call MPI_REDUCE(totalRate,maxRate,1,MPI_DOUBLE_PRECISION,MPI_MAX,0,comm,ierr)
 			commTime2=MPI_WTIME()
-			commTimeSum=commTimeSum+commTime2-commTime1
+			commTimeSum = commTimeSum + (commTime2 - commTime1)
+			allreduceTime = allreduceTime + (commTime2-commTime1)
 
 			if(myProc%taskid==MASTER) then
 				rateTau(1)=maxRate
@@ -283,7 +271,8 @@ program MISASCD
 			commTime1=MPI_WTIME()
 			call MPI_BCAST(rateTau, 2, MPI_DOUBLE_PRECISION, MASTER, comm,ierr)
 			commTime2=MPI_WTIME()
-			commTimeSum=commTimeSum+commTime2-commTime1
+			commTimeSum = commTimeSum + (commTime2-commTime1)
+			allreduceTime = allreduceTime + (commTime2-commTime1)
 
 			maxRate=rateTau(1)	!<update maxRate of the processor
 			tau=rateTau(2)		!<update time step of the processor
@@ -306,9 +295,6 @@ program MISASCD
 			!<If implantScheme=='explicit', cascade implantation needs to be carried out explicitly
 			if(implantScheme=='explicit') then
 				if(elapsedTime >= numImpAnn(1)*(numDisplacedAtoms*atomSize)/(totalVolume*dpaRate)) then
-				!if(elapsedTime >= 2.0d0*impCount) then
-				!	impCount=impCount+1
-
 					!<choose a cell in the peocessor to implant cascade
 					call addCascadeExplicit(reactionCurrent, CascadeCurrent)
 				else
@@ -376,22 +362,6 @@ program MISASCD
 				call cascadeUpdateStep(releaseToggle, cascadeCell)
 			end if
 
-			!***test
-			!if(cascadeCell /= 0) then
-			!	write(*,*) 'myProc%taskid', myProc%taskid, 'cell', cascadeCell
-			!	nullify(reactionTest)
-			!	reactionTest=>reactionList(cascadeCell)
-			!	do while(associated(reactionTest))
-			!		write(*,*) 'numReactants', reactionTest%numReactants, 'numProducts', reactionTest%numProducts
-			!		write(*,*) 'reactants', reactionTest%reactants
-			!		write(*,*) 'products', reactionTest%products
-			!		write(*,*) 'cellNumber', reactionTest%cellNumber
-			!		write(*,*) 'proc', reactionTest%taskid
-			!		write(*,*) 'reactionRate', reactionTest%reactionRate
-			!		reactionTest=>reactionTest%next
-			!	end do
-			!end if
-
 			!****************************************************************************************
 			!Every time a cascade is added, we reset the total rate and check how wrong it has become
 			!!'Cascade' implant type, check total rate when implantation event is choosen
@@ -418,14 +388,9 @@ program MISASCD
 			! Output according to outputCounter
 			!********************************************************************************
 			if(elapsedTime >= totalTime/2.0d6*(2.0d0)**(outputCounter)) then
-			!if(elapsedTime >= totalTime/50d0*(outputCounter)) then
-			!if(mod(step,100000)==0) then
 				simStatus=1	!<1: 'irradiation', 0: 'anneal'
-				commTime1=MPI_WTIME()
 				!call MPI_REDUCE(numImpAnn,totalImpAnn, 2, MPI_INTEGER, MPI_SUM, 0,comm, ierr)
 				call MPI_REDUCE(numImpAnn,totalImpAnn, 3, MPI_DOUBLE_PRECISION, MPI_SUM, 0,comm, ierr)
-				commTime2=MPI_WTIME()
-				commTimeSum=commTimeSum+commTime2-commTime1
 				if(xyzdatToggle=='yes') call outputDefectsXYZ()	!write xyzdat.out
 				if(totdatToggle=='yes' .OR. defectToggle=='yes' .OR. stadatToggle=='yes') then
 					call outputDefectsTotal(simStatus)	!write totdat.out, defect.out, stadat.out
@@ -433,7 +398,11 @@ program MISASCD
 				call cpu_time(time2)
 				if(myProc%taskid==MASTER) then
 					!DPA=dble(totalImpAnn(1))/(systemVol/(numDisplacedAtoms*atomSize))
-					DPA = totalImpAnn(3)/(systemVol/atomSize)
+					if(implantType=='Cascade') then
+						DPA = totalImpAnn(3)/(systemVol/atomSize)
+					else
+						DPA = totalImpAnn(1)/(systemVol/atomSize)
+					end if
 					write(*,*)
 					write(*,*) 'time', elapsedTime, 'DPA', DPA, 'steps', step, 'AverageTimeStep', elapsedTime/dble(step)
 					if(implantType=='FrenkelPair') then
@@ -447,7 +416,7 @@ program MISASCD
 				end if
 
 				outputCounter=outputCounter+1
-				call MPI_BARRIER(comm,ierr)
+				!call MPI_BARRIER(comm,ierr)
 			end if
 
 			!******************************************
@@ -466,17 +435,13 @@ program MISASCD
 			!	exit
 			!end do
 		end do	!end of do while(elapsedTime < totalTime)
-		runTime2=MPI_WTIME()
 
 		!***********************************************************************
 		!Output defects at the end of the implantation loop
 		!***********************************************************************
 		simStatus=1	!<1: 'irradiation', 0: 'anneal'
-		commTime1=MPI_WTIME()
 		!call MPI_REDUCE(numImpAnn, totalImpAnn, 2, MPI_INTEGER, MPI_SUM,0, comm, ierr)
 		call MPI_REDUCE(numImpAnn, totalImpAnn, 3, MPI_DOUBLE_PRECISION, MPI_SUM,0, comm, ierr)
-		commTime2=MPI_WTIME()
-		commTimeSum=commTimeSum+commTime2-commTime1
 		if(xyzdatToggle=='yes') call outputDefectsXYZ()	!write xyzdat.out
 		if(totdatToggle=='yes' .OR. defectToggle=='yes' .OR. stadatToggle=='yes') then
 			call outputDefectsTotal(simStatus)	!write totdat.out, defect.out, stadat.out
@@ -484,7 +449,11 @@ program MISASCD
 		call cpu_time(time2)
 		if(myProc%taskid==MASTER) then
 			!DPA=dble(totalImpAnn(1))/(systemVol/(numDisplacedAtoms*atomSize))
-			DPA = totalImpAnn(3)/(systemVol/atomSize)
+			if(implantType=='Cascade') then
+				DPA = totalImpAnn(3)/(systemVol/atomSize)
+			else
+				DPA = totalImpAnn(1)/(systemVol/atomSize)
+			end if
 			write(*,*)
 			write(*,*) 'Final  step'
 			write(*,*) 'time', elapsedTime, 'DPA', DPA, 'steps', step, 'AverageTimeStep', elapsedTime/dble(step)
@@ -497,6 +466,7 @@ program MISASCD
 			end if
 			write(*,*)
 		end if
+		runTime2 = MPI_WTIME()
 
 		!*************************************************************************************************************
 		!*************************************************************************************************************
@@ -646,7 +616,6 @@ program MISASCD
 				call outputDefectsTotal(simStatus)	!write totdat.out, defect.out, stadat.out
 			end if
 			call cpu_time(time2)
-			!write(*,*) 'Fraction null steps', dble(nullSteps)/dble(step), 'Proc', myProc%taskid
 			if(myProc%taskid==MASTER) then
 				!DPA=dble(totalImpAnn(1))/(systemVol/(numDisplacedAtoms*atomSize))
 				write(*,*)
@@ -695,11 +664,13 @@ program MISASCD
 	call deallocateMaterialInput()
 
 	call cpu_time(time2)
-	!runTime2=MPI_WTIME()
 	if(myProc%taskid==MASTER) then
 		!write(*,*) 'computation time', time2-time1
 		write(*,*) 'run time', runTime2-runTime1
 		write(*,*) 'communication time', commTimeSum
+		write(*,*) 'allresuce time', allreduceTime
+		write(*,*) 'cascade communicate time', casCommTime
+		write(*,*) 'other communicate time', otherCommTime
 		write(*,*) 'Deallocating memory'
 	end if
 

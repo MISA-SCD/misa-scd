@@ -260,7 +260,7 @@ subroutine cascadeUpdateStep(releaseToggle, cascadeCell)
     integer, allocatable :: defectSend(:,:), defectRecv(:,:)
     integer :: status(MPI_STATUS_SIZE), sendStatus(MPI_STATUS_SIZE),recvStatus(MPI_STATUS_SIZE)
     integer :: sendRequest, recvRequest
-    double precision :: commTime1, commTime2
+    double precision :: commTime1, commTime2, compTime1, compTime2
 
     !Fill send buffer
     if(cascadeCell==0) then
@@ -327,7 +327,7 @@ subroutine cascadeUpdateStep(releaseToggle, cascadeCell)
         end if
 
         !Send
-        commTime1=MPI_WTIME()
+        commTime1 = MPI_WTIME()
         !if(myProc%procNeighbor(dir) /= myProc%taskid) then
             call MPI_ISEND(defectSend, (SPECIES+1)*numSendTemp, MPI_INTEGER, myProc%procNeighbor(dir), &
                     900+dir, comm, sendRequest, ierr)
@@ -344,9 +344,8 @@ subroutine cascadeUpdateStep(releaseToggle, cascadeCell)
 
             call MPI_RECV(defectRecv,(SPECIES+1)*numRecv,MPI_INTEGER,myProc%procNeighbor(recvDir),&
                     900+dir,comm,status,ierr)
-        commTime2=MPI_WTIME()
-        commTimeSum=commTimeSum+commTime2-commTime1
 
+        compTime1 = MPI_WTIME() !标记计算时间的起始位置
             if(numRecv /= 0) then
                 !Update my boundary
                 bndryCellNumber=defectRecv(3,1)
@@ -428,10 +427,13 @@ subroutine cascadeUpdateStep(releaseToggle, cascadeCell)
             end if
             deallocate(defectRecv)
         !end if
-
+        compTime2 = MPI_WTIME() !标记计算时间的结束位置
         if(myProc%procNeighbor(dir) /= myProc%taskid) then
             call MPI_WAIT(sendRequest, sendStatus, ierr)
         end if
+        commTime2 = MPI_WTIME()
+        commTimeSum = commTimeSum + (commTime2-commTime1)-(compTime2-compTime1)
+        casCommTime = casCommTime + (commTime2-commTime1)-(compTime2-compTime1)
     end do
 
 end subroutine
